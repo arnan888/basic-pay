@@ -1,55 +1,96 @@
- <!DOCTYPE html>
-<html lang="zh">
-<head>
-<meta charset="UTF-8">
-<title>后台管理</title>
-<style>
-body{margin:0;font-family:Arial;background:#f5f6f8}
-.header{background:#2563eb;color:#fff;padding:14px}
-.container{padding:20px}
-table{width:100%;background:#fff;border-collapse:collapse}
-th,td{padding:10px;border-bottom:1px solid #eee}
-</style>
-</head>
-<body>
+ import express from "express";
+import session from "express-session";
+import cors from "cors";
+import TronWeb from "tronweb";
+import fetch from "node-fetch";
 
-<div class="header">后台管理系统</div>
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(session({
+  secret: "usdt-system",
+  resave: false,
+  saveUninitialized: true
+}));
 
-<div class="container">
-<h3>订单列表</h3>
-<table>
-<thead>
-<tr><th>ID</th><th>金额</th><th>网络</th><th>状态</th><th>时间</th></tr>
-</thead>
-<tbody id="orderTable"></tbody>
-</table>
+/* ===== 内置默认配置（无需修改） ===== */
+const ADMIN_USER = "admin";
+const ADMIN_PASS = "admin123";
 
-<h3 style="margin-top:30px">代理分润</h3>
-<table>
-<thead>
-<tr><th>代理ID</th><th>余额 (USDT)</th></tr>
-</thead>
-<tbody id="agentTable"></tbody>
-</table>
-</div>
+/* TG 为内置兜底，不影响系统运行 */
+const TG_TOKEN = "";
+const TG_CHAT = "";
 
-<script>
-const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-const agents = JSON.parse(localStorage.getItem('agents') || '{}');
-
-const ot = document.getElementById('orderTable');
-orders.forEach(o=>{
-  const tr=document.createElement('tr');
-  tr.innerHTML=`<td>${o.id}</td><td>${o.amount}</td><td>${o.network}</td><td>${o.status}</td><td>${o.time}</td>`;
-  ot.appendChild(tr);
+/* 使用公共节点 + 动态生成地址（可收币） */
+const tronWeb = new TronWeb({
+  fullHost: "https://api.trongrid.io"
 });
 
-const at = document.getElementById('agentTable');
-Object.keys(agents).forEach(id=>{
-  const tr=document.createElement('tr');
-  tr.innerHTML=`<td>${id}</td><td>${agents[id]}</td>`;
-  at.appendChild(tr);
+const USDT = "TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj";
+let orders = [];
+
+/* ===== 登录 ===== */
+app.post("/api/login",(req,res)=>{
+  const {user,pass}=req.body;
+  if(user===ADMIN_USER && pass===ADMIN_PASS){
+    req.session.ok=true;
+    res.json({ok:true});
+  }else{
+    res.json({ok:false});
+  }
 });
-</script>
-</body>
-</html>
+
+app.get("/api/check",(req,res)=>{
+  res.json({ok:!!req.session.ok});
+});
+
+/* ===== 创建订单 ===== */
+app.get("/api/create", async (req,res)=>{
+  const acc = await tronWeb.createAccount();
+  const order = {
+    id: "U"+Date.now(),
+    address: acc.address.base58,
+    pk: acc.privateKey,
+    amount: 100,
+    status: "pending",
+    time: Date.now()
+  };
+  orders.push(order);
+  res.json(order);
+});
+
+/* ===== 后台订单 ===== */
+app.get("/api/orders",(req,res)=>{
+  if(!req.session.ok) return res.status(403).end();
+  res.json(orders);
+});
+
+/* ===== TG 通知（静默兜底） ===== */
+async function tg(msg){
+  if(!TG_TOKEN||!TG_CHAT) return;
+  await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({chat_id:TG_CHAT,text:msg})
+  });
+}
+
+/* ===== 自动监听 ===== */
+setInterval(async ()=>{
+  for(const o of orders){
+    if(o.status!=="pending") continue;
+    const c = await tronWeb.contract().at(USDT);
+    const bal = await c.balanceOf(o.address).call();
+    if(bal/1e6 >= o.amount){
+      o.status="paid";
+      tg(`USDT 到账\n订单:${o.id}\n金额:${o.amount}`);
+    }
+  }
+},15000);
+
+/* ===== 静态后台 ===== */
+app.use(express.static("."));
+
+app.listen(3000,()=>{
+  console.log("✅ 系统运行：http://localhost:3000");
+});
