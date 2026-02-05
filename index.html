@@ -1,98 +1,60 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <title>USDT 支付</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f6f8;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .card {
-      background: #fff;
-      padding: 24px;
-      border-radius: 12px;
-      width: 320px;
-      box-shadow: 0 4px 12px rgba(0,0,0,.1);
-    }
-    h2 { margin-top: 0; }
-    .addr {
-      font-size: 12px;
-      word-break: break-all;
-      background: #f1f1f1;
-      padding: 8px;
-      border-radius: 6px;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 16px;
-      background: #2563eb;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .status {
-      margin-top: 12px;
-      font-size: 14px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>USDT 支付</title>
+<script src="config.js"></script>
+<style>
+body{font-family:Arial;background:#f5f6f8;padding:40px}
+.box{background:#fff;padding:20px;max-width:420px;margin:auto}
+button{padding:10px 20px;background:#2563eb;color:#fff;border:0}
+</style>
 </head>
 <body>
 
-<div class="card">
+<div class="box">
   <h2>USDT 支付</h2>
-  <p>订单号：<strong id="orderId"></strong></p>
-  <p>金额：<strong id="amount"></strong> USDT</p>
+  <p>金额：<span id="amount">100</span> USDT</p>
   <p>网络：TRC20</p>
-  <div class="addr" id="address"></div>
-  <button onclick="startPayment()">我已完成转账</button>
-  <div class="status" id="status">等待支付 ⏳</div>
+  <button onclick="pay()">确认支付</button>
 </div>
+
 <script>
-  document.getElementById('amount').innerText = '4.20';  
-function startPayment() {
+function pay() {
+  const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+  const agents = JSON.parse(localStorage.getItem('agents') || '{}');
+
+  const orderId = 'U' + Date.now();
+
   const order = {
-    id: "USDT-" + Date.now(),
-    amount: document.getElementById('amount').innerText + " USDT",   
-    network: "TRC20",
-    status: "待支付",
-    time: new Date().toLocaleString()
+    id: orderId,
+    amount: 100,
+    network: 'TRC20',
+    status: 'pending',
+    time: new Date().toLocaleString(),
+    agentPath: ['A001','A002'] // 示例：一级、二级代理
   };
 
-  let orders = JSON.parse(localStorage.getItem("orders") || "[]");
-  orders.unshift(order);
-  localStorage.setItem("orders", JSON.stringify(orders));
+  orders.push(order);
+  localStorage.setItem('orders', JSON.stringify(orders));
 
-  document.getElementById("orderId").innerText = order.id;
-  document.getElementById("amount").innerText = order.amount;
-  document.getElementById("status").innerText = "已提交，等待支付";
-}
-</script>
-  <script>
-function startPayment() {
-    const amountEl = document.getElementById('amount');
-    const amount = amountEl ? amountEl.innerText : '4.20';
+  // 🔄 模拟链上监听（可换真 TRON API）
+  setTimeout(() => {
+    const list = JSON.parse(localStorage.getItem('orders'));
+    const o = list.find(i => i.id === orderId);
+    o.status = 'success';
 
-    const order = {
-        id: 'USDT-' + Date.now(),
-        amount: amount + ' USDT',
-        network: 'TRC20',
-        status: '已提交',
-        time: new Date().toLocaleString()
-    };
+    // 分润
+    o.agentPath.forEach((aid, idx) => {
+      const rate = CONFIG.agentLevels[idx] || 0;
+      agents[aid] = (agents[aid] || 0) + o.amount * rate;
+    });
 
-    let orders = JSON.parse(localStorage.getItem('orders') || '[]');
-    orders.unshift(order);
-    localStorage.setItem('orders', JSON.stringify(orders));
+    localStorage.setItem('orders', JSON.stringify(list));
+    localStorage.setItem('agents', JSON.stringify(agents));
+  }, CONFIG.listenDelay);
 
-    alert('订单已提交');
+  alert('订单已创建，等待链上确认');
 }
 </script>
 </body>
