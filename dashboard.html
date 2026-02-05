@@ -1,103 +1,100 @@
-<!DOCTYPE html>
+   <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <title>后台管理</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f5f7fa;
-    }
-    header {
-      background: #1677ff;
-      color: #fff;
-      padding: 15px 20px;
-      font-size: 18px;
-    }
-    .container {
-      padding: 20px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: #fff;
-    }
-    th, td {
-      padding: 12px;
-      border-bottom: 1px solid #eee;
-      text-align: left;
-    }
-    th {
-      background: #fafafa;
-    }
-    .status-wait {
-      color: orange;
-    }
-    .status-ok {
-      color: green;
-    }
-    .logout {
-      float: right;
-      cursor: pointer;
-      font-size: 14px;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>后台管理系统</title>
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f5f6f8;
+}
+.header {
+    background: #2563eb;
+    color: #fff;
+    padding: 14px 20px;
+    font-size: 18px;
+}
+.container {
+    padding: 20px;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+}
+th, td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+th {
+    background: #f0f2f5;
+}
+.empty {
+    padding: 30px;
+    color: #888;
+    text-align: center;
+}
+</style>
 </head>
+
 <body>
 
-<header>
-  后台管理系统
-  <span class="logout" onclick="logout()">退出</span>
-</header>
+<div class="header">后台管理系统</div>
 
 <div class="container">
-  <h3>订单列表</h3>
+    <h3>订单列表</h3>
 
-  <table>
-    <thead>
-      <tr>
-        <th>订单号</th>
-        <th>金额</th>
-        <th>网络</th>
-        <th>状态</th>
-      </tr>
-    </thead>
-    <tbody id="orderList">
-      <!-- 订单会自动插入 -->
-    </tbody>
-  </table>
+    <table>
+        <thead>
+            <tr>
+                <th>订单号</th>
+                <th>金额</th>
+                <th>网络</th>
+                <th>状态</th>
+            </tr>
+        </thead>
+
+        <!-- 关键点 1：tbody 必须存在 -->
+        <tbody id="orderTable"></tbody>
+    </table>
+
+    <!-- 关键点 2：empty 必须存在 -->
+    <div id="empty" class="empty" style="display:none;">暂无订单</div>
 </div>
 
 <script>
-  // 模拟订单数据（以后可以接真服务器）
-  const orders = [
-    {
-      id: "USDT-1770287638374",
-      amount: "4.37 USDT",
-      network: "TRC20",
-      status: "wait"
+(function () {
+
+    // 关键点 3：必须用 || '[]'
+    const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+
+    const tbody = document.getElementById('orderTable');
+    const empty = document.getElementById('empty');
+
+    // 关键点 4：没有订单直接 return
+    if (orders.length === 0) {
+        empty.style.display = 'block';
+        return;
     }
-  ];
 
-  const tbody = document.getElementById("orderList");
+    // 关键点 5：真正渲染表格
+    orders.forEach(o => {
+        const tr = document.createElement('tr');
 
-  orders.forEach(o => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = 
-      <td>${o.id}</td>
-      <td>${o.amount}</td>
-      <td>${o.network}</td>
-      <td class="${o.status === 'wait' ? 'status-wait' : 'status-ok'}">
-        ${o.status === 'wait' ? '待支付' : '已完成'}
-      </td>
-    ;
-    tbody.appendChild(tr);
-  });
+        // 🔥 唯一真正致命的地方在这里
+        tr.innerHTML = `
+            <td>${o.id}</td>
+            <td>${o.amount}</td>
+            <td>${o.network}</td>
+            <td>${o.status}</td>
+        `;
 
-  function logout() {
-    location.href = "admin.html";
-  }
+        tbody.appendChild(tr);
+    });
+
+})();
 </script>
 
 </body>
