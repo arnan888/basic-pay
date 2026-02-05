@@ -39,6 +39,48 @@
     <h2>基础工资支付</h2>
     <p>金额：100 元</p>
     <button>立即支付</button>
-  </div>
+  </div><script>
+const USDT_ADDRESS = "你的TRC20地址"; // ← 等下你再填
+const CHECK_INTERVAL = 10000;
+
+// 从 URL 读取 amount
+const params = new URLSearchParams(window.location.search);
+const REQUIRED_AMOUNT = Number(params.get("amount"));
+
+if (!REQUIRED_AMOUNT) {
+  document.getElementById("amount").innerText = "未指定金额";
+} else {
+  document.getElementById("amount").innerText = REQUIRED_AMOUNT + " USDT";
+}
+
+let timer = setInterval(checkPayment, CHECK_INTERVAL);
+
+async function checkPayment() {
+  if (!REQUIRED_AMOUNT) return;
+
+  try {
+    const res = await fetch(
+      https://apilist.tronscanapi.com/api/token_trc20/transfers?limit=10&start=0&toAddress=${USDT_ADDRESS}
+    );
+    const data = await res.json();
+
+    if (!data.token_transfers) return;
+
+    for (const tx of data.token_transfers) {
+      const amount = Number(tx.quant) / 1e6;
+      if (amount >= REQUIRED_AMOUNT) {
+        clearInterval(timer);
+        document.getElementById("status").innerText =
+          "✅ 已收到 " + amount + " USDT，支付成功";
+        return;
+      }
+    }
+  } catch (e) {
+    console.log("监听中…");
+  }
+}<script>
+document.getElementById("status").innerText = "🟢 script 已加载";
+</script></script>  
+  
 </body>
 </html>
