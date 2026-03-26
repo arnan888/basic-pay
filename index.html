@@ -3,33 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>V45_OVERLOAD_SYSTEM</title>
+    <title>ORIGINAL_ROBOT_V45</title>
     <style>
-        body, html { margin: 0; background: #000; overflow: hidden; height: 100vh; font-family: 'Courier New', monospace; color: #0f0; }
-        .v-active { display: flex !important; animation: shake 0.05s infinite; }
-        @keyframes shake { 0% { transform: translate(0,0); } 25% { transform: translate(-3px, 2px); filter: hue-rotate(90deg); } 50% { transform: translate(3px, -2px); } 100% { transform: translate(0,0); } }
-        .view { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,20,0,0.8); }
-        .plate { border: 4px double #0f0; padding: 40px; background: #000; box-shadow: 0 0 30px #0f0; text-align: center; }
-        .num { font-size: 80px; font-weight: 900; color: #fff; text-shadow: 3px 3px #f00; }
-        .spin { animation: rotate 0.2s linear infinite; border-radius: 50%; border-color: #ff00ff; }
-        @keyframes rotate { from { transform: rotate(0deg) scale(1.2); } to { transform: rotate(360deg) scale(1.2); } }
-        button { background: #000; border: 2px solid #fff; color: #fff; padding: 15px 30px; margin-top: 30px; cursor: pointer; font-size: 18px; }
+        body, html { margin: 0; padding: 0; background: #000; overflow: hidden; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Courier New', monospace; color: #fff; }
+        .v45-bg { position: absolute; inset: 0; background: radial-gradient(circle, #1a0033 0%, #000 100%); animation: flash 0.05s infinite; opacity: 0.3; pointer-events: none; }
+        @keyframes flash { 0% { background: #1a0033; } 50% { background: #330000; } 100% { background: #001a33; } }
+        
+        .robot { width: 150px; height: 200px; position: relative; animation: dance 0.2s infinite alternate; cursor: pointer; filter: drop-shadow(0 0 15px #0f0); }
+        .head { width: 100px; height: 80px; background: #222; border: 4px solid #0f0; border-radius: 15px; margin: 0 auto; position: relative; }
+        .eyes { display: flex; justify-content: space-around; padding-top: 25px; }
+        .eye { width: 20px; height: 20px; background: #0f0; border-radius: 50%; box-shadow: 0 0 20px #0f0; animation: blink 0.1s infinite; }
+        .body-box { width: 130px; height: 70px; background: #222; border: 4px solid #0f0; border-radius: 10px; margin: 10px auto; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .wave { width: 100%; height: 20px; background: #0f0; position: absolute; animation: wave-move 0.1s infinite linear; opacity: 0.5; }
+        
+        @keyframes dance { from { transform: translateY(0) rotate(-2deg) scale(1.05); } to { transform: translateY(-10px) rotate(2deg) scale(0.95); } }
+        @keyframes blink { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.1); } }
+        @keyframes wave-move { 0% { top: -20px; } 100% { top: 80px; } }
+
+        .num-overload { font-size: 80px; font-weight: 900; color: #fff; text-shadow: 3px 0 #f00, -3px 0 #00f; margin-top: 20px; z-index: 10; animation: shake 0.05s infinite; }
+        @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-2px, -1px); } 100% { transform: translate(1px, -1px); } }
+        
+        .btn { border: 2px solid #fff; background: transparent; color: #fff; padding: 15px 40px; font-size: 20px; margin-top: 30px; z-index: 10; text-transform: uppercase; letter-spacing: 5px; box-shadow: 0 0 15px #fff; }
+        .btn:active { background: #fff; color: #000; transform: scale(0.9); }
     </style>
 </head>
-<body onclick="A()">
-    <div id="v1" class="view v-active">
-        <div class="plate"><div style="color:#0f0">SYNC_STATUS_V45</div><div class="num" id="n1">1000</div></div>
-        <button onclick="G(2)">进入 45 级转转乐</button>
+<body onclick="startAudio()">
+    <div class="v45-bg"></div>
+    <div class="robot" id="rob">
+        <div class="head">
+            <div class="eyes"><div class="eye"></div><div class="eye"></div></div>
+        </div>
+        <div class="body-box"><div class="wave"></div><div style="z-index:1; font-weight:bold;">V45</div></div>
     </div>
-    <div id="v2" class="view">
-        <div class="plate spin"><div style="color:#ff00ff">LUCKY_OVERLOAD</div><div class="num" id="n2">777</div></div>
-        <button onclick="G(1)">返回监测</button>
-    </div>
+    <div class="num-overload" id="n">1000</div>
+    <button class="btn" onclick="spinNow()">幸运转转乐</button>
     <script>
-        let ac=null; function G(i){document.querySelectorAll('.view').forEach(v=>v.classList.remove('v-active'));document.getElementById('v'+i).classList.add('v-active');if(ac)P();}
-        setInterval(()=>{document.getElementById('n1').innerText=Math.floor(Math.random()*50)+950;document.getElementById('n2').innerText=['777','888','999','WIN'][Math.floor(Math.random()*4)];},50);
-        function A(){if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();}
-        function P(){let o=ac.createOscillator(),g=ac.createGain();o.type='square';o.frequency.setValueAtTime(200+Math.random()*600,ac.currentTime);g.gain.setValueAtTime(0.1,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.01,ac.currentTime+0.1);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+0.1);}
+        let ac=null;
+        function spinNow() {
+            document.getElementById('rob').style.animation = 'spin 0.2s infinite linear';
+            document.body.style.background = '#f0f';
+            if(ac) playSfx();
+        }
+        setInterval(() => {
+            document.getElementById('n').innerText = Math.floor(Math.random() * 100) + 900;
+        }, 50);
+        function startAudio() { if(!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); }
+        function playSfx() {
+            let o = ac.createOscillator(), g = ac.createGain();
+            o.type = 'sawtooth'; o.frequency.setValueAtTime(440 + Math.random()*440, ac.currentTime);
+            g.gain.setValueAtTime(0.1, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.1);
+            o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime + 0.1);
+        }
     </script>
+    <style>@keyframes spin { from { transform: rotate(0deg) scale(1.5); } to { transform: rotate(360deg) scale(1.5); } }</style>
 </body>
 </html>
