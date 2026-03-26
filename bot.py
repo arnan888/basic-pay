@@ -12,17 +12,41 @@ CONFIG = {
 logging.basicConfig(level=logging.WARNING)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    kb = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🏁 3D 巨幕赛车", url=CONFIG["RACE_URL"]),
-         InlineKeyboardButton("🎡 赚赚乐 (V45)", url=CONFIG["WHEEL_URL"])]
-    ])
+    # 模拟图片中的矩阵布局
+    keyboard = [
+        [
+            InlineKeyboardButton("🏁 Lucky Racing (赛车)", url=CONFIG["RACE_URL"]),
+            InlineKeyboardButton("🎡 赚赚乐 (V45)", url=CONFIG["WHEEL_URL"])
+        ],
+        [InlineKeyboardButton("💣 扫雷 (100-5)", callback_data='mines')],
+        [InlineKeyboardButton("🎵 边玩边听 (Spotify)", url='https://open.spotify.com')],
+        [
+            InlineKeyboardButton("🧧 领 TRX", callback_data='trx'),
+            InlineKeyboardButton("👤 技术支持", url='https://t.me/your_admin')
+        ],
+        [InlineKeyboardButton("⚙️ 系统后台管理", callback_data='admin')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    caption = (
+        "<b>『 💠 DOLA 终端 · 旗舰版 』</b>\n\n"
+        "👤 <b>用户:</b> ✨【 智 能 合 约 】✨【\n"
+        "💰 <b>余额:</b> 1000.00 TRX\n\n"
+        "45级过载系统已就绪，请选择："
+    )
+
     try:
-        await update.message.reply_photo(CONFIG["IMG"], caption="<b>『 💠 DOLA 终端 · 终极版 』</b>\n\n✅ 视觉置顶：已锁定\n✅ 命名同步：赚赚乐 V45\n✅ 路径管理：~/basic-pay", parse_mode="HTML", reply_markup=kb)
+        await update.message.reply_photo(
+            CONFIG["IMG"], 
+            caption=caption, 
+            parse_mode="HTML", 
+            reply_markup=reply_markup
+        )
     except:
-        await update.message.reply_text("💠 DOLA 就绪：", reply_markup=kb)
+        await update.message.reply_text(caption, parse_mode="HTML", reply_markup=reply_markup)
 
 if __name__ == "__main__":
     app = Application.builder().token(CONFIG["TOKEN"]).build()
     app.add_handler(CommandHandler("start", start))
-    print("🚀 DOLA 终极整理版启动成功")
+    print("🚀 旗舰版机器人已启动")
     app.run_polling()
