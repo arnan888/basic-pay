@@ -1,38 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>V45_ROBOT_ACTIVE</title>
+    <title>SLIM_WHEEL</title>
     <style>
-        body, html { margin: 0; padding: 0; background: #000; overflow: hidden; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: monospace; }
-        /* 经典机器人样式 */
-        .robot { width: 140px; height: 180px; position: relative; animation: v45-dance 0.15s infinite alternate; filter: drop-shadow(0 0 15px #0f0); cursor: pointer; }
-        .head { width: 90px; height: 70px; background: #222; border: 3px solid #0f0; border-radius: 12px; margin: 0 auto; position: relative; }
-        .eyes { display: flex; justify-content: space-around; padding-top: 20px; }
-        .eye { width: 18px; height: 18px; background: #0f0; border-radius: 50%; box-shadow: 0 0 15px #0f0; animation: blink 0.1s infinite; }
-        .body-box { width: 110px; height: 60px; background: #222; border: 3px solid #0f0; border-radius: 8px; margin: 8px auto; display: flex; align-items: center; justify-content: center; color: #0f0; font-weight: bold; font-size: 24px; box-shadow: inset 0 0 10px #0f0; }
-        /* 45级过载动作 */
-        @keyframes v45-dance { from { transform: translateY(0) rotate(-3deg); filter: hue-rotate(0deg); } to { transform: translateY(-15px) rotate(3deg); filter: hue-rotate(90deg); } }
-        @keyframes blink { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.1); } }
-        /* 数字过载 */
-        .num { font-size: 80px; font-weight: 900; color: #fff; text-shadow: 2px 2px #f00, -2px -2px #00f; margin-top: 20px; animation: shake 0.05s infinite; }
-        @keyframes shake { 0% { transform: translate(2px, 2px); } 50% { transform: translate(-2px, -2px); } 100% { transform: translate(1px, -1px); } }
-        /* 按钮与转转乐 */
-        button { background: transparent; border: 2px solid #fff; color: #fff; padding: 15px 40px; margin-top: 30px; cursor: pointer; font-size: 20px; font-weight: bold; letter-spacing: 3px; }
-        .spin-v45 { animation: spin 0.2s infinite linear !important; }
-        @keyframes spin { from { transform: rotate(0deg) scale(1.6); } to { transform: rotate(360deg) scale(1.6); } }
+        :root { --neon: #00f2ff; --pink: #ff0055; }
+        body { margin: 0; background: #050505; color: #fff; font-family: 'Arial Black', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; perspective: 1000px; }
+        .hud { width: 60%; background: rgba(255,255,255,0.05); border: 1px solid var(--neon); border-radius: 6px; padding: 8px; text-align: center; margin-bottom: 30px; }
+        .hud b { font-size: 18px; color: #fff; text-shadow: 0 0 10px var(--neon); }
+        .wheel-box { position: relative; transform: rotateX(15deg); }
+        .wheel { 
+            width: 240px; height: 240px; /* 精致小巧版 */
+            border-radius: 50%; border: 6px solid #1a1a1a;
+            background: conic-gradient(#ff0055 0 60deg, #222 60deg 120deg, #00f2ff 120deg 180deg, #222 180deg 240deg, #ffcc00 240deg 300deg, #222 300deg 360deg);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8); transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .item { position: absolute; font-size: 22px; }
+        .i1 { transform: rotate(30deg) translateY(-85px); }
+        .i2 { transform: rotate(90deg) translateY(-85px); }
+        .i3 { transform: rotate(150deg) translateY(-85px); }
+        .i4 { transform: rotate(210deg) translateY(-85px); }
+        .i5 { transform: rotate(270deg) translateY(-85px); }
+        .i6 { transform: rotate(330deg) translateY(-85px); }
+        .btn { position: absolute; width: 55px; height: 55px; background: #111; border: 3px solid var(--pink); border-radius: 50%; font-size: 12px; font-weight: bold; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px var(--pink); }
+        .pointer { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 20px solid #fff; z-index: 20; }
+        .ovl { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
     </style>
 </head>
-<body onclick="A()">
-    <div class="robot" id="r"><div class="head"><div class="eyes"><div class="eye"></div><div class="eye"></div></div></div><div class="body-box">V45</div></div>
-    <div class="num" id="n">1000</div>
-    <button onclick="S()">幸运转转乐</button>
+<body>
+    <div class="hud">BALANCE: <b id="bal">1,000</b></div>
+    <div class="wheel-box">
+        <div class="pointer"></div>
+        <div class="wheel" id="wheel">
+            <div class="item i1">💎</div><div class="item i2">💀</div><div class="item i3">💰</div><div class="item i4">💀</div><div class="item i5">🎁</div><div class="item i6">💀</div>
+            <div class="btn" onclick="spin()">SPIN</div>
+        </div>
+    </div>
+    <div class="ovl" id="ovl"><div style="font-size:40px; font-weight:900;" id="res-txt"></div><button style="margin-top:30px; padding:12px 30px; background:var(--neon); border:none; border-radius:5px; font-weight:bold;" onclick="location.reload()">AGAIN</button></div>
     <script>
-        let ac=null; function S(){document.getElementById('r').classList.toggle('spin-v45');if(ac)P();}
-        setInterval(()=>{document.getElementById('n').innerText=Math.floor(Math.random()*150)+850;},50);
-        function A(){if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();}
-        function P(){let o=ac.createOscillator(),g=ac.createGain();o.type='sawtooth';o.frequency.setValueAtTime(600,ac.currentTime);g.gain.setValueAtTime(0.1,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.01,ac.currentTime+0.1);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+0.1);}
+        let b=1000, r=0;
+        function spin(){
+            if(b<50)return alert('余额不足'); b-=50; document.getElementById('bal').innerText=b;
+            let add=1800+Math.floor(Math.random()*360); r+=add;
+            document.getElementById('wheel').style.transform="rotate("+r+"deg)";
+            setTimeout(()=>{
+                let win=[0, 100, 0, 200, 0, 500][Math.floor(Math.random()*6)]; b+=win;
+                document.getElementById('bal').innerText=b; document.getElementById('ovl').style.display='flex';
+                document.getElementById('res-txt').innerText=win>0?"WIN: "+win:"LOSE"; document.getElementById('res-txt').style.color=win>0?'#00f2ff':'#ff0055';
+            },4000);
+        }
     </script>
 </body>
 </html>
