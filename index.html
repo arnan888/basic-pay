@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOLA_旗舰终端_V45</title>
+    <title>DOLA_旗舰终端_V45_同步版</title>
     <style>
         :root { --neon: #00f2ff; --pink: #ff0055; }
         * { box-sizing: border-box; }
@@ -11,12 +11,12 @@
             margin: 0; padding: 0; background: #000; color: #fff; 
             font-family: 'Arial Black', sans-serif; 
             height: 100vh; width: 100vw; overflow: hidden;
-            /* 背景图：确保它在最底层 */
+            /* 背景图 */
             background: url('https://img.freepik.com/free-vector/abstract-technology-particle-background_23-2148426649.jpg') no-repeat center center;
             background-size: cover;
             position: relative;
         }
-        
+
         /* 电视屏幕暗角滤镜 */
         body::after {
             content: ""; position: fixed; inset: 0;
@@ -24,7 +24,7 @@
             pointer-events: none; z-index: 1; 
         }
 
-        /* 顶部余额 HUD：强制置顶 */
+        /* 顶部余额 HUD */
         .hud { 
             position: absolute; top: 20px; left: 50%; transform: translateX(-50%); 
             width: 80%; background: rgba(0,0,0,0.6); 
@@ -34,13 +34,13 @@
         }
         .hud b { font-size: 22px; color: var(--neon); text-shadow: 0 0 10px var(--neon); }
 
-        /* 转盘容器：绝对定位，确保在背景之上 */
+        /* 转盘容器 */
         .wheel-box { 
             position: absolute; top: 110px; left: 50%; 
             transform: translateX(-50%); 
-            z-index: 50; /* 确保高于背景 */
+            z-index: 50; 
         }
-        
+
         .wheel { 
             width: 280px; height: 280px; border-radius: 50%; 
             border: 6px solid #111;
@@ -50,7 +50,7 @@
             display: flex; align-items: center; justify-content: center;
             position: relative;
         }
-        
+
         .item { position: absolute; font-size: 28px; }
         .i1 { transform: rotate(30deg) translateY(-105px); } 
         .i2 { transform: rotate(90deg) translateY(-105px); } 
@@ -58,7 +58,7 @@
         .i4 { transform: rotate(210deg) translateY(-105px); } 
         .i5 { transform: rotate(270deg) translateY(-105px); } 
         .i6 { transform: rotate(330deg) translateY(-105px); }
-        
+
         .btn { 
             position: absolute; width: 60px; height: 60px; background: #000; 
             border: 3px solid var(--pink); border-radius: 50%; 
@@ -66,7 +66,7 @@
             display: flex; align-items: center; justify-content: center; 
             box-shadow: 0 0 20px var(--pink); 
         }
-        
+
         .pointer { 
             position: absolute; top: -15px; left: 50%; transform: translateX(-50%); 
             width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; 
@@ -77,7 +77,7 @@
     </style>
 </head>
 <body>
-    <div class="hud">BALANCE: <b id="bal">1,000</b></div>
+    <div class="hud">BALANCE: <b id="bal">获取中...</b></div>
     <div class="wheel-box">
         <div class="pointer"></div>
         <div class="wheel" id="wheel">
@@ -88,17 +88,54 @@
     <div class="ovl" id="ovl"><div id="res-txt" style="font-size:40px; font-weight:900;"></div><button style="margin-top:30px; padding:12px 30px; background:var(--neon); border:none; border-radius:5px; font-weight:bold;" onclick="location.reload()">AGAIN</button></div>
 
     <script>
-        let b=1000, r=0;
-        function spin(){ 
-            if(b<50)return alert('余额不足'); b-=50; document.getElementById('bal').innerText=b; 
-            let add=1800+Math.floor(Math.random()*360); r+=add; 
-            document.getElementById('wheel').style.transform="rotate("+r+"deg)";
-            setTimeout(()=>{ 
-                let win=[0,100,0,200,0,500][Math.floor(Math.random()*6)]; b+=win; 
-                document.getElementById('bal').innerText=b; document.getElementById('ovl').style.display='flex'; 
-                document.getElementById('res-txt').innerText=win>0?"WIN: "+win:"LOSE"; document.getElementById('res-txt').style.color=win>0?'#00f2ff':'#ff0055'; 
-            },4000); 
+        /** 
+         * 同步模块：使用 localStorage 替代数据库存储充值额度 
+         */
+        let b = parseFloat(localStorage.getItem('user_gold') || '1000'); // 读取额度，默认1000
+        let r = 0;
+
+        // 更新界面并保存额度到浏览器缓存
+        function updateDisplay() {
+            document.getElementById('bal').innerText = b.toLocaleString();
+            localStorage.setItem('user_gold', b.toString()); // 同步保存
         }
+
+        // 初始化显示余额
+        updateDisplay();
+
+        /**
+         * 游戏主逻辑
+         */
+        function spin() { 
+            if(b < 50) return alert('余额不足，请联系客服充值'); 
+            
+            b -= 50; // 扣除游戏金币
+            updateDisplay(); 
+
+            let add = 1800 + Math.floor(Math.random() * 360); 
+            r += add; 
+            document.getElementById('wheel').style.transform = "rotate(" + r + "deg)";
+
+            setTimeout(() => { 
+                let win = [0, 100, 0, 200, 0, 500][Math.floor(Math.random() * 6)]; 
+                b += win; // 增加中奖金币
+                updateDisplay(); 
+
+                document.getElementById('ovl').style.display = 'flex'; 
+                document.getElementById('res-txt').innerText = win > 0 ? "WIN: " + win : "LOSE"; 
+                document.getElementById('res-txt').style.color = win > 0 ? '#00f2ff' : '#ff0055'; 
+            }, 4000); 
+        }
+
+        /**
+         * 充值同步工具：供管理员或充值接口使用
+         * 使用方法：在浏览器控制台(F12)输入 syncGold(1000) 即可瞬间同步额度
+         */
+        window.syncGold = (amount) => {
+            b += amount;
+            updateDisplay();
+            console.log(`[同步成功] 已成功存入: ${amount} 金币，当前总额度: ${b}`);
+        };
     </script>
 </body>
 </html>
