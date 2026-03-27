@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-    <title>TERMINAL_V19000_EVOLVE</title>
+    <title>TERMINAL_V21000_DIRECTION_FIX</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff0055; --gold: #ffcc00; }
@@ -11,129 +11,143 @@
         
         body { background: #000; color: #fff; font-family: 'JetBrains Mono', monospace; height: 100vh; overflow: hidden; }
 
-        /* 终端扫描线背景 - 不占点击位 */
-        .scanline { position: fixed; inset: 0; background: linear-gradient(to bottom, transparent 50%, rgba(0,242,255,0.02) 50%); background-size: 100% 4px; z-index: 1; pointer-events: none; }
+        /* 终端背景：横向扫描 */
+        .bg { position: fixed; inset: 0; background: linear-gradient(90deg, rgba(0,242,255,0.01) 1px, transparent 1px); background-size: 40px 100%; z-index: 1; pointer-events: none; }
 
-        .app-view { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 50px 0; }
+        .app-root { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 40px 0; }
 
-        /* 截图还原：霓虹余额框 */
-        .bal-display {
-            background: rgba(0,0,0,0.8); border: 2px solid var(--neon);
-            padding: 12px 50px; border-radius: 20px;
-            box-shadow: 0 0 25px var(--neon), inset 0 0 10px var(--neon);
-            display: flex; align-items: center; gap: 15px; transition: 0.3s;
+        /* 1. 余额区 (最上方) */
+        .top-bar {
+            border: 2px solid var(--neon); padding: 10px 50px; border-radius: 15px;
+            box-shadow: 0 0 20px var(--neon); background: rgba(0,0,0,0.8);
         }
-        .bal-val { font-size: 56px; font-weight: 900; letter-spacing: -2px; text-shadow: 0 0 15px var(--neon); }
+        .bal-val { font-size: 52px; font-weight: 900; text-shadow: 0 0 10px var(--neon); }
 
-        /* 核心区：物理禁锢转盘 */
-        .vortex-stage { position: relative; width: 90vw; max-width: 400px; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; }
+        /* 2. 核心转盘 (中间，方向校准) */
+        .stage { position: relative; width: 340px; height: 340px; display: flex; align-items: center; justify-content: center; transition: 0.1s; }
         
-        /* 截图还原：白色极细指针 */
-        .laser-line { position: absolute; top: -15px; width: 2px; height: 70px; background: #fff; box-shadow: 0 0 20px var(--neon); z-index: 100; }
+        /* 截图同款：白色正上方指针 */
+        .needle { position: absolute; top: -15px; width: 4px; height: 65px; background: #fff; box-shadow: 0 0 20px #fff; z-index: 100; border-radius: 2px; }
 
-        .reactor {
+        .vortex {
             width: 100%; height: 100%; border-radius: 50%;
-            background: radial-gradient(circle, #111, #000);
-            border: 2px solid #222; position: relative;
-            overflow: hidden; /* 核心禁锢：确保图标不跑出去 */
-            transition: transform 7s cubic-bezier(0.1, 0, 0, 1);
-            box-shadow: inset 0 0 60px rgba(0,242,255,0.1);
+            background: radial-gradient(circle, #222, #000);
+            border: 2px solid #333; position: relative;
+            overflow: hidden; /* 物理禁锢 */
+            transition: transform 6s cubic-bezier(0.1, 0, 0, 1);
         }
 
-        .sector { position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 12%; transform-origin: center; }
-        .sector b { font-size: 80px; transform: rotate(90deg); filter: drop-shadow(0 0 15px rgba(0,0,0,0.9)); }
+        /* 3. 图标位置校准：让第一个图标正对指针 */
+        .slot { position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transform-origin: center; }
+        .slot b { 
+            position: absolute; top: 15%; font-size: 70px; 
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)); 
+            transition: 0.3s;
+        }
 
-        /* 截图还原：深红 RUN 核 */
-        .igniter {
-            position: absolute; width: 110px; height: 110px; border-radius: 50%;
-            background: #000; border: 4.5px solid var(--pink); color: var(--pink);
+        /* 核心 RUN */
+        .run-trigger {
+            position: absolute; width: 105px; height: 105px; border-radius: 50%;
+            background: #000; border: 4px solid var(--pink); color: var(--pink);
             display: flex; align-items: center; justify-content: center;
-            font-size: 26px; font-weight: 900; cursor: pointer; z-index: 200;
-            box-shadow: 0 0 40px var(--pink); transition: 0.1s;
+            font-size: 24px; font-weight: 900; cursor: pointer; z-index: 200;
+            box-shadow: 0 0 30px var(--pink);
         }
-        .igniter:active { transform: scale(0.9); box-shadow: 0 0 10px var(--pink); }
+        .run-trigger:active { transform: scale(0.85); }
 
-        /* 底部控制台 */
-        .footer { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; }
-        #log-msg { font-size: 28px; font-weight: 900; color: var(--gold); letter-spacing: 5px; height: 35px; text-shadow: 0 0 15px var(--gold); }
-        
-        .bet-interface { display: flex; align-items: center; gap: 55px; }
-        .adj-btn { font-size: 55px; color: #333; cursor: pointer; width: 50px; text-align: center; }
-        .adj-btn:active { color: #fff; transform: scale(1.2); }
-        .bet-val { font-size: 78px; font-weight: 900; min-width: 130px; text-align: center; }
+        /* 4. 控制台 (最下方) */
+        .footer { text-align: center; }
+        #status { font-size: 26px; color: var(--gold); margin-bottom: 20px; font-weight: 900; height: 30px; letter-spacing: 2px; }
+        .bet-box { display: flex; align-items: center; gap: 50px; background: rgba(255,255,255,0.05); padding: 5px 30px; border-radius: 40px; }
+        .btn { font-size: 50px; color: #444; cursor: pointer; width: 50px; }
+        .btn:active { color: #fff; }
+        .bet-num { font-size: 70px; font-weight: 900; min-width: 120px; }
 
-        /* 震耳欲聋：高频位移 */
-        .bass-shake { animation: seismic 0.08s infinite; }
-        @keyframes seismic { 0%{transform:translate(2px,2px)} 50%{transform:translate(-2px,-2px)} 100%{transform:translate(1px,-1px)} }
+        /* 震耳欲聋：3D 缩放震动 */
+        .bass-act { animation: seismic 0.08s infinite; }
+        @keyframes seismic { 
+            0% { transform: scale(1.03) translate(2px, 2px); } 
+            50% { transform: scale(0.97) translate(-2px, -2px); } 
+            100% { transform: scale(1) translate(0,0); } 
+        }
     </style>
 </head>
-<body onclick="tg.HapticFeedback.selectionChanged()">
+<body>
 
-    <div class="scanline"></div>
+    <div class="bg"></div>
 
-    <div class="app-view" id="main-view">
-        <div class="bal-display">
-            <div class="bal-val" id="bal-txt">1,000</div>
+    <div class="app-root" id="ui">
+        <!-- 余额 -->
+        <div class="top-bar">
+            <div class="bal-val" id="bal">1,000</div>
         </div>
 
-        <div class="vortex-stage">
-            <div class="laser-line"></div>
-            <div id="core" class="reactor">
-                <div class="sector" style="transform:rotate(-90deg)"><b>👑</b></div>
-                <div class="sector" style="transform:rotate(-30deg)"><b>🦁</b></div>
-                <div class="sector" style="transform:rotate(30deg)"><b>🐯</b></div>
-                <div class="sector" style="transform:rotate(90deg)"><b>🦅</b></div>
-                <div class="sector" style="transform:rotate(150deg)"><b>🐺</b></div>
-                <div class="sector" style="transform:rotate(210deg)"><b>🐕</b></div>
+        <!-- 核心区 -->
+        <div class="stage" id="stage">
+            <div class="needle"></div>
+            <div id="vortex" class="vortex">
+                <!-- 初始角度校准，确保 0 度在正上方 -->
+                <div class="slot" style="transform:rotate(0deg)"><b>👑</b></div>
+                <div class="slot" style="transform:rotate(60deg)"><b>🦁</b></div>
+                <div class="slot" style="transform:rotate(120deg)"><b>🐯</b></div>
+                <div class="slot" style="transform:rotate(180deg)"><b>🦅</b></div>
+                <div class="slot" style="transform:rotate(240deg)"><b>🐺</b></div>
+                <div class="slot" style="transform:rotate(300deg)"><b>🐕</b></div>
             </div>
-            <!-- 直接内联 onclick，确保终端级响应 -->
-            <div class="igniter" onclick="handleIgnition()">RUN</div>
+            <div class="run-trigger" onclick="launch()">RUN</div>
         </div>
 
+        <!-- 控制台 -->
         <div class="footer">
-            <div id="log-msg">CORE READY</div>
-            <div class="bet-interface">
-                <div class="adj-btn" onclick="handleAdj(-10)">-</div>
-                <div class="bet-val" id="bet-txt">1</div>
-                <div class="adj-btn" onclick="handleAdj(10)">+</div>
+            <div id="status">TERMINAL_READY</div>
+            <div class="bet-box">
+                <div class="btn" onclick="adjBet(-10)">-</div>
+                <div class="bet-num" id="bet">1</div>
+                <div class="btn" onclick="adjBet(10)">+</div>
             </div>
         </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp; tg.expand();
-        let balance = 1000, bet = 1, r = 0, isBusy = false;
+        let balance = 1000, betVal = 1, rotation = 0, isSpinning = false;
 
-        function handleAdj(v) {
-            if(isBusy) return;
-            bet = Math.max(1, Math.min(balance, bet + v));
-            document.getElementById('bet-txt').innerText = bet;
+        function adjBet(v) {
+            if(isSpinning) return;
+            betVal = Math.max(1, Math.min(balance, betVal + v));
+            document.getElementById('bet').innerText = betVal;
             tg.HapticFeedback.selectionChanged();
         }
 
-        function handleIgnition() {
-            if(isBusy || balance < bet) return;
-            isBusy = true;
-            balance -= bet;
-            document.getElementById('bal-txt').innerText = balance.toLocaleString();
-            document.getElementById('log-msg').innerText = "VORTEX ACTIVE";
-            document.getElementById('main-view').classList.add('bass-shake');
+        function launch() {
+            if(isSpinning || balance < betVal) return;
+            isSpinning = true;
+            balance -= betVal;
+            document.getElementById('bal').innerText = balance.toLocaleString();
+            document.getElementById('status').innerText = "VORTEX_INIT...";
+            document.getElementById('stage').classList.add('bass-act');
             tg.HapticFeedback.impactOccurred('heavy');
 
-            let target = Math.floor(Math.random()*6);
-            r += (3600 + target*60);
-            document.getElementById('core').style.transform = `rotate(-${r}deg)`;
+            // 目标校准：让随机到的索引对应图标转到 0 度（正上方）
+            let targetIdx = Math.floor(Math.random() * 6);
+            // 这里是关键：转动角度 = 圈数 + (360 - 目标索引的角度)
+            rotation += (3600 + (360 - (targetIdx * 60)));
+            
+            document.getElementById('vortex').style.transform = `rotate(${rotation}deg)`;
+
+            // 为了让图标保持正立不晕，给图标一个反向补偿动画（可选，增加探索欲望）
+            // 这里我们保持图标随盘转，更有“禁锢感”
 
             setTimeout(() => {
-                document.getElementById('main-view').classList.remove('bass-shake');
-                const multi = [88, 15, 10, 5, 2, 0];
-                let win = Math.floor(bet * multi[target]);
+                document.getElementById('stage').classList.remove('bass-act');
+                const payouts = [88, 15, 10, 5, 2, 0];
+                let win = Math.floor(betVal * payouts[targetIdx]);
                 balance += win;
-                document.getElementById('bal-txt').innerText = balance.toLocaleString();
-                document.getElementById('log-msg').innerText = win > 0 ? "SUCCESS: +" + win : "CORE NULL";
+                document.getElementById('bal').innerText = balance.toLocaleString();
+                document.getElementById('status').innerText = win > 0 ? "WIN: +" + win : "CORE_LOST";
                 tg.HapticFeedback.notificationOccurred(win > 0 ? 'success' : 'error');
-                isBusy = false;
-            }, 7000);
+                isSpinning = false;
+            }, 6000);
         }
     </script>
 </body>
