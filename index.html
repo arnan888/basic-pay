@@ -3,189 +3,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-    <title>五兽至尊_V500_ULTIMATE</title>
+    <title>五兽至尊_V800_DARK_MATTER</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --neon: #00f2ff; --pink: #ff0055; --gold: #ffcc00; --dark: #020406; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+        :root { --neon: #00f2ff; --pink: #ff0055; --gold: #ffcc00; --bg: #000000; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; outline: none; }
         
-        /* 1. 终极全屏流光背景：彻底解决“填不满”问题 */
-        body { 
-            background: var(--dark); color: #fff; font-family: 'Arial Black', sans-serif; 
-            height: 100vh; width: 100vw; display: flex; flex-direction: column; align-items: center; overflow: hidden;
-            position: relative;
-        }
-        /* 动态激光流光层 */
-        .bg-stream {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: 
-                radial-gradient(circle at 50% 50%, #102030 0%, #020406 100%),
-                repeating-linear-gradient(125deg, rgba(0,242,255,0.03) 0%, transparent 10%, rgba(255,0,85,0.03) 20%);
-            background-size: 400% 400%; animation: streamBG 15s ease infinite; z-index: -1;
-        }
-        @keyframes streamBG { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        body { background: var(--bg); color: #fff; font-family: 'Inter', system-ui, sans-serif; height: 100vh; overflow: hidden; position: relative; }
 
-        /* 顶部余额：流光溢彩卡片 */
-        .header { width: 100%; height: 20%; display: flex; align-items: center; justify-content: center; z-index: 10; }
-        .bal-display { 
-            background: rgba(255,255,255,0.02); border: 2px solid var(--neon); border-radius: 20px;
-            padding: 15px 40px; backdrop-filter: blur(20px);
-            box-shadow: 0 0 30px rgba(0,242,255,0.3), inset 0 0 15px rgba(0,242,255,0.2);
-        }
-        .bal-val { font-size: 48px; font-weight: 900; text-shadow: 0 0 20px var(--neon); letter-spacing: -2px; }
+        /* 粒子画布：填满所有边角 */
+        #particleCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 
-        /* 转盘区：悬浮霓虹效果 */
-        .main-stage { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; z-index: 5; }
-        .wheel-glow {
-            position: relative; width: 92vw; max-width: 400px; aspect-ratio: 1/1; 
-            border-radius: 50%; padding: 12px;
-            background: linear-gradient(135deg, #222, #000, #333);
-            box-shadow: 0 0 60px rgba(0, 242, 255, 0.4); /* 巨大的外发光 */
-        }
-        /* 旋转的霓虹虚线 */
-        .wheel-glow::after {
-            content: ""; position: absolute; inset: -6px; border-radius: 50%;
-            border: 3px dashed var(--pink); opacity: 0.5; animation: spin-rev 12s linear infinite;
-        }
-        @keyframes spin-rev { 100% { transform: rotate(-360deg); } }
+        /* 全屏 UI 容器 */
+        .app-layer { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 40px 0; }
 
-        .wheel { 
-            width: 100%; height: 100%; border-radius: 50%; border: 10px solid #111;
-            background: conic-gradient(from 0deg, #111 0%, #222 25%, #111 50%, #222 75%, #111 100%);
-            transition: transform 6s cubic-bezier(0.1, 0, 0, 1); position: relative; overflow: hidden;
+        /* 顶部余额：黑金浮雕感 */
+        .score-box {
+            background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px 45px; border-radius: 100px; backdrop-filter: blur(30px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(0,242,255,0.1);
+            transform: perspective(500px) rotateX(10deg);
         }
-        
-        .sector { position: absolute; width: 100%; height: 100%; clip-path: polygon(50% 50%, 100% 16%, 100% 84%); transform-origin: center; display: flex; align-items: center; justify-content: flex-end; padding-right: 6%; }
-        
-        /* 极致图标：发光投影 */
-        .item-icon { transform: rotate(90deg) translateY(-28px); font-size: 82px; filter: drop-shadow(0 0 20px rgba(255,255,255,0.8)); }
+        .val { font-size: 52px; font-weight: 900; background: linear-gradient(to bottom, #fff, #888); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 15px var(--neon)); }
 
-        .needle { 
-            position: absolute; top: -20px; left: 50%; transform: translateX(-50%); 
-            width: 0; height: 0; border-left: 25px solid transparent; border-right: 25px solid transparent; border-top: 60px solid #fff; 
-            z-index: 100; filter: drop-shadow(0 0 20px var(--neon));
+        /* 转盘：核心动力源 */
+        .wheel-wrap { position: relative; width: 88vw; max-width: 380px; aspect-ratio: 1/1; }
+        .wheel-outer {
+            width: 100%; height: 100%; border-radius: 50%; padding: 8px;
+            background: conic-gradient(from 0deg, #111, #333, #111, #333, #111);
+            box-shadow: 0 0 100px rgba(0,0,0,0.9), 0 0 40px rgba(0,242,255,0.2);
+            position: relative; transition: 6s cubic-bezier(0.15, 0, 0.05, 1);
         }
-        
-        .btn-core { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            width: 90px; height: 90px; background: radial-gradient(#333, #000); 
-            border: 5px solid var(--pink); border-radius: 50%; z-index: 110;
-            color: #fff; font-size: 24px; font-weight: 900; display: flex; align-items: center; justify-content: center; 
-            box-shadow: 0 0 40px var(--pink), inset 0 0 20px var(--pink); cursor: pointer;
-        }
+        .sector { position: absolute; width: 100%; height: 100%; clip-path: polygon(50% 50%, 100% 18%, 100% 82%); transform-origin: center; display: flex; align-items: center; justify-content: flex-end; padding-right: 8%; }
+        .icon { font-size: 78px; transform: rotate(90deg); filter: drop-shadow(0 0 20px rgba(255,255,255,0.4)); transition: 0.3s; }
 
-        /* 底部控制：赛博模块 */
-        .footer { width: 100%; height: 22%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; z-index: 10; }
-        .bet-box { 
-            display: flex; align-items: center; gap: 40px; background: rgba(0,0,0,0.6); 
-            padding: 12px 35px; border-radius: 50px; border: 2px solid var(--neon); backdrop-filter: blur(10px);
+        /* 指针：激光切割线 */
+        .pointer { 
+            position: absolute; top: -30px; left: 50%; transform: translateX(-50%); 
+            width: 4px; height: 80px; background: var(--neon); box-shadow: 0 0 30px var(--neon); z-index: 50;
         }
-        .btn-ui { width: 55px; height: 55px; border-radius: 50%; border: none; background: #fff; color: #000; font-size: 32px; font-weight: bold; }
-        #msg-box { color: var(--gold); font-weight: 900; font-size: 28px; text-shadow: 0 0 15px #000; letter-spacing: 1px; }
+        .pointer::after { content: ""; position: absolute; bottom: 0; left: -8px; border: 10px solid transparent; border-bottom-color: var(--neon); }
+
+        /* 启动核：重力感应按钮 */
+        .spin-core {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 100px; height: 100px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2);
+            background: radial-gradient(circle at 30% 30%, #444, #000);
+            display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 22px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.8), inset 0 0 20px rgba(255,0,85,0.3);
+            color: var(--pink); text-shadow: 0 0 10px var(--pink); cursor: pointer; z-index: 100;
+        }
+        .spin-core:active { transform: translate(-50%, -50%) scale(0.92); }
+
+        /* 底部：控制中枢 */
+        .control-panel { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 25px; }
+        .bet-bar { 
+            display: flex; align-items: center; gap: 50px; 
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.05), transparent);
+            padding: 10px 60px; border-top: 1px solid rgba(255,255,255,0.1); border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .step-btn { background: none; border: none; color: #fff; font-size: 40px; font-weight: 100; opacity: 0.5; transition: 0.3s; width: 60px; }
+        .step-btn:active { opacity: 1; transform: scale(1.3); color: var(--neon); }
+        #msg { height: 30px; font-size: 24px; font-weight: 900; letter-spacing: 4px; color: var(--gold); text-shadow: 0 0 20px rgba(255,204,0,0.4); }
     </style>
 </head>
-<body onclick="activate()">
+<body onclick="initEngine()">
 
-    <div class="bg-stream"></div>
+    <canvas id="particleCanvas"></canvas>
 
-    <div class="header">
-        <div class="bal-display"><div class="bal-val">💎 <span id="bal">1,000</span></div></div>
-    </div>
+    <div class="app-layer">
+        <div class="score-box">
+            <div class="val">💎 <span id="bal">1,000</span></div>
+        </div>
 
-    <div class="main-stage">
-        <div class="wheel-glow">
-            <div class="needle"></div>
-            <div id="wheel" class="wheel">
-                <div class="sector" style="background:rgba(255,215,0,0.25); transform:rotate(-90deg)"><b class="item-icon">👑</b></div>
-                <div class="sector" style="background:rgba(255,0,85,0.15); transform:rotate(-30deg)"><b class="item-icon">🦁</b></div>
-                <div class="sector" style="background:rgba(255,165,0,0.25); transform:rotate(30deg)"><b class="item-icon">🐯</b></div>
-                <div class="sector" style="background:rgba(0,242,255,0.2); transform:rotate(90deg)"><b class="item-icon">🦅</b></div>
-                <div class="sector" style="background:rgba(147,112,219,0.25); transform:rotate(150deg)"><b class="item-icon">🐺</b></div>
-                <div class="sector" style="background:rgba(255,255,255,0.15); transform:rotate(210deg)"><b class="item-icon">🐕</b></div>
+        <div class="wheel-wrap">
+            <div class="pointer"></div>
+            <div id="wheel" class="wheel-outer">
+                <div class="sector" style="transform:rotate(-90deg)"><b class="icon">👑</b></div>
+                <div class="sector" style="transform:rotate(-30deg)"><b class="icon">🦁</b></div>
+                <div class="sector" style="transform:rotate(30deg)"><b class="icon">🐯</b></div>
+                <div class="sector" style="transform:rotate(90deg)"><b class="icon">🦅</b></div>
+                <div class="sector" style="transform:rotate(150deg)"><b class="icon">🐺</b></div>
+                <div class="sector" style="transform:rotate(210deg)"><b class="icon">🐕</b></div>
             </div>
-            <div class="btn-core" onclick="startSpin()">SPIN</div>
+            <div class="spin-core" onclick="go()">RUN</div>
         </div>
-    </div>
 
-    <div class="footer">
-        <div class="bet-box">
-            <button class="btn-ui" onclick="adj(-10)">-</button>
-            <div style="font-size:42px; font-weight:900; min-width:90px; text-align:center;"><span id="bet">1</span></div>
-            <button class="btn-ui" onclick="adj(10)">+</button>
+        <div class="control-panel">
+            <div class="bet-bar">
+                <button class="step-btn" onclick="alt(-10)">-</button>
+                <div style="font-size:48px; font-weight:900; min-width:100px; text-align:center;" id="bet">1</div>
+                <button class="step-btn" onclick="alt(10)">+</button>
+            </div>
+            <div id="msg">INITIALIZING...</div>
         </div>
-        <div id="msg-box">WAKE UP THE SYSTEM</div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp; tg.expand();
-        let b = 1000, bet = 1, r = 0, isS = false, audio;
+        let bal = 1000, bet = 1, rot = 0, isP = false, audioCtx, particles = [];
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
 
-        // 🎵 V500 提神音效引擎
-        function activate() {
-            if(!audio) {
-                audio = new (window.AudioContext || window.webkitAudioContext)();
-                if(audio.state === 'suspended') audio.resume();
-                document.getElementById('msg-box').innerText = "LET'S PLAY";
-                
-                // 背景心跳 Techno 节奏
-                const pulse = () => {
-                    const o = audio.createOscillator(); const g = audio.createGain();
-                    o.type = 'sawtooth'; o.frequency.setValueAtTime(55, audio.currentTime);
-                    g.gain.setValueAtTime(0.05, audio.currentTime);
-                    g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.2);
-                    o.connect(g); g.connect(audio.destination);
-                    o.start(); o.stop(audio.currentTime + 0.2);
-                    setTimeout(pulse, 400);
-                };
-                pulse();
-            }
+        // 粒子物理引擎
+        function initEngine() {
+            if(audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            for(let i=0; i<150; i++) particles.push({
+                x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+                vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5,
+                size: Math.random()*2, c: Math.random() > 0.5 ? '#00f2ff' : '#ff0055'
+            });
+            render();
+            document.getElementById('msg').innerText = "READY TO SPIN";
         }
 
-        function play(f, d, t='sine', v=0.1) {
-            if(!audio) return;
-            const o = audio.createOscillator(); const g = audio.createGain();
-            o.type = t; o.frequency.setTargetAtTime(f, audio.currentTime, 0.01);
-            g.gain.setValueAtTime(v, audio.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + d);
-            o.connect(g); g.connect(audio.destination);
-            o.start(); o.stop(audio.currentTime + d);
+        function render() {
+            ctx.fillStyle = 'rgba(0,0,0,0.15)';
+            ctx.fillRect(0,0,canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.x += p.vx; p.y += p.vy;
+                if(p.x<0 || p.x>canvas.width) p.vx *= -1;
+                if(p.y<0 || p.y>canvas.height) p.vy *= -1;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                ctx.fillStyle = p.c; ctx.fill();
+            });
+            requestAnimationFrame(render);
         }
 
-        function adj(v) {
-            if(isS) return;
-            bet = Math.max(1, Math.min(b, bet+v)); 
+        function playSfx(freq, dur, type='sine') {
+            if(!audioCtx) return;
+            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            o.type = type; o.frequency.exponentialRampToValueAtTime(freq, audioCtx.currentTime + dur);
+            g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+            o.connect(g); g.connect(audioCtx.destination);
+            o.start(); o.stop(audioCtx.currentTime + dur);
+        }
+
+        function alt(v) {
+            if(isP) return;
+            bet = Math.max(1, Math.min(bal, bet+v));
             document.getElementById('bet').innerText = bet;
             tg.HapticFeedback.selectionChanged();
-            play(1200, 0.1, 'square', 0.03); 
+            playSfx(800, 0.1, 'square');
         }
 
-        function startSpin() {
-            if(isS || b < bet) return;
-            isS = true; b -= bet; document.getElementById('bal').innerText = b.toLocaleString();
+        function go() {
+            if(isP || bal < bet) return;
+            isP = true; bal -= bet;
+            document.getElementById('bal').innerText = bal.toLocaleString();
             tg.HapticFeedback.impactOccurred('heavy');
             
-            let tick = setInterval(() => { if(isS) play(300 + Math.random()*800, 0.1, 'sawtooth', 0.02); }, 120);
-            
+            // 坍缩特效：粒子向中心加速
+            particles.forEach(p => { p.vx *= 15; p.vy *= 15; });
+
             let idx = Math.floor(Math.random()*6);
-            r += (3600 + idx*60);
-            document.getElementById('wheel').style.transform = `rotate(-${r}deg)`;
-            document.getElementById('msg-box').innerText = "CALCULATING...";
+            rot += (3600 + idx*60);
+            document.getElementById('wheel').style.transform = `rotate(-${rot}deg)`;
+            document.getElementById('msg').innerText = "SYNCHRONIZING...";
 
             setTimeout(() => {
-                clearInterval(tick);
-                const multi = [88, 15, 10, 5, 2, 0];
-                let win = Math.floor(bet * multi[idx]);
-                b += win; document.getElementById('bal').innerText = b.toLocaleString();
+                const m = [88, 15, 10, 5, 2, 0];
+                let w = Math.floor(bet * m[idx]);
+                bal += w;
+                document.getElementById('bal').innerText = bal.toLocaleString();
                 
-                if(win > 0) {
-                    document.getElementById('msg-box').innerText = "JACKPOT! +" + win;
-                    for(let i=0; i<10; i++) setTimeout(()=>play(500+i*100, 0.3, 'sine', 0.1), i*70);
+                // 爆炸特效
+                particles.forEach(p => { p.vx = (Math.random()-0.5)*20; p.vy = (Math.random()-0.5)*20; });
+
+                if(w > 0) {
+                    document.getElementById('msg').innerText = "VICTORY: +" + w;
                     tg.HapticFeedback.notificationOccurred('success');
+                    for(let i=0; i<15; i++) setTimeout(() => playSfx(400 + i*100, 0.2), i*50);
                 } else {
-                    document.getElementById('msg-box').innerText = "TRY AGAIN";
-                    play(100, 0.6, 'triangle', 0.1);
+                    document.getElementById('msg').innerText = "FATAL ERROR";
+                    playSfx(100, 0.5, 'sawtooth');
                 }
-                isS = false;
+                setTimeout(() => { 
+                    particles.forEach(p => { p.vx *= 0.1; p.vy *= 0.1; });
+                    isP = false; 
+                }, 1000);
             }, 6000);
         }
     </script>
