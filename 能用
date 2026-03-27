@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+    <title>V23000_ATOMIC_COLLISION</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --neon: #00f2ff; --pink: #ff0055; --gold: #ffcc00; --white: #fff; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin:0; padding:0; }
+        body { background: #000; color: #fff; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; }
+
+        /* 背景：白炽化的原子流光 */
+        #fx-canvas { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+
+        .app-view { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 40px 0; }
+
+        /* 截图还原：钻石发光余额框 */
+        .bal-header {
+            background: rgba(0,0,0,0.9); border: 3px solid var(--neon);
+            padding: 12px 55px; border-radius: 20px;
+            box-shadow: 0 0 45px var(--neon), inset 0 0 15px var(--neon);
+            display: flex; align-items: center; gap: 15px;
+        }
+        .bal-num { font-size: 58px; font-weight: 900; text-shadow: 0 0 25px var(--neon); }
+
+        /* 核心区：原子反应堆 */
+        .stage { position: relative; width: 88vw; max-width: 400px; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; }
+        .laser-ptr { position: absolute; top: -20px; width: 4px; height: 75px; background: #fff; box-shadow: 0 0 30px #fff; z-index: 100; }
+
+        .reactor-core {
+            width: 100%; height: 100%; border-radius: 50%;
+            background: radial-gradient(circle, #222, #000);
+            border: 2px solid #333; position: relative; overflow: hidden;
+            transition: transform 6.5s cubic-bezier(0.1, 0, 0, 1);
+            box-shadow: inset 0 0 80px rgba(0,242,255,0.1);
+        }
+        .slot { position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transform-origin: center; }
+        .slot b { position: absolute; top: 10%; font-size: 85px; filter: drop-shadow(0 0 20px rgba(255,255,255,0.3)); }
+
+        /* RUN 核：深红重低音脉冲 */
+        .run-trigger {
+            position: absolute; width: 115px; height: 115px; border-radius: 50%;
+            background: radial-gradient(circle, #ff0055, #300); border: 4px solid var(--pink);
+            color: var(--pink); display: flex; align-items: center; justify-content: center;
+            font-size: 28px; font-weight: 900; cursor: pointer; z-index: 200;
+            box-shadow: 0 0 60px var(--pink); animation: pulse 1s infinite;
+        }
+        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.8; } }
+
+        /* 状态栏与控制 */
+        .footer { text-align: center; }
+        #log-out { font-size: 30px; font-weight: 900; color: var(--gold); letter-spacing: 4px; height: 35px; text-shadow: 0 0 20px var(--gold); margin-bottom: 15px; }
+        .bet-bar { display: flex; align-items: center; gap: 45px; background: rgba(255,255,255,0.05); padding: 5px 35px; border-radius: 50px; }
+        .op { font-size: 55px; color: rgba(255,255,255,0.2); cursor: pointer; width: 50px; }
+        .val { font-size: 75px; font-weight: 900; min-width: 130px; }
+
+        /* 震耳欲聋效果：视觉白炽化闪烁 */
+        .atomic-shock { animation: shock 0.05s infinite; filter: brightness(1.5) contrast(1.3) saturate(1.5); }
+        @keyframes shock { 0% { transform: scale(1.03) translate(2px, 2px); } 50% { transform: scale(0.97) translate(-2px, -2px); } }
+    </style>
+</head>
+<body onclick="initCollision()">
+
+    <canvas id="fx-canvas"></canvas>
+
+    <div class="app-view" id="main-ui">
+        <div class="bal-header">
+            <div style="font-size:45px">💎</div>
+            <div class="bal-num" id="bal-val">1,000</div>
+        </div>
+
+        <div class="stage">
+            <div class="laser-ptr"></div>
+            <div id="core" class="reactor-core">
+                <div class="slot" style="transform:rotate(0deg)"><b>👑</b></div>
+                <div class="slot" style="transform:rotate(60deg)"><b>🦁</b></div>
+                <div class="slot" style="transform:rotate(120deg)"><b>🐯</b></div>
+                <div class="slot" style="transform:rotate(180deg)"><b>🦅</b></div>
+                <div class="slot" style="transform:rotate(240deg)"><b>🐺</b></div>
+                <div class="slot" style="transform:rotate(300deg)"><b>🐕</b></div>
+            </div>
+            <div class="run-trigger" onclick="ignite()">RUN</div>
+        </div>
+
+        <div class="footer">
+            <div id="log-out">SYSTEM READY</div>
+            <div class="bet-bar">
+                <div class="op" onclick="adj(-10)">-</div>
+                <div class="val" id="bet-val">1</div>
+                <div class="op" onclick="adj(10)">+</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp; tg.expand();
+        let bal = 1000, bet = 1, r = 0, active = false, ctx;
+
+        function initCollision() {
+            if(ctx) return;
+            const cvs = document.getElementById('fx-canvas');
+            ctx = cvs.getContext('2d');
+            cvs.width = window.innerWidth; cvs.height = window.innerHeight;
+            let atoms = [];
+            for(let i=0; i<120; i++) atoms.push({x: Math.random()*cvs.width, y: Math.random()*cvs.height, s: Math.random()*3+2, color: '#00f2ff'});
+            
+            function draw() {
+                ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(0,0,cvs.width, cvs.height);
+                atoms.forEach(a => {
+                    a.y += active ? 40 : 3; 
+                    if(a.y > cvs.height) a.y = -20;
+                    ctx.fillStyle = active ? `hsl(${Date.now()%360}, 100%, 80%)` : a.color;
+                    ctx.beginPath(); ctx.arc(a.x, a.y, active ? a.s*2 : a.s, 0, Math.PI*2); ctx.fill();
+                    if(active) { // 碰撞火花
+                        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+                        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(a.x + (Math.random()-0.5)*100, a.y - 60); ctx.stroke();
+                    }
+                });
+                requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        function adj(v) {
+            if(active) return;
+            bet = Math.max(1, Math.min(bal, bet + v));
+            document.getElementById('bet-val').innerText = bet;
+            tg.HapticFeedback.selectionChanged();
+        }
+
+        function ignite() {
+            if(active || bal < bet) return;
+            active = true; bal -= bet;
+            document.getElementById('bal-val').innerText = bal.toLocaleString();
+            document.getElementById('main-ui').classList.add('atomic-shock');
+            document.getElementById('log-out').innerText = "ATOMIC_WARP";
+            tg.HapticFeedback.impactOccurred('heavy');
+
+            let target = Math.floor(Math.random()*6);
+            r += (3600 + (360 - (target * 60)));
+            document.getElementById('core').style.transform = `rotate(${r}deg)`;
+
+            setTimeout(() => {
+                document.getElementById('main-ui').classList.remove('atomic-shock');
+                const multi = [88, 15, 10, 5, 2, 0];
+                let win = Math.floor(bet * multi[target]);
+                bal += win;
+                document.getElementById('bal-val').innerText = bal.toLocaleString();
+                document.getElementById('log-out').innerText = win > 0 ? "VICTORY: +" + win : "CORE_EMPTY";
+                tg.HapticFeedback.notificationOccurred(win > 0 ? 'success' : 'error');
+                active = false;
+            }, 6500);
+        }
+    </script>
+</body>
+</html>
