@@ -203,3 +203,203 @@
     </script>
 </body>
 </html>
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+    <title>五兽至尊_V3000_METAL_LUXE</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --gold: #d4af37; --dark-gold: #aa8a2e; --metal: #1a1c1e; --bg: #050607; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+        
+        body { 
+            background: var(--bg); color: #fff; font-family: 'Georgia', serif; 
+            height: 100vh; width: 100vw; display: flex; flex-direction: column; align-items: center; overflow: hidden;
+            background-image: radial-gradient(circle at center, #15181b 0%, #050607 100%);
+        }
+
+        /* 顶部：奢侈品风格状态栏 */
+        .top-bar { width: 100%; height: 15vh; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+        .bal-title { font-size: 12px; color: var(--gold); letter-spacing: 4px; margin-bottom: 5px; opacity: 0.8; }
+        .bal-val { font-size: 52px; font-weight: 800; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.5); font-family: 'Arial Black'; }
+
+        /* 核心区：重工机械轮盘 */
+        .stage { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; }
+        
+        /* 物理底座外圈 */
+        .metal-frame {
+            position: relative; width: 88vw; max-width: 380px; aspect-ratio: 1/1; 
+            border-radius: 50%; padding: 10px;
+            background: linear-gradient(145deg, #2c2f33, #000);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.9), inset 0 2px 5px rgba(255,255,255,0.1);
+            border: 1px solid #333;
+        }
+
+        /* 黄金刻度圈 */
+        .metal-frame::before {
+            content: ""; position: absolute; inset: 5px; border-radius: 50%;
+            border: 2px solid var(--dark-gold); opacity: 0.3;
+        }
+
+        /* 转盘主体：拉丝金属 */
+        .wheel-main { 
+            width: 100%; height: 100%; border-radius: 50%;
+            background: 
+                radial-gradient(circle at center, transparent 35%, rgba(0,0,0,0.4) 100%),
+                conic-gradient(from 0deg, #1a1c1e 0%, #2c2f33 25%, #1a1c1e 50%, #2c2f33 75%, #1a1c1e 100%);
+            border: 8px solid #111; position: relative; overflow: hidden;
+            transition: transform 7s cubic-bezier(0.15, 0.05, 0, 1);
+            box-shadow: inset 0 0 30px #000;
+        }
+        
+        /* 扇区划分线 */
+        .divider { position: absolute; width: 100%; height: 2px; background: rgba(212,175,55,0.1); top: 50%; left: 0; transform-origin: center; z-index: 1; }
+
+        .sector { 
+            position: absolute; width: 100%; height: 100%; 
+            clip-path: polygon(50% 50%, 100% 21%, 100% 79%); 
+            transform-origin: center; display: flex; align-items: center; justify-content: flex-end; padding-right: 8%; 
+        }
+        
+        /* 图标：浮雕感 */
+        .icon { 
+            transform: rotate(90deg); font-size: 76px; 
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)) grayscale(0.2); 
+            transition: 0.3s; 
+        }
+
+        /* 黄金中轴按钮 */
+        .center-hub { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            width: 95px; height: 95px; border-radius: 50%; z-index: 100;
+            background: radial-gradient(circle at 30% 30%, var(--gold), #634d08);
+            border: 4px solid #111; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.6), inset 0 2px 5px rgba(255,255,255,0.4);
+            cursor: pointer;
+        }
+        .center-hub span { color: #000; font-weight: 900; font-size: 22px; letter-spacing: 1px; }
+
+        /* 顶部物理指针 */
+        .needle { 
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%); 
+            width: 30px; height: 50px; background: var(--gold); 
+            clip-path: polygon(50% 100%, 0 0, 100% 0); z-index: 110;
+            filter: drop-shadow(0 4px 5px rgba(0,0,0,0.5));
+        }
+
+        /* 底部：精密控制台 */
+        .footer { width: 100%; height: 20vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
+        .bet-panel { 
+            display: flex; align-items: center; gap: 50px; background: #111; 
+            padding: 10px 40px; border-radius: 10px; border: 1px solid #333;
+            box-shadow: inset 0 2px 10px #000;
+        }
+        .adj-btn { background: none; border: none; color: var(--gold); font-size: 36px; font-weight: bold; width: 40px; cursor: pointer; }
+        #bet-val { font-size: 44px; font-weight: 900; color: #fff; min-width: 100px; text-align: center; font-family: 'Arial'; }
+        #status-msg { color: var(--gold); font-size: 18px; font-weight: bold; letter-spacing: 3px; text-transform: uppercase; opacity: 0.7; }
+    </style>
+</head>
+<body onclick="initAudio()">
+
+    <div class="top-bar">
+        <div class="bal-title">TOTAL CREDITS</div>
+        <div class="bal-val"><span id="bal">1,000</span></div>
+    </div>
+
+    <div class="stage">
+        <div class="metal-frame">
+            <div class="needle"></div>
+            <div id="wheel" class="wheel-main">
+                <div class="divider" style="transform:rotate(0deg)"></div>
+                <div class="divider" style="transform:rotate(60deg)"></div>
+                <div class="divider" style="transform:rotate(120deg)"></div>
+                <div class="sector" style="transform:rotate(-90deg)"><b class="icon">👑</b></div>
+                <div class="sector" style="transform:rotate(-30deg)"><b class="icon">🦁</b></div>
+                <div class="sector" style="transform:rotate(30deg)"><b class="icon">🐯</b></div>
+                <div class="sector" style="transform:rotate(90deg)"><b class="icon">🦅</b></div>
+                <div class="sector" style="transform:rotate(150deg)"><b class="icon">🐺</b></div>
+                <div class="sector" style="transform:rotate(210deg)"><b class="icon">🐕</b></div>
+            </div>
+            <div class="center-hub" onclick="run()">
+                <span>RUN</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div id="status-msg">SYSTEM READY</div>
+        <div class="bet-panel">
+            <button class="adj-btn" onclick="adj(-10)">-</button>
+            <div id="bet-val">1</div>
+            <button class="adj-btn" onclick="adj(10)">+</button>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp; tg.expand();
+        let b = 1000, bet = 1, r = 0, spinning = false, aCtx;
+
+        function initAudio() {
+            if(!aCtx) { aCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        }
+
+        function play(f, d, v=0.1) {
+            if(!aCtx) return;
+            const o = aCtx.createOscillator(); const g = aCtx.createGain();
+            o.type = 'sine'; o.frequency.setValueAtTime(f, aCtx.currentTime);
+            g.gain.setValueAtTime(v, aCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.0001, aCtx.currentTime + d);
+            o.connect(g); g.connect(aCtx.destination);
+            o.start(); o.stop(aCtx.currentTime + d);
+        }
+
+        function adj(v) {
+            if(spinning) return;
+            bet = Math.max(1, Math.min(b, bet+v));
+            document.getElementById('bet-val').innerText = bet;
+            tg.HapticFeedback.selectionChanged();
+            play(400, 0.1, 0.05);
+        }
+
+        function run() {
+            if(spinning || b < bet) return;
+            spinning = true; b -= bet;
+            document.getElementById('bal').innerText = b.toLocaleString();
+            tg.HapticFeedback.impactOccurred('heavy');
+            
+            // 模拟机械齿轮哒哒声
+            let tick = setInterval(() => { if(spinning) play(150, 0.05, 0.03); }, 100);
+
+            let idx = Math.floor(Math.random()*6);
+            r += (3600 + idx*60);
+            document.getElementById('wheel').style.transform = `rotate(-${r}deg)`;
+            document.getElementById('status-msg').innerText = "ENGAGING GEARS...";
+
+            setTimeout(() => {
+                clearInterval(tick);
+                const multi = [88, 15, 10, 5, 2, 0];
+                let win = Math.floor(bet * multi[idx]);
+                b += win;
+                document.getElementById('bal').innerText = b.toLocaleString();
+                
+                if(win > 0) {
+                    document.getElementById('status-msg').innerText = "WIN: " + win;
+                    tg.HapticFeedback.notificationOccurred('success');
+                    for(let i=0; i<8; i++) setTimeout(()=>play(300+i*50, 0.2, 0.1), i*80);
+                } else {
+                    document.getElementById('status-msg').innerText = "TRY AGAIN";
+                    play(100, 0.5, 0.1);
+                }
+                spinning = false;
+            }, 7000);
+        }
+    </script>
+</body>
+</html>
