@@ -3,119 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>TITAN_SLOT_V30005</title>
+    <title>TITAN_TURBO_V30008</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { --gold: #ffcc00; --win: #00ff88; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #000; color: #fff; font-family: 'Arial Black', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: space-around; }
-
-        /* 🏆 黄金余额框 */
-        .header { background: rgba(0,0,0,0.8); border: 2px solid var(--gold); padding: 10px 40px; border-radius: 50px; box-shadow: 0 0 20px rgba(255,204,0,0.4); display: flex; align-items: center; gap: 15px; }
-        #balance { font-size: 40px; color: var(--gold); text-shadow: 0 0 10px gold; }
-
-        /* 🎡 核心转盘区 */
-        .slot-container {
-            width: 260px; height: 260px; background: radial-gradient(circle, #222, #000);
-            border: 10px solid #333; border-radius: 50%; position: relative;
-            display: flex; align-items: center; justify-content: center; overflow: hidden;
-            box-shadow: 0 0 50px rgba(0,255,136,0.2);
-        }
-        .slot-reel {
-            font-size: 100px; transition: transform 0.5s cubic-bezier(0.45, 0.05, 0.55, 0.95);
-            display: flex; flex-direction: column; align-items: center;
-        }
-        /* 按钮悬浮在转盘中心 */
-        .spin-btn {
-            position: absolute; width: 100px; height: 100px; border-radius: 50%;
-            background: radial-gradient(circle, #00ff88, #006633); border: 4px solid #004422;
-            color: #fff; font-size: 20px; font-weight: 900; z-index: 100;
-            box-shadow: 0 8px 0 #003311, 0 10px 20px rgba(0,255,136,0.5); cursor: pointer;
-        }
-        .spin-btn:active { transform: translateY(4px); box-shadow: 0 4px 0 #003311; }
-
-        .footer { width: 90%; background: #1a1a1a; padding: 20px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .bet-box { display: flex; align-items: center; gap: 15px; font-size: 28px; }
-        .btn-mini { width: 45px; height: 45px; background: #444; color: #fff; border: none; border-radius: 10px; }
         
-        /* 旋转动画 */
-        .spinning { animation: roll 0.1s linear infinite; }
-        @keyframes roll { from { transform: translateY(0); } to { transform: translateY(-100px); } }
+        /* 🏆 黄金余额框 */
+        .header { background: rgba(0,0,0,0.8); border: 3px solid var(--gold); padding: 10px 50px; border-radius: 50px; box-shadow: 0 0 30px rgba(255,204,0,0.5); }
+        #balance { font-size: 45px; color: var(--gold); text-shadow: 0 0 15px gold; }
+
+        /* 🎡 极速旋转容器 */
+        .slot-window {
+            width: 280px; height: 280px; background: radial-gradient(circle, #222, #000);
+            border: 12px solid #333; border-radius: 50%; position: relative;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,255,136,0.3);
+        }
+        
+        /* 核心转盘：通过不断改变内容来实现视觉旋转 */
+        #reel { font-size: 130px; filter: drop-shadow(0 0 20px rgba(255,255,255,0.3)); transition: 0.1s; }
+        
+        /* 旋转时的模糊残影类 */
+        .blur-effect { filter: blur(15px) !important; transform: scale(0.8); opacity: 0.7; }
+
+        .spin-btn {
+            position: absolute; width: 110px; height: 110px; border-radius: 50%;
+            background: radial-gradient(circle, #00ff88, #006633); border: 5px solid #004422;
+            color: #fff; font-size: 24px; font-weight: 900; z-index: 100;
+            box-shadow: 0 10px 0 #003311, 0 15px 30px rgba(0,255,136,0.6); cursor: pointer;
+        }
+        .spin-btn:active { transform: translateY(6px); box-shadow: 0 4px 0 #003311; }
+        .spin-btn:disabled { filter: grayscale(1); opacity: 0.5; }
+
+        .footer { width: 95%; background: #111; padding: 25px; border-radius: 25px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
+        #win-amt { color: var(--win); font-size: 30px; font-weight: bold; }
     </style>
 </head>
 <body>
+    <audio id="bgm" src="https://www.soundjay.com/free-music/iron-man-1.mp3" loop>
+    <audio id="spin-sound" src="https://www.soundjay.com/mechanical/mechanical-clanking-1.mp3">
+    <audio id="win-sound" src="https://www.soundjay.com/misc/coins-spilled-1.mp3">
+
     <div class="header">
-        <span style="font-size:30px">💰</span>
         <div id="balance">0</div>
     </div>
 
-    <div class="slot-container">
-        <button class="spin-btn" id="btn" onclick="startSpin()">SPIN</button>
-        <div class="slot-reel" id="reel">🐱</div>
+    <div class="slot-window">
+        <button class="spin-btn" id="btn" onclick="startRolling()">SPIN</button>
+        <div id="reel">🦁</div>
     </div>
 
     <div class="footer">
-        <div class="bet-box">
-            <button class="btn-mini" onclick="changeBet(-10)">-</button>
-            <span id="bet-val">100</span>
-            <button class="btn-mini" onclick="changeBet(10)">+</button>
-        </div>
-        <div style="color:var(--win); font-size:22px;">WIN: <span id="win-amt">0</span></div>
+        <div style="font-size:28px;">BET: <span id="bet-val" style="color:var(--gold)">100</span></div>
+        <div id="win-amt">WIN: 0</div>
     </div>
 
     <script>
-        const symbols = ['🐱', '🦅', '🐻', '🦁', '👑', '💎'];
+        const symbols = ['🦁', '🐯', '🐻', '🦅', '💎', '7️⃣', '💰', '👑'];
         const urlParams = new URLSearchParams(window.location.search);
-        let balance = parseInt(urlParams.get('balance')) || 5000;
-        let bet = 100;
+        let balance = parseInt(urlParams.get('balance')) || 8888;
+        let isFirst = true;
         const tg = window.Telegram.WebApp;
         tg.expand();
 
         document.getElementById('balance').innerText = balance.toLocaleString();
 
-        function changeBet(amt) {
-            if(bet + amt >= 10) bet += amt;
-            document.getElementById('bet-val').innerText = bet;
-            tg.HapticFeedback.impactOccurred('light');
-        }
-
-        function startSpin() {
-            if(balance < bet) { tg.showAlert("余额不足！"); return; }
-            balance -= bet;
+        function startRolling() {
+            if(balance < 100) { tg.showAlert("余额不足！"); return; }
+            
+            // 激活音频
+            if(isFirst) { document.getElementById('bgm').play(); isFirst = false; }
+            
+            balance -= 100;
             document.getElementById('balance').innerText = balance.toLocaleString();
+            document.getElementById('win-amt').innerText = "WIN: 0";
             
             const reel = document.getElementById('reel');
             const btn = document.getElementById('btn');
+            const spinSnd = document.getElementById('spin-sound');
             
-            // 1. 开始旋转效果
-            reel.classList.add('spinning');
             btn.disabled = true;
+            spinSnd.play();
             tg.HapticFeedback.impactOccurred('heavy');
 
-            // 2. 模拟旋转 1.5 秒后停止
-            setTimeout(() => {
-                reel.classList.remove('spinning');
-                const winIndex = Math.floor(Math.random() * symbols.length);
-                const result = symbols[winIndex];
-                reel.innerText = result;
+            // --- 核心旋转动画：快速切换图标并加模糊 ---
+            let counter = 0;
+            let rollInterval = setInterval(() => {
+                reel.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+                reel.classList.add('blur-effect'); // 加上模糊残影
+                counter++;
                 
-                // 3. 判断是否中奖 (抽中 💎 或 👑 翻倍)
-                let win = 0;
-                if(result === '💎') win = bet * 10;
-                else if(result === '👑') win = bet * 5;
-                else if(Math.random() > 0.6) win = bet * 2;
-
-                if(win > 0) {
-                    balance += win;
-                    document.getElementById('win-amt').innerText = win;
-                    tg.HapticFeedback.notificationOccurred('success');
-                } else {
-                    document.getElementById('win-amt').innerText = 0;
+                if (counter > 20) { // 旋转20次后停止
+                    clearInterval(rollInterval);
+                    stopRolling(reel, btn);
                 }
-                
-                document.getElementById('balance').innerText = balance.toLocaleString();
-                btn.disabled = false;
-            }, 1500);
+            }, 60); // 60毫秒闪烁一次，极其迅速
+        }
+
+        function stopRolling(reel, btn) {
+            reel.classList.remove('blur-effect'); // 移除模糊
+            const result = symbols[Math.floor(Math.random() * symbols.length)];
+            reel.innerText = result;
+            
+            let win = 0;
+            if(result === '💎' || result === '7️⃣') win = 1000;
+            else if(Math.random() > 0.7) win = 200;
+
+            if(win > 0) {
+                balance += win;
+                document.getElementById('win-amt').innerText = "WIN: " + win;
+                document.getElementById('win-sound').play();
+                tg.HapticFeedback.notificationOccurred('success');
+            }
+            
+            document.getElementById('balance').innerText = balance.toLocaleString();
+            btn.disabled = false;
         }
     </script>
 </body>
