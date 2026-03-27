@@ -3,177 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>五兽至尊_V68_PRIVATE</title>
+    <title>五兽至尊_V75_FINAL</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --neon: #00f2ff; --pink: #ff0055; --gold: #ffcc00; --blue: #1e3a5f; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        :root { --neon: #00f2ff; --pink: #ff0055; --gold: #ffcc00; }
+        body { margin: 0; background: #050a10; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; }
         
-        body { 
-            margin: 0; padding: 0; 
-            background: radial-gradient(circle at 50% 50%, var(--blue) 0%, #0d1b2a 100%);
-            color: #fff; font-family: 'Segoe UI', sans-serif; 
-            height: 100vh; width: 100vw; overflow: hidden;
-            display: flex; flex-direction: column; align-items: center;
-        }
-
-        /* 顶部 HUD */
-        .hud {
-            width: 95%; margin-top: 15px; z-index: 100;
-            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px);
-            border: 1px solid var(--neon); border-radius: 20px; padding: 12px; text-align: center;
-        }
-        .bal-txt { font-size: 30px; color: #fff; margin-bottom: 10px; text-shadow: 0 0 15px var(--neon); }
+        /* 顶部玩家信息栏 */
+        .user-bar { width: 100%; padding: 10px; background: #111; display: flex; justify-content: space-around; border-bottom: 2px solid var(--neon); font-size: 14px; }
         
-        /* 下注控制 */
-        .bet-row { display: flex; align-items: center; justify-content: center; gap: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; }
-        .btn-ctrl { padding: 8px 15px; background: rgba(0,0,0,0.5); border: 1.5px solid var(--gold); color: var(--gold); border-radius: 10px; font-size: 16px; cursor: pointer; font-weight: bold; }
-        .bet-val { font-size: 24px; color: var(--gold); min-width: 70px; font-weight: 900; }
-
-        /* 转盘区 */
-        .wheel-box { margin-top: 25px; position: relative; width: 320px; height: 320px; z-index: 50; }
-        .wheel { 
-            width: 100%; height: 100%; border-radius: 50%; border: 10px solid #2c3e50;
-            position: relative; overflow: hidden; transition: transform 4.5s cubic-bezier(0.15, 0, 0.1, 1);
-            background: #111; box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-        }
-
-        .sector {
-            position: absolute; width: 100%; height: 100%;
-            clip-path: polygon(50% 50%, 100% 21%, 100% 79%); transform-origin: center;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .sector img { width: 110%; height: 110%; object-fit: cover; filter: brightness(0.6); }
-        /* 核心文字显示 - 绝不会错 */
-        .sector span { 
-            position: absolute; right: 15px; transform: rotate(-90deg); 
-            font-size: 11px; font-weight: bold; background: var(--pink); color: #fff; 
-            padding: 2px 6px; border-radius: 4px; box-shadow: 0 0 5px rgba(0,0,0,0.5); 
-        }
+        .hud { width: 92%; margin-top: 15px; background: rgba(0,0,0,0.8); border: 2px solid var(--gold); border-radius: 20px; padding: 15px; text-align: center; }
+        .bal-val { font-size: 38px; font-weight: 900; color: #fff; text-shadow: 0 0 15px var(--gold); }
         
-        .s0{transform:rotate(-90deg)} .s1{transform:rotate(-30deg)} .s2{transform:rotate(30deg)} 
-        .s3{transform:rotate(90deg)} .s4{transform:rotate(150deg)} .s5{transform:rotate(210deg)}
+        /* 转盘美化 */
+        .wheel-box { position: relative; margin-top: 25px; width: 330px; height: 330px; }
+        .wheel { width: 100%; height: 100%; border-radius: 50%; border: 8px solid #333; position: relative; overflow: hidden; transition: transform 5s cubic-bezier(0.1, 0, 0.1, 1); background: #1a1a1a; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
+        .sector { position: absolute; width: 100%; height: 100%; clip-path: polygon(50% 50%, 100% 20%, 100% 80%); transform-origin: center; display: flex; align-items: center; justify-content: flex-end; }
+        .sector b { transform: rotate(90deg); margin-right: 25px; padding: 4px 10px; background: var(--pink); border-radius: 5px; font-size: 14px; box-shadow: 0 0 10px var(--pink); }
+        
+        .center-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85px; height: 85px; background: #000; border: 4px solid var(--neon); border-radius: 50%; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 0 25px var(--neon); cursor: pointer; }
+        .pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 40px solid var(--pink); z-index: 110; }
 
-        .pointer { 
-            position: absolute; top: -12px; left: 50%; transform: translateX(-50%); 
-            width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; 
-            border-top: 35px solid var(--neon); z-index: 70;
-        }
-        .center-btn {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 70px; height: 70px; background: #000; border: 4px solid var(--pink);
-            border-radius: 50%; color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; z-index: 80;
-            display: flex; align-items: center; justify-content: center; box-shadow: 0 0 25px var(--pink);
-        }
-
-        /* 私人管理面板 */
-        .admin-panel {
-            margin-top: 30px; width: 92%; background: rgba(0,0,0,0.5); 
-            backdrop-filter: blur(5px); border-radius: 20px; padding: 15px; 
-            text-align: center; border: 1px solid rgba(255,255,255,0.1);
-        }
-        #res-win { font-size: 32px; font-weight: 900; color: var(--neon); margin-bottom: 15px; min-height: 40px; text-shadow: 0 0 10px var(--neon); }
-        .admin-btns { display: flex; justify-content: center; gap: 12px; }
-        .btn-admin { 
-            flex: 1; padding: 10px; background: #222; border: 1px solid #444; 
-            color: #aaa; border-radius: 12px; font-size: 14px; cursor: pointer; font-weight: bold;
-        }
-        .btn-admin:active { background: #fff; color: #000; }
+        /* 底部动态公告栏 */
+        .marquee { width: 90%; margin-top: 20px; background: rgba(0,242,255,0.1); padding: 10px; border-radius: 10px; font-size: 13px; color: var(--neon); overflow: hidden; white-space: nowrap; }
+        
+        #admin { display: none; position: absolute; bottom: 10px; width: 90%; display: flex; gap: 10px; }
     </style>
 </head>
 <body>
+    <!-- 引入音效 -->
+    <audio id="s_win" src="https://actions.google.com/sounds/v1/cartoon/toy_honk.ogg">
+    <audio id="s_spin" src="https://actions.google.com/sounds/v1/sports/mechanical_stop.ogg">
 
-    <div class="hud">
-        <div class="bal-txt">💰 <span id="bal">1,000</span></div>
-        <div class="bet-row">
-            <button class="btn-ctrl" onclick="chgBet(-1)">-1</button>
-            <button class="btn-ctrl" onclick="chgBet(-10)">-10</button>
-            <div class="bet-val">BET: <span id="bet">1</span></div>
-            <button class="btn-ctrl" onclick="chgBet(10)">+10</button>
-            <button class="btn-ctrl" onclick="chgBet(1)">+1</button>
+    <div class="user-bar">
+        <span>玩家: <b id="u_name">游客</b></span>
+        <span>ID: <b id="u_id">0000</b></span>
+    </div>
+
+    <div class="hud" onclick="showAdm()">
+        <div style="font-size:12px; color:var(--gold)">当前账户余额</div>
+        <div class="bal-val">🪙 <span id="bal">1,000</span></div>
+        <div style="margin-top:10px; display:flex; justify-content:center; gap:25px;">
+            <button onclick="changeBet(-10)" style="background:none; border:1px solid #fff; color:#fff; border-radius:5px; padding:5px 15px;">-10</button>
+            <span style="font-weight:bold; color:var(--gold); font-size:20px;">下注: <span id="bet">1</span></span>
+            <button onclick="changeBet(10)" style="background:none; border:1px solid #fff; color:#fff; border-radius:5px; padding:5px 15px;">+10</button>
         </div>
     </div>
 
     <div class="wheel-box">
         <div class="pointer"></div>
         <div class="wheel" id="wheel">
-            <div class="sector s0"><img src="all.jpg" onerror="this.style.display='none'"><span>MAX</span></div>
-            <div class="sector s1"><img src="lion.jpg" onerror="this.style.display='none'"><span>LION</span></div>
-            <div class="sector s2"><img src="tiger.jpg" onerror="this.style.display='none'"><span>TIGER</span></div>
-            <div class="sector s3"><img src="leopard.jpg" onerror="this.style.display='none'"><span>LEO</span></div>
-            <div class="sector s4"><img src="wolf.jpg" onerror="this.style.display='none'"><span>WOLF</span></div>
-            <div class="sector s5"><img src="dog.jpg" onerror="this.style.display='none'"><span>DOG</span></div>
+            <div class="sector" style="transform:rotate(-90deg); background:#222;"><b>MAX</b></div>
+            <div class="sector" style="transform:rotate(-30deg); background:#111;"><b>LION</b></div>
+            <div class="sector" style="transform:rotate(30deg); background:#222;"><b>TIGER</b></div>
+            <div class="sector" style="transform:rotate(90deg); background:#111;"><b>LEO</b></div>
+            <div class="sector" style="transform:rotate(150deg); background:#222;"><b>WOLF</b></div>
+            <div class="sector" style="transform:rotate(210deg); background:#111;"><b>DOG</b></div>
         </div>
-        <div class="center-btn" onclick="spin()">SPIN</div>
+        <div class="center-btn" onclick="spinNow()">
+            <span style="font-size:10px; opacity:0.6;">GO</span>
+            <span style="font-size:22px;">SPIN</span>
+        </div>
     </div>
 
-    <div class="admin-panel">
-        <div id="res-win">READY</div>
-        <div class="admin-btns">
-            <button class="btn-admin" onclick="addGold(100)">+100</button>
-            <button class="btn-admin" onclick="addGold(1000)">+1000</button>
-            <button class="btn-admin" onclick="resetSys()">RESET</button>
-        </div>
+    <div class="marquee" id="log">系统：欢迎来到五兽至尊，祝您好运连连！</div>
+
+    <div id="admin_panel" style="display:none; margin-top:10px;">
+        <button onclick="addM(1000)" style="padding:10px; background:var(--pink); border:none; color:#fff; border-radius:5px;">+1000测试分</button>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        let b = parseFloat(localStorage.getItem('u_gold') || '1000');
-        let tIn = parseFloat(localStorage.getItem('u_in') || '1000');
-        let tOut = parseFloat(localStorage.getItem('u_out') || '0');
-        let curBet = 1; 
-        let r = 0; 
-        let spinning = false;
+        // 获取机器人传来的用户信息
+        const params = new URLSearchParams(window.location.search);
+        document.getElementById('u_name').innerText = params.get('name') || "游客";
+        document.getElementById('u_id').innerText = params.get('id') || "8888";
 
-        const conf = [
-            {min:30,max:100,w:1.5},
-            {min:10,max:30,w:6.5},
-            {min:5,max:15,w:12},
-            {min:2,max:10,w:20},
-            {min:0.5,max:5,w:25},
-            {min:0.1,max:1,w:35}
-        ];
+        let bal = parseFloat(localStorage.getItem('g_v75') || '1000');
+        let tIn = parseFloat(localStorage.getItem('in_v75') || '1000'), tOut = parseFloat(localStorage.getItem('out_v75') || '0');
+        let bet = 1, r = 0, isS = false, clicks = 0;
 
-        function updateUI() {
-            document.getElementById('bal').innerText = Math.floor(b).toLocaleString();
-            document.getElementById('bet').innerText = curBet;
-            localStorage.setItem('u_gold', b);
-            localStorage.setItem('u_in', tIn);
-            localStorage.setItem('u_out', tOut);
+        function update() {
+            document.getElementById('bal').innerText = Math.floor(bal).toLocaleString();
+            document.getElementById('bet').innerText = bet;
+            localStorage.setItem('g_v75', bal); localStorage.setItem('in_v75', tIn); localStorage.setItem('out_v75', tOut);
         }
 
-        window.addGold = (v) => { b += v; tIn += v; updateUI(); };
-        window.resetSys = () => { if(confirm("确定清空重置吗？")){ b=1000; tIn=1000; tOut=0; updateUI(); } };
-        window.chgBet = (v) => { if(!spinning){ curBet = Math.max(1, Math.min(b, curBet + v)); updateUI(); } };
+        window.changeBet = (v) => { if(!isS) { bet = Math.max(1, Math.min(bal, bet+v)); update(); } };
+        window.addM = (v) => { bal+=v; tIn+=v; update(); };
+        window.showAdm = () => { clicks++; if(clicks>=5) document.getElementById('admin_panel').style.display='block'; };
 
-        function spin() {
-            if(spinning || b < curBet) return;
-            spinning = true;
-            b -= curBet;
-            updateUI();
+        function spinNow() {
+            if(isS || bal < bet) return;
+            isS = true; bal -= bet; update();
+            document.getElementById('s_spin').play();
             
-            document.getElementById('res-win').innerText = "...";
-
-            // 控杀算法：水位 > 92% 时强制出 DOG/WOLF
-            let idx = (tOut/tIn >= 0.92) ? (Math.random() < 0.8 ? 5 : 4) : Math.floor(Math.random() * 6);
-
-            r += (2160 + idx * 60);
+            // 胜率控制逻辑
+            let idx = (tOut/tIn > 0.85) ? (Math.random()<0.7?5:4) : Math.floor(Math.random()*6);
+            r += (2880 + idx*60);
             document.getElementById('wheel').style.transform = `rotate(-${r}deg)`;
+            document.getElementById('log').innerText = "🔄 转盘高速旋转中，祝您中大奖...";
 
             setTimeout(() => {
-                let m = (Math.random() * (conf[idx].max - conf[idx].min) + conf[idx].min);
-                let win = Math.floor(curBet * m);
-                b += win;
-                tOut += win;
-                updateUI();
-
-                document.getElementById('res-win').innerText = win > 0 ? "WIN: " + win : "LOST";
-                spinning = false;
-            }, 4500);
+                const multi = [50, 15, 10, 5, 2, 0];
+                let win = Math.floor(bet * multi[idx]);
+                bal += win; tOut += win; update();
+                
+                if(win > 0) {
+                    document.getElementById('s_win').play();
+                    document.getElementById('log').innerText = `✨ 恭喜！您在 ${['MAX','LION','TIGER','LEO','WOLF','DOG'][idx]} 赢得了 ${win} 金币！`;
+                    tg.HapticFeedback.notificationOccurred('success');
+                } else {
+                    document.getElementById('log').innerText = "💔 很遗憾，差一点点就中奖了，再试一次吧！";
+                }
+                isS = false;
+            }, 5000);
         }
-        updateUI();
+        update();
     </script>
 </body>
 </html>
