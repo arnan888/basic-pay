@@ -118,3 +118,167 @@
     </script>
 </body>
 </html>
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+    <title>TERMINAL_V22000_OVERLOAD</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --neon: #00f2ff; --pink: #ff0055; --gold: #ffcc00; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+        
+        body { background: #000; color: #fff; font-family: 'Inter', system-ui, sans-serif; height: 100vh; overflow: hidden; }
+
+        /* 背景：亮起的曲率星海 */
+        #warp-canvas { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+
+        .ui-layer { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 50px 0; pointer-events: none; }
+        .ui-layer * { pointer-events: auto; }
+
+        /* 截图还原：霓虹钻石余额 */
+        .bal-wrap {
+            background: rgba(0,0,0,0.8); border: 2.5px solid var(--neon);
+            padding: 12px 60px; border-radius: 25px;
+            box-shadow: 0 0 35px var(--neon), inset 0 0 15px var(--neon);
+            display: flex; align-items: center; gap: 20px;
+        }
+        .bal-val { font-size: 60px; font-weight: 900; letter-spacing: -2px; text-shadow: 0 0 20px var(--neon); }
+
+        /* 核心区：反应堆 */
+        .stage { position: relative; width: 92vw; max-width: 420px; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; }
+        
+        /* 指针：截图同款直线 */
+        .pointer { position: absolute; top: -10px; width: 3px; height: 60px; background: #fff; box-shadow: 0 0 20px #fff; z-index: 100; }
+
+        .disk {
+            width: 100%; height: 100%; border-radius: 50%;
+            background: radial-gradient(circle, #222, #000);
+            border: 2px solid #333; position: relative; overflow: hidden;
+            transition: transform 6.5s cubic-bezier(0.1, 0, 0, 1);
+            box-shadow: inset 0 0 60px rgba(0,242,255,0.1);
+        }
+
+        .item { position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 12%; transform-origin: center; }
+        .item b { font-size: 85px; filter: drop-shadow(0 0 15px rgba(0,0,0,0.8)); }
+
+        /* RUN 核：深红渐变脉冲 */
+        .run-core {
+            position: absolute; width: 110px; height: 110px; border-radius: 50%;
+            background: radial-gradient(circle, #ff0055, #300); border: 4px solid var(--pink);
+            color: var(--pink); display: flex; align-items: center; justify-content: center;
+            font-size: 26px; font-weight: 900; cursor: pointer; z-index: 200;
+            box-shadow: 0 0 40px var(--pink); transition: 0.1s;
+        }
+
+        /* 底部控制台 */
+        .footer { text-align: center; }
+        #msg { font-size: 32px; font-weight: 900; color: var(--gold); letter-spacing: 4px; height: 40px; text-shadow: 0 0 20px var(--gold); }
+        .bet-row { display: flex; align-items: center; gap: 60px; margin-top: 20px; }
+        .btn { font-size: 60px; color: rgba(255,255,255,0.2); cursor: pointer; width: 50px; }
+        .bet-txt { font-size: 80px; font-weight: 900; min-width: 140px; }
+
+        /* 震耳欲聋：视觉抖动与白光 */
+        .sonic-pulse { animation: sonic 0.06s infinite !important; filter: brightness(1.2) contrast(1.2); }
+        @keyframes sonic { 0% { transform: scale(1.02) translate(3px, 2px); } 50% { transform: scale(0.98) translate(-3px, -2px); } 100% { transform: scale(1) translate(0, 0); } }
+    </style>
+</head>
+<body onclick="initFX()">
+
+    <canvas id="warp-canvas"></canvas>
+
+    <div class="ui-layer" id="ui">
+        <div class="bal-wrap">
+            <div style="font-size:45px">💎</div>
+            <div class="bal-val" id="bal-txt">1,000</div>
+        </div>
+
+        <div class="stage">
+            <div class="pointer"></div>
+            <div id="disk" class="disk">
+                <div class="item" style="transform:rotate(-90deg)"><b style="transform:rotate(90deg)">👑</b></div>
+                <div class="item" style="transform:rotate(-30deg)"><b style="transform:rotate(90deg)">🦁</b></div>
+                <div class="item" style="transform:rotate(30deg)"><b style="transform:rotate(90deg)">🐯</b></div>
+                <div class="item" style="transform:rotate(90deg)"><b style="transform:rotate(90deg)">🦅</b></div>
+                <div class="item" style="transform:rotate(150deg)"><b style="transform:rotate(90deg)">🐺</b></div>
+                <div class="item" style="transform:rotate(210deg)"><b style="transform:rotate(90deg)">🐕</b></div>
+            </div>
+            <div class="run-core" onclick="warpDrive()">RUN</div>
+        </div>
+
+        <div class="footer">
+            <div id="msg">READY_SYSTEM</div>
+            <div class="bet-row">
+                <div class="btn" onclick="adj(-10)">-</div>
+                <div class="bet-txt" id="bet-txt">1</div>
+                <div class="btn" onclick="adj(10)">+</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp; tg.expand();
+        let bal = 1000, bet = 1, r = 0, isWarping = false, ctx;
+
+        function initFX() {
+            if(ctx) return;
+            const cvs = document.getElementById('warp-canvas');
+            ctx = cvs.getContext('2d');
+            cvs.width = window.innerWidth; cvs.height = window.innerHeight;
+            let stars = [];
+            for(let i=0; i<150; i++) stars.push({x: Math.random()*cvs.width, y: Math.random()*cvs.height, v: Math.random()*4+1, l: Math.random()*20});
+            
+            function animate() {
+                ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(0,0,cvs.width, cvs.height);
+                stars.forEach(s => {
+                    s.y += isWarping ? s.v * 15 : s.v;
+                    if(s.y > cvs.height) s.y = -50;
+                    ctx.strokeStyle = isWarping ? `hsl(${Date.now()%360}, 100%, 70%)` : '#fff';
+                    ctx.lineWidth = isWarping ? 3 : 1;
+                    ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(s.x, s.y + (isWarping ? s.l*5 : s.l)); ctx.stroke();
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        function adj(v) {
+            if(isWarping) return;
+            bet = Math.max(1, Math.min(bal, bet + v));
+            document.getElementById('bet-txt').innerText = bet;
+            tg.HapticFeedback.selectionChanged();
+        }
+
+        function warpDrive() {
+            if(isWarping || bal < bet) return;
+            isWarping = true; bal -= bet;
+            document.getElementById('bal-txt').innerText = bal.toLocaleString();
+            document.getElementById('ui').classList.add('sonic-pulse');
+            document.getElementById('msg').innerText = "WARP_DRIVE_MAX";
+            tg.HapticFeedback.impactOccurred('heavy');
+
+            let target = Math.floor(Math.random()*6);
+            r += (3600 + (360 - (target * 60))); 
+            document.getElementById('disk').style.transform = `rotate(${r}deg)`;
+
+            setTimeout(() => {
+                document.getElementById('ui').classList.remove('sonic-pulse');
+                const multi = [88, 15, 10, 5, 2, 0];
+                let win = Math.floor(bet * multi[target]);
+                bal += win;
+                document.getElementById('bal-txt').innerText = bal.toLocaleString();
+                document.getElementById('msg').innerText = win > 0 ? "VICTORY: +" + win : "CORE_EMPTY";
+                tg.HapticFeedback.notificationOccurred(win > 0 ? 'success' : 'error');
+                isWarping = false;
+            }, 6500);
+        }
+    </script>
+</body>
+</html>
