@@ -309,3 +309,189 @@ html>
     </script>
 </body>
 </html>
+
+
+
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+    <title>五兽至尊_V2000_CORE</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --c-main: #00f2ff; --c-alt: #ff0055; --bg: #000; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; outline: none; }
+        
+        body { background: var(--bg); color: #fff; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; }
+
+        /* 全屏星海背景 */
+        #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; transition: transform 0.5s; }
+
+        .ui-overlay { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 50px 0; pointer-events: none; }
+        .ui-overlay * { pointer-events: auto; }
+
+        /* 顶部余额：纯数字发光 */
+        .bal-wrap { text-align: center; }
+        .bal-num { font-size: 64px; font-weight: 900; color: #fff; text-shadow: 0 0 20px var(--c-main), 0 0 40px var(--c-main); letter-spacing: -2px; }
+        .bal-label { font-size: 14px; color: var(--c-main); letter-spacing: 5px; opacity: 0.8; }
+
+        /* 核心区：悬浮星轨系统 */
+        .orbit-container { position: relative; width: 95vw; max-width: 420px; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; }
+        
+        /* 霓虹光环 */
+        .neon-ring {
+            position: absolute; width: 85%; height: 85%; border-radius: 50%;
+            border: 2px solid rgba(0, 242, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.05);
+            transition: 0.5s;
+        }
+        .active-ring { border: 2px solid var(--c-main); box-shadow: 0 0 40px var(--c-main); }
+
+        /* 图标组：取消圆盘，改为直接旋转 */
+        .icon-orbit { 
+            position: absolute; width: 100%; height: 100%; 
+            transition: transform 6s cubic-bezier(0.15, 0, 0, 1);
+        }
+        .icon-node { 
+            position: absolute; width: 100px; height: 100px; 
+            display: flex; align-items: center; justify-content: center;
+            transform-origin: center;
+        }
+        .icon-node b { font-size: 85px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.3)); transition: 0.3s; }
+
+        /* 核心启动点 */
+        .core-btn {
+            position: relative; width: 110px; height: 110px; border-radius: 50%;
+            background: rgba(0,0,0,0.8); border: 1px solid var(--c-alt);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; font-weight: 900; color: var(--c-alt);
+            box-shadow: 0 0 30px var(--c-alt); cursor: pointer;
+        }
+        .core-btn::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 1px solid var(--c-alt); opacity: 0.3; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 0.3; } 100% { transform: scale(1.4); opacity: 0; } }
+
+        /* 底部控制：极简线性设计 */
+        .bottom-ctrl { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        .bet-input { display: flex; align-items: center; gap: 60px; }
+        .step { font-size: 40px; font-weight: 100; color: #fff; opacity: 0.3; cursor: pointer; width: 40px; text-align: center; }
+        .bet-val { font-size: 50px; font-weight: 900; color: #fff; min-width: 120px; text-align: center; }
+        #msg-status { font-size: 24px; font-weight: 900; color: #ffcc00; text-shadow: 0 0 15px rgba(255,204,0,0.4); text-transform: uppercase; }
+
+        /* 指针：改为一条极细的光束 */
+        .laser-line { position: absolute; top: 0; width: 2px; height: 50px; background: #fff; box-shadow: 0 0 15px #fff; z-index: 20; }
+    </style>
+</head>
+<body onclick="init()">
+
+    <canvas id="starfield"></canvas>
+
+    <div class="ui-overlay">
+        <div class="bal-wrap">
+            <div class="bal-num"><span id="b-val">1,000</span></div>
+            <div class="bal-label">CREDITS AVAILABLE</div>
+        </div>
+
+        <div class="orbit-container">
+            <div class="laser-line"></div>
+            <div class="neon-ring" id="ring"></div>
+            <div id="orbit" class="icon-orbit">
+                <!-- 动态生成图标位置 -->
+            </div>
+            <div class="core-btn" onclick="spin()">RUN</div>
+        </div>
+
+        <div class="bottom-ctrl">
+            <div id="msg-status">SYSTEM IDLE</div>
+            <div class="bet-input">
+                <div class="step" onclick="adjBet(-10)">-</div>
+                <div class="bet-val" id="bet-txt">1</div>
+                <div class="step" onclick="adjBet(10)">+</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp; tg.expand();
+        let balance = 1000, bet = 1, rot = 0, isSpinning = false, ctx, stars = [];
+        const canvas = document.getElementById('starfield');
+        const icons = ['👑','🦁','🐯','🦅','🐺','🐕'];
+
+        function init() {
+            if(ctx) return;
+            ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            for(let i=0; i<200; i++) stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, z:Math.random()*canvas.width, s:Math.random()*2});
+            
+            // 动态创建图标节点，彻底摆脱“圆盘图”
+            const orbit = document.getElementById('orbit');
+            icons.forEach((icon, i) => {
+                const node = document.createElement('div');
+                node.className = 'icon-node';
+                const angle = (i * 60) * (Math.PI / 180);
+                const radius = 150; 
+                node.style.left = (radius * Math.cos(angle - Math.PI/2) + 210 - 50) + 'px';
+                node.style.top = (radius * Math.sin(angle - Math.PI/2) + 210 - 50) + 'px';
+                node.innerHTML = `<b>${icon}</b>`;
+                orbit.appendChild(node);
+            });
+            updateStars();
+        }
+
+        function updateStars() {
+            ctx.fillStyle = 'black'; ctx.fillRect(0,0,canvas.width, canvas.height);
+            stars.forEach(s => {
+                s.z -= isSpinning ? 20 : 1; 
+                if(s.z <= 0) s.z = canvas.width;
+                const px = (s.x - canvas.width/2) * (canvas.width/s.z) + canvas.width/2;
+                const py = (s.y - canvas.height/2) * (canvas.width/s.z) + canvas.height/2;
+                const sz = (1 - s.z/canvas.width) * 3;
+                ctx.fillStyle = isSpinning ? '#ff0055' : 'white';
+                ctx.beginPath(); ctx.arc(px, py, sz, 0, Math.PI*2); ctx.fill();
+            });
+            requestAnimationFrame(updateStars);
+        }
+
+        function adjBet(v) {
+            if(isSpinning) return;
+            bet = Math.max(1, Math.min(balance, bet+v));
+            document.getElementById('bet-txt').innerText = bet;
+            tg.HapticFeedback.selectionChanged();
+        }
+
+        function spin() {
+            if(isSpinning || balance < bet) return;
+            isSpinning = true; balance -= bet;
+            document.getElementById('b-val').innerText = balance.toLocaleString();
+            document.getElementById('ring').classList.add('active-ring');
+            document.getElementById('msg-status').innerText = "WARPING...";
+            tg.HapticFeedback.impactOccurred('heavy');
+
+            let target = Math.floor(Math.random()*6);
+            rot += (3600 + target*60);
+            document.getElementById('orbit').style.transform = `rotate(-${rot}deg)`;
+            
+            // 图标反向旋转，保持正立感（高级感细节）
+            const nodes = document.querySelectorAll('.icon-node b');
+            nodes.forEach(n => n.style.transform = `rotate(${rot}deg)`);
+
+            setTimeout(() => {
+                const multi = [88, 15, 10, 5, 2, 0];
+                let win = Math.floor(bet * multi[target]);
+                balance += win;
+                document.getElementById('b-val').innerText = balance.toLocaleString();
+                document.getElementById('ring').classList.remove('active-ring');
+                
+                if(win > 0) {
+                    document.getElementById('msg-status').innerText = "SUCCESS: +" + win;
+                    tg.HapticFeedback.notificationOccurred('success');
+                } else {
+                    document.getElementById('msg-status').innerText = "FAILED";
+                }
+                isSpinning = false;
+            }, 6000);
+        }
+    </script>
+</body>
+</html>
