@@ -3,132 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-    <title>五兽至尊_V16000_TRUE_RUN</title>
+    <title>TERMINAL_V19000_EVOLVE</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff0055; --gold: #ffcc00; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         
-        body { background: #000; color: #fff; font-family: sans-serif; height: 100vh; overflow: hidden; }
+        body { background: #000; color: #fff; font-family: 'JetBrains Mono', monospace; height: 100vh; overflow: hidden; }
 
-        /* CSS 纯流光背景：不占用 Canvas，不挡点击 */
-        .bg-lines { position: fixed; inset: 0; background: linear-gradient(0deg, transparent 0%, rgba(0,242,255,0.05) 50%, transparent 100%); background-size: 100% 4px; z-index: 1; animation: move 2s linear infinite; }
-        @keyframes move { from { background-position: 0 0; } to { background-position: 0 100px; } }
+        /* 终端扫描线背景 - 不占点击位 */
+        .scanline { position: fixed; inset: 0; background: linear-gradient(to bottom, transparent 50%, rgba(0,242,255,0.02) 50%); background-size: 100% 4px; z-index: 1; pointer-events: none; }
 
-        .ui-box { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 50px 0; }
+        .app-view { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 50px 0; }
 
-        /* 截图同款：霓虹余额 */
-        .bal-card {
-            background: rgba(0,0,0,0.9); border: 2.5px solid var(--neon);
-            padding: 15px 50px; border-radius: 20px;
-            box-shadow: 0 0 30px var(--neon), inset 0 0 10px var(--neon);
-            text-align: center;
+        /* 截图还原：霓虹余额框 */
+        .bal-display {
+            background: rgba(0,0,0,0.8); border: 2px solid var(--neon);
+            padding: 12px 50px; border-radius: 20px;
+            box-shadow: 0 0 25px var(--neon), inset 0 0 10px var(--neon);
+            display: flex; align-items: center; gap: 15px; transition: 0.3s;
         }
-        .bal-val { font-size: 58px; font-weight: 900; text-shadow: 0 0 15px var(--neon); }
+        .bal-val { font-size: 56px; font-weight: 900; letter-spacing: -2px; text-shadow: 0 0 15px var(--neon); }
 
-        /* 核心转盘区 */
-        .stage { position: relative; width: 85vw; max-width: 380px; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; }
-        .pointer { position: absolute; top: -10px; width: 3px; height: 60px; background: #fff; box-shadow: 0 0 20px #fff; z-index: 100; }
+        /* 核心区：物理禁锢转盘 */
+        .vortex-stage { position: relative; width: 90vw; max-width: 400px; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; }
+        
+        /* 截图还原：白色极细指针 */
+        .laser-line { position: absolute; top: -15px; width: 2px; height: 70px; background: #fff; box-shadow: 0 0 20px var(--neon); z-index: 100; }
 
-        .wheel {
+        .reactor {
             width: 100%; height: 100%; border-radius: 50%;
-            background: radial-gradient(circle, #222, #000);
-            border: 2px solid #333; position: relative; transition: transform 6s cubic-bezier(0.1, 0, 0, 1);
+            background: radial-gradient(circle, #111, #000);
+            border: 2px solid #222; position: relative;
+            overflow: hidden; /* 核心禁锢：确保图标不跑出去 */
+            transition: transform 7s cubic-bezier(0.1, 0, 0, 1);
+            box-shadow: inset 0 0 60px rgba(0,242,255,0.1);
         }
-        .slot { position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 12%; transform-origin: center; }
-        .slot b { font-size: 70px; transform: rotate(90deg); }
 
-        /* 截图同款：红色 RUN 按钮 */
-        .run-btn {
-            position: absolute; width: 100px; height: 100px; border-radius: 50%;
-            background: #000; border: 4px solid var(--pink); color: var(--pink);
+        .sector { position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 12%; transform-origin: center; }
+        .sector b { font-size: 80px; transform: rotate(90deg); filter: drop-shadow(0 0 15px rgba(0,0,0,0.9)); }
+
+        /* 截图还原：深红 RUN 核 */
+        .igniter {
+            position: absolute; width: 110px; height: 110px; border-radius: 50%;
+            background: #000; border: 4.5px solid var(--pink); color: var(--pink);
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px; font-weight: 900; cursor: pointer; z-index: 200;
-            box-shadow: 0 0 30px var(--pink); animation: breathe 1.5s infinite;
+            font-size: 26px; font-weight: 900; cursor: pointer; z-index: 200;
+            box-shadow: 0 0 40px var(--pink); transition: 0.1s;
         }
-        @keyframes breathe { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } }
-        .run-btn:active { transform: scale(0.8) !important; }
+        .igniter:active { transform: scale(0.9); box-shadow: 0 0 10px var(--pink); }
 
         /* 底部控制台 */
         .footer { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; }
-        #msg { font-size: 30px; font-weight: 900; color: var(--gold); text-shadow: 0 0 10px var(--gold); height: 40px; }
-        .bet-row { display: flex; align-items: center; gap: 60px; }
-        .adj { font-size: 60px; color: #444; width: 60px; text-align: center; cursor: pointer; }
-        .adj:active { color: #fff; }
-        .bet-num { font-size: 80px; font-weight: 900; min-width: 120px; text-align: center; }
+        #log-msg { font-size: 28px; font-weight: 900; color: var(--gold); letter-spacing: 5px; height: 35px; text-shadow: 0 0 15px var(--gold); }
+        
+        .bet-interface { display: flex; align-items: center; gap: 55px; }
+        .adj-btn { font-size: 55px; color: #333; cursor: pointer; width: 50px; text-align: center; }
+        .adj-btn:active { color: #fff; transform: scale(1.2); }
+        .bet-val { font-size: 78px; font-weight: 900; min-width: 130px; text-align: center; }
 
-        /* 震耳欲聋效果 */
-        .bass-mode { animation: bass-act 0.05s infinite !important; }
-        @keyframes bass-act { 0% { transform: translate(3px, 3px); } 50% { transform: translate(-3px, -3px); } 100% { transform: translate(1px, -2px); } }
+        /* 震耳欲聋：高频位移 */
+        .bass-shake { animation: seismic 0.08s infinite; }
+        @keyframes seismic { 0%{transform:translate(2px,2px)} 50%{transform:translate(-2px,-2px)} 100%{transform:translate(1px,-1px)} }
     </style>
 </head>
-<body>
+<body onclick="tg.HapticFeedback.selectionChanged()">
 
-    <div class="bg-lines" id="bg"></div>
+    <div class="scanline"></div>
 
-    <div class="ui-box" id="main-ui">
-        <div class="bal-card">
+    <div class="app-view" id="main-view">
+        <div class="bal-display">
             <div class="bal-val" id="bal-txt">1,000</div>
         </div>
 
-        <div class="stage">
-            <div class="pointer"></div>
-            <div id="wheel-obj" class="wheel">
-                <div class="slot" style="transform:rotate(-90deg)"><b>👑</b></div>
-                <div class="slot" style="transform:rotate(-30deg)"><b>🦁</b></div>
-                <div class="slot" style="transform:rotate(30deg)"><b>🐯</b></div>
-                <div class="slot" style="transform:rotate(90deg)"><b>🦅</b></div>
-                <div class="slot" style="transform:rotate(150deg)"><b>🐺</b></div>
-                <div class="slot" style="transform:rotate(210deg)"><b>🐕</b></div>
+        <div class="vortex-stage">
+            <div class="laser-line"></div>
+            <div id="core" class="reactor">
+                <div class="sector" style="transform:rotate(-90deg)"><b>👑</b></div>
+                <div class="sector" style="transform:rotate(-30deg)"><b>🦁</b></div>
+                <div class="sector" style="transform:rotate(30deg)"><b>🐯</b></div>
+                <div class="sector" style="transform:rotate(90deg)"><b>🦅</b></div>
+                <div class="sector" style="transform:rotate(150deg)"><b>🐺</b></div>
+                <div class="sector" style="transform:rotate(210deg)"><b>🐕</b></div>
             </div>
-            <!-- 直接把函数写在 onclick 里，防止失效 -->
-            <div class="run-btn" onclick="handleRun()">RUN</div>
+            <!-- 直接内联 onclick，确保终端级响应 -->
+            <div class="igniter" onclick="handleIgnition()">RUN</div>
         </div>
 
         <div class="footer">
-            <div id="msg">READY</div>
-            <div class="bet-row">
-                <div class="adj" onclick="handleAdj(-10)">-</div>
-                <div class="bet-num" id="bet-txt">1</div>
-                <div class="adj" onclick="handleAdj(10)">+</div>
+            <div id="log-msg">CORE READY</div>
+            <div class="bet-interface">
+                <div class="adj-btn" onclick="handleAdj(-10)">-</div>
+                <div class="bet-val" id="bet-txt">1</div>
+                <div class="adj-btn" onclick="handleAdj(10)">+</div>
             </div>
         </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp; tg.expand();
-        let bal = 1000, bet = 1, r = 0, busy = false;
+        let balance = 1000, bet = 1, r = 0, isBusy = false;
 
         function handleAdj(v) {
-            if(busy) return;
-            bet = Math.max(1, Math.min(bal, bet + v));
+            if(isBusy) return;
+            bet = Math.max(1, Math.min(balance, bet + v));
             document.getElementById('bet-txt').innerText = bet;
             tg.HapticFeedback.selectionChanged();
         }
 
-        function handleRun() {
-            if(busy || bal < bet) return;
-            busy = true;
-            bal -= bet;
-            document.getElementById('bal-txt').innerText = bal.toLocaleString();
-            document.getElementById('msg').innerText = "SPEEDING...";
-            document.getElementById('main-ui').classList.add('bass-mode');
+        function handleIgnition() {
+            if(isBusy || balance < bet) return;
+            isBusy = true;
+            balance -= bet;
+            document.getElementById('bal-txt').innerText = balance.toLocaleString();
+            document.getElementById('log-msg').innerText = "VORTEX ACTIVE";
+            document.getElementById('main-view').classList.add('bass-shake');
             tg.HapticFeedback.impactOccurred('heavy');
 
             let target = Math.floor(Math.random()*6);
             r += (3600 + target*60);
-            document.getElementById('wheel-obj').style.transform = `rotate(-${r}deg)`;
+            document.getElementById('core').style.transform = `rotate(-${r}deg)`;
 
             setTimeout(() => {
-                document.getElementById('main-ui').classList.remove('bass-mode');
+                document.getElementById('main-view').classList.remove('bass-shake');
                 const multi = [88, 15, 10, 5, 2, 0];
                 let win = Math.floor(bet * multi[target]);
-                bal += win;
-                document.getElementById('bal-txt').innerText = bal.toLocaleString();
-                document.getElementById('msg').innerText = win > 0 ? "VICTORY: +" + win : "FAILED";
+                balance += win;
+                document.getElementById('bal-txt').innerText = balance.toLocaleString();
+                document.getElementById('log-msg').innerText = win > 0 ? "SUCCESS: +" + win : "CORE NULL";
                 tg.HapticFeedback.notificationOccurred(win > 0 ? 'success' : 'error');
-                busy = false;
-            }, 6200);
+                isBusy = false;
+            }, 7000);
         }
     </script>
 </body>
