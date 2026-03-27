@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+    <title>五兽至尊_MAX_STIMULATE</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --neon: #00f2ff; --gold: #ffcc00; --pink: #ff0055; --bg: #000; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        /* 1. 动态刺激背景：流光溢彩 */
+        body { 
+            margin: 0; background: var(--bg); color: #fff; font-family: 'Arial Black', sans-serif; 
+            height: 100vh; display: flex; flex-direction: column; align-items: center; overflow: hidden;
+            background: linear-gradient(125deg, #000, #0a1a2a, #1a0a1a, #000);
+            background-size: 400% 400%;
+            animation: gradientBG 10s ease infinite;
+        }
+        @keyframes gradientBG { 0% {background-position: 0% 50%;} 50% {background-position: 100% 50%;} 100% {background-position: 0% 50%;} }
+
+        .header { width: 100%; height: 18%; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        .bal-val { font-size: 52px; font-weight: 900; color: #fff; text-shadow: 0 0 10px var(--neon), 0 0 30px var(--neon), 0 0 50px var(--neon); animation: glow 1.5s infinite alternate; }
+        @keyframes glow { from { text-shadow: 0 0 10px var(--neon); } to { text-shadow: 0 0 30px var(--neon), 0 0 60px #fff; } }
+
+        /* 2. 跑马灯转盘区 */
+        .main-game { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; position: relative; }
+        .wheel-box { 
+            position: relative; width: 90vw; max-width: 380px; aspect-ratio: 1/1; 
+            border-radius: 50%; padding: 15px;
+            background: conic-gradient(from 0deg, var(--neon), var(--pink), var(--gold), var(--neon));
+            animation: rotate-border 2s linear infinite; /* 旋转跑马灯外框 */
+        }
+        @keyframes rotate-border { 100% { transform: rotate(360deg); } }
+
+        .wheel { 
+            width: 100%; height: 100%; border-radius: 50%; border: 8px solid #000; background: #111; 
+            transition: transform 5s cubic-bezier(0.1, 0, 0.1, 1); position: relative; overflow: hidden; 
+            transform: rotate(0deg); /* 抵消外框旋转 */
+        }
+        
+        .sector { position: absolute; width: 100%; height: 100%; clip-path: polygon(50% 50%, 100% 17%, 100% 83%); transform-origin: center; display: flex; align-items: center; justify-content: flex-end; padding-right: 8%; }
+        
+        /* 图案：极致放大 + 霓虹投影 */
+        .item { transform: rotate(90deg) translateY(-25px); display: flex; flex-direction: column; align-items: center; }
+        .item b { font-size: 82px; filter: drop-shadow(0 0 20px rgba(255,255,255,0.8)); }
+
+        .pointer { position: absolute; top: -20px; left: 50%; transform: translateX(-50%) rotate(180deg); width: 0; height: 0; border-left: 25px solid transparent; border-right: 25px solid transparent; border-bottom: 60px solid #fff; z-index: 100; filter: drop-shadow(0 0 20px #fff); }
+        
+        .spin-btn { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            width: 90px; height: 90px; background: #000; border: 5px solid var(--pink); border-radius: 50%; 
+            z-index: 110; color: #fff; font-size: 24px; font-weight: 900; display: flex; align-items: center; justify-content: center; 
+            box-shadow: 0 0 40px var(--pink); text-shadow: 0 0 10px var(--pink);
+        }
+
+        .footer { width: 100%; height: 20%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; z-index: 10; }
+        .bet-box { display: flex; align-items: center; gap: 40px; background: rgba(255,255,255,0.1); padding: 10px 30px; border-radius: 50px; border: 2px solid #fff; backdrop-filter: blur(10px); }
+        .btn-adj { width: 50px; height: 50px; border-radius: 50%; border: none; background: #fff; color: #000; font-size: 32px; font-weight: bold; }
+        #msg { color: var(--gold); font-weight: 900; font-size: 26px; text-shadow: 0 0 10px #000; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="bal-val">🪙 <span id="bal">1,000</span></div>
+    </div>
+
+    <div class="main-game">
+        <div style="transform: rotate(0deg); width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
+            <div class="wheel-box" id="box">
+                <div class="pointer"></div>
+                <div id="wheel" class="wheel">
+                    <div class="sector" style="transform:rotate(-90deg); background:rgba(255,215,0,0.3)"><div class="item"><b>👑</b></div></div>
+                    <div class="sector" style="transform:rotate(-30deg); background:rgba(255,0,0,0.25)"><div class="item"><b>🦁</b></div></div>
+                    <div class="sector" style="transform:rotate(30deg); background:rgba(255,165,0,0.3)"><div class="item"><b>🐯</b></div></div>
+                    <div class="sector" style="transform:rotate(90deg); background:rgba(0,255,0,0.25)"><div class="item"><b>🦅</b></div></div>
+                    <div class="sector" style="transform:rotate(150deg); background:rgba(147,112,219,0.3)"><div class="item"><b>🐺</b></div></div>
+                    <div class="sector" style="transform:rotate(210deg); background:rgba(240,230,140,0.25)"><div class="item"><b>🐕</b></div></div>
+                </div>
+                <div class="spin-btn" onclick="spin()">SPIN</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="bet-box">
+            <button class="btn-adj" onclick="setB(-10)">-</button>
+            <div style="font-size:36px; font-weight:900; color:#fff;"><span id="bet">1</span></div>
+            <button class="btn-adj" onclick="setB(10)">+</button>
+        </div>
+        <div id="msg">GO BIG OR GO HOME!</div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp; tg.expand();
+        let b = 1000, bet = 1, r = 0, isS = false, audioCtx;
+
+        // 🎵 提神刺激音效引擎
+        function initAudio() {
+            if(!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                // 持续的高能 Techno 低音节奏
+                const loop = () => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.type = 'sine'; o.frequency.setValueAtTime(60, audioCtx.currentTime); // 重低音
+                    g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.5);
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.start(); o.stop(audioCtx.currentTime + 0.5);
+                    setTimeout(loop, 500); // 每秒两次鼓点，心跳加速
+                };
+                loop();
+            }
+        }
+
+        function sfx(f, d, t='sine', v=0.15) {
+            if(!audioCtx) return;
+            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            o.type = t; o.frequency.setTargetAtTime(f, audioCtx.currentTime, 0.01);
+            g.gain.setValueAtTime(v, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + d);
+            o.connect(g); g.connect(audioCtx.destination);
+            o.start(); o.stop(audioCtx.currentTime + d);
+        }
+
+        function sync() {
+            document.getElementById('bal').innerText = b.toLocaleString();
+            document.getElementById('bet').innerText = bet;
+        }
+
+        window.setB = (v) => { 
+            initAudio();
+            if(!isS) { 
+                bet = Math.max(1, Math.min(b, bet+v)); sync(); 
+                tg.HapticFeedback.selectionChanged();
+                sfx(800, 0.1, 'square', 0.05);
+            } 
+        };
+
+        function spin() {
+            initAudio();
+            if(isS || b < bet) return;
+            isS = true; b -= bet; sync();
+            tg.HapticFeedback.impactOccurred('heavy');
+            
+            // 旋转时：高频电子滴答声，模拟引擎发动
+            let tick = setInterval(() => { if(isS) sfx(Math.random()*400+200, 0.05, 'sawtooth', 0.05); }, 100);
+            
+            let idx = Math.floor(Math.random()*6);
+            r += (3600 + idx*60);
+            document.getElementById('wheel').style.transform = `rotate(-${r}deg)`;
+            document.getElementById('box').style.animation = "rotate-border 0.2s linear infinite"; // 跑马灯加速
+
+            setTimeout(() => {
+                clearInterval(tick);
+                document.getElementById('box').style.animation = "rotate-border 2s linear infinite"; 
+                const multi = [88, 15, 10, 5, 2, 0];
+                let win = Math.floor(bet * multi[idx]);
+                b += win; sync();
+                
+                if(win > 0) {
+                    document.getElementById('msg').innerText = "JACKPOT: " + win + "!";
+                    // 赢钱：激进的上升音阶
+                    for(let i=0; i<5; i++) {
+                        setTimeout(() => sfx(400+i*200, 0.5, 'sine', 0.2), i*100);
+                    }
+                    tg.HapticFeedback.notificationOccurred('success');
+                } else {
+                    document.getElementById('msg').innerText = "DO IT AGAIN!";
+                    sfx(80, 0.8, 'sawtooth', 0.1);
+                }
+                isS = false;
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
