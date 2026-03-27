@@ -10,73 +10,65 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #000; color: #fff; font-family: 'Arial Black', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: space-around; }
         
-        /* 1. 黄金流光余额区 */
-        .balance-box {
+        /* 🏆 十万级黄金流光余额框 */
+        .header {
             margin-top: 20px;
-            background: rgba(0,0,0,0.8);
-            border: 2px solid var(--gold);
+            background: linear-gradient(180deg, #1a1a1a 0%, #000 100%);
+            border: 3px solid #ffd700;
             padding: 10px 40px;
             border-radius: 50px;
-            box-shadow: 0 0 20px rgba(255,204,0,0.4);
             display: flex; align-items: center; gap: 15px;
             position: relative;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.4);
         }
-        #balance { font-size: 48px; color: var(--gold); text-shadow: 0 0 10px gold; }
-        
-        /* 2. 核心 3D 旋转区 */
-        .slot-machine { position: relative; width: 300px; height: 300px; display: flex; align-items: center; justify-content: center; }
+        #balance { font-size: 45px; font-weight: 900; background: linear-gradient(180deg, #fff, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 10px gold); }
+
+        /* 🟢 3D 绿色实体大按钮 */
         .spin-btn {
             width: 140px; height: 140px; border-radius: 50%;
             background: radial-gradient(circle, #00ff88, #006633);
             border: 8px solid #004422; color: #fff; font-size: 28px; font-weight: 900;
-            box-shadow: 0 15px 0 #003311, 0 20px 30px rgba(0,255,136,0.5);
-            cursor: pointer; transition: 0.1s; z-index: 10;
+            box-shadow: 0 12px 0 #003311, 0 20px 30px rgba(0,255,136,0.5);
+            cursor: pointer; transition: 0.1s;
         }
-        .spin-btn:active { transform: translateY(10px); box-shadow: 0 5px 0 #003311, 0 10px 15px rgba(0,255,136,0.5); }
+        .spin-btn:active { transform: translateY(8px); box-shadow: 0 4px 0 #003311, 0 10px 15px rgba(0,255,136,0.5); }
         
-        /* 3. 底部控制台 */
-        .footer { width: 90%; background: #1a1a1a; padding: 20px; border-radius: 20px; border-top: 2px solid #333; display: flex; justify-content: space-between; align-items: center; }
-        .bet-box { display: flex; align-items: center; gap: 15px; font-size: 32px; }
-        .btn-mini { width: 50px; height: 50px; background: #333; border: 1px solid #555; color: #fff; border-radius: 10px; font-size: 24px; }
-        
-        /* 隐藏上分点（左上角） */
-        #secret-add { position: fixed; top: 0; left: 0; width: 60px; height: 60px; z-index: 100; }
+        .footer { width: 90%; background: #1a1a1a; padding: 15px; border-radius: 20px; border: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+        .btn-mini { width: 45px; height: 45px; background: #333; border: 1px solid #555; color: #fff; border-radius: 10px; font-size: 20px; }
     </style>
 </head>
 <body>
-    <!-- 秘密上分点：点这里加钱 -->
-    <div id="secret-add" onclick="addMoney()"></div>
-
-    <div class="balance-box">
+    <div class="header">
         <span style="font-size:30px">💰</span>
-        <div id="balance">1,000</div>
+        <div id="balance">加载中...</div>
     </div>
 
-    <div class="slot-machine">
+    <div style="position:relative;">
         <button class="spin-btn" onclick="startSpin()">SPIN</button>
-        <div id="result-msg" style="position:absolute; bottom:-40px; color:var(--win); font-size:24px;"></div>
+        <div id="msg" style="position:absolute; bottom:-40px; left:50%; transform:translateX(-50%); color:var(--win); white-space:nowrap;"></div>
     </div>
 
     <div class="footer">
-        <div class="bet-box">
+        <div style="display:flex; align-items:center; gap:10px;">
             <button class="btn-mini" onclick="changeBet(-10)">-</button>
-            <span id="bet-val">100</span>
+            <span id="bet-val" style="font-size:24px; color:var(--gold);">100</span>
             <button class="btn-mini" onclick="changeBet(10)">+</button>
         </div>
-        <div style="color:#ff4400; font-size:20px;">WIN: <span id="win-amt">0</span></div>
+        <div style="color:#ff4400; font-size:18px;">WIN: <span id="win-amt">0</span></div>
     </div>
 
     <script>
-        let balance = 1000;
-        let bet = 100;
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        function addMoney() {
-            balance += 5000;
-            updateDisplay();
-            tg.HapticFeedback.notificationOccurred('success');
-        }
+        // 🎯 核心上分接收逻辑
+        const urlParams = new URLSearchParams(window.location.search);
+        let balance = parseInt(urlParams.get('balance')) || 1000; 
+        let bet = 100;
+
+        window.onload = () => {
+            document.getElementById('balance').innerText = balance.toLocaleString();
+        };
 
         function changeBet(amt) {
             if(bet + amt >= 10) bet += amt;
@@ -85,28 +77,27 @@
         }
 
         function startSpin() {
-            if(balance < bet) { alert("余额不足！请点击左上角秘密充值"); return; }
+            if(balance < bet) { tg.showAlert("余额不足，请充值！"); return; }
             balance -= bet;
-            updateDisplay();
+            updateUI();
             tg.HapticFeedback.impactOccurred('heavy');
             
-            // 模拟中奖逻辑
             setTimeout(() => {
-                let win = Math.random() > 0.5 ? bet * 2 : 0;
+                let win = Math.random() > 0.7 ? bet * 5 : 0; // 30%中奖率
                 if(win > 0) {
                     balance += win;
                     document.getElementById('win-amt').innerText = win;
-                    document.getElementById('result-msg').innerText = "BIG WIN! +" + win;
+                    document.getElementById('msg').innerText = "🎉 BIG WIN! +" + win;
                     tg.HapticFeedback.notificationOccurred('success');
                 } else {
                     document.getElementById('win-amt').innerText = 0;
-                    document.getElementById('result-msg').innerText = "TRY AGAIN";
+                    document.getElementById('msg').innerText = "TRY AGAIN";
                 }
-                updateDisplay();
-            }, 500);
+                updateUI();
+            }, 400);
         }
 
-        function updateDisplay() {
+        function updateUI() {
             document.getElementById('balance').innerText = balance.toLocaleString();
         }
     </script>
