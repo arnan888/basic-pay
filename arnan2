@@ -247,3 +247,215 @@
     </script>
 </body>
 </html>
+
+
+
+
+300
+
+
+
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+    <title>五兽至尊_V300_PRO_MAX</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --c-cyan: #00f2ff; --c-pink: #ff0055; --c-gold: #ffcc00; --c-bg: #05050a; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+
+        body { 
+            background: var(--c-bg); color: #fff; font-family: 'Segoe UI', Roboto, sans-serif; 
+            height: 100vh; display: flex; flex-direction: column; align-items: center; overflow: hidden;
+            position: relative;
+        }
+
+        /* 1. 赛博空间：动态网格背景 */
+        .space-bg {
+            position: absolute; width: 200%; height: 200%; top: -50%; left: -50%;
+            background-image: 
+                linear-gradient(rgba(0, 242, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 242, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: perspective(800px) rotateX(60deg);
+            animation: space-move 20s linear infinite; z-index: 0;
+        }
+        @keyframes space-move { 0% { background-position: 0 0; } 100% { background-position: 0 1000px; } }
+
+        /* 2. 顶部：全息状态栏 */
+        .top-ui { 
+            width: 100%; height: 18vh; display: flex; align-items: center; justify-content: center; z-index: 10;
+            background: linear-gradient(to bottom, rgba(0,242,255,0.1), transparent);
+        }
+        .score-card { 
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(0,242,255,0.4);
+            padding: 10px 40px; border-radius: 20px; backdrop-filter: blur(12px);
+            box-shadow: 0 0 30px rgba(0,242,255,0.2), inset 0 0 15px rgba(0,242,255,0.1);
+        }
+        .score-val { font-size: 48px; font-weight: 900; color: #fff; text-shadow: 0 0 10px var(--c-cyan); letter-spacing: -1px; }
+
+        /* 3. 转盘核心：3D 全息底座 */
+        .stage { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; z-index: 5; }
+        .hologram-plate {
+            position: relative; width: 85vw; max-width: 360px; aspect-ratio: 1/1; 
+            border-radius: 50%; border: 2px solid rgba(255,255,255,0.1);
+            background: radial-gradient(circle at center, rgba(0,242,255,0.1) 0%, transparent 70%);
+        }
+        .hologram-plate::after {
+            content: ""; position: absolute; inset: -15px; border-radius: 50%;
+            border: 1px dashed var(--c-cyan); opacity: 0.3; animation: rotate-reverse 15s linear infinite;
+        }
+
+        .wheel-main { 
+            width: 100%; height: 100%; border-radius: 50%; border: 10px solid #111;
+            background: #111; position: relative; overflow: hidden;
+            transition: transform 6s cubic-bezier(0.1, 0, 0, 1);
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
+
+        .slice { 
+            position: absolute; width: 100%; height: 100%; clip-path: polygon(50% 50%, 100% 18%, 100% 82%); 
+            transform-origin: center; display: flex; align-items: center; justify-content: flex-end; padding-right: 7%; 
+        }
+        .emoji { transform: rotate(90deg) translateY(-20px); font-size: 72px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.8)); }
+
+        /* 顶部指针：极光效果 */
+        .needle { 
+            position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 40px; height: 60px;
+            background: var(--c-cyan); clip-path: polygon(50% 100%, 0 0, 100% 0); z-index: 100;
+            filter: drop-shadow(0 0 20px var(--c-cyan)); opacity: 0.9;
+        }
+
+        /* 启动按钮：脉冲心脏 */
+        .btn-spin { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            width: 86px; height: 86px; background: #000; 
+            border: 4px solid var(--c-pink); border-radius: 50%; z-index: 110;
+            color: var(--c-pink); font-size: 20px; font-weight: 900; display: flex; align-items: center; justify-content: center; 
+            box-shadow: 0 0 30px var(--c-pink); cursor: pointer; transition: 0.2s;
+        }
+        .btn-spin:active { transform: translate(-50%, -50%) scale(0.9); box-shadow: 0 0 10px var(--c-pink); }
+
+        /* 4. 底部控制：悬浮面板 */
+        .bottom-ui { width: 100%; height: 22vh; display: flex; flex-direction: column; align-items: center; gap: 15px; z-index: 10; }
+        .bet-panel { 
+            display: flex; align-items: center; gap: 40px; background: rgba(0,0,0,0.5); 
+            padding: 12px 30px; border-radius: 40px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(20px);
+        }
+        .adj-btn { width: 50px; height: 50px; border-radius: 15px; border: 1px solid var(--c-cyan); background: transparent; color: var(--c-cyan); font-size: 28px; cursor: pointer; }
+        #msg { font-size: 22px; font-weight: bold; color: var(--c-gold); letter-spacing: 2px; text-shadow: 0 0 10px rgba(255,204,0,0.5); }
+
+        @keyframes rotate-reverse { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+    </style>
+</head>
+<body onclick="wakeUp()">
+
+    <div class="space-bg"></div>
+
+    <div class="top-ui">
+        <div class="score-card"><div class="score-val">💎 <span id="bal">1,000</span></div></div>
+    </div>
+
+    <div class="stage">
+        <div class="hologram-plate">
+            <div class="needle"></div>
+            <div id="wheel" class="wheel-main">
+                <div class="slice" style="background:rgba(255,215,0,0.2); transform:rotate(-90deg)"><b class="emoji">👑</b></div>
+                <div class="slice" style="background:rgba(255,0,85,0.15); transform:rotate(-30deg)"><b class="emoji">🦁</b></div>
+                <div class="slice" style="background:rgba(255,165,0,0.2); transform:rotate(30deg)"><b class="emoji">🐯</b></div>
+                <div class="slice" style="background:rgba(0,242,255,0.15); transform:rotate(90deg)"><b class="emoji">🦅</b></div>
+                <div class="slice" style="background:rgba(147,112,219,0.2); transform:rotate(150deg)"><b class="emoji">🐺</b></div>
+                <div class="slice" style="background:rgba(255,255,255,0.1); transform:rotate(210deg)"><b class="emoji">🐕</b></div>
+            </div>
+            <div class="btn-spin" onclick="spinNow()">SPIN</div>
+        </div>
+    </div>
+
+    <div class="bottom-ui">
+        <div class="bet-panel">
+            <button class="adj-btn" onclick="changeBet(-10)">-</button>
+            <div style="font-size:36px; font-weight:900; min-width:90px; text-align:center;"><span id="bet">1</span></div>
+            <button class="adj-btn" onclick="changeBet(10)">+</button>
+        </div>
+        <div id="msg">SYSTEM ONLINE</div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp; tg.ready(); tg.expand();
+        let balance = 1000, currentBet = 1, rotation = 0, spinning = false, audioCtx;
+
+        // 第一次点击唤醒系统（绕过浏览器静音限制）
+        function wakeUp() {
+            if(!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                document.getElementById('msg').innerText = "READY FOR BET";
+                playTone(440, 0.1, 'sine', 0.05);
+            }
+        }
+
+        function playTone(freq, dur, type='sine', vol=0.1) {
+            if(!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const amp = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            amp.gain.setValueAtTime(vol, audioCtx.currentTime);
+            amp.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+            osc.connect(amp); amp.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + dur);
+        }
+
+        function changeBet(val) {
+            if(spinning) return;
+            currentBet = Math.max(1, Math.min(balance, currentBet + val));
+            document.getElementById('bet').innerText = currentBet;
+            document.getElementById('bet').parentElement.style.transform = "scale(1.2)";
+            setTimeout(() => document.getElementById('bet').parentElement.style.transform = "scale(1)", 100);
+            tg.HapticFeedback.selectionChanged();
+            playTone(800, 0.1, 'square', 0.02);
+        }
+
+        function spinNow() {
+            if(spinning || balance < currentBet) return;
+            spinning = true;
+            balance -= currentBet;
+            document.getElementById('bal').innerText = balance.toLocaleString();
+            tg.HapticFeedback.impactOccurred('heavy');
+
+            // 旋转音效模拟
+            let sfxTimer = setInterval(() => {
+                if(spinning) playTone(200 + Math.random()*600, 0.08, 'sawtooth', 0.02);
+            }, 120);
+
+            const targetIdx = Math.floor(Math.random() * 6);
+            rotation += (3600 + (targetIdx * 60)); // 至少转10圈
+            document.getElementById('wheel').style.transform = `rotate(-${rotation}deg)`;
+            document.getElementById('msg').innerText = "LOCKING TARGET...";
+
+            setTimeout(() => {
+                clearInterval(sfxTimer);
+                const odds = [88, 15, 10, 5, 2, 0];
+                let winAmt = Math.floor(currentBet * odds[targetIdx]);
+                balance += winAmt;
+                document.getElementById('bal').innerText = balance.toLocaleString();
+
+                if(winAmt > 0) {
+                    document.getElementById('msg').innerText = "SYSTEM REWARD: +" + winAmt;
+                    tg.HapticFeedback.notificationOccurred('success');
+                    for(let i=0; i<12; i++) {
+                        setTimeout(() => playTone(600 + (i*80), 0.4, 'sine', 0.1), i*70);
+                    }
+                } else {
+                    document.getElementById('msg').innerText = "ACCESS DENIED";
+                    playTone(110, 0.6, 'triangle', 0.1);
+                }
+                spinning = false;
+            }, 6000);
+        }
+    </script>
+</body>
+</html>
