@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>五兽至尊_V66_Stable</title>
+    <title>五兽至尊_V68_PRIVATE</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { --neon: #00f2ff; --pink: #ff0055; --gold: #ffcc00; --blue: #1e3a5f; }
@@ -17,17 +17,20 @@
             display: flex; flex-direction: column; align-items: center;
         }
 
+        /* 顶部 HUD */
         .hud {
             width: 95%; margin-top: 15px; z-index: 100;
             background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px);
-            border: 1px solid var(--neon); border-radius: 20px; padding: 15px; text-align: center;
+            border: 1px solid var(--neon); border-radius: 20px; padding: 12px; text-align: center;
         }
         .bal-txt { font-size: 30px; color: #fff; margin-bottom: 10px; text-shadow: 0 0 15px var(--neon); }
         
-        .bet-row { display: flex; align-items: center; justify-content: center; gap: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; }
+        /* 下注控制 */
+        .bet-row { display: flex; align-items: center; justify-content: center; gap: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; }
         .btn-ctrl { padding: 8px 15px; background: rgba(0,0,0,0.5); border: 1.5px solid var(--gold); color: var(--gold); border-radius: 10px; font-size: 16px; cursor: pointer; font-weight: bold; }
         .bet-val { font-size: 24px; color: var(--gold); min-width: 70px; font-weight: 900; }
 
+        /* 转盘区 */
         .wheel-box { margin-top: 25px; position: relative; width: 320px; height: 320px; z-index: 50; }
         .wheel { 
             width: 100%; height: 100%; border-radius: 50%; border: 10px solid #2c3e50;
@@ -40,9 +43,13 @@
             clip-path: polygon(50% 50%, 100% 21%, 100% 79%); transform-origin: center;
             display: flex; align-items: center; justify-content: center;
         }
-        /* 确保图片加载正常，如果加载失败会显示文字备用 */
-        .sector img { width: 110%; height: 110%; object-fit: cover; filter: brightness(0.7); }
-        .sector span { position: absolute; right: 15px; transform: rotate(-90deg); font-size: 12px; font-weight: bold; background: var(--pink); padding: 2px 5px; border-radius: 4px; }
+        .sector img { width: 110%; height: 110%; object-fit: cover; filter: brightness(0.6); }
+        /* 核心文字显示 - 绝不会错 */
+        .sector span { 
+            position: absolute; right: 15px; transform: rotate(-90deg); 
+            font-size: 11px; font-weight: bold; background: var(--pink); color: #fff; 
+            padding: 2px 6px; border-radius: 4px; box-shadow: 0 0 5px rgba(0,0,0,0.5); 
+        }
         
         .s0{transform:rotate(-90deg)} .s1{transform:rotate(-30deg)} .s2{transform:rotate(30deg)} 
         .s3{transform:rotate(90deg)} .s4{transform:rotate(150deg)} .s5{transform:rotate(210deg)}
@@ -59,14 +66,19 @@
             display: flex; align-items: center; justify-content: center; box-shadow: 0 0 25px var(--pink);
         }
 
+        /* 私人管理面板 */
         .admin-panel {
-            margin-top: 30px; width: 92%; background: rgba(0,0,0,0.4); 
+            margin-top: 30px; width: 92%; background: rgba(0,0,0,0.5); 
             backdrop-filter: blur(5px); border-radius: 20px; padding: 15px; 
             text-align: center; border: 1px solid rgba(255,255,255,0.1);
         }
-        #res-win { font-size: 32px; font-weight: 900; color: var(--neon); margin-bottom: 12px; min-height: 40px; }
+        #res-win { font-size: 32px; font-weight: 900; color: var(--neon); margin-bottom: 15px; min-height: 40px; text-shadow: 0 0 10px var(--neon); }
         .admin-btns { display: flex; justify-content: center; gap: 12px; }
-        .btn-admin { flex: 1; padding: 10px; background: #222; border: 1px solid #444; color: #aaa; border-radius: 12px; font-size: 14px; cursor: pointer; }
+        .btn-admin { 
+            flex: 1; padding: 10px; background: #222; border: 1px solid #444; 
+            color: #aaa; border-radius: 12px; font-size: 14px; cursor: pointer; font-weight: bold;
+        }
+        .btn-admin:active { background: #fff; color: #000; }
     </style>
 </head>
 <body>
@@ -85,7 +97,6 @@
     <div class="wheel-box">
         <div class="pointer"></div>
         <div class="wheel" id="wheel">
-            <!-- 请确保这些图片文件在你的 GitHub 根目录下 -->
             <div class="sector s0"><img src="all.jpg" onerror="this.style.display='none'"><span>MAX</span></div>
             <div class="sector s1"><img src="lion.jpg" onerror="this.style.display='none'"><span>LION</span></div>
             <div class="sector s2"><img src="tiger.jpg" onerror="this.style.display='none'"><span>TIGER</span></div>
@@ -116,7 +127,14 @@
         let r = 0; 
         let spinning = false;
 
-        const config = [{min:30,max:100,w:1.5},{min:10,max:30,w:6.5},{min:5,max:15,w:12},{min:2,max:10,w:20},{min:0.5,max:5,w:25},{min:0.1,max:1,w:35}];
+        const conf = [
+            {min:30,max:100,w:1.5},
+            {min:10,max:30,w:6.5},
+            {min:5,max:15,w:12},
+            {min:2,max:10,w:20},
+            {min:0.5,max:5,w:25},
+            {min:0.1,max:1,w:35}
+        ];
 
         function updateUI() {
             document.getElementById('bal').innerText = Math.floor(b).toLocaleString();
@@ -127,24 +145,30 @@
         }
 
         window.addGold = (v) => { b += v; tIn += v; updateUI(); };
-        window.resetSys = () => { if(confirm("RESET?")){ b=1000; tIn=1000; tOut=0; updateUI(); } };
+        window.resetSys = () => { if(confirm("确定清空重置吗？")){ b=1000; tIn=1000; tOut=0; updateUI(); } };
         window.chgBet = (v) => { if(!spinning){ curBet = Math.max(1, Math.min(b, curBet + v)); updateUI(); } };
 
         function spin() {
             if(spinning || b < curBet) return;
-            spinning = true; b -= curBet; updateUI();
-            document.getElementById('res-win').innerText = "SPINNING...";
+            spinning = true;
+            b -= curBet;
+            updateUI();
             
-            let rtp = tOut / tIn;
-            let idx = (rtp >= 0.92) ? (Math.random() < 0.8 ? 5 : 4) : Math.floor(Math.random() * 6);
+            document.getElementById('res-win').innerText = "...";
+
+            // 控杀算法：水位 > 92% 时强制出 DOG/WOLF
+            let idx = (tOut/tIn >= 0.92) ? (Math.random() < 0.8 ? 5 : 4) : Math.floor(Math.random() * 6);
 
             r += (2160 + idx * 60);
             document.getElementById('wheel').style.transform = `rotate(-${r}deg)`;
 
             setTimeout(() => {
-                let m = (Math.random() * (config[idx].max - config[idx].min) + config[idx].min);
+                let m = (Math.random() * (conf[idx].max - conf[idx].min) + conf[idx].min);
                 let win = Math.floor(curBet * m);
-                b += win; tOut += win; updateUI();
+                b += win;
+                tOut += win;
+                updateUI();
+
                 document.getElementById('res-win').innerText = win > 0 ? "WIN: " + win : "LOST";
                 spinning = false;
             }, 4500);
