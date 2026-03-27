@@ -2,7 +2,128 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"><!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+    <title>TITAN_SLOT_V30005</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --gold: #ffcc00; --win: #00ff88; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #000; color: #fff; font-family: 'Arial Black', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: space-around; }
+
+        /* 🏆 黄金余额框 */
+        .header { background: rgba(0,0,0,0.8); border: 2px solid var(--gold); padding: 10px 40px; border-radius: 50px; box-shadow: 0 0 20px rgba(255,204,0,0.4); display: flex; align-items: center; gap: 15px; }
+        #balance { font-size: 40px; color: var(--gold); text-shadow: 0 0 10px gold; }
+
+        /* 🎡 核心转盘区 */
+        .slot-container {
+            width: 260px; height: 260px; background: radial-gradient(circle, #222, #000);
+            border: 10px solid #333; border-radius: 50%; position: relative;
+            display: flex; align-items: center; justify-content: center; overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,255,136,0.2);
+        }
+        .slot-reel {
+            font-size: 100px; transition: transform 0.5s cubic-bezier(0.45, 0.05, 0.55, 0.95);
+            display: flex; flex-direction: column; align-items: center;
+        }
+        /* 按钮悬浮在转盘中心 */
+        .spin-btn {
+            position: absolute; width: 100px; height: 100px; border-radius: 50%;
+            background: radial-gradient(circle, #00ff88, #006633); border: 4px solid #004422;
+            color: #fff; font-size: 20px; font-weight: 900; z-index: 100;
+            box-shadow: 0 8px 0 #003311, 0 10px 20px rgba(0,255,136,0.5); cursor: pointer;
+        }
+        .spin-btn:active { transform: translateY(4px); box-shadow: 0 4px 0 #003311; }
+
+        .footer { width: 90%; background: #1a1a1a; padding: 20px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .bet-box { display: flex; align-items: center; gap: 15px; font-size: 28px; }
+        .btn-mini { width: 45px; height: 45px; background: #444; color: #fff; border: none; border-radius: 10px; }
+        
+        /* 旋转动画 */
+        .spinning { animation: roll 0.1s linear infinite; }
+        @keyframes roll { from { transform: translateY(0); } to { transform: translateY(-100px); } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span style="font-size:30px">💰</span>
+        <div id="balance">0</div>
+    </div>
+
+    <div class="slot-container">
+        <button class="spin-btn" id="btn" onclick="startSpin()">SPIN</button>
+        <div class="slot-reel" id="reel">🐱</div>
+    </div>
+
+    <div class="footer">
+        <div class="bet-box">
+            <button class="btn-mini" onclick="changeBet(-10)">-</button>
+            <span id="bet-val">100</span>
+            <button class="btn-mini" onclick="changeBet(10)">+</button>
+        </div>
+        <div style="color:var(--win); font-size:22px;">WIN: <span id="win-amt">0</span></div>
+    </div>
+
+    <script>
+        const symbols = ['🐱', '🦅', '🐻', '🦁', '👑', '💎'];
+        const urlParams = new URLSearchParams(window.location.search);
+        let balance = parseInt(urlParams.get('balance')) || 5000;
+        let bet = 100;
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        document.getElementById('balance').innerText = balance.toLocaleString();
+
+        function changeBet(amt) {
+            if(bet + amt >= 10) bet += amt;
+            document.getElementById('bet-val').innerText = bet;
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
+        function startSpin() {
+            if(balance < bet) { tg.showAlert("余额不足！"); return; }
+            balance -= bet;
+            document.getElementById('balance').innerText = balance.toLocaleString();
+            
+            const reel = document.getElementById('reel');
+            const btn = document.getElementById('btn');
+            
+            // 1. 开始旋转效果
+            reel.classList.add('spinning');
+            btn.disabled = true;
+            tg.HapticFeedback.impactOccurred('heavy');
+
+            // 2. 模拟旋转 1.5 秒后停止
+            setTimeout(() => {
+                reel.classList.remove('spinning');
+                const winIndex = Math.floor(Math.random() * symbols.length);
+                const result = symbols[winIndex];
+                reel.innerText = result;
+                
+                // 3. 判断是否中奖 (抽中 💎 或 👑 翻倍)
+                let win = 0;
+                if(result === '💎') win = bet * 10;
+                else if(result === '👑') win = bet * 5;
+                else if(Math.random() > 0.6) win = bet * 2;
+
+                if(win > 0) {
+                    balance += win;
+                    document.getElementById('win-amt').innerText = win;
+                    tg.HapticFeedback.notificationOccurred('success');
+                } else {
+                    document.getElementById('win-amt').innerText = 0;
+                }
+                
+                document.getElementById('balance').innerText = balance.toLocaleString();
+                btn.disabled = false;
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
     <title>TITAN_JILI_V30000</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
