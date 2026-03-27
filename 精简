@@ -3,147 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>ULTIMATE_BET_V30018</title>
+    <title>TITAN_FULL_WHEEL_V30020</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { --gold: #ffcc00; --neon: #00ff88; }
-        * { box-sizing: border-box; }
         body { background: #000; color: #fff; font-family: 'Arial Black', sans-serif; height: 100vh; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-around; overflow: hidden; }
         
-        /* 🏆 黄金余额框 */
-        .header { 
-            border: 4px solid var(--gold); padding: 12px 50px; border-radius: 60px; 
-            background: #111; position: relative; overflow: hidden;
-            box-shadow: 0 0 30px rgba(255, 204, 0, 0.4);
-        }
-        #balance { font-size: 45px; color: var(--gold); text-shadow: 0 0 15px gold; font-weight: 900; }
+        .header { border: 4px solid var(--gold); padding: 12px 50px; border-radius: 60px; box-shadow: 0 0 30px gold; background: #111; }
+        #balance { font-size: 45px; color: var(--gold); text-shadow: 0 0 15px gold; }
 
-        /* 🎡 物理转盘 */
-        .wheel-container {
-            width: 290px; height: 290px; border: 10px solid #333; border-radius: 50%;
-            position: relative; display: flex; align-items: center; justify-content: center;
-            background: radial-gradient(circle, #222, #000);
+        /* 🎡 真正的实体转盘：带图案、带分隔线 */
+        .wheel-box {
+            width: 320px; height: 320px; border: 12px solid #333; border-radius: 50%;
+            position: relative; overflow: hidden;
             transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
+            background: conic-gradient(
+                #222 0deg 45deg, #111 45deg 90deg, #222 90deg 135deg, #111 135deg 180deg, 
+                #222 180deg 225deg, #111 225deg 270deg, #222 270deg 315deg, #111 315deg 360deg
+            );
         }
-        #symbol { font-size: 130px; z-index: 5; }
+        /* 转盘上的 8 个固定图案 */
+        .item {
+            position: absolute; width: 60px; height: 60px; font-size: 45px;
+            top: 50%; left: 50%; margin-top: -30px; margin-left: -30px;
+        }
+        /* 布局图案位置 */
+        .i1 { transform: rotate(0deg) translateY(-110px); }
+        .i2 { transform: rotate(45deg) translateY(-110px); }
+        .i3 { transform: rotate(90deg) translateY(-110px); }
+        .i4 { transform: rotate(135deg) translateY(-110px); }
+        .i5 { transform: rotate(180deg) translateY(-110px); }
+        .i6 { transform: rotate(225deg) translateY(-110px); }
+        .i7 { transform: rotate(270deg) translateY(-110px); }
+        .i8 { transform: rotate(315deg) translateY(-110px); }
 
-        /* 🟢 3D 启动按钮 */
+        /* 🔴 顶部的红色指针 */
+        .pointer {
+            position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent;
+            border-top: 40px solid #ff4400; z-index: 20; filter: drop-shadow(0 0 10px red);
+        }
+
         .spin-btn {
-            position: absolute; width: 100px; height: 100px; border-radius: 50%;
-            background: radial-gradient(circle, #00ff88, #006633); border: 5px solid #004422;
-            color: #fff; font-size: 22px; font-weight: 900; z-index: 100;
-            box-shadow: 0 10px 0 #003311, 0 15px 30px rgba(0,255,136,0.6); cursor: pointer;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 90px; height: 90px; border-radius: 50%; background: #00ff88;
+            border: 5px solid #004422; color: #000; font-weight: 900; z-index: 100;
+            box-shadow: 0 0 20px #00ff88; cursor: pointer;
         }
-        .spin-btn:active { transform: translateY(6px); box-shadow: 0 4px 0 #003311; }
 
-        /* 🎮 底部注码控制区 */
         .footer { width: 95%; background: #111; padding: 20px; border-radius: 30px; border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
-        
-        /* 注码加减按钮 */
-        .bet-ctrl { display: flex; align-items: center; gap: 10px; background: #222; padding: 5px 15px; border-radius: 20px; border: 1px solid #555; }
-        .btn-mini { width: 45px; height: 45px; background: #444; border: none; border-radius: 10px; color: #fff; font-size: 24px; font-weight: bold; cursor: pointer; }
-        .btn-mini:active { background: #666; }
-        #bet-val { font-size: 32px; color: var(--gold); min-width: 80px; text-align: center; }
-        #win-amt { color: var(--neon); font-size: 32px; font-weight: 900; }
+        .bet-ctrl { display: flex; align-items: center; gap: 10px; }
+        .btn-mini { width: 45px; height: 45px; background: #444; color: #fff; border-radius: 10px; font-size: 24px; border: none; }
+        #bet-val { font-size: 32px; color: var(--gold); min-width: 70px; text-align: center; }
+        #win-amt { color: var(--neon); font-size: 32px; font-weight: bold; }
     </style>
 </head>
-<body id="main-body">
+<body>
     <div class="header"><div id="balance">0</div></div>
 
     <div style="position:relative;">
-        <div class="wheel-container" id="wheel"><div id="symbol">🦁</div></div>
-        <button class="spin-btn" id="btn" onclick="ignite()">SPIN</button>
+        <div class="pointer"></div>
+        <div class="wheel-box" id="wheel">
+            <div class="item i1">🦁</div><div class="item i2">🐯</div>
+            <div class="item i3">💎</div><div class="item i4">💰</div>
+            <div class="item i5">👑</div><div class="item i6">7️⃣</div>
+            <div class="item i7">🦅</div><div class="item i8">🎰</div>
+        </div>
+        <button class="spin-btn" id="btn" onclick="go()">SPIN</button>
     </div>
 
     <div class="footer">
         <div class="bet-ctrl">
-            <button class="btn-mini" onclick="changeBet(-100)">-</button>
+            <button class="btn-mini" onclick="changeBet(-50)">-</button>
             <span id="bet-val">100</span>
-            <button class="btn-mini" onclick="changeBet(100)">+</button>
+            <button class="btn-mini" onclick="changeBet(50)">+</button>
         </div>
         <div id="win-amt">WIN: 0</div>
     </div>
 
     <script>
-        const symbols = ['🦁', '🐯', '💎', '7️⃣', '💰', '👑', '🦅', '🐻', '🎰'];
         const tg = window.Telegram.WebApp;
         tg.expand();
-
-        const urlParams = new URLSearchParams(window.location.search);
-        let balance = parseInt(urlParams.get('balance')) || 88888;
-        let bet = 100;
-
+        let balance = 89288; let bet = 100; let currentRotation = 0;
         document.getElementById('balance').innerText = balance.toLocaleString();
 
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSound(f, t, v, d) {
-            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-            o.type = t; o.frequency.value = f; g.gain.setValueAtTime(v, audioCtx.currentTime);
-            o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + d);
-        }
+        function changeBet(a) { if(bet+a >= 50){ bet+=a; document.getElementById('bet-val').innerText=bet; } }
 
-        // --- 加减注逻辑 ---
-        function changeBet(amt) {
-            if(bet + amt >= 10) { 
-                bet += amt; 
-                document.getElementById('bet-val').innerText = bet;
-                playSound(600, 'sine', 0.05, 0.05); // 调注码的叮叮声
-                tg.HapticFeedback.impactOccurred('light');
-            }
-        }
-
-        function ignite() {
-            if(balance < bet) { tg.showAlert("余额不足！请点击左上角秘密加分或联系管理员"); return; }
+        function go() {
+            if(balance < bet) { tg.showAlert("余额不足！"); return; }
             balance -= bet;
             document.getElementById('balance').innerText = balance.toLocaleString();
             document.getElementById('win-amt').innerText = "WIN: 0";
             
-            const wheel = document.getElementById('wheel');
-            const symbol = document.getElementById('symbol');
             const btn = document.getElementById('btn');
-            
+            const wheel = document.getElementById('wheel');
             btn.disabled = true;
+
+            // 核心逻辑：旋转 5 圈以上，并随机落在 8 个格子之一
+            const randomExtra = Math.floor(Math.random() * 360);
+            currentRotation += 1800 + randomExtra; 
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+            
             tg.HapticFeedback.impactOccurred('heavy');
-            playSound(120, 'square', 0.2, 0.4);
-
-            const deg = 1800 + Math.floor(Math.random() * 360);
-            wheel.style.transform = `rotate(${deg}deg)`;
-
-            let count = 0;
-            let timer = setInterval(() => {
-                symbol.innerText = symbols[Math.floor(Math.random() * symbols.length)];
-                playSound(300 + count * 10, 'sine', 0.05, 0.05);
-                count++;
-                if(count > 40) clearInterval(timer);
-            }, 80);
 
             setTimeout(() => {
-                const final = symbols[Math.floor(Math.random() * symbols.length)];
-                symbol.innerText = final;
-                
-                // 根据下注额翻倍
-                let win = (final === '💎' || final === '7️⃣') ? bet * 20 : (Math.random() > 0.8 ? bet * 5 : 0);
-                
+                // 简单判定逻辑（根据停下的角度判断中奖，简化为随机）
+                let win = Math.random() > 0.7 ? bet * 10 : 0;
                 if(win > 0) {
-                    playSound(880, 'triangle', 0.3, 0.2); 
-                    tg.HapticFeedback.notificationOccurred('success');
-                    
-                    let curWin = 0;
-                    let winTimer = setInterval(() => {
-                        curWin += Math.ceil(win / 15);
-                        if(curWin >= win) { curWin = win; clearInterval(winTimer); }
-                        document.getElementById('win-amt').innerText = "WIN: " + curWin;
-                    }, 40);
                     balance += win;
+                    document.getElementById('win-amt').innerText = "WIN: " + win;
+                    tg.HapticFeedback.notificationOccurred('success');
                 }
                 document.getElementById('balance').innerText = balance.toLocaleString();
                 btn.disabled = false;
-                
-                setTimeout(() => {
-                    wheel.style.transition = 'none';
-                    wheel.style.transform = 'rotate(0deg)';
-                    setTimeout(() => wheel.style.transition = 'transform 4s cubic-bezier(0.15, 0, 0.15, 1)', 50);
-                }, 400);
             }, 4000);
         }
     </script>
