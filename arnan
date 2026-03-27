@@ -28,3 +28,178 @@
             },60); }
     </script>
 </body>
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DOLA_旗舰终端_V45_修正布局版</title>
+    <style>
+        :root { --neon: #00f2ff; --pink: #ff0055; --gold: #ffcc00; }
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; padding: 0; background: #000; color: #fff; 
+            font-family: 'Arial Black', sans-serif; 
+            height: 100vh; width: 100vw; overflow: hidden;
+            background: url('https://img.freepik.com/free-vector/abstract-technology-particle-background_23-2148426649.jpg') no-repeat center center;
+            background-size: cover; position: relative;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        body::after {
+            content: ""; position: fixed; inset: 0;
+            background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.8) 100%);
+            pointer-events: none; z-index: 1; 
+        }
+
+        /* 顶部 HUD 容器 */
+        .hud-container {
+            width: 90%; margin-top: 20px; z-index: 100;
+            background: rgba(0,0,0,0.7); border: 2px solid var(--neon);
+            border-radius: 15px; padding: 15px; text-align: center;
+            backdrop-filter: blur(10px); box-shadow: 0 0 20px rgba(0,242,255,0.4);
+        }
+
+        .balance-row { font-size: 24px; color: var(--neon); text-shadow: 0 0 10px var(--neon); margin-bottom: 10px; }
+
+        .bet-row {
+            display: flex; align-items: center; justify-content: center; gap: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1); pt: 10px;
+        }
+
+        .bet-btn {
+            width: 45px; height: 45px; background: #111; border: 2px solid var(--gold);
+            color: var(--gold); border-radius: 10px; font-size: 24px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: 0.2s;
+        }
+        .bet-btn:active { transform: scale(0.9); background: var(--gold); color: #000; }
+
+        .bet-val { font-size: 22px; color: var(--gold); min-width: 100px; font-weight: 900; }
+
+        /* 转盘容器：恢复大尺寸 */
+        .wheel-box { 
+            margin-top: 40px; position: relative; z-index: 50; 
+            width: 320px; height: 320px;
+        }
+
+        .wheel { 
+            width: 320px; height: 320px; border-radius: 50%; border: 8px solid #111;
+            background: conic-gradient(from 0deg, #ff0055 0 60deg, #1a1a1a 60deg 120deg, #00f2ff 120deg 180deg, #1a1a1a 180deg 240deg, #ffcc00 240deg 300deg, #1a1a1a 300deg 360deg);
+            box-shadow: 0 0 60px rgba(0,0,0,0.9), 0 0 30px var(--neon);
+            transition: transform 4s cubic-bezier(0.1, 0, 0.1, 1);
+            display: flex; align-items: center; justify-content: center; position: relative;
+        }
+
+        .item { position: absolute; font-size: 32px; }
+        .i1 { transform: rotate(30deg) translateY(-120px); } 
+        .i2 { transform: rotate(90deg) translateY(-120px); } 
+        .i3 { transform: rotate(150deg) translateY(-120px); } 
+        .i4 { transform: rotate(210deg) translateY(-120px); } 
+        .i5 { transform: rotate(270deg) translateY(-120px); } 
+        .i6 { transform: rotate(330deg) translateY(-120px); }
+
+        .spin-btn { 
+            position: absolute; width: 75px; height: 75px; background: #000; 
+            border: 4px solid var(--pink); border-radius: 50%; 
+            color: #fff; font-size: 18px; font-weight: bold; cursor: pointer; z-index: 60; 
+            display: flex; align-items: center; justify-content: center; 
+            box-shadow: 0 0 25px var(--pink); 
+        }
+
+        .pointer { 
+            position: absolute; top: -20px; left: 50%; transform: translateX(-50%); 
+            width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; 
+            border-top: 35px solid #fff; z-index: 70; filter: drop-shadow(0 0 15px var(--neon));
+        }
+
+        .ovl { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 200; }
+    </style>
+</head>
+<body>
+    <div class="hud-container">
+        <div class="balance-row">BALANCE: <b id="bal">1,000</b></div>
+        <div class="bet-row">
+            <button class="bet-btn" onclick="changeBet(-50)">-</button>
+            <div class="bet-val">BET: <span id="bet">50</span></div>
+            <button class="bet-btn" onclick="changeBet(50)">+</button>
+        </div>
+    </div>
+
+    <div class="wheel-box">
+        <div class="pointer"></div>
+        <div class="wheel" id="wheel">
+            <div class="item i1">💎</div><div class="item i2">💀</div><div class="item i3">💰</div><div class="item i4">💀</div><div class="item i5">🎁</div><div class="item i6">💀</div>
+            <div class="spin-btn" id="spin-btn" onclick="spin()">SPIN</div>
+        </div>
+    </div>
+
+    <div class="ovl" id="ovl">
+        <div id="res-txt" style="font-size:50px; font-weight:900; text-shadow: 0 0 20px #fff;"></div>
+        <button style="margin-top:40px; padding:15px 40px; background:var(--neon); border:none; border-radius:10px; font-size:20px; font-weight:bold; color:#000;" onclick="closeOvl()">CONTINUE</button>
+    </div>
+
+    <script>
+        let b = parseFloat(localStorage.getItem('user_gold') || '1000'); 
+        let currentBet = 50; 
+        let r = 0;
+        let spinning = false;
+
+        function updateUI() {
+            document.getElementById('bal').innerText = Math.floor(b).toLocaleString();
+            document.getElementById('bet').innerText = currentBet;
+            localStorage.setItem('user_gold', b.toString());
+        }
+
+        window.changeBet = (val) => {
+            if (spinning) return;
+            let nextBet = currentBet + val;
+            if (nextBet < 50) nextBet = 50; // 最小下注 50
+            if (nextBet > b) nextBet = Math.max(50, Math.floor(b)); 
+            currentBet = nextBet;
+            updateUI();
+        };
+
+        updateUI();
+
+        function spin() { 
+            if (spinning) return;
+            if (b < currentBet) return alert('余额不足！请同步额度'); 
+
+            spinning = true;
+            b -= currentBet; 
+            updateUI(); 
+
+            let add = 1800 + Math.floor(Math.random() * 360); 
+            r += add; 
+            document.getElementById('wheel').style.transform = "rotate(" + r + "deg)";
+
+            setTimeout(() => { 
+                let prizePool = [10, 0, 2, 0, 5, 0]; // 对应奖项倍率
+                let m = prizePool[Math.floor(Math.random() * 6)]; 
+                let win = currentBet * m;
+                b += win; 
+                updateUI(); 
+
+                document.getElementById('ovl').style.display = 'flex'; 
+                document.getElementById('res-txt').innerText = win > 0 ? "WIN: " + win : "LOSE"; 
+                document.getElementById('res-txt').style.color = win > 0 ? '#00f2ff' : '#ff0055'; 
+                spinning = false;
+            }, 4000); 
+        }
+
+        window.closeOvl = () => { document.getElementById('ovl').style.display = 'none'; };
+
+        // 充值同步
+        window.syncGold = (n) => { b += n; updateUI(); };
+    </script>
+</body>
+</html>
