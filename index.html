@@ -1,129 +1,121 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>TITAN_ULTIMATE_V30010</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <title>TITAN_V30011</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { --gold: #ffcc00; --win: #00ff88; }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #000; color: #fff; font-family: 'Arial Black', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: space-around; }
+        body { background: #000; color: #fff; font-family: sans-serif; height: 100vh; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-around; overflow: hidden; }
         
-        /* 🏆 黄金流光余额框 */
-        .header { background: rgba(0,0,0,0.9); border: 3px solid var(--gold); padding: 12px 50px; border-radius: 50px; box-shadow: 0 0 35px rgba(255,204,0,0.6); position: relative; overflow: hidden; }
-        .header::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent); animation: shine 3s infinite; }
-        @keyframes shine { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-        #balance { font-size: 48px; color: var(--gold); text-shadow: 0 0 15px gold; font-weight: 900; }
+        /* 🏆 黄金余额框 */
+        .header { border: 3px solid var(--gold); padding: 10px 40px; border-radius: 50px; box-shadow: 0 0 20px var(--gold); background: rgba(255,204,0,0.1); }
+        #balance { font-size: 42px; color: var(--gold); font-weight: 900; }
 
-        /* 🎡 极速旋转窗口 */
-        .slot-window {
-            width: 290px; height: 290px; background: radial-gradient(circle, #222, #000);
-            border: 12px solid #333; border-radius: 50%; position: relative;
-            display: flex; align-items: center; justify-content: center; overflow: hidden;
-            box-shadow: 0 0 80px rgba(0,255,136,0.5);
-        }
-        #reel { font-size: 140px; transition: 0.05s; z-index: 1; }
-        .blur-effect { filter: blur(20px) brightness(1.5); transform: scale(0.8); }
-
-        /* 🟢 3D 旗舰绿色大按钮 */
-        .spin-btn {
-            position: absolute; width: 115px; height: 115px; border-radius: 50%;
-            background: radial-gradient(circle, #00ff88, #006633); border: 6px solid #004422;
-            color: #fff; font-size: 26px; font-weight: 900; z-index: 100;
-            box-shadow: 0 12px 0 #003311, 0 15px 40px rgba(0,255,136,0.8); cursor: pointer;
+        /* 🎡 真正的黄金大转盘 */
+        .wheel-container {
+            width: 280px; height: 280px; border: 15px solid #333; border-radius: 50%;
+            position: relative; background: conic-gradient(#333 0deg 60deg, #111 60deg 120deg, #333 120deg 180deg, #111 180deg 240deg, #333 240deg 300deg, #111 300deg 360deg);
             display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 50px rgba(255,204,0,0.3); transition: transform 3s cubic-bezier(0.15, 0, 0.15, 1);
         }
-        .spin-btn:active { transform: translateY(8px); box-shadow: 0 4px 0 #003311; }
-        .spin-btn:disabled { opacity: 0.6; filter: grayscale(1); }
+        #symbol { font-size: 100px; z-index: 5; transition: 0.2s; }
 
-        /* 底部控制台 */
-        .footer { width: 95%; background: #111; padding: 25px; border-radius: 25px; border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 0 20px #000; }
-        #win-amt { color: var(--win); font-size: 35px; font-weight: 900; text-shadow: 0 0 15px #00ff88; }
+        /* 🟢 3D 启动按钮 */
+        .spin-btn {
+            position: absolute; width: 100px; height: 100px; border-radius: 50%;
+            background: radial-gradient(circle, #00ff88, #006633); border: 4px solid #004422;
+            color: #fff; font-size: 20px; font-weight: 900; z-index: 10;
+            box-shadow: 0 8px 0 #003311, 0 10px 20px rgba(0,255,136,0.5); cursor: pointer;
+        }
+        .spin-btn:active { transform: translateY(4px); box-shadow: 0 4px 0 #003311; }
+
+        .footer { width: 90%; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #333; padding-top: 20px; }
+        #win-amt { color: var(--win); font-size: 30px; font-weight: bold; }
     </style>
 </head>
 <body>
-    <!-- 🔊 这里的音效链接经过筛选，确保稳定 -->
-    <audio id="bgm" src="https://www.soundjay.com/free-music/iron-man-1.mp3" loop>
-    <audio id="spin-sound" src="https://www.soundjay.com/mechanical/mechanical-clanking-1.mp3">
-    <audio id="win-sound" src="https://www.soundjay.com/misc/coins-spilled-1.mp3">
+    <div class="header"><div id="balance">加载中...</div></div>
 
-    <div class="header">
-        <div id="balance">加载中...</div>
-    </div>
-
-    <div class="slot-window">
-        <button class="spin-btn" id="btn" onclick="startRolling()">SPIN</button>
-        <div id="reel">🦁</div>
+    <div style="position:relative;">
+        <div class="wheel-container" id="wheel"><div id="symbol">💰</div></div>
+        <button class="spin-btn" id="btn" onclick="go()">SPIN</button>
     </div>
 
     <div class="footer">
-        <div style="font-size:26px; color:#777;">BET: <span style="color:var(--gold)">100</span></div>
+        <div style="font-size:24px; color:#555;">BET: <span style="color:var(--gold)">100</span></div>
         <div id="win-amt">WIN: 0</div>
     </div>
 
     <script>
-        const symbols = ['🦁', '🐯', '🐻', '🦅', '💎', '7️⃣', '💰', '👑'];
+        const symbols = ['🦁', '🐯', '💎', '7️⃣', '💰', '👑', '🦅', '🐻'];
         const tg = window.Telegram.WebApp;
         tg.expand();
 
         const urlParams = new URLSearchParams(window.location.search);
         let balance = parseInt(urlParams.get('balance')) || 8888;
-        let isFirst = true;
-
         document.getElementById('balance').innerText = balance.toLocaleString();
 
-        function startRolling() {
-            if(balance < 100) { tg.showAlert("余额不足！请联系客服充值"); return; }
-            
-            // 第一次点击：激活所有音频并开启背景低音炮
-            if(isFirst) { 
-                const bgm = document.getElementById('bgm');
-                bgm.play().catch(e => console.log("Audio ready")); 
-                isFirst = false; 
-            }
-            
+        // 🔊 暴力蜂鸣音效：不需要外部链接，必响！
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(freq, type, dur) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = type; osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(); osc.stop(ctx.currentTime + dur);
+        }
+
+        function go() {
+            if(balance < 100) { tg.showAlert("余额不足"); return; }
             balance -= 100;
             document.getElementById('balance').innerText = balance.toLocaleString();
             document.getElementById('win-amt').innerText = "WIN: 0";
             
-            const reel = document.getElementById('reel');
+            const wheel = document.getElementById('wheel');
+            const symbol = document.getElementById('symbol');
             const btn = document.getElementById('btn');
-            const spinSnd = document.getElementById('spin-sound');
             
+            // 1. 转盘飞速旋转动画
+            const rotateDeg = 1800 + Math.random() * 360; 
+            wheel.style.transform = `rotate(${rotateDeg}deg)`;
             btn.disabled = true;
-            spinSnd.currentTime = 0;
-            spinSnd.play();
+            
+            // 2. 模拟重低音蜂鸣
+            playSound(150, 'square', 0.5); 
             tg.HapticFeedback.impactOccurred('heavy');
 
-            // --- 真正的极速残影旋转逻辑 ---
-            let counter = 0;
-            let rollInterval = setInterval(() => {
-                reel.innerText = symbols[Math.floor(Math.random() * symbols.length)];
-                reel.classList.add('blur-effect');
-                counter++;
-                
-                if (counter > 30) { // 增加到30次，旋转更持久
-                    clearInterval(rollInterval);
-                    reel.classList.remove('blur-effect');
-                    const result = symbols[Math.floor(Math.random() * symbols.length)];
-                    reel.innerText = result;
-                    
-                    let win = 0;
-                    if(result === '💎') win = 3000;
-                    else if(result === '7️⃣') win = 1500;
-                    else if(Math.random() > 0.7) win = 300;
+            // 3. 旋转过程中不断换图标
+            let i = 0;
+            let timer = setInterval(() => {
+                symbol.innerText = symbols[Math.floor(Math.random() * symbols.length)];
+                playSound(300 + i*10, 'sine', 0.05); // 叮叮叮的机械声
+                i++;
+                if(i > 30) clearInterval(timer);
+            }, 100);
 
-                    if(win > 0) {
-                        balance += win;
-                        document.getElementById('win-amt').innerText = "WIN: " + win;
-                        document.getElementById('win-sound').play();
-                        tg.HapticFeedback.notificationOccurred('success');
-                    }
-                    document.getElementById('balance').innerText = balance.toLocaleString();
-                    btn.disabled = false;
+            // 4. 停止并判定
+            setTimeout(() => {
+                const res = symbols[Math.floor(Math.random() * symbols.length)];
+                symbol.innerText = res;
+                symbol.style.transform = "scale(1.5)";
+                setTimeout(() => symbol.style.transform = "scale(1)", 200);
+
+                let win = (res === '💎' || res === '👑') ? 2000 : (Math.random() > 0.8 ? 500 : 0);
+                if(win > 0) {
+                    balance += win;
+                    document.getElementById('win-amt').innerText = "WIN: " + win;
+                    playSound(800, 'triangle', 0.3); // 中奖喜报声
+                    tg.HapticFeedback.notificationOccurred('success');
                 }
-            }, 45); // 45毫秒，极速闪烁，肉眼只能看到残影
+                document.getElementById('balance').innerText = balance.toLocaleString();
+                btn.disabled = false;
+                wheel.style.transition = 'none'; // 重置转盘
+                wheel.style.transform = 'rotate(0deg)';
+                setTimeout(() => wheel.style.transition = 'transform 3s cubic-bezier(0.15, 0, 0.15, 1)', 50);
+            }, 3000);
         }
     </script>
 </body>
