@@ -3,177 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-    <title>五兽至尊_V9000_REBORN</title>
+    <title>五兽至尊_V10000_CORE_PROTOCOL</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --c: #00f2ff; --p: #ff0055; --g: #ffcc00; }
+        :root { --c-neon: #00f2ff; --c-warn: #ff0055; --c-gold: #ffcc00; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         
-        body { background: #000; color: #fff; font-family: system-ui, -apple-system, sans-serif; height: 100vh; overflow: hidden; }
+        body { background: #000; color: #fff; font-family: 'JetBrains Mono', monospace; height: 100vh; overflow: hidden; }
 
-        /* 背景流光：极速感 */
-        #bgCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+        /* 全屏时空隧道 */
+        #fxCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
 
-        .ui-root { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 40px 0; }
+        .app-container { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 40px 10px; }
 
-        /* 顶部余额：发光卡片 */
-        .header-bal {
-            background: rgba(255,255,255,0.05); border: 1px solid var(--c);
-            padding: 10px 40px; border-radius: 50px; backdrop-filter: blur(15px);
-            box-shadow: 0 0 20px var(--c);
-        }
-        .bal-val { font-size: 50px; font-weight: 900; text-shadow: 0 0 10px var(--c); }
+        /* 顶部：精密数据面板 */
+        .data-header { width: 90%; display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid rgba(0,242,255,0.3); padding-bottom: 10px; }
+        .bal-group .label { font-size: 10px; color: var(--c-neon); letter-spacing: 2px; }
+        .bal-group .val { font-size: 44px; font-weight: 900; text-shadow: 0 0 15px var(--c-neon); }
+        .stat-group { text-align: right; font-size: 12px; color: #666; }
 
-        /* 核心转盘区 */
-        .wheel-container { position: relative; width: 85vw; max-width: 380px; aspect-ratio: 1/1; }
+        /* 核心区：三层联动矩阵 */
+        .matrix-stage { position: relative; width: 95vw; max-width: 420px; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; }
         
-        /* 激光指针 */
-        .pointer-laser { 
-            position: absolute; top: -10px; left: 50%; transform: translateX(-50%); 
-            width: 2px; height: 60px; background: #fff; box-shadow: 0 0 15px var(--c), 0 0 30px var(--c); z-index: 20; 
+        /* 激光刻度指针 */
+        .scanner-line { position: absolute; top: 0; width: 1px; height: 100%; background: linear-gradient(to bottom, transparent, var(--c-warn), transparent); z-index: 50; animation: scan 4s linear infinite; }
+        @keyframes scan { 0% { left: 45%; opacity:0; } 50% { left: 50%; opacity:1; } 100% { left: 55%; opacity:0; } }
+
+        .disk-outer { position: absolute; inset: 0; border: 1px solid rgba(255,255,255,0.05); border-radius: 50%; transition: 6s cubic-bezier(0.1, 0, 0, 1); }
+        .disk-mid { position: absolute; inset: 15%; border-radius: 50%; background: radial-gradient(circle, #111, #000); border: 2px solid #222; transition: 6.5s cubic-bezier(0.15, 0, 0.05, 1); }
+
+        /* 倍率浮动标签 */
+        .mult-tag { position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 2%; font-size: 14px; color: var(--c-gold); font-weight: 900; }
+        .icon-node { position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 18%; }
+        .icon-node b { font-size: 70px; filter: drop-shadow(0 0 15px #000); transition: 0.3s; }
+
+        /* 核心启动钮 */
+        .igniter {
+            position: absolute; width: 100px; height: 100px; border-radius: 50%;
+            background: #000; border: 2px solid var(--c-warn);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; z-index: 100; box-shadow: 0 0 30px rgba(255,0,85,0.3);
         }
+        .igniter .btn-text { font-size: 20px; font-weight: 900; color: var(--c-warn); }
+        .igniter .sub-text { font-size: 8px; color: #666; margin-top: 4px; }
 
-        .main-disc {
-            width: 100%; height: 100%; border-radius: 50%;
-            background: radial-gradient(circle, #111 0%, #000 80%);
-            border: 2px solid rgba(255,255,255,0.1);
-            position: relative; transition: transform 6s cubic-bezier(0.1, 0, 0, 1);
-            overflow: hidden;
-        }
+        /* 底部：能量控制台 */
+        .control-deck { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        
+        /* 能量条 */
+        .energy-bar-wrap { width: 80%; height: 4px; background: #111; border-radius: 2px; overflow: hidden; position: relative; }
+        #energy-fill { width: 10%; height: 100%; background: var(--c-neon); box-shadow: 0 0 10px var(--c-neon); transition: 0.3s; }
 
-        .sector { position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: flex-end; padding-right: 8%; transform-origin: center; }
-        .sector b { font-size: 75px; transform: rotate(90deg); filter: drop-shadow(0 0 10px rgba(255,255,255,0.3)); transition: 0.3s; }
+        .bet-interface { display: flex; align-items: center; gap: 40px; }
+        .op-btn { font-size: 40px; font-weight: 100; color: var(--c-neon); cursor: pointer; opacity: 0.5; transition: 0.2s; }
+        .op-btn:active { transform: scale(0.8); opacity: 1; }
+        .bet-input-val { font-size: 54px; font-weight: 900; color: #fff; min-width: 130px; text-align: center; font-family: monospace; }
+        
+        #console-log { font-size: 16px; color: var(--c-gold); font-weight: 900; height: 20px; text-transform: uppercase; letter-spacing: 2px; }
 
-        /* 启动按钮：确保 100% 响应 */
-        .btn-run {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 90px; height: 90px; border-radius: 50%; background: #000;
-            border: 3px solid var(--p); color: var(--p); font-size: 22px; font-weight: 900;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 30px var(--p); cursor: pointer; z-index: 100;
-            transition: transform 0.1s;
-        }
-        .btn-run:active { transform: translate(-50%, -50%) scale(0.85); box-shadow: 0 0 10px var(--p); }
-
-        /* 底部控制台 */
-        .console-box { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; }
-        .bet-ctrl { display: flex; align-items: center; gap: 50px; background: rgba(255,255,255,0.05); padding: 5px 30px; border-radius: 40px; }
-        .adj { font-size: 50px; font-weight: 900; color: #fff; cursor: pointer; padding: 0 10px; opacity: 0.6; }
-        .adj:active { transform: scale(0.8); opacity: 1; color: var(--c); }
-        .bet-num { font-size: 60px; font-weight: 900; min-width: 100px; text-align: center; }
-        #status-msg { font-size: 24px; font-weight: 900; color: var(--g); letter-spacing: 2px; height: 30px; }
+        /* 屏幕抖动类 */
+        .shake { animation: shake-act 0.1s infinite; }
+        @keyframes shake-act { 0% { transform: translate(2px, 2px); } 50% { transform: translate(-2px, -2px); } 100% { transform: translate(1px, -1px); } }
     </style>
 </head>
-<body>
+<body onclick="initSystem()">
 
-    <canvas id="bgCanvas"></canvas>
+    <canvas id="fxCanvas"></canvas>
 
-    <div class="ui-root">
-        <div class="header-bal">
-            <div class="bal-val" id="bal">1,000</div>
-        </div>
-
-        <div class="wheel-container">
-            <div class="pointer-laser"></div>
-            <div id="wheel" class="main-disc">
-                <div class="sector" style="transform:rotate(-90deg)"><b>👑</b></div>
-                <div class="sector" style="transform:rotate(-30deg)"><b>🦁</b></div>
-                <div class="sector" style="transform:rotate(30deg)"><b>🐯</b></div>
-                <div class="sector" style="transform:rotate(90deg)"><b>🦅</b></div>
-                <div class="sector" style="transform:rotate(150deg)"><b>🐺</b></div>
-                <div class="sector" style="transform:rotate(210deg)"><b>🐕</b></div>
+    <div class="app-container" id="main-view">
+        <div class="data-header">
+            <div class="bal-group">
+                <div class="label">SECURE BALANCE</div>
+                <div class="val" id="bal-ui">1,000</div>
             </div>
-            <div class="btn-run" id="run-btn">RUN</div>
+            <div class="stat-group">
+                <div>SYSTEM: ACTIVE</div>
+                <div id="mult-status">MOD: STABLE</div>
+            </div>
         </div>
 
-        <div class="console-box">
-            <div id="status-msg">READY</div>
-            <div class="bet-ctrl">
-                <div class="adj" id="minus">-</div>
-                <div class="bet-num" id="bet-ui">1</div>
-                <div class="adj" id="plus">+</div>
+        <div class="matrix-stage">
+            <div class="scanner-line"></div>
+            <!-- 外层：倍率阵列 -->
+            <div id="disk-o" class="disk-outer"></div>
+            <!-- 中层：神兽阵列 -->
+            <div id="disk-m" class="disk-mid"></div>
+            <!-- 启动核心 -->
+            <div class="igniter" onclick="ignite()">
+                <div class="btn-text">RUN</div>
+                <div class="sub-text">INITIATE</div>
+            </div>
+        </div>
+
+        <div class="control-deck">
+            <div id="console-log">STANDBY</div>
+            <div class="energy-bar-wrap"><div id="energy-fill"></div></div>
+            <div class="bet-interface">
+                <div class="op-btn" onclick="adj(-10)">-</div>
+                <div class="bet-input-val" id="bet-ui">1</div>
+                <div class="op-btn" onclick="adj(10)">+</div>
             </div>
         </div>
     </div>
 
     <script>
-        // 核心变量
         const tg = window.Telegram.WebApp; tg.expand();
-        let bal = 1000, bet = 1, r = 0, spinning = false;
-        
-        // 获取DOM
-        const wheel = document.getElementById('wheel');
-        const balTxt = document.getElementById('bal');
-        const betTxt = document.getElementById('bet-ui');
-        const msgTxt = document.getElementById('status-msg');
-        const canvas = document.getElementById('bgCanvas');
-        const ctx = canvas.getContext('2d');
+        let bal = 1000, bet = 1, rO = 0, rM = 0, busy = false, ctx, stars = [];
+        const icons = ['👑','🦁','🐯','🦅','🐺','🐕'];
+        let currentMults = [88, 50, 20, 10, 5, 2];
 
-        // 初始化背景
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        let particles = [];
-        for(let i=0; i<60; i++) particles.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height, v: Math.random()*5+2, l: Math.random()*30});
-
-        function animate() {
-            ctx.fillStyle = 'rgba(0,0,0,0.2)';
-            ctx.fillRect(0,0,canvas.width, canvas.height);
-            particles.forEach(p => {
-                p.y += spinning ? p.v * 15 : p.v;
-                if(p.y > canvas.height) p.y = -50;
-                ctx.strokeStyle = spinning ? '#ff0055' : '#00f2ff';
-                ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x, p.y + p.l); ctx.stroke();
-            });
-            requestAnimationFrame(animate);
-        }
-        animate();
-
-        // 绑定事件：采用最基础的 click，确保 100% 响应
-        document.getElementById('plus').onclick = () => {
-            if(spinning) return;
-            bet = Math.min(bal, bet + 10);
-            betTxt.innerText = bet;
-            tg.HapticFeedback.selectionChanged();
-        };
-
-        document.getElementById('minus').onclick = () => {
-            if(spinning) return;
-            bet = Math.max(1, bet - 10);
-            betTxt.innerText = bet;
-            tg.HapticFeedback.selectionChanged();
-        };
-
-        document.getElementById('run-btn').onclick = () => {
-            if(spinning || bal < bet) return;
+        function initSystem() {
+            if(ctx) return;
+            const cvs = document.getElementById('fxCanvas');
+            ctx = cvs.getContext('2d');
+            cvs.width = window.innerWidth; cvs.height = window.innerHeight;
+            for(let i=0; i<150; i++) stars.push({x:Math.random()*cvs.width, y:Math.random()*cvs.height, z:Math.random()*cvs.width});
             
-            spinning = true;
-            bal -= bet;
-            balTxt.innerText = bal.toLocaleString();
-            msgTxt.innerText = "SPEEDING...";
+            // 注入多重矩阵
+            const dO = document.getElementById('disk-o');
+            const dM = document.getElementById('disk-m');
+            icons.forEach((icon, i) => {
+                const ang = i * 60;
+                // 外层倍率
+                const mNode = document.createElement('div');
+                mNode.className = 'mult-tag'; mNode.style.transform = `rotate(${ang}deg)`;
+                mNode.innerHTML = `<span id="m-${i}">x${currentMults[i]}</span>`;
+                dO.appendChild(mNode);
+                // 中层神兽
+                const iNode = document.createElement('div');
+                iNode.className = 'icon-node'; iNode.style.transform = `rotate(${ang}deg)`;
+                iNode.innerHTML = `<b>${icon}</b>`;
+                dM.appendChild(iNode);
+            });
+            draw();
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(0,0,ctx.canvas.width, ctx.canvas.height);
+            stars.forEach(s => {
+                s.z -= busy ? 25 : 2;
+                if(s.z <= 0) s.z = ctx.canvas.width;
+                const px = (s.x - ctx.canvas.width/2) * (ctx.canvas.width/s.z) + ctx.canvas.width/2;
+                const py = (s.y - ctx.canvas.height/2) * (ctx.canvas.width/s.z) + ctx.canvas.height/2;
+                ctx.fillStyle = busy ? `hsl(${Date.now()%360}, 100%, 50%)` : '#333';
+                ctx.fillRect(px, py, 2, 2);
+            });
+            requestAnimationFrame(draw);
+        }
+
+        function adj(v) {
+            if(busy) return;
+            bet = Math.max(1, Math.min(bal, bet + v));
+            document.getElementById('bet-ui').innerText = bet;
+            document.getElementById('energy-fill').style.width = Math.min(100, (bet/bal)*200) + '%';
+            tg.HapticFeedback.selectionChanged();
+        }
+
+        function ignite() {
+            if(busy || bal < bet) return;
+            busy = true; bal -= bet;
+            document.getElementById('bal-ui').innerText = bal.toLocaleString();
+            document.getElementById('main-view').classList.add('shake');
+            document.getElementById('console-log').innerText = "WARMING UP...";
             tg.HapticFeedback.impactOccurred('heavy');
 
-            // 旋转逻辑
-            let targetIdx = Math.floor(Math.random()*6);
-            r += (3600 + targetIdx * 60);
-            wheel.style.transform = `rotate(-${r}deg)`;
-
-            // 结果结算
+            // 1.5秒预热后开始正式旋转
             setTimeout(() => {
-                const multi = [88, 15, 10, 5, 2, 0];
-                let win = Math.floor(bet * multi[targetIdx]);
-                bal += win;
-                balTxt.innerText = bal.toLocaleString();
+                document.getElementById('main-view').classList.remove('shake');
+                document.getElementById('console-log').innerText = "VORTEX ACTIVE";
                 
-                if(win > 0) {
-                    msgTxt.innerText = "VICTORY: +" + win;
-                    tg.HapticFeedback.notificationOccurred('success');
-                } else {
-                    msgTxt.innerText = "FAILED";
-                }
-                spinning = false;
-            }, 6000);
-        };
+                // 随机化本次倍率
+                currentMults = currentMults.map(() => Math.floor(Math.random()*100) + 2);
+                currentMults.forEach((m, i) => document.getElementById(`m-${i}`).innerText = 'x' + m);
+
+                let target = Math.floor(Math.random()*6);
+                rO += (3600 + target*60);
+                rM += (7200 + target*60); // 中层转得更快
+
+                document.getElementById('disk-o').style.transform = `rotate(-${rO}deg)`;
+                document.getElementById('disk-m').style.transform = `rotate(-${rM}deg)`;
+                
+                // 图标补偿自转
+                document.querySelectorAll('.icon-node b').forEach(b => b.style.transform = `rotate(${rM}deg)`);
+
+                setTimeout(() => {
+                    let win = bet * currentMults[target];
+                    bal += win;
+                    document.getElementById('bal-ui').innerText = bal.toLocaleString();
+                    document.getElementById('console-log').innerText = win > 0 ? `SUCCESS: +${win}` : "NULL DATA";
+                    tg.HapticFeedback.notificationOccurred(win > 0 ? 'success' : 'error');
+                    busy = false;
+                }, 7000);
+            }, 1500);
+        }
     </script>
 </body>
 </html>
