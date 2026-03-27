@@ -3,93 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-    <title>JILI_STYLE_V29000</title>
+    <title>JILI_TITAN_V30000</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --neon: #00f2ff; --pink: #ff0055; --gold: #ffcc00; --panel: #1a1a1a; }
+        :root { --neon: #00f2ff; --green: #00ff88; --dark-green: #006633; --pink: #ff0055; --gold: #ffcc00; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin:0; padding:0; }
         body { background: #000; color: #fff; font-family: 'Arial Black', sans-serif; height: 100vh; overflow: hidden; }
 
-        /* 背景：原子聚变流光 */
-        #fx-canvas { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+        /* 背景：炫彩流光粒子（图3同款） */
+        #bg-canvas { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
 
-        .ui-main { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 30px 0; }
+        .ui-root { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
 
-        /* 1. 复刻：3D发光余额 */
-        .bal-display {
-            background: linear-gradient(180deg, #333, #000); 
-            border: 3px solid var(--neon); padding: 10px 60px; border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.8), 0 0 30px var(--neon);
-            display: flex; align-items: center; gap: 15px;
-        }
-        .bal-val { font-size: 60px; font-weight: 900; text-shadow: 0 0 15px var(--neon); color: #fff; }
+        /* 1. 顶部：钻石发光余额 (JILI风格) */
+        .header { margin-top: 40px; background: linear-gradient(180deg, #333, #000); border: 2.5px solid var(--neon); padding: 12px 60px; border-radius: 15px; box-shadow: 0 0 35px var(--neon), inset 0 0 10px var(--neon); display: flex; align-items: center; gap: 15px; }
+        .bal-val { font-size: 60px; font-weight: 900; text-shadow: 0 0 15px var(--neon); }
 
-        /* 2. 复刻：JILI 风格实体转盘 */
-        .stage { position: relative; width: 88vw; max-width: 400px; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; }
-        .needle { position: absolute; top: -10px; width: 6px; height: 60px; background: #fff; box-shadow: 0 0 20px #fff; z-index: 100; border-radius: 3px; }
+        /* 2. 核心：突出转盘与 3D SPIN 按钮 */
+        .stage { position: relative; width: 90vw; max-width: 420px; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; }
+        .needle { position: absolute; top: -10px; width: 6px; height: 65px; background: #fff; box-shadow: 0 0 25px #fff; z-index: 100; border-radius: 3px; }
 
-        .disk-core {
+        .disk {
             width: 100%; height: 100%; border-radius: 50%;
-            background: radial-gradient(circle, #333 0%, #000 70%);
+            background: radial-gradient(circle, #333 0%, #000 75%);
             border: 5px solid #444; position: relative; overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.9), inset 0 0 80px rgba(0,242,255,0.2);
-            transition: transform 6s cubic-bezier(0.1, 0, 0, 1);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.9), inset 0 0 100px rgba(0,242,255,0.15);
+            transition: transform 6.5s cubic-bezier(0.1, 0, 0, 1);
         }
         .item { position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transform-origin: center; }
-        .item b { position: absolute; top: 10%; font-size: 85px; filter: drop-shadow(0 5px 10px #000); }
+        .item b { position: absolute; top: 11%; font-size: 88px; filter: drop-shadow(0 8px 15px #000); }
 
-        /* 核心：JILI 风格 3D SPIN 按钮 */
+        /* JILI 级 3D 机械按钮 */
         .spin-btn {
-            position: absolute; width: 120px; height: 120px; border-radius: 50%;
-            background: linear-gradient(180deg, #00ff88 0%, #006633 100%);
-            border: 6px solid #004422; color: #fff; font-size: 24px; font-weight: 900;
+            position: absolute; width: 125px; height: 125px; border-radius: 50%;
+            background: linear-gradient(180deg, var(--green) 0%, var(--dark-green) 100%);
+            border: 6px solid #004422; color: #fff; font-size: 26px; font-weight: 900;
             display: flex; align-items: center; justify-content: center; z-index: 200;
-            box-shadow: 0 8px 0 #002211, 0 15px 30px rgba(0,0,0,0.8);
+            box-shadow: 0 10px 0 #002211, 0 20px 40px rgba(0,0,0,0.8);
             cursor: pointer; transition: 0.1s;
         }
-        .spin-btn:active { transform: translateY(6px); box-shadow: 0 2px 0 #002211, 0 5px 15px rgba(0,0,0,0.5); }
+        .spin-btn:active { transform: translateY(8px); box-shadow: 0 2px 0 #002211, 0 5px 15px rgba(0,0,0,0.5); }
 
-        /* 3. 复刻：重金属控制面板 */
-        .control-panel {
-            background: linear-gradient(180deg, #2a2a2a, #111);
-            width: 100%; padding: 20px 0; border-top: 4px solid #444;
+        /* 3. 底部：金属控制面板与明显按键 */
+        .panel {
+            background: linear-gradient(180deg, #222 0%, #111 50%, #000 100%);
+            width: 100%; padding: 25px 0 45px; border-top: 4px solid #333;
             display: flex; flex-direction: column; align-items: center;
-            box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 -15px 40px rgba(0,0,0,0.6);
         }
-        .status-msg { font-size: 28px; font-weight: 900; color: var(--gold); margin-bottom: 15px; text-shadow: 0 0 10px var(--gold); }
+        #msg { font-size: 30px; font-weight: 900; color: var(--gold); letter-spacing: 3px; text-shadow: 0 0 15px var(--gold); margin-bottom: 15px; }
         
-        .bet-row { display: flex; align-items: center; gap: 40px; }
+        .ctrl-row { display: flex; align-items: center; gap: 50px; }
         
-        /* 实体加减按钮 */
-        .btn-3d {
-            width: 80px; height: 80px; border-radius: 12px;
+        /* 拟物化实体加减键 */
+        .btn-adj {
+            width: 85px; height: 85px; border-radius: 15px;
             background: linear-gradient(180deg, #444, #222);
-            border: 2px solid #555; color: #fff; font-size: 50px;
+            border: 2px solid #555; color: #fff; font-size: 60px;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 5px 0 #111, 0 8px 15px rgba(0,0,0,0.6);
-            cursor: pointer; transition: 0.1s;
+            box-shadow: 0 6px 0 #000, 0 10px 20px rgba(0,0,0,0.7);
+            cursor: pointer; transition: 0.1s; font-weight: 100;
         }
-        .btn-3d:active { transform: translateY(4px); box-shadow: 0 1px 0 #111; color: var(--neon); }
-        .bet-display { font-size: 80px; font-weight: 900; min-width: 140px; text-align: center; color: #fff; }
+        .btn-adj:active { transform: translateY(4px); box-shadow: 0 2px 0 #000; color: var(--neon); }
+        .bet-val { font-size: 95px; font-weight: 900; min-width: 160px; text-align: center; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
 
-        /* 震耳欲聋效果 */
-        .bass-vibe { animation: shock 0.06s infinite; filter: brightness(1.3); }
-        @keyframes shock { 0%{transform:translate(2px,2px)} 50%{transform:translate(-2px,-2px)} }
+        /* 震耳欲聋：频率共振 */
+        .shake-fx { animation: bass-hit 0.05s infinite; filter: brightness(1.4) contrast(1.2); }
+        @keyframes bass-hit { 0%{transform:translate(3px,3px)} 50%{transform:translate(-3px,-3px)} }
     </style>
 </head>
-<body onclick="initAudio()">
+<body onclick="bootSystem()">
 
-    <canvas id="fx-canvas"></canvas>
+    <canvas id="bg-canvas"></canvas>
 
-    <div class="ui-main" id="ui">
-        <div class="bal-display">
-            <div style="font-size:40px">💎</div>
+    <div class="ui-root" id="ui-core">
+        <div class="header">
+            <div style="font-size:45px">💎</div>
             <div class="bal-val" id="bal">1,000</div>
         </div>
 
         <div class="stage">
             <div class="needle"></div>
-            <div id="disk" class="disk-core">
+            <div id="disk" class="disk">
                 <div class="item" style="transform:rotate(0deg)"><b>👑</b></div>
                 <div class="item" style="transform:rotate(60deg)"><b>🦁</b></div>
                 <div class="item" style="transform:rotate(120deg)"><b>🐯</b></div>
@@ -97,83 +92,86 @@
                 <div class="item" style="transform:rotate(240deg)"><b>🐺</b></div>
                 <div class="item" style="transform:rotate(300deg)"><b>🐕</b></div>
             </div>
-            <div class="spin-btn" onclick="spin()">SPIN</div>
+            <div class="spin-btn" onclick="ignite()">SPIN</div>
         </div>
 
-        <div class="control-panel">
-            <div id="status-out" class="status-msg">READY_SYSTEM</div>
-            <div class="bet-row">
-                <div class="btn-3d" onclick="adj(-10)">-</div>
-                <div class="bet-display" id="bet">1</div>
-                <div class="btn-3d" onclick="adj(10)">+</div>
+        <div class="panel">
+            <div id="msg">SYSTEM_ACTIVE</div>
+            <div class="ctrl-row">
+                <div class="btn-adj" onclick="adj(-10)">-</div>
+                <div class="bet-val" id="bet">1</div>
+                <div class="btn-adj" onclick="adj(10)">+</div>
             </div>
         </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp; tg.expand();
-        let balance = 1000, bet = 1, r = 0, active = false, audioCtx;
+        let balance = 1000, bet = 1, rot = 0, isBusy = false, audioCtx;
 
-        function initAudio() {
+        // 唤醒：背景流光与音频引擎
+        function bootSystem() {
             if(audioCtx) return;
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const cvs = document.getElementById('fx-canvas');
+            const cvs = document.getElementById('bg-canvas');
             const ctx = cvs.getContext('2d');
             cvs.width = window.innerWidth; cvs.height = window.innerHeight;
             let p = [];
-            for(let i=0; i<100; i++) p.push({x:Math.random()*cvs.width, y:Math.random()*cvs.height, s:Math.random()*3+1});
-            function anim() {
-                ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(0,0,cvs.width, cvs.height);
+            for(let i=0; i<100; i++) p.push({x:Math.random()*cvs.width, y:Math.random()*cvs.height, s:Math.random()*2+1, c:`hsl(${Math.random()*360}, 100%, 75%)`});
+            function draw() {
+                ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.fillRect(0,0,cvs.width, cvs.height);
                 p.forEach(a => {
-                    a.y += active ? 40 : 2; if(a.y > cvs.height) a.y = -20;
-                    ctx.fillStyle = active ? '#fff' : '#00f2ff';
-                    ctx.beginPath(); ctx.arc(a.x, a.y, active?a.s*2:a.s, 0, Math.PI*2); ctx.fill();
+                    a.y += isBusy ? 35 : 1.8; if(a.y > cvs.height) a.y = -20;
+                    ctx.fillStyle = isBusy ? '#fff' : a.c;
+                    ctx.beginPath(); ctx.arc(a.x, a.y, isBusy?a.s*2.5:a.s, 0, Math.PI*2); ctx.fill();
+                    if(isBusy) { ctx.strokeStyle='#fff'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(a.x,a.y-50); ctx.stroke(); }
                 });
-                requestAnimationFrame(anim);
+                requestAnimationFrame(draw);
             }
-            anim();
+            draw();
         }
 
-        function playDJ(d) {
+        // 核心：合成 DJ 重低音轰鸣
+        function playBass(d) {
             if(!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const g = audioCtx.createGain();
-            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(50, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + d);
-            g.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(45, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(15, audioCtx.currentTime + d);
+            g.gain.setValueAtTime(0.5, audioCtx.currentTime);
             g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + d);
             osc.connect(g); g.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + d);
         }
 
         function adj(v) {
-            if(active) return;
+            if(isBusy) return;
             bet = Math.max(1, Math.min(balance, bet + v));
             document.getElementById('bet').innerText = bet;
             tg.HapticFeedback.selectionChanged();
         }
 
-        function spin() {
-            if(active || balance < bet) return;
-            active = true; balance -= bet;
+        function ignite() {
+            if(isBusy || balance < bet) return;
+            isBusy = true; balance -= bet;
             document.getElementById('bal').innerText = balance.toLocaleString();
-            document.getElementById('ui').classList.add('bass-vibe');
-            document.getElementById('status-out').innerText = "BASS_OVERLOAD";
-            playDJ(6); tg.HapticFeedback.impactOccurred('heavy');
+            document.getElementById('ui-core').classList.add('shake-fx');
+            document.getElementById('msg').innerText = "BASS_IGNITION";
+            playBass(6.5); tg.HapticFeedback.impactOccurred('heavy');
 
             let target = Math.floor(Math.random()*6);
-            r += (3600 + (360 - (target * 60)));
-            document.getElementById('disk').style.transform = `rotate(${r}deg)`;
+            rot += (3600 + (360 - (target * 60)));
+            document.getElementById('disk').style.transform = `rotate(${rot}deg)`;
 
             setTimeout(() => {
-                document.getElementById('ui').classList.remove('bass-vibe');
+                document.getElementById('ui-core').classList.remove('shake-fx');
                 const multi = [88, 15, 10, 5, 2, 0];
                 let win = Math.floor(bet * multi[target]);
                 balance += win;
                 document.getElementById('bal').innerText = balance.toLocaleString();
-                document.getElementById('status-out').innerText = win > 0 ? "WIN: +" + win : "LOST";
+                document.getElementById('msg').innerText = win > 0 ? "VICTORY: +" + win : "CORE_EMPTY";
                 tg.HapticFeedback.notificationOccurred(win > 0 ? 'success' : 'error');
-                active = false;
+                isBusy = false;
             }, 6500);
         }
     </script>
