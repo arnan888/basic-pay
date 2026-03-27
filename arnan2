@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+    <title>五兽至尊_V100_PRO</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root { --neon: #00f2ff; --pink: #ff0055; --gold: #ffcc00; --dark: #0a0e14; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; background: var(--dark); color: #fff; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
+
+        /* 顶部玩家状态栏 */
+        .hud { width: 92%; margin-top: 15px; background: rgba(0,0,0,0.8); border: 1.5px solid var(--neon); border-radius: 20px; padding: 12px; box-shadow: 0 0 15px var(--neon); z-index: 100; cursor: pointer; }
+        .bal-val { font-size: 32px; font-weight: 900; color: #fff; text-shadow: 0 0 10px var(--neon); text-align: center; }
+        .bet-bar { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 10px; border-top: 1px solid #333; padding-top: 8px; }
+        .btn-bet { width: 45px; height: 35px; background: #222; border: 1px solid var(--gold); color: var(--gold); border-radius: 8px; font-weight: bold; }
+
+        /* 转盘核心区 */
+        .wheel-main { position: relative; margin-top: 25px; width: 320px; height: 320px; }
+        .wheel { 
+            width: 100%; height: 100%; border-radius: 50%; border: 10px solid #1a1a1a; 
+            background: conic-gradient(#333 0deg, #111 60deg, #333 120deg, #111 180deg, #333 240deg, #111 300deg);
+            position: relative; overflow: hidden; transition: transform 5s cubic-bezier(0.1, 0, 0.1, 1);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+        .sector { position: absolute; width: 100%; height: 100%; clip-path: polygon(50% 50%, 100% 20%, 100% 80%); transform-origin: center; display: flex; align-items: center; justify-content: flex-end; }
+        .sector b { transform: rotate(90deg); margin-right: 25px; padding: 3px 8px; background: var(--pink); border-radius: 4px; font-size: 13px; box-shadow: 0 0 8px var(--pink); white-space: nowrap; }
+
+        .pointer { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 35px solid var(--neon); z-index: 110; filter: drop-shadow(0 0 8px var(--neon)); }
+        .center-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 75px; height: 75px; background: #000; border: 4px solid var(--pink); border-radius: 50%; z-index: 120; display: flex; align-items: center; justify-content: center; font-weight: 900; box-shadow: 0 0 20px var(--pink); color: var(--pink); font-size: 20px; }
+
+        /* 消息展示与中奖公告 */
+        .msg-box { margin-top: 20px; width: 90%; height: 60px; background: rgba(255,255,255,0.05); border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid #222; }
+        #log { font-size: 18px; font-weight: bold; color: var(--gold); text-align: center; padding: 0 10px; }
+
+        /* 隐藏管理面板 */
+        #adm-panel { display: none; margin-top: 15px; width: 92%; background: #111; padding: 10px; border-radius: 12px; border: 1px dashed var(--pink); }
+        .adm-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .btn-adm { padding: 10px; background: #000; border: 1px solid #444; color: #fff; border-radius: 6px; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <div class="hud" onclick="checkAdm()">
+        <div class="bal-val">🪙 <span id="bal">1,000</span></div>
+        <div class="bet-bar">
+            <button class="btn-bet" onclick="setB(-10)">-10</button>
+            <div style="font-weight:bold; color:var(--gold)">下注: <span id="bet">1</span></div>
+            <button class="btn-bet" onclick="setB(10)">+10</button>
+        </div>
+    </div>
+
+    <div class="wheel-main">
+        <div class="pointer"></div>
+        <div class="wheel" id="wheel">
+            <div class="sector" style="transform:rotate(-90deg)"><b>至尊 MAX</b></div>
+            <div class="sector" style="transform:rotate(-30deg)"><b>威武 LION</b></div>
+            <div class="sector" style="transform:rotate(30deg)"><b>霸气 TIGER</b></div>
+            <div class="sector" style="transform:rotate(90deg)"><b>睿智 LEO</b></div>
+            <div class="sector" style="transform:rotate(150deg)"><b>孤狼 WOLF</b></div>
+            <div class="sector" style="transform:rotate(210deg)"><b>忠诚 DOG</b></div>
+        </div>
+        <div class="center-btn" onclick="spin()">SPIN</div>
+    </div>
+
+    <div class="msg-box"><div id="log">准备就绪，祝你好运！</div></div>
+
+    <div id="adm-panel">
+        <div style="color:var(--pink); font-size:10px; margin-bottom:5px; text-align:center;">ADMIN MODE</div>
+        <div class="adm-grid">
+            <button class="btn-adm" onclick="addM(500)">+500</button>
+            <button class="btn-adm" onclick="addM(2000)">+2000</button>
+            <button class="btn-adm" onclick="resetD()">清零</button>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp; tg.expand();
+        let b = parseFloat(localStorage.getItem('g_v100') || '1000');
+        let tin = parseFloat(localStorage.getItem('in_v100') || '1000'), tout = parseFloat(localStorage.getItem('out_v100') || '0');
+        let bet = 1, r = 0, isS = false, cCount = 0;
+
+        function sync() {
+            document.getElementById('bal').innerText = Math.floor(b).toLocaleString();
+            document.getElementById('bet').innerText = bet;
+            localStorage.setItem('g_v100', b); localStorage.setItem('in_v100', tin); localStorage.setItem('out_v100', tout);
+        }
+
+        // 隐藏暗号：快速点击顶部余额 5 次开启加分面板
+        function checkAdm() {
+            cCount++; if(cCount >= 5) { document.getElementById('adm-panel').style.display = 'block'; localStorage.setItem('is_adm','1'); }
+            setTimeout(() => { cCount = 0; }, 2000);
+        }
+        if(localStorage.getItem('is_adm') === '1') document.getElementById('adm-panel').style.display = 'block';
+
+        window.setB = (v) => { if(!isS) { bet = Math.max(1, Math.min(b, bet+v)); sync(); } };
+        window.addM = (v) => { b+=v; tin+=v; sync(); tg.HapticFeedback.notificationOccurred('success'); };
+        window.resetD = () => { if(confirm("清空重置？")){b=1000;tin=1000;tout=0;sync();} };
+
+        function spin() {
+            if(isS || b < bet) return;
+            isS = true; b -= bet; sync();
+            tg.HapticFeedback.impactOccurred('medium');
+
+            // 胜率控制逻辑：如果玩家赢太多(水位>90%)，强制中最低奖或不中奖
+            let idx = (tout/tin > 0.9) ? (Math.random()<0.8?5:4) : Math.floor(Math.random()*6);
+            r += (2880 + idx*60);
+            document.getElementById('wheel').style.transform = `rotate(-${r}deg)`;
+            document.getElementById('log').innerText = "🔄 幸运转盘高速旋转中...";
+
+            setTimeout(() => {
+                const multi = [50, 15, 10, 5, 2, 0];
+                let win = Math.floor(bet * multi[idx]);
+                b += win; tout += win; sync();
+
+                if(win > 0) {
+                    document.getElementById('log').innerText = "🎊 恭喜！赢取 " + win + " 金币！";
+                    tg.HapticFeedback.notificationOccurred('success');
+                } else {
+                    document.getElementById('log').innerText = "💔 很遗憾，再接再厉！";
+                }
+                isS = false;
+            }, 5000);
+        }
+        sync();
+    </script>
+</body>
+</html>
