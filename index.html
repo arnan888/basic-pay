@@ -3,196 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-    <title>五兽至尊_V1000_SINGULARITY</title>
+    <title>五兽至尊_V2000_CORE</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --c-cyan: #00f2ff; --c-pink: #ff0055; --c-gold: #ffcc00; --c-bg: #000; }
+        :root { --c-main: #00f2ff; --c-alt: #ff0055; --bg: #000; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; outline: none; }
         
-        body { background: var(--c-bg); color: #fff; font-family: 'Exo 2', sans-serif; height: 100vh; overflow: hidden; position: relative; }
+        body { background: var(--bg); color: #fff; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; }
 
-        /* 全屏粒子场：更细腻、更灵动 */
-        #fxCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+        /* 全屏星海背景 */
+        #starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; transition: transform 0.5s; }
 
-        .ui-root { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 30px 0; }
+        .ui-overlay { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 50px 0; pointer-events: none; }
+        .ui-overlay * { pointer-events: auto; }
 
-        /* 顶部：全息余额卡 */
-        .top-panel {
-            background: rgba(255,255,255,0.02); border: 1px solid rgba(0,242,255,0.3);
-            padding: 12px 50px; border-radius: 100px; backdrop-filter: blur(25px);
-            box-shadow: 0 0 30px rgba(0,242,255,0.2), inset 0 0 15px rgba(0,242,255,0.1);
-            animation: float 4s ease-in-out infinite;
-        }
-        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        .val-num { font-size: 56px; font-weight: 900; background: linear-gradient(135deg, #fff, var(--c-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 15px var(--c-cyan)); }
+        /* 顶部余额：纯数字发光 */
+        .bal-wrap { text-align: center; }
+        .bal-num { font-size: 64px; font-weight: 900; color: #fff; text-shadow: 0 0 20px var(--c-main), 0 0 40px var(--c-main); letter-spacing: -2px; }
+        .bal-label { font-size: 14px; color: var(--c-main); letter-spacing: 5px; opacity: 0.8; }
 
-        /* 转盘：3D 分层构造 */
-        .stage-box { position: relative; width: 90vw; max-width: 400px; aspect-ratio: 1/1; }
-        .wheel-body {
-            width: 100%; height: 100%; border-radius: 50%; border: 4px solid #1a1a1a;
-            background: radial-gradient(circle at center, #222 0%, #000 70%);
-            box-shadow: 0 0 100px rgba(0,0,0,0.8), inset 0 0 50px rgba(0,242,255,0.1);
-            position: relative; transition: transform 7s cubic-bezier(0.1, 0, 0, 1);
-            overflow: hidden;
-        }
-        /* 动态流光边框 */
-        .stage-box::before {
-            content: ""; position: absolute; inset: -10px; border-radius: 50%;
-            background: conic-gradient(from 0deg, transparent, var(--c-cyan), transparent, var(--c-pink), transparent);
-            animation: rotate-flow 4s linear infinite; opacity: 0.3; z-index: -1;
-        }
-        @keyframes rotate-flow { 100% { transform: rotate(360deg); } }
-
-        .slice-item { position: absolute; width: 100%; height: 100%; clip-path: polygon(50% 50%, 100% 17%, 100% 83%); transform-origin: center; display: flex; align-items: center; justify-content: flex-end; padding-right: 8%; }
-        .slice-item b { font-size: 82px; transform: rotate(90deg); filter: drop-shadow(0 0 15px rgba(255,255,255,0.5)); transition: 0.3s; }
-
-        /* 激光指针 */
-        .laser-pointer { 
-            position: absolute; top: -15px; left: 50%; transform: translateX(-50%); 
-            width: 3px; height: 70px; background: #fff; box-shadow: 0 0 25px var(--c-cyan), 0 0 45px var(--c-cyan); z-index: 50;
-        }
+        /* 核心区：悬浮星轨系统 */
+        .orbit-container { position: relative; width: 95vw; max-width: 420px; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; }
         
-        .run-btn {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 95px; height: 95px; border-radius: 50%; 
-            background: #000; border: 3px solid var(--c-pink);
-            display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 24px;
-            box-shadow: 0 0 40px var(--c-pink), inset 0 0 20px var(--c-pink);
-            color: #fff; text-shadow: 0 0 10px var(--c-pink); cursor: pointer; z-index: 100;
+        /* 霓虹光环 */
+        .neon-ring {
+            position: absolute; width: 85%; height: 85%; border-radius: 50%;
+            border: 2px solid rgba(0, 242, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.05);
+            transition: 0.5s;
         }
+        .active-ring { border: 2px solid var(--c-main); box-shadow: 0 0 40px var(--c-main); }
 
-        /* 底部：控制台 */
-        .console { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; }
-        .bet-row { 
-            display: flex; align-items: center; gap: 60px; 
-            background: rgba(255,255,255,0.03); padding: 10px 50px; border-radius: 50px;
+        /* 图标组：取消圆盘，改为直接旋转 */
+        .icon-orbit { 
+            position: absolute; width: 100%; height: 100%; 
+            transition: transform 6s cubic-bezier(0.15, 0, 0, 1);
         }
-        .adj { background: none; border: none; color: #fff; font-size: 44px; font-weight: 200; width: 50px; }
-        #msg-ui { height: 35px; font-size: 26px; font-weight: 900; color: var(--c-gold); text-shadow: 0 0 20px rgba(255,204,0,0.5); font-style: italic; }
+        .icon-node { 
+            position: absolute; width: 100px; height: 100px; 
+            display: flex; align-items: center; justify-content: center;
+            transform-origin: center;
+        }
+        .icon-node b { font-size: 85px; filter: drop-shadow(0 0 15px rgba(255,255,255,0.3)); transition: 0.3s; }
+
+        /* 核心启动点 */
+        .core-btn {
+            position: relative; width: 110px; height: 110px; border-radius: 50%;
+            background: rgba(0,0,0,0.8); border: 1px solid var(--c-alt);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; font-weight: 900; color: var(--c-alt);
+            box-shadow: 0 0 30px var(--c-alt); cursor: pointer;
+        }
+        .core-btn::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 1px solid var(--c-alt); opacity: 0.3; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 0.3; } 100% { transform: scale(1.4); opacity: 0; } }
+
+        /* 底部控制：极简线性设计 */
+        .bottom-ctrl { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        .bet-input { display: flex; align-items: center; gap: 60px; }
+        .step { font-size: 40px; font-weight: 100; color: #fff; opacity: 0.3; cursor: pointer; width: 40px; text-align: center; }
+        .bet-val { font-size: 50px; font-weight: 900; color: #fff; min-width: 120px; text-align: center; }
+        #msg-status { font-size: 24px; font-weight: 900; color: #ffcc00; text-shadow: 0 0 15px rgba(255,204,0,0.4); text-transform: uppercase; }
+
+        /* 指针：改为一条极细的光束 */
+        .laser-line { position: absolute; top: 0; width: 2px; height: 50px; background: #fff; box-shadow: 0 0 15px #fff; z-index: 20; }
     </style>
 </head>
-<body onclick="bootSystem()">
+<body onclick="init()">
 
-    <canvas id="fxCanvas"></canvas>
+    <canvas id="starfield"></canvas>
 
-    <div class="ui-root">
-        <div class="top-panel">
-            <div class="val-num">💎 <span id="bal-txt">1,000</span></div>
+    <div class="ui-overlay">
+        <div class="bal-wrap">
+            <div class="bal-num"><span id="b-val">1,000</span></div>
+            <div class="bal-label">CREDITS AVAILABLE</div>
         </div>
 
-        <div class="stage-box">
-            <div class="laser-pointer"></div>
-            <div id="wheel-obj" class="wheel-body">
-                <div class="slice-item" style="transform:rotate(-90deg)"><b>👑</b></div>
-                <div class="slice-item" style="transform:rotate(-30deg)"><b>🦁</b></div>
-                <div class="slice-item" style="transform:rotate(30deg)"><b>🐯</b></div>
-                <div class="slice-item" style="transform:rotate(90deg)"><b>🦅</b></div>
-                <div class="slice-item" style="transform:rotate(150deg)"><b>🐺</b></div>
-                <div class="slice-item" style="transform:rotate(210deg)"><b>🐕</b></div>
+        <div class="orbit-container">
+            <div class="laser-line"></div>
+            <div class="neon-ring" id="ring"></div>
+            <div id="orbit" class="icon-orbit">
+                <!-- 动态生成图标位置 -->
             </div>
-            <div class="run-btn" onclick="executeSpin()">RUN</div>
+            <div class="core-btn" onclick="spin()">RUN</div>
         </div>
 
-        <div class="console">
-            <div class="bet-row">
-                <button class="adj" onclick="changeBet(-10)">-</button>
-                <div style="font-size:52px; font-weight:900; min-width:110px; text-align:center;" id="bet-txt">1</div>
-                <button class="adj" onclick="changeBet(10)">+</button>
+        <div class="bottom-ctrl">
+            <div id="msg-status">SYSTEM IDLE</div>
+            <div class="bet-input">
+                <div class="step" onclick="adjBet(-10)">-</div>
+                <div class="bet-val" id="bet-txt">1</div>
+                <div class="step" onclick="adjBet(10)">+</div>
             </div>
-            <div id="msg-ui">AWAITING INPUT...</div>
         </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp; tg.expand();
-        let balance = 1000, bet = 1, currentRot = 0, active = false, aCtx, dots = [];
-        const cvs = document.getElementById('fxCanvas');
-        const ctx = cvs.getContext('2d');
+        let balance = 1000, bet = 1, rot = 0, isSpinning = false, ctx, stars = [];
+        const canvas = document.getElementById('starfield');
+        const icons = ['👑','🦁','🐯','🦅','🐺','🐕'];
 
-        function bootSystem() {
-            if(aCtx) return;
-            aCtx = new (window.AudioContext || window.webkitAudioContext)();
-            cvs.width = window.innerWidth; cvs.height = window.innerHeight;
-            for(let i=0; i<180; i++) dots.push({
-                x: Math.random()*cvs.width, y: Math.random()*cvs.height,
-                vx: (Math.random()-0.5)*0.8, vy: (Math.random()-0.5)*0.8,
-                s: Math.random()*2.5, c: Math.random() > 0.5 ? '#00f2ff' : '#ff0055'
+        function init() {
+            if(ctx) return;
+            ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            for(let i=0; i<200; i++) stars.push({x:Math.random()*canvas.width, y:Math.random()*canvas.height, z:Math.random()*canvas.width, s:Math.random()*2});
+            
+            // 动态创建图标节点，彻底摆脱“圆盘图”
+            const orbit = document.getElementById('orbit');
+            icons.forEach((icon, i) => {
+                const node = document.createElement('div');
+                node.className = 'icon-node';
+                const angle = (i * 60) * (Math.PI / 180);
+                const radius = 150; 
+                node.style.left = (radius * Math.cos(angle - Math.PI/2) + 210 - 50) + 'px';
+                node.style.top = (radius * Math.sin(angle - Math.PI/2) + 210 - 50) + 'px';
+                node.innerHTML = `<b>${icon}</b>`;
+                orbit.appendChild(node);
             });
-            draw();
-            document.getElementById('msg-ui').innerText = "SYSTEM ONLINE";
+            updateStars();
         }
 
-        function draw() {
-            ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(0,0,cvs.width, cvs.height);
-            dots.forEach(p => {
-                p.x += p.vx; p.y += p.vy;
-                if(p.x<0 || p.x>cvs.width) p.vx *= -1;
-                if(p.y<0 || p.y>cvs.height) p.vy *= -1;
-                ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, Math.PI*2);
-                ctx.fillStyle = p.c; ctx.fill();
-                // 连线特效
-                if(Math.random() > 0.98) {
-                    ctx.strokeStyle = p.c; ctx.lineWidth = 0.2;
-                    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(cvs.width/2, cvs.height/2); ctx.stroke();
-                }
+        function updateStars() {
+            ctx.fillStyle = 'black'; ctx.fillRect(0,0,canvas.width, canvas.height);
+            stars.forEach(s => {
+                s.z -= isSpinning ? 20 : 1; 
+                if(s.z <= 0) s.z = canvas.width;
+                const px = (s.x - canvas.width/2) * (canvas.width/s.z) + canvas.width/2;
+                const py = (s.y - canvas.height/2) * (canvas.width/s.z) + canvas.height/2;
+                const sz = (1 - s.z/canvas.width) * 3;
+                ctx.fillStyle = isSpinning ? '#ff0055' : 'white';
+                ctx.beginPath(); ctx.arc(px, py, sz, 0, Math.PI*2); ctx.fill();
             });
-            requestAnimationFrame(draw);
+            requestAnimationFrame(updateStars);
         }
 
-        function sound(f, d, t='sine', v=0.1) {
-            if(!aCtx) return;
-            const o = aCtx.createOscillator(); const g = aCtx.createGain();
-            o.type = t; o.frequency.setTargetAtTime(f, aCtx.currentTime, 0.01);
-            g.gain.setValueAtTime(v, aCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.0001, aCtx.currentTime + d);
-            o.connect(g); g.connect(aCtx.destination);
-            o.start(); o.stop(aCtx.currentTime + d);
-        }
-
-        function changeBet(v) {
-            if(active) return;
+        function adjBet(v) {
+            if(isSpinning) return;
             bet = Math.max(1, Math.min(balance, bet+v));
             document.getElementById('bet-txt').innerText = bet;
             tg.HapticFeedback.selectionChanged();
-            sound(1200, 0.1, 'square', 0.05);
         }
 
-        function executeSpin() {
-            if(active || balance < bet) return;
-            active = true; balance -= bet;
-            document.getElementById('bal-txt').innerText = balance.toLocaleString();
+        function spin() {
+            if(isSpinning || balance < bet) return;
+            isSpinning = true; balance -= bet;
+            document.getElementById('b-val').innerText = balance.toLocaleString();
+            document.getElementById('ring').classList.add('active-ring');
+            document.getElementById('msg-status').innerText = "WARPING...";
             tg.HapticFeedback.impactOccurred('heavy');
-            
-            // 坍缩脉冲：粒子流向中心
-            dots.forEach(p => { p.vx = (cvs.width/2 - p.x)*0.1; p.vy = (cvs.height/2 - p.y)*0.1; });
 
             let target = Math.floor(Math.random()*6);
-            currentRot += (3600 + target*60);
-            document.getElementById('wheel-obj').style.transform = `rotate(-${currentRot}deg)`;
-            document.getElementById('msg-ui').innerText = "CALCULATING PROBABILITY...";
+            rot += (3600 + target*60);
+            document.getElementById('orbit').style.transform = `rotate(-${rot}deg)`;
+            
+            // 图标反向旋转，保持正立感（高级感细节）
+            const nodes = document.querySelectorAll('.icon-node b');
+            nodes.forEach(n => n.style.transform = `rotate(${rot}deg)`);
 
             setTimeout(() => {
                 const multi = [88, 15, 10, 5, 2, 0];
                 let win = Math.floor(bet * multi[target]);
                 balance += win;
-                document.getElementById('bal-txt').innerText = balance.toLocaleString();
+                document.getElementById('b-val').innerText = balance.toLocaleString();
+                document.getElementById('ring').classList.remove('active-ring');
                 
-                // 爆炸释放
-                dots.forEach(p => { p.vx = (Math.random()-0.5)*15; p.vy = (Math.random()-0.5)*15; });
-
                 if(win > 0) {
-                    document.getElementById('msg-ui').innerText = "CRITICAL WIN: +" + win;
+                    document.getElementById('msg-status').innerText = "SUCCESS: +" + win;
                     tg.HapticFeedback.notificationOccurred('success');
-                    for(let i=0; i<20; i++) setTimeout(() => sound(400 + i*120, 0.3, 'sine', 0.1), i*60);
                 } else {
-                    document.getElementById('msg-ui').innerText = "REBOOTING...";
-                    sound(80, 0.8, 'sawtooth', 0.1);
+                    document.getElementById('msg-status').innerText = "FAILED";
                 }
-                setTimeout(() => { 
-                    dots.forEach(p => { p.vx *= 0.05; p.vy *= 0.05; });
-                    active = false; 
-                }, 1000);
-            }, 7000);
+                isSpinning = false;
+            }, 6000);
         }
     </script>
 </body>
