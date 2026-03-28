@@ -1,114 +1,54 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <title>PB_MAIN_CONTROL_V1</title>
-    <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { background:#000; color:#FFED00; font-family:monospace; height:100vh; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-        
-        /* 1. 主控看板：10% 利润监控 (仅主控可见逻辑) */
-        .hud { position:fixed; top:0; width:100%; height:60px; background:#111; border-bottom:3px solid #FFED00; display:flex; justify-content:space-around; align-items:center; font-size:18px; }
-        .profit-tag { color:#0f0; border:1px solid #0f0; padding:2px 10px; font-size:12px; }
+const idle  = new Audio('audio/idle.mp3');
+const intro = new Audio('audio/spin_intro.mp3');
+const loop  = new Audio('audio/spin_loop.mp3');
+const slow  = new Audio('audio/spin_slow.mp3');
+const win   = new Audio('audio/win_hit.mp3');
+const lose  = new Audio('audio/lose_cut.mp3');
 
-        /* 2. 核心资产：0.5 起步余额 */
-        .bal-area { text-align:center; margin-bottom:10px; }
-        .bal-val { font-size:90px; font-weight:900; text-shadow:0 0 30px #f00; }
+idle.loop = true;
+loop.loop = true;
 
-        /* 3. 转盘：物理 8 坑位 (概率已锁死) */
-        .stage { width:70vmin; height:70vmin; border:12px solid #FFED00; border-radius:50%; position:relative; box-shadow:0 0 50px rgba(255,0,0,0.5); }
-        .wheel { width:100%; height:100%; border-radius:50%; transition:transform 5s cubic-bezier(0.1, 0, 0.1, 1); position:relative; }
-        .pointer { position:absolute; top:-40px; left:50%; transform:translateX(-50%); border-top:60px solid #f00; border-left:25px solid transparent; border-right:25px solid transparent; z-index:100; filter:drop-shadow(0 0 10px #f00); }
-        .slot { position:absolute; width:100px; height:50%; left:50%; margin-left:-50px; transform-origin:50% 100%; text-align:center; padding-top:20px; font-size:22px; font-weight:bold; color:#fff; }
+// 初始化：进入等待状态
+function enterIdle() {
+  stopAll();
+  idle.volume = 0.4;
+  idle.play();
+}
 
-        /* 4. 客户操作感：0.5 步进按钮 */
-        .ctrls { margin-top:30px; display:flex; flex-direction:column; gap:20px; align-items:center; }
-        .btn-spin { background:linear-gradient(180deg, #f00, #900); width:280px; padding:20px; border:none; border-radius:50px; color:#fff; font-size:32px; font-weight:900; cursor:pointer; box-shadow:0 10px 30px rgba(255,0,0,0.5); }
-        .bet-row { display:flex; gap:10px; }
-        .btn-bet { background:#222; border:1px solid #FFED00; color:#FFED00; padding:10px 20px; border-radius:8px; cursor:pointer; }
-    </style>
-</head>
-<body>
+// 点击开始
+function startSpin() {
+  stopAll();
+  intro.play();
+  setTimeout(() => {
+    loop.play();
+  }, 1200);
+}
 
-    <div class="hud">
-        <div>IN: <b id="st_in" style="color:#0f0">0.0</b></div>
-        <div class="profit-tag">PROFIT: 10% (RTP 90%)</div>
-        <div>OUT: <b id="st_out" style="color:#f00">0.0</b></div>
-    </div>
+// 减速
+function slowDown() {
+  loop.pause();
+  slow.play();
+}
 
-    <div class="bal-area">
-        <div class="bal-val" id="ui_bal">100.0</div>
-        <div style="color:#888;">BET: <span id="ui_bet" style="color:#0f0">0.5</span></div>
-    </div>
+// 出结果
+function showResult(multiplier) {
+  slow.pause();
+  if (multiplier === 0) {
+    lose.play();
+  } else {
+    win.play();
+  }
 
-    <div class="stage">
-        <div class="pointer"></div>
-        <div id="ui_wheel" class="wheel">
-            <div class="slot" style="transform:rotate(0deg)">10X</div>
-            <div class="slot" style="transform:rotate(45deg)">5X</div>
-            <div class="slot" style="transform:rotate(90deg)">2X</div>
-            <div class="slot" style="transform:rotate(135deg)">0X</div>
-            <div class="slot" style="transform:rotate(180deg)">1.5X</div>
-            <div class="slot" style="transform:rotate(225deg)">0X</div>
-            <div class="slot" style="transform:rotate(270deg)">20X</div>
-            <div class="slot" style="transform:rotate(315deg)">JACK</div>
-        </div>
-    </div>
+  // 结果结束后回到 idle
+  setTimeout(() => {
+    enterIdle();
+  }, 2000);
+}
 
-    <div class="ctrls">
-        <div class="bet-row">
-            <button class="btn-bet" onclick="addBet(0.5)">+0.5</button>
-            <button class="btn-bet" onclick="addBet(5)">+5</button>
-            <button class="btn-bet" onclick="resetBet()">C</button>
-        </div>
-        <button class="btn-spin" onclick="runGame()">祝 贺</button>
-    </div>
-
-    <script>
-        // 物理变量：0.5 起步，锁死 90% RTP
-        let balance = 100.0, bet = 0.5, totalIn = 0.0, totalOut = 0.0, rotation = 0, busy = false;
-
-        function addBet(v) { if(!busy) { bet += v; sync(); } }
-        function resetBet() { if(!busy) { bet = 0.5; sync(); } }
-
-        function runGame() {
-            if(busy || balance < bet) return;
-            busy = true;
-
-            // 核心中奖概率：千分比逻辑 (锁死 10% 利润)
-            // 权重: [10X:2, 5X:8, 2X:60, 0X:450, 1.5X:478, 0X:1, 20X:0.8, JACK:0.2]
-            const r = Math.floor(Math.random() * 1000);
-            let idx = 3; // 默认停在 0X
-            if (r < 2) idx = 0;        // 10X
-            else if (r < 10) idx = 1;  // 5X
-            else if (r < 70) idx = 2;  // 2X
-            else if (r < 520) idx = 3; // 0X (杀)
-            else if (r < 998) idx = 4; // 1.5X (留)
-            else if (r < 999) idx = 5; // 0X (杀)
-            else if (r < 999.8) idx = 6; // 20X
-            else idx = 7;              // JACK
-
-            const angle = idx * 45;
-            const spins = (Math.floor(Math.random() * 5) + 12) * 360;
-            rotation += spins + (360 - angle - (rotation % 360)) + 360;
-            document.getElementById('ui_wheel').style.transform = `rotate(${rotation}deg)`;
-
-            setTimeout(() => {
-                const multi = [10, 5, 2, 0, 1.5, 0, 20, 50];
-                const prize = multi[idx] * bet;
-                balance = (balance - bet) + prize;
-                totalIn += bet; totalOut += prize;
-                sync();
-                busy = false;
-            }, 5000);
-        }
-
-        function sync() {
-            document.getElementById('ui_bal').innerText = balance.toFixed(1);
-            document.getElementById('ui_bet').innerText = bet.toFixed(1);
-            document.getElementById('st_in').innerText = totalIn.toFixed(1);
-            document.getElementById('st_out').innerText = totalOut.toFixed(1);
-        }
-    </script>
-</body>
-</html>
+// 工具函数
+function stopAll() {
+  [idle, intro, loop, slow, win, lose].forEach(a => {
+    a.pause();
+    a.currentTime = 0;
+  });
+}
