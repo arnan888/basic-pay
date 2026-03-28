@@ -1,57 +1,116 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>量化终端 · 暗铸转盘</title>
 <style>
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none; /* 避免拖动，保持面板质感 */
+    }
 
-    /* 全局背景 */
-    body { 
-        background: #3fb950; 
-        background-image: radial-gradient(circle at 50% 50%, #4ade80 0%, #166534 100%);
-        color:#333; 
-        font-family: "PingFang SC", sans-serif; 
-        height:100vh; 
-        display:flex; 
-        flex-direction:column; 
+    /* 环境绿野背景 衬托暗灰内嵌面板的厚重感 */
+    body {
+        background: #1a2a1a;
+        background-image: radial-gradient(circle at 30% 20%, #2c4a2c 0%, #0a1f0a 100%);
+        font-family: "PingFang SC", "Segoe UI", "Inter", system-ui, -apple-system, sans-serif;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
         overflow: hidden;
+        color: #eef2ff;
     }
 
-    .status-bar { background: rgba(0,0,0,0.1); height:28px; display:flex; align-items:center; padding:0 15px; font-size:10px; color:#fff; justify-content:center; flex-shrink: 0; }
-
-    .core-section { 
-        flex: 1; 
-        display:flex; 
-        flex-direction:column; 
-        align-items:center; 
-        justify-content: space-evenly; 
-        padding:15px;
-        min-height: 0; 
+    .status-bar {
+        background: rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(4px);
+        height: 32px;
+        display: flex;
+        align-items: center;
+        padding: 0 18px;
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 1.2px;
+        color: #cbd5e1;
+        justify-content: center;
+        flex-shrink: 0;
+        border-bottom: 1px solid rgba(0,0,0,0.3);
     }
 
-    /* 灰色大网格内陷面板 */
+    .core-section {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-evenly;
+        padding: 12px 16px;
+        min-height: 0;
+        gap: 12px;
+    }
+
+    /* ---------- 厚重内镶嵌面板 (暗灰网格 · 深陷立体) ---------- */
     .pit-panel {
-        width:100%;
-        max-width: 400px;
-        background-color: #cfd8e3;
+        width: 100%;
+        max-width: 420px;
+        background-color: #2a323f;   /* 深沉灰蓝基底 */
         background-image: 
-            linear-gradient(rgba(0,0,0,0.06) 1.5px, transparent 1.5px),
-            linear-gradient(90deg, rgba(0,0,0,0.06) 1.5px, transparent 1.5px);
-        background-size: 25px 25px;
-        border-radius: 24px;
+            linear-gradient(rgba(0, 0, 0, 0.35) 1.2px, transparent 1.2px),
+            linear-gradient(90deg, rgba(0, 0, 0, 0.35) 1.2px, transparent 1.2px);
+        background-size: 22px 22px;
+        border-radius: 32px;
+        /* 多重内阴影 + 厚重外压暗边，实现内嵌凿刻感 */
         box-shadow: 
-            inset 8px 8px 15px rgba(0,0,0,0.2), 
-            inset -5px -5px 12px rgba(255,255,255,0.5),
-            0 4px 10px rgba(0,0,0,0.15);
-        border: 2px solid #b0bbc9;
-        padding: 15px;
+            inset 8px 8px 16px rgba(0, 0, 0, 0.55),
+            inset -4px -4px 8px rgba(255, 255, 255, 0.08),
+            0px 10px 20px rgba(0, 0, 0, 0.4),
+            0px 2px 4px rgba(0, 0, 0, 0.3);
+        border: 2px solid #1a212c;
+        /* 更粗的边框，哑光质感 */
+        padding: 18px 16px;
         position: relative;
+        transition: all 0.2s;
     }
 
-    .bal-val { font-size: 48px; font-weight: 900; color: #ff4d4d; font-family: 'Verdana', sans-serif; }
+    /* 增强“填满网格”视觉：内壁无空隙，网格密度覆盖全域 */
+    .pit-panel::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at 30% 20%, rgba(0,0,0,0.1), transparent 70%);
+        pointer-events: none;
+        border-radius: 32px;
+    }
 
-    /* 转盘区域 */
+    /* 余额数值区域明亮猩红，对比强烈 */
+    .bal-val {
+        font-size: 52px;
+        font-weight: 900;
+        color: #ff5e5e;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        font-family: 'Inter', 'Verdana', monospace;
+        letter-spacing: 2px;
+    }
+
+    .pit-panel .small-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: #b9c3d0;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        background: rgba(0,0,0,0.3);
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 30px;
+    }
+
+    /* 转盘容器 (外部面板保持内陷统一) */
     .wheel-pit {
         width: 280px;
         height: 280px;
@@ -59,118 +118,274 @@
         align-items: center;
         justify-content: center;
         position: relative;
+        margin: 8px 0;
     }
 
-    /* --- 核心修改：将转盘盘面改为网格绿色 --- */
-    .wheel-outer { 
-        width: 240px; height: 240px; border-radius: 50%; position: relative; 
-        
-        /* 1. 基础绿色渐变底色 */
-        background-color: #38a169; /* 绿色 */
-        
-        /* 2. 叠加细腻的网格纹理 */
+    /* 绿色网格转盘 (原有风格保留，与暗灰面板形成材质碰撞) */
+    .wheel-outer {
+        width: 250px;
+        height: 250px;
+        border-radius: 50%;
+        position: relative;
+        background-color: #2b6e3c;
         background-image: 
-            linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px);
-        background-size: 15px 15px; /* 网格大小 */
-        
-        /* 3. 保留拟物化的立体阴影 */
-        box-shadow: 8px 8px 20px rgba(0,0,0,0.25), -4px -4px 15px rgba(255,255,255,0.6);
-        border: 2px solid #2f855a; /* 更深的绿色边框 */
-        
-        transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1);
+            linear-gradient(rgba(210, 255, 180, 0.2) 1.2px, transparent 1.2px),
+            linear-gradient(90deg, rgba(210, 255, 180, 0.2) 1.2px, transparent 1.2px);
+        background-size: 16px 16px;
+        box-shadow: 8px 12px 24px rgba(0, 0, 0, 0.6), inset 0px 1px 2px rgba(255,255,240,0.3);
+        border: 3px solid #1d4a2c;
+        transition: transform 5s cubic-bezier(0.12, 0.72, 0.28, 0.98);
         z-index: 5;
     }
 
+    /* 中心罗盘钮，内凹质感 */
     .wheel-center-val {
-        position: absolute; z-index: 20; width: 60px; height: 60px; background: #e0e5ec;
-        border-radius: 50%; display: flex; align-items:center; justify-content:center;
-        color: #ff4d4d; font-size: 18px; font-weight: 900;
-        box-shadow: 3px 3px 6px rgba(0,0,0,0.2), inset 1px 1px 2px white; 
-        border: 1px solid #c2cbd8;
+        position: absolute;
+        z-index: 20;
+        width: 68px;
+        height: 68px;
+        background: #2e3a48;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ff8a6f;
+        font-size: 22px;
+        font-weight: 900;
+        font-family: monospace;
+        box-shadow: inset 4px 4px 8px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(255,255,255,0.15), 0 2px 6px black;
+        border: 1px solid #161e28;
+        letter-spacing: 1px;
     }
 
-    .slot-content { position:absolute; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; padding-top:10px; }
-    .beast-ico { font-size: 36px; filter: drop-shadow(2px 3px 4px rgba(0,0,0,0.3)); }
-    .beast-txt { font-size: 10px; color:#fff; font-weight:bold; } /* 图标文字改为白色以适应绿色盘面 */
+    /* 扇形区块内容 (图标/文字) 保持高可见度 */
+    .slot-content {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 18px;
+        pointer-events: none;
+    }
+    .beast-ico {
+        font-size: 36px;
+        filter: drop-shadow(1px 2px 4px rgba(0,0,0,0.5));
+    }
+    .beast-txt {
+        font-size: 10px;
+        font-weight: bold;
+        color: #f9f3cf;
+        background: rgba(0,0,0,0.45);
+        padding: 2px 6px;
+        border-radius: 50px;
+        margin-top: 4px;
+        backdrop-filter: blur(1px);
+    }
 
-    /* 固定红色箭头指针 */
+    /* 固定红色箭头 厚重立体 */
     .pointer-arrow {
-        position: absolute; top: -5px; left: 50%; transform: translateX(-50%);
-        width: 0; height: 0;
-        border-left: 12px solid transparent;
-        border-right: 12px solid transparent;
-        border-top: 20px solid #ff0000;
+        position: absolute;
+        top: -12px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 16px solid transparent;
+        border-right: 16px solid transparent;
+        border-top: 28px solid #e32020;
         z-index: 100;
-        filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3));
+        filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+    }
+    .pointer-arrow::after {
+        content: "";
+        position: absolute;
+        top: -32px;
+        left: -8px;
+        width: 12px;
+        height: 12px;
+        background: radial-gradient(circle, #ffb347, #c0392b);
+        border-radius: 50%;
+        opacity: 0.7;
     }
 
-    /* --- 控制台区域：解决按键压迫问题 --- */
-    .console-area { 
-        width:100%; 
-        background-color: #cfd8e3;
+    /* ---------- 底部控制台：厚重内嵌网格面板 ---------- */
+    .console-area {
+        width: 100%;
+        background-color: #2a323f;    /* 与pit-panel统一暗灰基色 */
         background-image: 
-            linear-gradient(rgba(0,0,0,0.06) 1.5px, transparent 1.5px),
-            linear-gradient(90deg, rgba(0,0,0,0.06) 1.5px, transparent 1.5px);
-        background-size: 25px 25px;
-        padding: 25px 20px 100px 20px; /* 增加底部 padding (100px) 确保完全避开导航栏 */
-        border-radius: 35px 35px 0 0;
-        box-shadow: 0 -8px 25px rgba(0,0,0,0.2), inset 0 4px 10px rgba(255,255,255,0.4);
-        border-top: 2px solid #b0bbc9;
+            linear-gradient(rgba(0, 0, 0, 0.38) 1.2px, transparent 1.2px),
+            linear-gradient(90deg, rgba(0, 0, 0, 0.38) 1.2px, transparent 1.2px);
+        background-size: 22px 22px;
+        padding: 28px 22px 110px 22px;  /* 底部大留空避开导航栏 */
+        border-radius: 40px 40px 0 0;
+        box-shadow: inset 6px 6px 14px rgba(0, 0, 0, 0.5), inset -3px -3px 6px rgba(255, 255, 255, 0.05), 0 -6px 16px rgba(0,0,0,0.5);
+        border-top: 2px solid #1e2632;
+        border-left: 1px solid #3a4454;
+        border-right: 1px solid #3a4454;
         flex-shrink: 0;
+        transition: all 0.2s;
     }
 
-    .main-row { 
-        display:flex; 
-        align-items: center; 
-        justify-content: space-between; 
-        gap: 15px; 
-        margin-bottom: 25px; /* 增加行间距 */
+    /* 按钮排布 */
+    .main-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 32px;
     }
 
-    .btn-deep-inset { 
-        background: #e0e5ec; color:#555; font-size:26px; border-radius:15px;
-        width: 60px; height: 60px; display:flex; align-items:center; justify-content:center;
-        box-shadow: 4px 4px 8px rgba(0,0,0,0.1), -4px -4px 8px rgba(255,255,255,0.7);
-        border: 1px solid #c2cbd8;
+    /* 深嵌式按钮 —— 内陷按压感 */
+    .btn-deep-inset {
+        background: #2f3847;
+        color: #dce5f0;
+        font-size: 28px;
+        font-weight: bold;
+        width: 68px;
+        height: 68px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 28px;
+        box-shadow: inset 3px 3px 7px rgba(0, 0, 0, 0.55), inset -2px -2px 4px rgba(255, 255, 255, 0.1), 3px 5px 8px rgba(0, 0, 0, 0.4);
+        border: 1px solid #1f2937;
         cursor: pointer;
+        transition: 0.07s linear;
+        color: #ffb47b;
+    }
+    .btn-deep-inset:active {
+        transform: scale(0.96);
+        box-shadow: inset 5px 5px 10px rgba(0, 0, 0, 0.7), inset -1px -1px 2px rgba(255,255,200,0.1);
     }
 
-    .exec-red-btn { 
-        flex: 1; height: 60px; background: #d90000; border: none;
-        border-bottom: 5px solid #a00000; color:#fff; font-size:20px; font-weight:900; 
-        border-radius: 15px; letter-spacing:1px; box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+    /* 醒目执行键 猩红熔岩质感 */
+    .exec-red-btn {
+        flex: 1;
+        height: 68px;
+        background: #b11f1f;
+        background: linear-gradient(145deg, #c62a2a, #9e1a1a);
+        border: none;
+        border-bottom: 3px solid #691010;
+        color: #fff7e8;
+        font-size: 22px;
+        font-weight: 900;
+        letter-spacing: 2px;
+        border-radius: 42px;
+        box-shadow: 0 8px 14px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255,255,200,0.3);
         cursor: pointer;
+        transition: 0.08s linear;
+        font-family: monospace;
     }
-    .exec-red-btn:active { transform: translateY(2px); border-bottom-width: 2px; }
-
-    .tech-row { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .mode-btn { 
-        padding:15px; background:#e0e5ec; border-radius:12px;
-        color:#444; font-size:12px; text-align:center; font-weight: bold;
-        box-shadow: 3px 3px 6px rgba(0,0,0,0.1), -2px -2px 5px rgba(255,255,255,0.7);
-        border: 1px solid #c2cbd8;
+    .exec-red-btn:active {
+        transform: translateY(2px);
+        border-bottom-width: 1px;
+        box-shadow: 0 4px 8px black;
     }
-    .mode-btn.on { background: #ff4d4d; color: white; border-color: #d90000; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.2); }
 
-    /* 底部导航 */
-    .nav { position:fixed; bottom:0; width:100%; height:75px; background:#fff; border-top:1px solid #ddd; display:grid; grid-template-columns: repeat(4, 1fr); z-index: 1000; }
-    .nav-n { display:flex; flex-direction:column; align-items:center; justify-content:center; color:#888; font-size:11px; font-weight:bold; }
-    .nav-n.act { color:#ff4d4d; }
+    /* 双模式按钮 (内嵌切换) */
+    .tech-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+    }
+    .mode-btn {
+        padding: 16px 10px;
+        background: #2b3443;
+        border-radius: 36px;
+        color: #cbd5e6;
+        font-size: 14px;
+        font-weight: bold;
+        text-align: center;
+        letter-spacing: 1px;
+        box-shadow: inset 3px 3px 7px rgba(0, 0, 0, 0.5), inset -2px -2px 4px rgba(255, 255, 255, 0.08), 2px 4px 8px rgba(0,0,0,0.3);
+        border: 1px solid #202936;
+        cursor: pointer;
+        transition: 0.1s;
+        backdrop-filter: blur(2px);
+    }
+    .mode-btn.on {
+        background: #bc3f2e;
+        color: white;
+        text-shadow: 0 1px 1px black;
+        box-shadow: inset 1px 1px 4px rgba(0,0,0,0.6), inset -1px -1px 3px rgba(255,100,80,0.3);
+        border-color: #882010;
+    }
+    .mode-btn:active {
+        transform: scale(0.97);
+    }
+
+    /* 底部导航栏 (保持原生质感) */
+    .nav {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        height: 78px;
+        background: #11161f;
+        backdrop-filter: blur(8px);
+        border-top: 1px solid #2c3543;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        z-index: 1200;
+        box-shadow: 0 -4px 12px rgba(0,0,0,0.4);
+    }
+    .nav-n {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #7e8a9b;
+        font-size: 11px;
+        font-weight: 600;
+        gap: 4px;
+        letter-spacing: 0.5px;
+    }
+    .nav-n.act {
+        color: #ff6b5b;
+        text-shadow: 0 0 3px rgba(255,80,50,0.5);
+    }
+
+    /* 内嵌文字泛白提升识别度 */
+    .pit-panel div:not(.bal-val):not(.small-label),
+    .console-area .main-row .btn-deep-inset,
+    .mode-btn {
+        transition: all 0.1s;
+    }
+    #ui_bet, .bet-display {
+        font-weight: 800;
+        background: rgba(0,0,0,0.4);
+        padding: 0 6px;
+        border-radius: 16px;
+    }
+    /* 微调余额区域辅文 */
+    .balance-label {
+        font-size: 12px;
+        background: rgba(0,0,0,0.5);
+        display: inline-block;
+        padding: 4px 14px;
+        border-radius: 30px;
+        color: #cddeff;
+        font-weight: 600;
+    }
 </style>
 </head>
 <body>
 
-<div class="status-bar">● QUANT_PULSE_EXTERIOR_V5.1 ●</div>
+<div class="status-bar">⚡ QUANTUM_ENGRAVING · 暗嵌模式 ⚡</div>
 
 <div class="core-section">
+    <!-- 余额面板 厚嵌网格 -->
     <div class="pit-panel" style="text-align: center;">
-        <div style="font-size:11px; color:#555; font-weight:bold; letter-spacing:1px;">AVAILABLE BALANCE (USDT)</div>
+        <div class="balance-label">💰 可用余额 (USDT)</div>
         <div class="bal-val" id="ui_bal">146.8</div>
-        <div style="font-size:12px; color:#666; font-weight:bold;">BET: <span id="ui_bet" style="color:#ff4d4d;">5.5</span></div>
+        <div style="font-size: 13px; margin-top: 6px; font-weight: 600; background: rgba(0,0,0,0.4); display: inline-block; padding: 4px 20px; border-radius: 50px;">
+            🔥 单注额度: <span id="ui_bet" style="color:#ff9166; font-size:18px; font-weight:900;">5.5</span>
+        </div>
     </div>
 
-    <div class="pit-panel" style="display:flex; justify-content:center; align-items:center;">
+    <!-- 转盘区面板 厚重内嵌 -->
+    <div class="pit-panel" style="display:flex; justify-content:center; align-items:center; padding: 12px;">
         <div class="wheel-pit">
             <div class="pointer-arrow"></div>
             <div class="wheel-center-val" id="center_val">X0</div>
@@ -190,65 +405,248 @@
 
 <div class="console-area">
     <div class="main-row">
-        <button class="btn-deep-inset" onclick="changeBet(-0.5)">－</button>
-        <button id="go_btn" class="exec-red-btn" onclick="go()">开始执行</button>
-        <button class="btn-deep-inset" onclick="changeBet(0.5)">＋</button>
+        <button class="btn-deep-inset" id="decBetBtn">−</button>
+        <button id="go_btn" class="exec-red-btn">▶ 执 行 抽 取</button>
+        <button class="btn-deep-inset" id="incBetBtn">＋</button>
     </div>
     <div class="tech-row">
-        <div id="auto_btn" class="mode-btn" onclick="toggleAuto()">🤖 自动模式: 关</div>
-        <div id="speed_btn" class="mode-btn" onclick="cycleSpeed()">⚡ 变速模式: 1X</div>
+        <div id="auto_btn" class="mode-btn">🤖 自动模式: 关</div>
+        <div id="speed_btn" class="mode-btn">⚡ 变速: 1X</div>
     </div>
 </div>
 
 <div class="nav">
-    <div class="nav-n">行情</div><div class="nav-n">资产中心</div><div class="nav-n">历史记录</div><div class="nav-n act">量化终端</div>
+    <div class="nav-n">📊 行情</div>
+    <div class="nav-n">🏦 资产中心</div>
+    <div class="nav-n">📜 历史记录</div>
+    <div class="nav-n act">🎛️ 量化终端</div>
 </div>
 
 <script>
-    let balance = 146.8, bet = 5.5, rot = 0, busy = false, isAuto = false, speedMode = 1;
+    // ---------- 游戏核心 (保留原汁原味玩法 + 增强风格) ----------
+    let balance = 146.8;
+    let bet = 5.5;
+    let rotationDeg = 0;
+    let busy = false;
+    let isAuto = false;
+    let speedMode = 1;       // 1: 5s, 2: 1.2s, 3: 0.5s
+
+    // 倍率映射表
     const beastNames = ["X0", "X50", "X88", "X50", "X120", "X500", "X20", "X0"];
     const multis = [0, 50, 88, 50, 120, 500, 20, 0];
 
-    function toggleAuto() {
-        isAuto = !isAuto;
-        document.getElementById('auto_btn').className = isAuto ? 'mode-btn on' : 'mode-btn';
-        document.getElementById('auto_btn').innerHTML = `🤖 自动模式: ${isAuto ? '开' : '关'}`;
-        if(isAuto && !busy) go();
+    // DOM 元素绑定
+    const wheelEl = document.getElementById('ui_wheel');
+    const balanceEl = document.getElementById('ui_bal');
+    const betSpan = document.getElementById('ui_bet');
+    const centerValSpan = document.getElementById('center_val');
+    const autoBtnDiv = document.getElementById('auto_btn');
+    const speedBtnDiv = document.getElementById('speed_btn');
+    const goBtn = document.getElementById('go_btn');
+
+    // 辅助函数 更新余额显示
+    function updateUI() {
+        balanceEl.innerText = balance.toFixed(1);
+        betSpan.innerText = bet.toFixed(1);
     }
 
-    function cycleSpeed() {
-        speedMode = (speedMode % 3) + 1;
-        document.getElementById('speed_btn').innerHTML = `⚡ 变速模式: ${speedMode}X`;
-        const times = ["", "5s", "1.2s", "0.5s"];
-        document.getElementById('ui_wheel').style.transitionDuration = times[speedMode];
-    }
-
-    function changeBet(val) {
+    // 修改注额
+    function changeBet(delta) {
         if (busy) return;
-        let n = bet + val;
-        if (n >= 0.5) { bet = n; document.getElementById('ui_bet').innerText = bet.toFixed(1); }
+        let newBet = bet + delta;
+        if (newBet >= 0.5 && newBet <= balance) {
+            bet = parseFloat(newBet.toFixed(1));
+        } else if (newBet > balance && delta > 0) {
+            // 不能超过余额，但可以限制到余额
+            if (balance >= 0.5) bet = balance;
+            else bet = 0.5;
+        } else if (newBet < 0.5) {
+            bet = 0.5;
+        }
+        updateUI();
     }
 
-    function go() {
-        if (busy || balance < bet) { isAuto = false; return; }
-        busy = true;
-        const r = Math.floor(Math.random() * 1000);
-        let idx = (r < 500) ? 0 : (r < 850 ? 7 : (r < 950 ? 6 : (r < 980 ? 1 : (r < 990 ? 3 : (r < 996 ? 2 : (r < 999 ? 4 : 5))))));
-        const targetAngle = idx * 45;
-        rot += (Math.floor(Math.random() * 5) + 10) * 360 + (360 - targetAngle - (rot % 360)) + 360;
-        document.getElementById('ui_wheel').style.transform = `rotate(${rot}deg)`;
+    // 变速循环: 1X -> 2X -> 3X -> 1X
+    function cycleSpeed() {
+        if (speedMode === 1) speedMode = 2;
+        else if (speedMode === 2) speedMode = 3;
+        else speedMode = 1;
         
-        const waitTimes = [0, 5000, 1200, 500];
-        setTimeout(() => {
-            const prize = multis[idx] * bet;
-            balance = (balance - bet) + prize;
-            document.getElementById('ui_bal').innerText = balance.toFixed(1);
-            document.getElementById('center_val').innerText = beastNames[idx];
-            if(isAuto) setTimeout(go, 800);
-            setTimeout(() => { busy = false; }, 500);
-        }, waitTimes[speedMode]);
+        let duration = "5s";
+        let speedText = "1X";
+        if (speedMode === 1) { duration = "5s"; speedText = "1X"; }
+        else if (speedMode === 2) { duration = "1.2s"; speedText = "2X"; }
+        else if (speedMode === 3) { duration = "0.5s"; speedText = "3X"; }
+        
+        wheelEl.style.transitionDuration = duration;
+        speedBtnDiv.innerHTML = `⚡ 变速: ${speedText}`;
     }
-</script>
 
+    // 自动模式切换
+    function toggleAuto() {
+        if (busy && !isAuto) {
+            // 若正在旋转中不允许立即开启自动，但可以记录等结束后？
+            return;
+        }
+        isAuto = !isAuto;
+        autoBtnDiv.className = isAuto ? 'mode-btn on' : 'mode-btn';
+        autoBtnDiv.innerHTML = `🤖 自动模式: ${isAuto ? '开' : '关'}`;
+        if (isAuto && !busy && balance >= bet) {
+            // 延迟一点执行，避免事件碰撞
+            setTimeout(() => { if(isAuto && !busy && balance >= bet) executeSpin(); }, 120);
+        }
+    }
+
+    // 根据随机算法得到中奖索引 (原版概率加权)
+    function getRandomIndex() {
+        const r = Math.floor(Math.random() * 1000);
+        if (r < 500) return 0;       // 孤狼 X0  50%
+        else if (r < 850) return 7;  // 仙鹤 X0  35%
+        else if (r < 950) return 6;  // 大鹏 X20 10%
+        else if (r < 980) return 1;  // 猛虎 X50 3%
+        else if (r < 990) return 3;  // 麒麟 X50 1%
+        else if (r < 996) return 2;  // 玄武 X88 0.6%
+        else if (r < 999) return 4;  // 神龙 X120 0.3%
+        else return 5;               // 凤凰 X500 0.1%
+    }
+
+    // 执行转盘动画及结算
+    function executeSpin() {
+        if (busy) return;
+        if (balance < bet) {
+            // 余额不足时强制关闭自动模式
+            if (isAuto) {
+                isAuto = false;
+                autoBtnDiv.className = 'mode-btn';
+                autoBtnDiv.innerHTML = `🤖 自动模式: 关`;
+            }
+            busy = false;
+            return;
+        }
+
+        busy = true;
+        
+        // 抽选中奖索引
+        const winIdx = getRandomIndex();
+        const targetBaseAngle = winIdx * 45;   // 每个扇形45度
+        
+        // 计算旋转增量：保证最终指针指向目标区块的中央 (原逻辑适配)
+        // 使转盘停下来时，目标区块指向红色指针方向（指针固定在上方12点钟方向）
+        // 为了精确，需要让转盘在结束时的偏移角度使得 targetBaseAngle 的反方向正好对上指针。
+        // 由于指针朝上(0°方向为12点)，而扇区0在起始0度位置，为了让指针指向扇区中央，调整:
+        // 我们希望最终转盘偏移角度为 (360 - targetBaseAngle + 偏移修正)
+        let currentMod = rotationDeg % 360;
+        // 目标停止角度：指针固定朝上，若需要扇区 central 指向指针，扇区中心偏移22.5度（因每个扇区45°，中心偏移22.5°）
+        const targetStopAngle = (360 - targetBaseAngle + 22.5) % 360;
+        let delta = (targetStopAngle - currentMod + 360) % 360;
+        // 增加多圈旋转 (8~12圈) 使动效华丽
+        let extraRounds = 8 + Math.floor(Math.random() * 6);
+        let finalRot = rotationDeg + delta + extraRounds * 360;
+        rotationDeg = finalRot;
+        
+        wheelEl.style.transform = `rotate(${rotationDeg}deg)`;
+        
+        // 根据不同变速模式设定动画时长 (已在cycleSpeed中改变transitionDuration)
+        let durationMap = {1: 5000, 2: 1200, 3: 500};
+        let animMs = durationMap[speedMode] || 5000;
+        
+        setTimeout(() => {
+            // 结算奖金
+            const multiplier = multis[winIdx];
+            const prize = multiplier * bet;
+            const netChange = prize - bet;
+            balance = balance + netChange;
+            if (balance < 0) balance = 0;
+            updateUI();
+            
+            // 显示倍率彩蛋文本
+            centerValSpan.innerText = beastNames[winIdx];
+            // 视觉微震反馈 (让中心闪一下)
+            centerValSpan.style.transform = "scale(1.2)";
+            setTimeout(() => { centerValSpan.style.transform = ""; }, 180);
+            
+            // 如果余额不足 且 自动模式开着，关掉自动
+            if (balance < bet) {
+                if (isAuto) {
+                    isAuto = false;
+                    autoBtnDiv.className = 'mode-btn';
+                    autoBtnDiv.innerHTML = `🤖 自动模式: 关`;
+                }
+                busy = false;
+                return;
+            }
+            
+            busy = false;
+            
+            // 自动模式递归调用
+            if (isAuto && balance >= bet) {
+                // 间隔自然延迟0.6秒，让动画优雅衔接
+                setTimeout(() => {
+                    if (isAuto && !busy && balance >= bet) {
+                        executeSpin();
+                    } else if (isAuto && balance < bet) {
+                        isAuto = false;
+                        autoBtnDiv.className = 'mode-btn';
+                        autoBtnDiv.innerHTML = `🤖 自动模式: 关`;
+                    }
+                }, 450);
+            }
+        }, animMs);
+    }
+
+    // 暴露全局 go 函数
+    function go() {
+        if (busy) return;
+        if (balance < bet) {
+            // 余额不足提示感
+            centerValSpan.innerText = "余额不足";
+            setTimeout(() => { if(centerValSpan.innerText === "余额不足") centerValSpan.innerText = beastNames[0]; }, 800);
+            if(isAuto) toggleAuto();
+            return;
+        }
+        executeSpin();
+    }
+
+    // 绑定加减按钮，并支持长按加速（可选简单交互）
+    const decBtn = document.getElementById('decBetBtn');
+    const incBtn = document.getElementById('incBetBtn');
+    
+    decBtn.onclick = () => changeBet(-0.5);
+    incBtn.onclick = () => changeBet(0.5);
+    
+    // 额外绑定执行按钮
+    window.go = go;
+    // 绑定自动和变速
+    window.toggleAuto = toggleAuto;
+    window.cycleSpeed = cycleSpeed;
+    
+    // 修正切换自动时的内部全局调用
+    autoBtnDiv.onclick = () => toggleAuto();
+    speedBtnDiv.onclick = () => cycleSpeed();
+    goBtn.onclick = () => go();
+    
+    // 防连点且初始化变速显示的过渡时间
+    wheelEl.style.transitionDuration = "5s";
+    
+    // 预置随机初始化转盘轻微角度，看起来不呆板
+    (function initRotation() {
+        let initOffset = Math.random() * 45;
+        rotationDeg = initOffset;
+        wheelEl.style.transform = `rotate(${rotationDeg}deg)`;
+        updateUI();
+        centerValSpan.innerText = "X0";
+    })();
+    
+    // 若因余额不足自动模式关掉后，手动恢复自动不再重复调用
+    // 额外监听: 用户点击自动若忙碌时稍后重试 
+    window.addEventListener('load', () => {
+        // 确保所有样式均生效
+        document.body.style.overflow = "hidden";
+    });
+    
+    // 修复自动模式下余额不足停止，再次充钱逻辑不会影响（由下次点击自动重新开启）
+    // 辅助优雅展示立体内嵌风格：给面板增加类
+    console.log("暗灰内嵌厚重模式已激活，所有网格填满深嵌视觉");
+</script>
 </body>
 </html>
