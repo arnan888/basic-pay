@@ -2,6 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 
@@ -12,169 +13,155 @@
         color:#333; 
         font-family: "PingFang SC", sans-serif; 
         height:100vh; 
-        overflow:hidden; 
         display:flex; 
         flex-direction:column; 
+        overflow: hidden;
     }
 
-    .status-bar { background: rgba(0,0,0,0.3); height:28px; display:flex; align-items:center; padding:0 15px; font-size:10px; color:#fff; justify-content:center; }
+    .status-bar { background: rgba(0,0,0,0.1); height:28px; display:flex; align-items:center; padding:0 15px; font-size:10px; color:#fff; justify-content:center; flex-shrink: 0; }
 
-    .core-section { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:15px; gap:20px; }
+    /* 核心显示区：自动填满剩余空间 */
+    .core-section { 
+        flex: 1; 
+        display:flex; 
+        flex-direction:column; 
+        align-items:center; 
+        justify-content: space-evenly; /* 均匀分布板块，防止挤压 */
+        padding:10px 15px;
+        min-height: 0; 
+    }
 
-    /* --- 核心修改：灰色外凸内陷模板 --- */
+    /* 灰白色拟物化面板 */
     .panel-grey-emboss {
         width:100%;
-        background: #d1d5db; /* 基础灰色 */
-        border-radius: 20px;
-        /* 外凸效果：右下深色阴影，左上白色高光 */
-        box-shadow: 
-            8px 8px 16px rgba(0,0,0,0.2), 
-            -8px -8px 16px rgba(255,255,255,0.8);
-        padding: 20px;
-        position: relative;
+        max-width: 400px;
+        background: #e0e5ec;
+        border-radius: 24px;
+        box-shadow: 9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5);
+        padding: 12px;
     }
 
-    /* 内嵌槽：用于放置数字或转盘 */
     .inset-well {
-        background: #bdc3c7;
-        border-radius: 15px;
-        /* 内陷效果：内部上方深色阴影，内部下方白色高光 */
-        box-shadow: 
-            inset 6px 6px 12px rgba(0,0,0,0.15), 
-            inset -4px -4px 8px rgba(255,255,255,0.5);
+        background: #e0e5ec;
+        border-radius: 18px;
+        box-shadow: inset 6px 6px 12px rgba(163,177,198,0.8), inset -6px -6px 12px rgba(255,255,255,0.5);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
     }
 
-    /* 余额区数字 */
-    .bal-val { 
-        font-size:62px; 
-        font-weight:900; 
-        color: #ef4444; /* 红色数字 */
-        font-family: 'Verdana', sans-serif;
-        margin: 10px 0;
-    }
+    .bal-val { font-size: 56px; font-weight: 900; color: #ff4d4d; font-family: 'Verdana', sans-serif; margin: 5px 0; }
 
-    /* 转盘外圈：同样做成灰色立体感 */
+    /* 转盘 */
     .wheel-outer { 
-        width: 260px; 
-        height: 260px; 
-        border-radius: 50%; 
-        position: relative; 
-        border: 4px solid #9ca3af;
-        background: #e5e7eb;
-        /* 转盘本身的立体感 */
-        box-shadow: 
-            5px 5px 10px rgba(0,0,0,0.1),
-            -5px -5px 10px rgba(255,255,255,0.6);
+        width: 240px; height: 240px; border-radius: 50%; position: relative; 
+        background: linear-gradient(145deg, #f0f0f0, #cacaca);
+        box-shadow: 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff;
+        border: 2px solid #d1d5db;
         transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1);
         overflow: hidden;
     }
 
     .wheel-center-val {
-        position: absolute;
-        z-index: 10;
-        width: 70px;
-        height: 70px;
-        background: #d1d5db;
-        border-radius: 50%;
-        border: 2px solid #9ca3af;
-        display: flex;
-        align-items:center;
-        justify-content:center;
-        color: #ef4444;
-        font-size: 20px;
-        font-weight: 900;
-        box-shadow: 3px 3px 6px rgba(0,0,0,0.1);
+        position: absolute; z-index: 10; width: 65px; height: 65px; background: #e0e5ec;
+        border-radius: 50%; display: flex; align-items:center; justify-content:center;
+        color: #ff4d4d; font-size: 20px; font-weight: 900;
+        box-shadow: 3px 3px 6px #b8b9be, -3px -3px 6px #ffffff; border: 1px solid #d1d5db;
     }
 
-    .slot-content { position:absolute; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; padding-top:15px; }
+    .slot-content { position:absolute; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; padding-top:12px; }
     .beast-ico { font-size: 24px; }
-    .beast-txt { font-size: 10px; color:#4b5563; font-weight:bold; }
+    .beast-txt { font-size: 10px; color:#666; font-weight:bold; }
+    .pointer-line { position:absolute; top:8px; left:50%; transform:translateX(-50%); width:4px; height:40px; background:#ff4d4d; z-index:100; border-radius:3px; }
 
-    .pointer-line {
-        position:absolute; top:10px; left:50%; transform:translateX(-50%);
-        width:4px; height:40px; background:#ef4444; z-index:100; border-radius:2px;
-    }
-
-    /* --- 底部控制台 --- */
+    /* --- 控制台区域：修复对齐与叠压 --- */
     .console-area { 
         width:100%; 
-        background:#bdc3c7; 
-        padding:20px 20px 85px 20px; 
+        background: #e0e5ec; 
+        padding: 20px 20px calc(75px + 20px) 20px; /* 增加底部Padding为导航栏留座，防止重叠 */
         border-radius: 30px 30px 0 0;
         box-shadow: 0 -10px 20px rgba(0,0,0,0.1);
+        flex-shrink: 0;
     }
 
-    .main-row { display:flex; gap:12px; margin-bottom:15px; }
+    .main-row { 
+        display:flex; 
+        align-items: center; 
+        justify-content: space-between; /* 确保左右按键与中间按钮完美对齐 */
+        gap: 15px; 
+        margin-bottom: 20px;
+        width: 100%;
+    }
 
-    /* 加减按键：内嵌质感 */
     .btn-deep-inset { 
-        background: #d1d5db; 
-        border: 1px solid #9ca3af; 
-        color:#4b5563; font-size:32px; border-radius:12px;
+        background: #e0e5ec; 
+        color:#777; font-size:28px; border-radius:15px;
         display:flex; align-items:center; justify-content:center;
-        width:65px; height:60px;
-        box-shadow: inset 4px 4px 8px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.5);
+        width: 60px; height: 60px; /* 固定宽高防止变形 */
+        flex-shrink: 0; /* 禁止被挤压 */
+        box-shadow: inset 4px 4px 8px #b8b9be, inset -4px -4px 8px #ffffff;
+        border: none;
+        cursor: pointer;
     }
 
-    /* --- 修改：红色对象开始按键（不发光） --- */
+    /* 红色按键：纯色不发光，对齐加厚 */
     .exec-red-btn { 
-        flex:1; height:60px; 
-        background: #cc0000; /* 纯正红色 */
+        flex: 1; /* 自动撑满中间空间 */
+        height: 60px; 
+        background: #d90000; 
         border: none;
-        border-bottom: 4px solid #880000; /* 底部深色模拟厚度 */
-        color:#fff; font-size:22px; font-weight:900; border-radius:12px;
+        border-bottom: 5px solid #a00000; 
+        color:#fff; font-size:20px; font-weight:900; border-radius:15px;
         letter-spacing:2px;
         cursor: pointer;
-        /* 只有结构阴影，没有发光(glow) */
-        box-shadow: 0 4px 0 #880000, 0 8px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         transition: all 0.1s;
     }
-    .exec-red-btn:active {
-        transform: translateY(3px);
-        border-bottom-width: 1px;
-        box-shadow: 0 1px 0 #880000, 0 2px 5px rgba(0,0,0,0.2);
-    }
+    .exec-red-btn:active { transform: translateY(2px); border-bottom-width: 2px; }
 
     .tech-row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
     .mode-btn { 
-        padding:12px; background:#d1d5db; border: 1px solid #9ca3af; 
-        color:#4b5563; font-size:12px; border-radius:10px; text-align:center;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+        padding:14px; background:#e0e5ec; border-radius:12px;
+        color:#666; font-size:12px; text-align:center;
+        box-shadow: 3px 3px 6px #b8b9be, -3px -3px 6px #ffffff;
     }
-    .mode-btn.on { background: #ef4444; color: white; border-color: #b91c1c; }
+    .mode-btn.on { background: #ff4d4d; color: white; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.2); }
 
-    .nav { position:fixed; bottom:0; width:100%; height:75px; background:#fff; border-top:1px solid #ddd; display:grid; grid-template-columns: repeat(4, 1fr); }
-    .nav-n { display:flex; flex-direction:column; align-items:center; justify-content:center; color:#9ca3af; font-size:11px; font-weight:bold; }
-    .nav-n.act { color:#ef4444; }
+    /* 底部导航栏：固定在最下方 */
+    .nav { 
+        position:fixed; bottom:0; width:100%; height:75px; 
+        background:#fff; border-top:1px solid #eee; 
+        display:grid; grid-template-columns: repeat(4, 1fr); 
+        z-index: 1000;
+    }
+    .nav-n { display:flex; flex-direction:column; align-items:center; justify-content:center; color:#999; font-size:11px; font-weight:bold; }
+    .nav-n.act { color:#ff4d4d; }
 </style>
 </head>
 <body>
 
-<div class="status-bar">● QUANT_PULSE_EXTERIOR_V2 ●</div>
+<div class="status-bar">● QUANT_PULSE_EXTERIOR_V3.1 ●</div>
 
 <div class="core-section">
     <div class="panel-grey-emboss">
         <div class="inset-well" style="padding: 15px;">
-            <div style="font-size:11px; color:#4b5563; margin-bottom:5px; font-weight:bold;">AVAILABLE BALANCE (USDT)</div>
-            <div class="bal-val" id="ui_bal">100.3</div>
-            <div style="font-size:12px; color:#666;">BET: <span id="ui_bet" style="color:#ef4444; font-weight:bold;">0.5</span></div>
+            <div style="font-size:11px; color:#888; font-weight:bold;">AVAILABLE BALANCE (USDT)</div>
+            <div class="bal-val" id="ui_bal">99.8</div>
+            <div style="font-size:12px; color:#999;">BET: <span id="ui_bet" style="color:#ff4d4d; font-weight:bold;">0.5</span></div>
         </div>
     </div>
 
-    <div class="panel-grey-emboss" style="display:flex; justify-content:center; align-items:center; padding: 25px;">
-        <div class="inset-well" style="width:280px; height:280px; border-radius:50%;">
+    <div class="panel-grey-emboss" style="display:flex; justify-content:center; align-items:center;">
+        <div class="inset-well" style="width:260px; height:260px; border-radius:50%;">
             <div class="pointer-line"></div>
-            <div class="wheel-center-val" id="center_val">READY</div>
+            <div class="wheel-center-val" id="center_val">X0</div>
             <div id="ui_wheel" class="wheel-outer">
                 <div class="slot-content" style="transform:rotate(0deg)"><span class="beast-ico">🦢</span><span class="beast-txt">孤鸿</span></div>
                 <div class="slot-content" style="transform:rotate(45deg)"><span class="beast-ico">🐺</span><span class="beast-txt">孤狼</span></div>
                 <div class="slot-content" style="transform:rotate(90deg)"><span class="beast-ico">🐢</span><span class="beast-txt">玄武</span></div>
-                <div class="slot-content" style="transform:rotate(135deg)"><span class="beast-ico">鹿</span><span class="beast-txt">麒麟</span></div>
-                <div class="slot-content" style="transform:rotate(180deg)"><span class="beast-ico">🐲</span><span class="beast-txt" style="color:#ef4444">神龙</span></div>
+                <div class="slot-content" style="transform:rotate(135deg)"><span class="beast-ico">🦌</span><span class="beast-txt">麒麟</span></div>
+                <div class="slot-content" style="transform:rotate(180deg)"><span class="beast-ico">🐲</span><span class="beast-txt" style="color:#ff4d4d">神龙</span></div>
                 <div class="slot-content" style="transform:rotate(225deg)"><span class="beast-ico">🔥</span><span class="beast-txt">凤凰</span></div>
                 <div class="slot-content" style="transform:rotate(270deg)"><span class="beast-ico">🦅</span><span class="beast-txt">大鹏</span></div>
                 <div class="slot-content" style="transform:rotate(315deg)"><span class="beast-ico">🦢</span><span class="beast-txt">仙鹤</span></div>
@@ -185,9 +172,9 @@
 
 <div class="console-area">
     <div class="main-row">
-        <div class="btn-deep-inset" onclick="changeBet(-0.5)">－</div>
+        <button class="btn-deep-inset" onclick="changeBet(-0.5)">－</button>
         <button id="go_btn" class="exec-red-btn" onclick="go()">开始执行</button>
-        <div class="btn-deep-inset" onclick="changeBet(0.5)">＋</div>
+        <button class="btn-deep-inset" onclick="changeBet(0.5)">＋</button>
     </div>
     <div class="tech-row">
         <div id="auto_btn" class="mode-btn" onclick="toggleAuto()">🤖 自动模式: 关</div>
@@ -200,7 +187,8 @@
 </div>
 
 <script>
-    let balance = 100.3, bet = 0.5, rot = 0, busy = false, isAuto = false, speedMode = 1;
+    // 保持逻辑一致
+    let balance = 99.8, bet = 0.5, rot = 0, busy = false, isAuto = false, speedMode = 1;
     const beastNames = ["X0", "X0", "X120", "X500", "X50", "X88", "X50", "X20"];
     const multis = [0, 0, 120, 500, 50, 88, 50, 20];
 
