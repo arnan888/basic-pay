@@ -1,204 +1,56 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI_QUANT_PULSE_EXTERIOR</title>
-    <style>
-        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-        
-        /* 1. 全局绿色区域大幅提亮 + 红色脉冲点点缀 */
-        body { 
-            background: #3fb950; 
-            background-image: 
-                radial-gradient(circle at 10% 10%, rgba(255, 0, 0, 0.4) 2px, transparent 3px), /* 红色脉冲点 */
-                radial-gradient(circle at 90% 20%, rgba(255, 0, 0, 0.4) 2px, transparent 3px),
-                radial-gradient(circle at 50% 50%, #4ade80 0%, #166534 100%);
-            background-size: 100% 100%, 100% 100%, 100% 100%;
-            color:#FFF; font-family: "PingFang SC", sans-serif; 
-            height:100vh; overflow:hidden; display:flex; flex-direction:column;
-            box-shadow: inset 0 0 60px rgba(255,255,255,0.2);
-        }
+<script>
+/* ===============================
+   机械噪音模块（低频工业感）
+   一键粘贴 · 不破原逻辑
+   =============================== */
 
-        .status-bar { background: rgba(0,0,0,0.5); height:28px; display:flex; align-items:center; padding:0 15px; font-size:10px; color:#fff; justify-content:center; }
+let audioCtx, noiseNode, gainNode;
+let noiseOn = true;
 
-        .core-section { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:15px; gap:15px; }
+/* 初始化噪音 */
+function initNoise() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        /* 2. 功能板块：大黑边点缀白光体 */
-        .panel-inset {
-            width:100%; background: #050807; border-radius:18px;
-            border: 2px solid #000;
-            /* 白色发光点点缀在黑边里 */
-            background-image: 
-                radial-gradient(circle at 5% 5%, rgba(255,255,255,0.2) 1px, transparent 2px),
-                radial-gradient(circle at 95% 95%, rgba(255,255,255,0.2) 1px, transparent 2px);
-            box-shadow: inset 10px 10px 20px rgba(0,0,0,0.9), 0 0 15px rgba(0,0,0,0.5);
-        }
+    const bufferSize = 2 * audioCtx.sampleRate;
+    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
 
-        /* 余额区：红色大数字 */
-        .balance-card { padding:22px; text-align:center; position:relative; }
-        .bal-val { 
-            font-size:62px; font-weight:900; 
-            color: #ef4444; 
-            text-shadow: 0 0 20px rgba(239, 68, 68, 0.6); 
-            font-family: 'Verdana', sans-serif; 
-        }
+    for (let i = 0; i < bufferSize; i++) {
+        output[i] = (Math.random() * 2 - 1) * 0.15; // 低强度噪音
+    }
 
-        /* 3. 转盘区：内陷黑盘 + 白色星光点 */
-        .wheel-well { 
-            position:relative; width:100%; max-width:320px; aspect-ratio: 1/1; 
-            display:flex; align-items:center; justify-content:center; 
-        }
-        
-        .wheel-outer {
-            width: 82%; height: 82%; border-radius: 50%; position: relative; 
-            border: 6px solid #000; overflow: hidden;
-            /* 黑色转盘内的白色发光体点缀 */
-            background: #050807;
-            background-image: radial-gradient(circle at 30% 20%, #fff 0.5px, transparent 1px),
-                              radial-gradient(circle at 70% 80%, #fff 0.5px, transparent 1px);
-            transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1);
-            box-shadow: 0 0 25px rgba(0,0,0,0.8);
-        }
-        
-        .wheel-center-val {
-            position: absolute; z-index: 10; width: 75px; height: 75px; background: #0d1110;
-            border-radius: 50%; border: 1px solid #222; display: flex; align-items:center; justify-content:center;
-            color: #ef4444; font-size: 22px; font-weight: 900;
-        }
-        
-        .slot-content { position:absolute; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; padding-top:10px; }
-        .beast-ico { font-size: 26px; }
-        .beast-txt { font-size: 10px; color:#444; font-weight:bold; }
-        .pointer-line { position:absolute; top:5px; left:50%; transform:translateX(-50%); width:3px; height:45px; background:#ef4444; z-index:100; border-radius:2px; box-shadow: 0 0 10px #ef4444; }
+    noiseNode = audioCtx.createBufferSource();
+    noiseNode.buffer = noiseBuffer;
+    noiseNode.loop = true;
 
-        /* 4. 下分按键区（锁死不动，保持原有内陷质感） */
-        .console-area { 
-            width:100%; background:#0d1110; padding:20px 20px 85px 20px; 
-            border-radius: 25px 25px 0 0; border-top: 2px solid #000;
-        }
-        
-        .main-row { display:flex; gap:12px; margin-bottom:15px; }
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = 0.03; // ⚠️ 噪音强度（越小越稳）
 
-        .btn-deep-inset {
-            background: #080a09; 
-            border: 1px solid #1a1a1a; color:#555; font-size:32px; border-radius:12px;
-            display:flex; align-items:center; justify-content:center;
-            box-shadow: inset 6px 6px 12px rgba(0,0,0,0.9), inset -2px -2px 6px rgba(255,255,255,0.01); 
-        }
-        .adj { width:65px; height:60px; }
+    noiseNode.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+}
 
-        .exec-red-inset { 
-            flex:1; height:60px; 
-            background: #991b1b; 
-            border: 1px solid #450a0a; color:#fff; font-size:24px; font-weight:900; 
-            border-radius:12px; letter-spacing:4px;
-            box-shadow: inset 5px 5px 10px rgba(0,0,0,0.6), inset -2px -2px 8px rgba(255,255,255,0.05);
-        }
-        
-        .tech-row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-        .mode-btn { 
-            padding:14px; background:#080a09; border: 1px solid #1a1a1a; color:#333; font-size:12px; border-radius:10px; text-align:center;
-            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.6);
-        }
-        .mode-btn.on { color:#ef4444; border-color:#991b1b; }
+/* 开始噪音 */
+function startNoise() {
+    if (!noiseOn) return;
+    initNoise();
+    try { noiseNode.start(); } catch(e){}
+}
 
-        .nav { position:fixed; bottom:0; width:100%; height:75px; background:#000; border-top:1px solid #111; display:grid; grid-template-columns: repeat(4, 1fr); }
-        .nav-n { display:flex; flex-direction:column; align-items:center; justify-content:center; color:#333; font-size:11px; font-weight:bold; }
-        .nav-n.act { color:#ef4444; }
-    </style>
-</head>
-<body>
+/* 停止噪音 */
+function stopNoise() {
+    if (noiseNode) {
+        try { noiseNode.stop(); } catch(e){}
+        noiseNode = null;
+    }
+}
 
-    <div class="status-bar">● PULSE_EXTERIOR_ACTIVE ● </div>
-
-    <div class="core-section">
-        <!-- 余额区：黑色面板点缀白光，红色数字 -->
-        <div class="panel-inset balance-card">
-            <div style="font-size:10px; color:#166534; margin-bottom:12px; letter-spacing:1px; font-weight:900;">AVAILABLE BALANCE (USDT)</div>
-            <div class="bal-val" id="ui_bal">100.3</div>
-            <div style="font-size:11px; color:#1a2f23; margin-top:8px;">UNIT_BET: <span id="ui_bet" style="color:#ef4444">0.5</span></div>
-        </div>
-
-        <!-- 转盘区：黑底白星光 -->
-        <div class="panel-inset wheel-well">
-            <div class="pointer-line"></div>
-            <div class="wheel-center-val" id="center_val">X88</div>
-            <div id="ui_wheel" class="wheel-outer">
-                <div class="slot-content" style="transform:rotate(0deg)"><span class="beast-ico">🦢</span><span class="beast-txt">孤鸿</span></div>
-                <div class="slot-content" style="transform:rotate(45deg)"><span class="beast-ico">🐺</span><span class="beast-txt">孤狼</span></div>
-                <div class="slot-content" style="transform:rotate(90deg)"><span class="beast-ico">🐢</span><span class="beast-txt">玄武</span></div>
-                <div class="slot-content" style="transform:rotate(135deg)"><span class="beast-ico">🦌</span><span class="beast-txt">麒麟</span></div>
-                <div class="slot-content" style="transform:rotate(180deg)"><span class="beast-ico">🐲</span><span class="beast-txt" style="color:#ef4444">神龙</span></div>
-                <div class="slot-content" style="transform:rotate(225deg)"><span class="beast-ico">🔥</span><span class="beast-txt">凤凰</span></div>
-                <div class="slot-content" style="transform:rotate(270deg)"><span class="beast-ico">🦅</span><span class="beast-txt">大鹏</span></div>
-                <div class="slot-content" style="transform:rotate(315deg)"><span class="beast-ico">🦢</span><span class="beast-txt">仙鹤</span></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 底部控制台：下分按键不动 -->
-    <div class="console-area">
-        <div class="main-row">
-            <div class="btn-deep-inset adj" onclick="changeBet(-0.5)">－</div>
-            <button id="go_btn" class="exec-red-inset" onclick="go()">开始执行</button>
-            <div class="btn-deep-inset adj" onclick="changeBet(0.5)">＋</div>
-        </div>
-        <div class="tech-row">
-            <div id="auto_btn" class="mode-btn" onclick="toggleAuto()">🤖 自动模式: 关</div>
-            <div id="speed_btn" class="mode-btn" onclick="cycleSpeed()">⚡ 变速模式: 1X</div>
-        </div>
-    </div>
-
-    <div class="nav">
-        <div class="nav-n">行情</div><div class="nav-n">资产中心</div><div class="nav-n">历史记录</div><div class="nav-n act">量化终端</div>
-    </div>
-
-    <script>
-        let balance = 100.3, bet = 0.5, rot = 0, busy = false, isAuto = false, speedMode = 1;
-        const beastNames = ["X0", "X0", "X120", "X500", "X50", "X88", "X50", "X20"];
-        const multis = [0, 0, 120, 500, 50, 88, 50, 20];
-
-        function toggleAuto() {
-            isAuto = !isAuto;
-            document.getElementById('auto_btn').className = isAuto ? 'mode-btn on' : 'mode-btn';
-            document.getElementById('auto_btn').innerHTML = `🤖 自动模式: ${isAuto ? '开' : '关'}`;
-            if(isAuto && !busy) go();
-        }
-
-        function cycleSpeed() {
-            speedMode = (speedMode % 3) + 1;
-            const btn = document.getElementById('speed_btn');
-            btn.innerHTML = `⚡ 变速模式: ${speedMode}X`;
-            const times = ["", "5s", "1.2s", "0.5s"];
-            document.getElementById('ui_wheel').style.transitionDuration = times[speedMode];
-        }
-
-        function changeBet(val) {
-            if (busy) return;
-            let n = bet + val;
-            if (n >= 0.5) { bet = n; document.getElementById('ui_bet').innerText = bet.toFixed(1); }
-        }
-
-        function go() {
-            if (busy || balance < bet) { isAuto = false; return; }
-            busy = true;
-            document.getElementById('go_btn').style.opacity = "0.7";
-            const r = Math.floor(Math.random() * 1000);
-            let idx = (r < 500) ? 0 : (r < 850 ? 1 : (r < 950 ? 7 : (r < 980 ? 6 : (r < 990 ? 2 : (r < 996 ? 5 : (r < 999 ? 4 : 3))))));
-            const targetAngle = idx * 45; 
-            rot += (Math.floor(Math.random() * 5) + 10) * 360 + (360 - targetAngle - (rot % 360)) + 360;
-            document.getElementById('ui_wheel').style.transform = `rotate(${rot}deg)`;
-            const waitTimes = [0, 5000, 1200, 500];
-            setTimeout(() => {
-                const prize = multis[idx] * bet;
-                balance = (balance - bet) + prize;
-                document.getElementById('ui_bal').innerText = balance.toFixed(1);
-                document.getElementById('center_val').innerText = beastNames[idx];
-                if(isAuto) setTimeout(go, 800);
-                setTimeout(() => { busy = false; document.getElementById('go_btn').style.opacity = "1"; }, 500);
-            }, waitTimes[speedMode]);
-        }
-    </script>
-</body>
-</html>
+/* ===== 挂钩到你原有 go() ===== */
+const _go = go;
+go = function () {
+    startNoise();
+    _go();
+    setTimeout(stopNoise, 1200); // 转盘后自动停
+};
+</script>
