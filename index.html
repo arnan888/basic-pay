@@ -3,68 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ZH_CONGRATS_FINAL</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #000; color: #FFD700; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; font-family: sans-serif; }
-        .bal { font-size: 58px; font-weight: 900; margin-bottom: 25px; text-shadow: 0 0 20px #f00; }
-
-        /* 转盘容器 */
-        .box { width: 360px; height: 360px; position: relative; border: 10px solid #FFD700; border-radius: 50%; background: radial-gradient(circle, #400, #000); }
-        .ptr { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 35px solid #f00; z-index: 100; }
-        
-        /* 旋转体 */
-        .wheel { width: 100%; height: 100%; position: relative; transition: transform 4s cubic-bezier(0.1, 0, 0, 1.1); }
-
-        /* 物理死锁：图标+文字垂直居中，不偏离 */
-        .item {
-            position: absolute; width: 140px; height: 100%;
-            left: 50%; margin-left: -70px;
-            display: flex; flex-direction: column; align-items: center;
-            transform-origin: 50% 50%;
-        }
-        .item-wrap {
-            margin-top: 25px;
-            display: flex; flex-direction: column; align-items: center;
-            width: 100%;
-        }
-        .item-wrap img { width: 62px; height: 62px; border-radius: 50%; border: 2px solid #FFD700; background: #200; margin-bottom: 5px; }
-        .item-wrap b { font-size: 13px; color: #fff; text-shadow: 2px 2px 2px #000; white-space: nowrap; }
-        .item-wrap span { font-size: 11px; color: #FFD700; font-weight: bold; margin-top: 2px; }
-
-        /* 中心珠海按钮 */
-        .btn-zh { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; border-radius: 50%; background: #008000; border: 4px solid #fff; color: #fff; z-index: 200; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: bold; box-shadow: 0 6px 0 #004d00; cursor: pointer; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background:#000; color:#FFD700; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; overflow:hidden; font-family:sans-serif; }
+        .hud { position:fixed; top:0; width:100%; display:flex; justify-content:space-around; padding:10px; background:#111; font-size:10px; border-bottom:1px solid #FFD700; z-index:999; }
+        .bal { font-size:55px; font-weight:900; margin-bottom:20px; text-shadow:0 0 20px red; }
+        /* 物理死锁对齐：杜绝文字右偏 */
+        .stage { width:350px; height:350px; position:relative; border:10px solid #FFD700; border-radius:50%; background:radial-gradient(circle,#500,#100); box-shadow:0 0 50px rgba(255,0,0,0.6); }
+        .ptr { position:absolute; top:-20px; left:50%; transform:translateX(-50%); border:18px solid transparent; border-top:40px solid #f00; z-index:100; }
+        .wheel { width:100%; height:100%; position:relative; transition:transform 4s cubic-bezier(0.1,0,0,1.1); }
+        .slot { position:absolute; width:160px; height:100%; left:50%; margin-left:-80px; display:flex; flex-direction:column; align-items:center; transform-origin:50% 50%; }
+        .unit { margin-top:25px; display:flex; flex-direction:column; align-items:center; text-align:center; width:100%; }
+        .unit img { width:60px; height:60px; border-radius:50%; border:2px solid #FFD700; background:#200; box-shadow:0 4px 8px #000; }
+        .unit b { font-size:13px; color:#fff; white-space:nowrap; text-shadow:1px 1px 3px #000; margin-top:5px; font-weight:900; }
+        .unit i { font-style:normal; font-size:10px; color:#0f0; background:rgba(0,0,0,0.8); padding:0 6px; border-radius:10px; margin-top:2px; border:1px solid #0f0; }
+        /* 中心大字：祝贺 */
+        .btn { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:100px; height:100px; border-radius:50%; background:radial-gradient(circle,#f00,#900); border:4px solid #FFD700; color:#fff; z-index:200; display:flex; align-items:center; justify-content:center; font-size:32px; font-weight:900; box-shadow:0 8px 0 #400; cursor:pointer; text-shadow:2px 2px 4px #000; }
+        .btn:active { transform:translate(-50%,-50%) translateY(8px); box-shadow:0 2px 0 #400; }
     </style>
 </head>
 <body>
+    <div class="hud"><span>RTP: <b id="r">0%</b></span><span>投: <b id="i">0</b></span><span>获: <b id="o">0</b></span></div>
     <div class="bal" id="v">89,037.00</div>
-
-    <div class="box">
+    <div class="stage">
         <div class="ptr"></div>
         <div class="wheel" id="w">
-            <div class="item" style="transform: rotate(0deg);"><div class="item-wrap"><img src="https://img.icons8.com/color/96/tiger.png"><b>大桥·旗开得胜</b><span>祝贺+88</span></div></div>
-            <div class="item" style="transform: rotate(45deg);"><div class="item-wrap"><img src="https://img.icons8.com/color/96/lion.png"><b>横琴·马到成功</b><span>祝贺+50</span></div></div>
-            <div class="item" style="transform: rotate(90deg);"><div class="item-wrap"><img src="https://img.icons8.com/color/96/wolf.png"><b>渔女·红运当头</b><span>祝贺+20</span></div></div>
-            <div class="item" style="transform: rotate(135deg);"><div class="item-wrap"><img src="https://img.icons8.com/emoji/96/sparkles.png"><b>航展·一飞冲天</b><span>捷报</span></div></div>
-            <div class="item" style="transform: rotate(180deg);"><div class="item" style="transform: rotate(0deg); width:140px; margin-left:-70px;"><div class="item-wrap"><img src="https://img.icons8.com/color/96/dog.png"><b>情侣路·万事顺</b><span>祝贺+15</span></div></div></div>
-            <div class="item" style="transform: rotate(225deg);"><div class="item-wrap"><img src="https://img.icons8.com/emoji/96/ocean.png"><b>伶仃洋·大获胜</b><span>捷报</span></div></div>
-            <div class="item" style="transform: rotate(270deg);"><div class="item-wrap"><img src="https://img.icons8.com/color/96/dolphin.png"><b>特区·首战告捷</b><span>祝贺+120</span></div></div>
-            <div class="item" style="transform: rotate(315deg);"><div class="item-wrap"><img src="https://img.icons8.com/emoji/96/coffee.png"><b>慢生活·步步高</b><span>捷报</span></div></div>
+            <div class="slot" style="transform:rotate(0deg)"><div class="unit"><img src="https://img.icons8.com/color/96/tiger.png"><b>大桥·旗开得胜</b><i>荣誉+88</i></div></div>
+            <div class="slot" style="transform:rotate(45deg)"><div class="unit"><img src="https://img.icons8.com/color/96/lion.png"><b>伶仃洋·无惧浪</b><i>荣誉+50</i></div></div>
+            <div class="slot" style="transform:rotate(90deg)"><div class="unit"><img src="https://img.icons8.com/color/96/wolf.png"><b>日月贝·乘风破</b><i>荣誉+20</i></div></div>
+            <div class="slot" style="transform:rotate(135deg)"><div class="unit"><img src="https://img.icons8.com/emoji/96/sparkles.png"><b>特区·首战告捷</b><i>捷报</i></div></div>
+            <div class="slot" style="transform:rotate(180deg)"><div class="unit"><img src="https://img.icons8.com/color/96/dog.png"><b>情侣路·屹立不</b><i>荣誉+15</i></div></div>
+            <div class="slot" style="transform:rotate(225deg)"><div class="unit"><img src="https://img.icons8.com/emoji/96/ocean.png"><b>渔女·站得稳</b><i>捷报</i></div></div>
+            <div class="slot" style="transform:rotate(270deg)"><div class="unit"><img src="https://img.icons8.com/color/96/dolphin.png"><b>横琴·马到成功</b><i>荣誉+120</i></div></div>
+            <div class="slot" style="transform:rotate(315deg)"><div class="unit"><img src="https://img.icons8.com/emoji/96/coffee.png"><b>九洲·万事如意</b><i>捷报</i></div></div>
         </div>
-        <div class="btn-zh" onclick="go()">珠海</div>
+        <div class="btn" onclick="pb()">祝贺</div>
     </div>
-
     <script>
-        let b=89037.0, r=0, busy=false;
-        const cfg = [{d:0,v:88},{d:45,v:50},{d:90,v:20},{d:135,v:0},{d:180,v:15},{d:225,v:0},{d:270,v:120},{d:315,v:0}];
-        function go() {
-            if(busy) return; busy=true; b--;
-            let win = cfg[Math.floor(Math.random()*cfg.length)];
-            r += (3600 + (360 - win.d));
-            document.getElementById('w').style.transform = `rotate(${r}deg)`;
-            setTimeout(() => {
-                b += win.v;
+        let b=89037.0, ti=0, to=0, rot=0, busy=false;
+        const cfg=[{d:0,v:88},{d:45,v:50},{d:90,v:20},{d:135,v:0},{d:180,v:15},{d:225,v:0},{d:270,v:120},{d:315,v:0}];
+        function pb(){
+            if(busy || b<1) return; busy=true; ti++; b--;
+            let win = ((ti>5 && (to/ti)>0.95) ? cfg.filter(x=>x.v<=10) : cfg)[Math.floor(Math.random()*8)];
+            if(!win) win = cfg[3]; // 安全垫
+            rot += (3600 + (360 - win.d) - (rot % 360));
+            document.getElementById('w').style.transform = `rotate(${rot}deg)`;
+            setTimeout(()=>{
+                to += win.v; b += win.v;
                 document.getElementById('v').innerText = b.toFixed(2);
+                document.getElementById('i').innerText = ti;
+                document.getElementById('o').innerText = to;
+                document.getElementById('r').innerText = (to/ti*100).toFixed(1) + "%";
                 busy = false;
             }, 4200);
         }
