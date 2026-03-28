@@ -3,95 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PB_FIX_FINAL</title>
+    <title>ZH_CELEBRATION_PB_V10</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #000; color: #FFD700; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; font-family: sans-serif; }
+        body { background: radial-gradient(circle at center, #3d0a0a 0%, #000 100%); color: #FFD700; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; }
         
-        /* 1. 监控面板 */
-        .pb-info { width: 100%; padding: 10px; background: #111; border-bottom: 1px solid #FFD700; display: flex; justify-content: space-around; font-size: 10px; position: fixed; top: 0; }
-        .bal-v { font-size: 48px; font-weight: bold; margin-bottom: 20px; text-shadow: 0 0 10px #FFD700; }
+        /* PB后台监控 */
+        .pb-stat { position: absolute; top: 0; width: 100%; background: rgba(0,0,0,0.9); padding: 10px; display: flex; justify-content: space-around; font-size: 11px; border-bottom: 2px solid #FFD700; z-index: 500; }
+        .pb-stat b { color: #0f0; text-shadow: 0 0 5px #0f0; }
 
-        /* 2. 转盘容器 - 放弃 clip-path, 改用传统的 transform-origin */
-        .wheel-box { width: 340px; height: 340px; position: relative; border: 10px solid #FFD700; border-radius: 50%; background: #200; box-shadow: 0 0 30px rgba(255,215,0,0.3); }
-        .main-wheel { width: 100%; height: 100%; position: relative; transition: transform 4s cubic-bezier(0.1, 0, 0, 1); border-radius: 50%; overflow: hidden; }
-        
-        /* 3. 奖项格 - 强制定位 */
-        .slot {
-            position: absolute; width: 100%; height: 100%;
-            top: 0; left: 0;
-        }
-        .slot-inner {
-            position: absolute; top: 25px; left: 50%; transform: translateX(-50%);
-            text-align: center; width: 80px;
-        }
-        .slot-inner img { width: 60px; height: 60px; border-radius: 50%; border: 2px solid #FFD700; background: #000; }
-        .slot-inner b { display: block; font-size: 14px; margin-top: 5px; }
+        .balance-text { font-size: 52px; font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 20px #FFD700; letter-spacing: -1px; }
 
-        /* 4. 控制组件 */
-        .ptr { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 35px solid #f40; z-index: 100; }
-        .btn-spin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; border-radius: 50%; background: #008000; border: 4px solid #fff; color: #fff; font-weight: bold; font-size: 18px; z-index: 200; box-shadow: 0 5px 0 #004d00; display: flex; align-items: center; justify-content: center; }
+        /* 纯净 3D 祝贺转盘 */
+        .stage { width: 420px; height: 420px; position: relative; border: 12px solid #FFD700; border-radius: 50%; background: #000; box-shadow: 0 0 60px rgba(255,215,0,0.4), inset 0 0 30px #000; }
+        .pointer-top { position: absolute; top: -25px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 45px solid #FF4500; z-index: 100; filter: drop-shadow(0 5px 5px #000); }
         
-        .footer-ctrl { margin-top: 30px; background: #111; padding: 15px; border-radius: 10px; border: 1px solid #FFD700; width: 90%; font-size: 14px; }
-        .shake { animation: sk 0.1s infinite; } @keyframes sk { 0%,100%{transform:translate(0,0)} 50%{transform:translate(3px,3px)} }
+        .wheel-body { width: 100%; height: 100%; position: relative; transition: transform 4s cubic-bezier(0.1, 0, 0.1, 1.25); border-radius: 50%; overflow: hidden; }
+        .sector-line { position: absolute; width: 100%; height: 100%; clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%); transform-origin: 50% 50%; }
+        .sector-line:nth-child(odd) { background: linear-gradient(45deg, #700, #200); }
+        .sector-line:nth-child(even) { background: #111; }
+
+        .content-box { position: absolute; width: 100%; text-align: center; top: 35px; transform-origin: center 175px; }
+        .content-box img { width: 68px; height: 68px; border-radius: 50%; border: 2px solid #FFD700; box-shadow: 0 5px 15px #000; display: block; margin: 0 auto; }
+        .content-box span { display: block; font-size: 13px; font-weight: bold; color: #FFD700; margin-top: 5px; text-shadow: 1px 1px 3px #000; white-space: nowrap; }
+
+        /* SPIN水晶按钮 */
+        .btn-main { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #5cff5c, #008000 75%, #003300); border: 4px solid #fff; cursor: pointer; z-index: 200; box-shadow: 0 10px 0 #004d00, 0 15px 30px rgba(0,0,0,0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-size: 18px; font-weight: 900; }
+        .btn-main:active { transform: translate(-50%, -50%) translateY(8px); box-shadow: 0 2px 0 #003300; }
+
+        /* 钉在右下角的赔率按键 */
+        .odds-anchor { position: absolute; bottom: 30px; right: 25px; width: 65px; height: 65px; background: radial-gradient(circle, #FFD700, #B8860B); border-radius: 50%; border: 3px solid #fff; display: flex; align-items: center; justify-content: center; color: #000; font-size: 12px; font-weight: 900; cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 300; }
+        
+        /* 弹窗样式 */
+        #pop-table { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; background: #1a1a1a; border: 3px solid #FFD700; padding: 20px; border-radius: 20px; z-index: 1000; box-shadow: 0 0 150px #000; }
+        .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #333; font-size: 13px; color: #ddd; }
+        .row b { color: #FFD700; font-size: 16px; }
+
+        .shake-fx { animation: sk 0.12s infinite; } @keyframes sk { 0%,100%{transform:translate(0,0)} 50%{transform:translate(4px,4px)} }
     </style>
 </head>
 <body>
-    <div class="pb-info">
-        <span>RTP: <b id="r_rtp">0%</b></span>
-        <span>投: <b id="r_in">0</b></span>
-        <span>赔: <b id="r_out">0</b></span>
+    <div class="pb-stat">
+        <span>RTP控制: <b id="ui_rtp">0%</b></span>
+        <span>总投入: <b id="ui_in">0</b></span>
+        <span>总赔付: <b id="ui_out">0</b></span>
     </div>
 
-    <div class="bal-v" id="bal_v">89,037.00</div>
+    <div class="balance-text" id="v_bal">89,037.00</div>
 
-    <div class="wheel-box" id="stage">
-        <div class="ptr"></div>
-        <div class="main-wheel" id="w">
-            <!-- 手动分摊 8 个奖项角度 -->
-            <div class="slot" style="transform: rotate(0deg);"><div class="slot-inner"><img src="https://img.icons8.com/color/96/tiger.png"><b>老虎 X10</b></div></div>
-            <div class="slot" style="transform: rotate(45deg);"><div class="slot-inner"><img src="https://img.icons8.com/color/96/lion.png"><b>狮子 X5</b></div></div>
-            <div class="slot" style="transform: rotate(90deg);"><div class="slot-inner"><img src="https://img.icons8.com/color/96/wolf.png"><b>狼 X2</b></div></div>
-            <div class="slot" style="transform: rotate(135deg);"><div class="slot-inner"><img src="https://img.icons8.com/emoji/96/cross-mark-emoji.png"><b>空</b></div></div>
-            <div class="slot" style="transform: rotate(180deg);"><div class="slot-inner"><img src="https://img.icons8.com/color/96/dog.png"><b>狗 X20</b></div></div>
-            <div class="slot" style="transform: rotate(225deg);"><div class="slot-inner"><img src="https://img.icons8.com/emoji/96/cross-mark-emoji.png"><b>空</b></div></div>
-            <div class="slot" style="transform: rotate(270deg);"><div class="slot-inner"><img src="https://img.icons8.com/color/96/dolphin.png"><b>海豚 X50</b></div></div>
-            <div class="slot" style="transform: rotate(315deg);"><div class="slot-inner"><img src="https://img.icons8.com/color/96/koala.png"><b>空</b></div></div>
+    <div class="stage" id="stg">
+        <div class="pointer-top"></div>
+        <div class="wheel-body" id="w">
+            <!-- 8款祝贺语注入 -->
+            <div class="sector-line" style="transform:rotate(0deg)"><div class="content-box" style="transform:rotate(22.5deg)"><img src="https://img.icons8.com/color/144/tiger.png"><span>情侣路·长久</span></div></div>
+            <div class="sector-line" style="transform:rotate(45deg)"><div class="content-box" style="transform:rotate(22.5deg)"><img src="https://img.icons8.com/color/144/lion.png"><span>渔女灯·点亮</span></div></div>
+            <div class="sector-line" style="transform:rotate(90deg)"><div class="content-box" style="transform:rotate(22.5deg)"><img src="https://img.icons8.com/color/144/wolf.png"><span>日月贝·双喜</span></div></div>
+            <div class="sector-line" style="transform:rotate(135deg)"><div class="content-box" style="transform:rotate(22.5deg)"><img src="https://img.icons8.com/emoji/144/sparkles.png"><span>幸福城·乐中</span></div></div>
+            <div class="sector-line" style="transform:rotate(180deg)"><div class="content-box" style="transform:rotate(22.5deg)"><img src="https://img.icons8.com/color/144/dog.png"><span>航展云·必得</span></div></div>
+            <div class="sector-line" style="transform:rotate(225deg)"><div class="content-box" style="transform:rotate(22.5deg)"><img src="https://img.icons8.com/emoji/144/ocean.png"><span>浪漫海·无边</span></div></div>
+            <div class="sector-line" style="transform:rotate(270deg)"><div class="content-box" style="transform:rotate(22.5deg)"><img src="https://img.icons8.com/color/144/dolphin.png"><span>横琴风·生财</span></div></div>
+            <div class="sector-line" style="transform:rotate(315deg)"><div class="content-box" style="transform:rotate(22.5deg)"><img src="https://img.icons8.com/emoji/144/coffee.png"><span>慢生活·得意</span></div></div>
         </div>
-        <div class="btn-spin" onclick="goPB()">SPIN</div>
+        <div class="btn-main" onclick="runPB()">START<span>珠海</span></div>
     </div>
 
-    <div class="footer-ctrl">
-        RTP设定: <input type="number" id="target" value="95" style="width:45px;"> % 
-        强制杀分: <input type="checkbox" id="kill">
+    <!-- 右下角钉死的赔率表按键 -->
+    <div class="odds-anchor" onclick="showTable()">赔率表</div>
+
+    <div id="pop-table">
+        <h2 style="text-align:center; color:#FFD700; margin-bottom:15px; font-size:18px;">祝贺·赔率后台</h2>
+        <div class="row"><span>老虎 (长长久久)</span><b>X88</b></div>
+        <div class="row"><span>狮子 (好运点亮)</span><b>X50</b></div>
+        <div class="row"><span>野狼 (双喜临门)</span><b>X20</b></div>
+        <div class="row"><span>狗狗 (志在必得)</span><b>X10</b></div>
+        <div class="row"><span>海豚 (财源滚滚)</span><b>X100</b></div>
+        <button onclick="showTable()" style="width:100%; margin-top:20px; background:#FFD700; border:none; padding:10px; font-weight:900; border-radius:10px;">确 认</button>
     </div>
 
     <script>
-        let b = 89037.00; let ti = 0; let to = 0; let curR = 0; let busy = false;
-        const prizes = [{d:0,v:10},{d:45,v:5},{d:90,v:2},{d:135,v:0},{d:180,v:20},{d:225,v:0},{d:270,v:50},{d:315,v:0}];
+        let b=89037.00; let ti=0; let to=0; let r=0; let busy=false;
+        const cfg = [{d:0,v:88},{d:45,v:50},{d:90,v:20},{d:135,v:0},{d:180,v:10},{d:225,v:0},{d:270,v:100},{d:315,v:0}];
 
-        function goPB() {
-            if(busy || b < 0.5) return; busy = true; ti += 0.5; b -= 0.5;
-            let trtp = parseFloat(document.getElementById('target').value)/100;
-            let km = document.getElementById('kill').checked;
-            let crtp = ti > 0 ? to / ti : 0;
-            
-            let pool = prizes.filter(p => km ? p.v === 0 : (crtp > trtp ? p.v <= 2 : true));
-            let res = pool[Math.floor(Math.random()*pool.length)];
+        function showTable(){ const p = document.getElementById('pop-table'); p.style.display = p.style.display==='block'?'none':'block'; }
 
-            let targetDeg = (360 - res.d) % 360;
-            curR += (3600 + targetDeg - (curR % 360));
-            document.getElementById('w').style.transform = `rotate(${curR}deg)`;
-            
+        function runPB() {
+            if(busy || b<1) return; busy=true; ti+=1; b-=1;
+            let currentRTP = ti>0 ? to/ti : 0;
+            // PB机器人核心逻辑：监控水位，强制杀分
+            let pool = cfg.filter(p => (currentRTP > 0.90) ? p.v<=10 : true);
+            let win = pool[Math.floor(Math.random()*pool.length)];
+            let target = (360 - win.d) % 360;
+            r += (3600 + target - (r % 360));
+            document.getElementById('w').style.transform = `rotate(${r}deg)`;
             setTimeout(() => {
-                document.getElementById('stage').classList.add('shake');
+                document.getElementById('stg').classList.add('shake-fx');
                 setTimeout(() => {
-                    document.getElementById('stage').classList.remove('shake');
-                    to += res.v; b += res.v;
-                    document.getElementById('bal_v').innerText = b.toLocaleString(undefined,{minimumFractionDigits:2});
-                    document.getElementById('r_in').innerText = ti.toFixed(2);
-                    document.getElementById('r_out').innerText = to.toFixed(2);
-                    document.getElementById('r_rtp').innerText = (ti>0?(to/ti*100).toFixed(1):0) + "%";
+                    document.getElementById('stg').classList.remove('shake-fx');
+                    to += win.v; b += win.v;
+                    document.getElementById('v_bal').innerText = b.toLocaleString(undefined,{minimumFractionDigits:2});
+                    document.getElementById('ui_in').innerText = ti;
+                    document.getElementById('ui_out').innerText = to;
+                    document.getElementById('ui_rtp').innerText = (ti>0?(to/ti*100).toFixed(1):0) + "%";
                     busy = false;
                 }, 400);
             }, 4000);
