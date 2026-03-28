@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI_QUANT_PHYSICAL_LOCK</title>
+    <title>AI_QUANT_POWER_ON</title>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         
@@ -12,87 +12,107 @@
             background-image: radial-gradient(circle at 50% 50%, #4ade80 0%, #15803d 100%);
             color:#FFF; font-family: "PingFang SC", sans-serif; 
             height:100vh; overflow:hidden; display:flex; flex-direction:column;
+            position: relative;
+        }
+
+        /* 1. 背景层红色指示灯：镶嵌在绿色机壳边缘 */
+        @keyframes pulse-red { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.2); } }
+        .glow-red { 
+            position: absolute; width: 5px; height: 5px; background: #ff0000; border-radius: 50%; 
+            box-shadow: 0 0 8px #ff0000; z-index: 1; animation: pulse-red 3s infinite; pointer-events: none;
         }
 
         .status-bar { background: rgba(0,0,0,0.5); height:28px; display:flex; align-items:center; justify-content:center; font-size:10px; color:#fff; z-index: 10; }
-        .core-section { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:15px; gap:12px; }
+        .core-section { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:15px; gap:12px; z-index: 5; }
 
-        /* 深度内陷板块 */
+        /* 2. 深度内陷板块 */
         .stable-inset-panel {
             width:100%; background: #080a09; border-radius:18px;
             box-shadow: inset 10px 10px 20px rgba(0,0,0,1), inset -2px -2px 6px rgba(255,255,255,0.02), 0 0 0 2px #000;
-            border: 1px solid #1a2f23; position: relative;
+            border: 1px solid #1a2f23; position: relative; overflow: hidden;
         }
 
-        .balance-card { padding:22px; text-align:center; }
+        /* 槽位内部白色指示灯：固定在死角 */
+        @keyframes pulse-white { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.6; } }
+        .glow-white { 
+            position: absolute; width: 3px; height: 3px; background: #ffffff; border-radius: 50%; 
+            box-shadow: 0 0 6px #ffffff; z-index: 2; animation: pulse-white 2.5s infinite; pointer-events: none;
+        }
+
+        .balance-card { padding:22px; text-align:center; position: relative; z-index: 5; }
         .bal-val { font-size:62px; font-weight:900; color: #ef4444; text-shadow: 0 0 20px rgba(239, 68, 68, 0.6); font-family: 'Verdana', sans-serif; }
 
-        /* 转盘区：强化压住感 */
-        .wheel-well { width:100%; max-width:330px; aspect-ratio: 1/1; display:flex; align-items:center; justify-content:center; }
-        
-        /* 指针：增加厚度感，像压板 */
+        /* 3. 转盘区：物理压住感 */
+        .wheel-well { width:100%; max-width:330px; aspect-ratio: 1/1; display:flex; align-items:center; justify-content:center; position: relative; z-index: 5; }
         .pointer-line { 
             position:absolute; top:2px; left:50%; transform:translateX(-50%); 
             width:6px; height:52px; background:#ef4444; z-index:100; 
             border-radius:0 0 4px 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.8), 0 0 15px #ef4444;
         }
-
         .wheel-outer {
             width: 86%; height: 86%; border-radius: 50%; position: relative; 
             border: 10px solid #000; overflow: hidden; background: #050807;
-            /* 咬合动画：使用 cubic-bezier 模拟机械停顿 */
-            transition: transform 4s cubic-bezier(0.2, 0, 0, 1.1); 
-            box-shadow: 0 0 40px rgba(0,0,0,1); margin: auto;
+            transition: transform 4s cubic-bezier(0.2, 0, 0, 1.15); /* 强化回弹死锁感 */
+            box-shadow: 0 0 40px rgba(0,0,0,1); margin: auto; z-index: 6;
         }
-        
         .wheel-center-val {
             position: absolute; z-index: 10; width: 80px; height: 80px; background: #0d1110;
             border-radius: 50%; border: 3px solid #222; display: flex; align-items:center; justify-content:center;
             color: #ef4444; font-size: 24px; font-weight: 900; box-shadow: 0 0 30px rgba(0,0,0,1);
         }
-        
-        .slot-content { position:absolute; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; padding-top:10px; transition: 0.3s; }
-        
-        /* 选中时的“被压住”效果 */
-        .slot-content.locked { transform: scale(0.9) !important; filter: brightness(1.5); }
-        .slot-content.locked .beast-ico { text-shadow: 0 0 15px #fff; }
+        .slot-content { position:absolute; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; padding-top:10px; transition: 0.3s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
+        /* 选中时的“被压死”效果 */
+        .slot-content.locked { transform: scale(0.85) !important; filter: brightness(1.8) drop-shadow(0 0 10px #fff); }
 
-        .beast-ico { font-size: 40px; transition: 0.3s; }
-        .beast-txt { font-size: 11px; color:#ffffff; font-weight:900; margin-top: 2px; }
+        .beast-ico { font-size: 40px; }
+        .beast-txt { font-size: 11px; color:#ffffff; font-weight:900; margin-top: 2px; text-shadow: 0 1px 2px #000; }
 
-        /* 下分按键区 */
-        .console-area { width:100%; background:#0d1110; padding:20px 20px 85px 20px; border-radius: 25px 25px 0 0; border-top: 3px solid #000; }
+        /* 4. 下分按键区 */
+        .console-area { width:100%; background:#0d1110; padding:20px 20px 85px 20px; border-radius: 25px 25px 0 0; border-top: 3px solid #000; z-index: 100; }
         .main-row { display:flex; gap:12px; margin-bottom:15px; }
         .btn-deep-inset {
             background: #080a09; border: 1px solid #1a1a1a; color:#ffffff; font-size:32px; border-radius:12px;
-            display:flex; align-items:center; justify-content:center; width:65px; height:60px; font-weight:bold;
+            display:flex; align-items:center; justify-content:center; width:65px; height:60px; font-weight:bold; cursor: pointer;
             box-shadow: inset 8px 8px 16px rgba(0,0,0,0.9), inset -2px -2px 8px rgba(255,255,255,0.02); 
         }
+        .btn-deep-inset:active { opacity: 0.6; }
         .exec-red-inset { 
             flex:1; height:60px; background: #991b1b; border: 1px solid #450a0a; color:#fff; font-size:24px; font-weight:900; border-radius:12px; letter-spacing:4px;
-            box-shadow: inset 6px 6px 12px rgba(0,0,0,0.7), inset -2px -2px 8px rgba(255,255,255,0.1);
+            box-shadow: inset 6px 6px 12px rgba(0,0,0,0.7), inset -2px -2px 8px rgba(255,255,255,0.1); cursor: pointer;
         }
         .tech-row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-        .mode-btn { padding:14px; background:#080a09; border: 1px solid #1a1a1a; color:#ffffff; font-size:12px; border-radius:10px; text-align:center; box-shadow: inset 5px 5px 10px rgba(0,0,0,0.7); }
+        .mode-btn { padding:14px; background:#080a09; border: 1px solid #1a1a1a; color:#ffffff; font-size:12px; border-radius:10px; text-align:center; box-shadow: inset 5px 5px 10px rgba(0,0,0,0.7); cursor: pointer; }
         .mode-btn.on { color:#ef4444; border-color:#991b1b; }
 
-        .nav { position:fixed; bottom:0; width:100%; height:75px; background:#000; border-top:1px solid #111; display:grid; grid-template-columns: repeat(4, 1fr); }
+        .nav { position:fixed; bottom:0; width:100%; height:75px; background:#000; border-top:1px solid #111; display:grid; grid-template-columns: repeat(4, 1fr); z-index: 200; }
         .nav-n { display:flex; flex-direction:column; align-items:center; justify-content:center; color:#ffffff; font-size:11px; font-weight:bold; opacity: 0.6; }
         .nav-n.act { color:#ef4444; opacity: 1; }
     </style>
 </head>
 <body>
+    <!-- 机壳红色灯 -->
+    <div class="glow-red" style="top:5%; left:10%"></div>
+    <div class="glow-red" style="top:30%; right:5%; animation-delay: 0.5s"></div>
+    <div class="glow-red" style="bottom:20%; left:5%; animation-delay: 1.2s"></div>
 
-    <div class="status-bar">● MECHANICAL_LOCK_ENGAGED ● </div>
+    <div class="status-bar">● MECHANICAL_LOCK_POWER_ON ● </div>
 
     <div class="core-section">
         <div class="stable-inset-panel balance-card">
+            <!-- 槽内白色灯 -->
+            <div class="glow-white" style="top:8px; left:8px"></div>
+            <div class="glow-white" style="bottom:8px; right:8px; animation-delay: 1s"></div>
+            
             <div style="font-size:10px; color:#ffffff; margin-bottom:12px; letter-spacing:1px; font-weight:900; opacity:0.8;">AVAILABLE BALANCE (USDT)</div>
             <div class="bal-val" id="ui_bal">100.3</div>
             <div style="font-size:11px; color:#ffffff; margin-top:8px; opacity:0.8;">UNIT_BET: <span id="ui_bet" style="color:#ef4444; font-weight:900;">0.5</span></div>
         </div>
 
         <div class="stable-inset-panel wheel-well">
+            <!-- 槽内白色灯 -->
+            <div class="glow-white" style="top:12px; right:12px"></div>
+            <div class="glow-white" style="bottom:12px; left:12px; animation-delay: 1.5s"></div>
+
             <div class="pointer-line"></div>
             <div class="wheel-center-val" id="center_val">X0</div>
             <div id="ui_wheel" class="wheel-outer">
@@ -153,31 +173,6 @@
             busy = true;
             document.querySelectorAll('.slot-content').forEach(el => el.classList.remove('locked'));
             
-            // 利益压制概率
+            // 利益压制概率逻辑
             const r = Math.floor(Math.random() * 100);
-            let idx = (r < 60) ? 6 : (r < 85 ? 5 : (r < 95 ? 7 : 1));
-
-            const targetAngle = idx * 45; 
-            rot += 360 * 5 + (360 - targetAngle - (rot % 360));
-            document.getElementById('ui_wheel').style.transform = `rotate(${rot}deg)`;
-
-            const wait = ["", 4000, 1000, 400][speedMode];
-            setTimeout(() => {
-                // 物理压住感：给选中的格位加上 locked 类
-                const slots = document.querySelectorAll('.slot-content');
-                slots[idx].classList.add('locked');
-
-                const prize = multis[idx] * bet;
-                balance = (balance - bet) + prize;
-                document.getElementById('ui_bal').innerText = balance.toFixed(1);
-                document.getElementById('center_val').innerText = beastNames[idx];
-                
-                setTimeout(() => {
-                    busy = false;
-                    if(isAuto) go();
-                }, 500);
-            }, wait);
-        }
-    </script>
-</body>
-</html>
+            let idx = (r < 65) ? 6 : (r < 85 ? 5 : (r < 95 ? 7 : 1));
