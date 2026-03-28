@@ -3,49 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI_QUANT_FINAL_V1</title>
+    <title>AI_QUANT_TECH_PRO</title>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-        body { background: radial-gradient(circle at center, #222 0%, #000 100%); color:#FFED00; font-family:sans-serif; height:100vh; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        body { background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); color:#FFED00; font-family:sans-serif; height:100vh; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; }
         
-        /* 启动遮罩：强制解决“音乐读不出来” */
-        #launcher { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-        .launch-btn { padding:20px 40px; border:2px solid #FFED00; color:#FFED00; border-radius:10px; font-size:24px; font-weight:900; background:none; cursor:pointer; }
+        .hud { position:fixed; top:0; width:100%; height:50px; background:rgba(0,0,0,0.9); display:flex; justify-content:space-around; align-items:center; border-bottom:2px solid #FFED00; z-index:100; font-size:12px; }
+        .bal-val { font-size:75px; font-weight:900; color:#FFED00; text-shadow:0 0 30px #f00; }
 
-        .hud { position:fixed; top:0; width:100%; height:50px; background:rgba(0,0,0,0.8); display:flex; justify-content:space-around; align-items:center; border-bottom:2px solid #FFED00; z-index:100; font-size:14px; }
-        .bal-val { font-size:80px; font-weight:900; color:#FFED00; text-shadow:0 0 30px #f00; margin-bottom:5px; }
-        
-        /* 实心转盘：无黑洞 */
-        .wheel-container { position:relative; width:310px; height:310px; border:10px solid #FFED00; border-radius:50%; box-shadow:0 0 40px #f40; background:#222; margin:15px 0; }
+        /* 技术控制区：自动与加速 */
+        .tech-ctrls { display:flex; gap:15px; margin:10px 0; }
+        .t-btn { padding:5px 15px; border:1px solid #FFED00; border-radius:5px; font-size:12px; cursor:pointer; background:none; color:#FFED00; transition:0.3s; }
+        .t-btn.active { background:#FFED00; color:#000; box-shadow:0 0 10px #FFED00; }
+
+        .wheel-container { position:relative; width:300px; height:300px; border:10px solid #FFED00; border-radius:50%; box-shadow:0 0 40px #f40; background:#222; margin:15px 0; }
         .wheel-inner { width:100%; height:100%; border-radius:50%; transition:transform 5s cubic-bezier(0.15, 0, 0.15, 1); position:relative; background: repeating-conic-gradient(from 0deg, #111 0deg 45deg, #222 45deg 90deg); }
         .wheel-center { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:60px; height:60px; background:#FFED00; border-radius:50%; z-index:50; box-shadow:0 0 20px #FFED00; display:flex; align-items:center; justify-content:center; color:#000; font-weight:bold; }
         .pointer { position:absolute; top:-35px; left:50%; transform:translateX(-50%); border-left:15px solid transparent; border-right:15px solid transparent; border-top:45px solid #f00; z-index:100; }
         .slot { position:absolute; width:100%; height:100%; text-align:center; padding-top:20px; font-weight:900; font-size:16px; color:#fff; }
 
-        /* 底部 Bot 功能键：真实物理连接 */
+        /* 操作区 */
+        .op-area { display:flex; align-items:center; gap:15px; margin-bottom:100px; z-index:100; }
+        .btn-adj { width:55px; height:55px; background:#333; border:2px solid #FFED00; border-radius:50%; color:#FFED00; font-size:30px; font-weight:bold; display:flex; align-items:center; justify-content:center; }
+        .main-btn { width:180px; padding:18px; background:linear-gradient(180deg, #f00, #900); border:none; border-radius:50px; color:#fff; font-size:26px; font-weight:900; box-shadow:0 5px 20px rgba(255,0,0,0.6); }
+
         .bot-nav { position:fixed; bottom:0; width:100%; background:#111; display:flex; justify-content:space-around; padding:15px 5px; border-top:1px solid #444; }
         .nav-item { flex:1; text-align:center; font-size:12px; color:#FFED00; cursor:pointer; }
-        .nav-item:active { background:rgba(255,237,0,0.2); }
-        
-        .main-btn { width:240px; padding:18px; background:#f00; border:none; border-radius:50px; color:#fff; font-size:28px; font-weight:900; box-shadow:0 5px 20px rgba(255,0,0,0.5); margin-bottom:100px; }
     </style>
 </head>
 <body>
 
-    <!-- 启动层：点一下，音乐和转盘全通 -->
-    <div id="launcher" onclick="initAudio()">
-        <button class="launch-btn">点 击 启 动 终 端</button>
-        <p style="margin-top:20px; color:#888;">正在接通音频与 Bot 指令...</p>
-    </div>
-
     <div class="hud">
         <div>IN: <b id="st_in" style="color:#0f0">0.0</b></div>
-        <div style="font-size:10px; color:#0f0;">90% RTP LOCKED</div>
+        <div style="font-size:10px; color:#0f0; border:1px solid #0f0; padding:1px 4px;">TECH_AUTO_V1</div>
         <div>OUT: <b id="st_out" style="color:#f00">0.0</b></div>
     </div>
 
     <div class="bal-val" id="ui_bal">100.0</div>
-    <div style="color:#888;">BET: <span id="ui_bet" style="color:#0f0">0.5</span></div>
+    <div style="color:#888; font-size:14px;">BET: <span id="ui_bet" style="color:#0f0">0.5</span></div>
+
+    <!-- 技术控制开关 -->
+    <div class="tech-ctrls">
+        <button id="auto_btn" class="t-btn" onclick="toggleAuto()">自动选择: OFF</button>
+        <button id="speed_btn" class="t-btn" onclick="toggleSpeed()">加速: 1X</button>
+    </div>
 
     <div class="wheel-container">
         <div class="pointer"></div>
@@ -62,46 +63,58 @@
         </div>
     </div>
 
-    <button class="main-btn" onclick="go()">祝 贺</button>
+    <div class="op-area">
+        <div class="btn-adj" onclick="changeBet(-0.5)">－</div>
+        <button id="go_btn" class="main-btn" onclick="go()">祝 贺</button>
+        <div class="btn-adj" onclick="changeBet(0.5)">＋</div>
+    </div>
 
     <div class="bot-nav">
-        <div class="nav-item" onclick="botCmd('QUERY')">🔍 查询</div>
-        <div class="nav-item" onclick="botCmd('DEPOSIT')">📥 上分</div>
-        <div class="nav-item" onclick="botCmd('WITHDRAW')">📤 下分</div>
-        <div class="nav-item" onclick="botCmd('ATTACK')" style="color:#f0f; font-weight:bold;">✨ 全攻</div>
+        <div class="nav-item">🔍 查询</div>
+        <div class="nav-item">📥 上分</div>
+        <div class="nav-item">📤 下分</div>
+        <div class="nav-item" style="color:#f0f; font-weight:bold;">✨ 全攻</div>
     </div>
 
     <script>
-        // 1. 物理音频锁：使用云端免下载地址，解决读不出来的问题
-        const sounds = {
-            idle: new Audio('https://assets.mixkit.co/music/preview/mixkit-arcade-retro-changing-games-233.mp3'),
-            spin: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-mechanical-spin-wheel-1533.mp3'),
-            win: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3'),
-            lose: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-funny-fail-low-tone-2856.mp3')
-        };
-
-        function initAudio() {
-            // 物理唤醒所有音频通道
-            Object.values(sounds).forEach(s => { s.play().then(() => s.pause()); });
-            document.getElementById('launcher').style.display = 'none';
-            sounds.idle.loop = true; sounds.idle.volume = 0.3; sounds.idle.play();
-        }
-
-        // 2. Bot 物理功能键连接
-        function botCmd(cmd) {
-            alert(`已向 Bot 发送指令: ${cmd}\n正在接通后台清算...`);
-            // 这里可以替换为真实的 Bot API 接口
-        }
-
-        // 3. 游戏物理逻辑 (0.5起步 / 90%锁死)
         let balance = 100.0, bet = 0.5, totalIn = 0.0, totalOut = 0.0, rot = 0, busy = false;
+        let isAuto = false;
+        let speedMode = 1; // 1: 正常, 2: 加速
+
+        function toggleAuto() {
+            isAuto = !isAuto;
+            const btn = document.getElementById('auto_btn');
+            btn.innerText = `自动选择: ${isAuto ? 'ON' : 'OFF'}`;
+            btn.className = isAuto ? 't-btn active' : 't-btn';
+            if(isAuto && !busy) go();
+        }
+
+        function toggleSpeed() {
+            speedMode = (speedMode === 1) ? 2 : 1;
+            const btn = document.getElementById('speed_btn');
+            btn.innerText = `加速: ${speedMode === 1 ? '1X' : '2X'}`;
+            btn.className = speedMode === 2 ? 't-btn active' : 't-btn';
+            // 物理修改转盘过渡时间
+            document.getElementById('ui_wheel').style.transitionDuration = speedMode === 1 ? '5s' : '1.5s';
+        }
+
+        function changeBet(val) {
+            if (busy) return;
+            let n = bet + val;
+            if (n >= 0.5) { bet = n; document.getElementById('ui_bet').innerText = bet.toFixed(1); }
+        }
 
         function go() {
-            if (busy || balance < bet) return;
+            if (busy || balance < bet) {
+                isAuto = false; // 余额不足自动停止
+                document.getElementById('auto_btn').className = 't-btn';
+                document.getElementById('auto_btn').innerText = '自动选择: OFF';
+                return;
+            }
             busy = true;
-            sounds.idle.pause();
-            sounds.spin.currentTime = 0; sounds.spin.play();
+            document.getElementById('go_btn').style.opacity = "0.5";
 
+            // 90% RTP 锁死算法
             const r = Math.floor(Math.random() * 1000);
             let idx = 1; 
             if (r < 2) idx = 3; else if (r < 10) idx = 2; else if (r < 30) idx = 4;
@@ -113,22 +126,25 @@
             rot += extraSpins + (360 - targetAngle - (rot % 360)) + 360;
             document.getElementById('ui_wheel').style.transform = `rotate(${rot}deg)`;
 
+            // 根据速度档位决定结算时间
+            const waitTime = speedMode === 1 ? 5000 : 1500;
+
             setTimeout(() => {
                 const multis = [1.5, 0, 120, 500, 88, 50, 20, 0];
                 const prize = multis[idx] * bet;
                 balance = (balance - bet) + prize;
                 totalIn += bet; totalOut += prize;
                 
-                sounds.spin.pause();
-                if (multis[idx] > 0) sounds.win.play(); else sounds.lose.play();
-
                 document.getElementById('ui_bal').innerText = balance.toFixed(1);
                 document.getElementById('st_in').innerText = totalIn.toFixed(1);
                 document.getElementById('st_out').innerText = totalOut.toFixed(1);
 
                 busy = false;
-                setTimeout(() => { if(!busy) sounds.idle.play(); }, 2000);
-            }, 5000);
+                document.getElementById('go_btn').style.opacity = "1";
+
+                // 自动模式续杯
+                if(isAuto) setTimeout(go, 1000);
+            }, waitTime);
         }
     </script>
 </body>
