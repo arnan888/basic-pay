@@ -2,82 +2,133 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOLA_ANIMAL_PB_FINAL</title>
+    <title>PB_SYSTEM_BOT_V4.0_STRICT_CONTROL</title>
     <style>
+        /* 保持旗舰视觉，注入硬核逻辑 */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: radial-gradient(circle at center, #3d0505 0%, #000 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: 'Arial Black', sans-serif; }
-        .hud { margin-bottom: 20px; text-align: center; }
-        .hud-v { color: #FFD700; font-size: 52px; font-weight: 900; text-shadow: 0 0 20px rgba(255,215,0,0.8); }
-        
-        .outer { width: 420px; height: 420px; border: 15px solid #FFD700; border-radius: 50%; position: relative; background: #000; box-shadow: 0 0 60px rgba(255,215,0,0.5), inset 0 0 30px #000; }
-        .wheel { width: 100%; height: 100%; border-radius: 50%; position: relative; transition: transform 4s cubic-bezier(0.1, 0, 0.1, 1.25); overflow: hidden; }
-        
+        body { background: #000; color: #FFD700; display: flex; flex-direction: column; align-items: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; }
+        .monitor { width: 100%; background: #111; padding: 10px; border-bottom: 2px solid #333; display: flex; justify-content: space-around; font-size: 12px; }
+        .hud-v { font-size: 45px; margin: 20px 0; text-shadow: 0 0 15px #FFD700; }
+        .outer { width: 400px; height: 400px; border: 15px solid #FFD700; border-radius: 50%; position: relative; }
+        .wheel { width: 100%; height: 100%; border-radius: 50%; position: relative; transition: transform 3s cubic-bezier(0.1, 0, 0, 1); }
         .sector { position: absolute; width: 100%; height: 100%; clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 50%); transform-origin: 50% 50%; }
-        .sector:nth-child(odd) { background: radial-gradient(circle at 100% 100%, #a00 0%, #200 100%); }
-        .sector:nth-child(even) { background: radial-gradient(circle at 100% 100%, #222 0%, #000 100%); }
-
-        /* 动物头像容器 */
-        .icon-box { position: absolute; width: 100%; text-align: center; top: 35px; transform-origin: center 175px; }
-        .animal-head { 
-            width: 75px; height: 75px; border-radius: 50%; border: 3px solid #FFD700; 
-            object-fit: cover; box-shadow: 0 5px 15px rgba(0,0,0,0.8);
-            background: #eee;
-        }
-        .name-tag { color: #FFD700; font-size: 14px; font-weight: 900; display: block; margin-top: 2px; text-shadow: 1px 1px 2px #000; }
-
-        .spin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 95px; height: 95px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #5cff5c, #008000 70%, #004d00); border: 4px solid #fff; cursor: pointer; z-index: 200; box-shadow: 0 10px 0 #003300, 0 15px 30px rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 20px; }
-        .spin:active { transform: translate(-50%, -50%) translateY(8px); box-shadow: 0 2px 0 #003300; }
-        .ptr { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 45px solid #FF7F00; z-index: 100; }
-
-        .gears { margin-top: 35px; display: flex; gap: 12px; }
-        .gear { padding: 10px 20px; border: 2px solid #FFD700; background: none; color: #FFD700; border-radius: 8px; font-weight: 900; cursor: pointer; }
-        .gear.active { background: #FFD700; color: #000; box-shadow: 0 0 20px #FFD700; }
-        .shake { animation: s 0.1s infinite; } @keyframes s { 0%,100%{transform:translate(0,0)} 50%{transform:translate(3px,3px)} }
+        .icon-box { position: absolute; width: 100%; text-align: center; top: 30px; transform-origin: center 170px; }
+        .animal { width: 60px; height: 60px; border-radius: 50%; border: 2px solid #FFD700; }
+        .spin { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90px; height: 90px; border-radius: 50%; background: #008000; border: 4px solid #fff; cursor: pointer; z-index: 100; box-shadow: 0 8px 0 #004d00; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .ptr { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 40px solid #FF7F00; z-index: 50; }
+        .panel { margin-top: 20px; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #FFD700; }
+        input { background: #000; color: #0f0; border: 1px solid #0f0; width: 60px; padding: 2px; }
     </style>
 </head>
 <body>
-    <div class="hud"><div class="hud-v" id="bal">89,037.00</div></div>
-    <div class="outer" id="stg">
+    <!-- PB 后台实时监控面板 -->
+    <div class="monitor">
+        <span>当前RTP: <b id="rtp_real">0%</b></span>
+        <span>总投入: <b id="total_in">0</b></span>
+        <span>总赔付: <b id="total_out">0</b></span>
+        <span>系统水位: <b id="water_level">NORMAL</b></span>
+    </div>
+
+    <div class="hud-v" id="bal">89,037.00</div>
+
+    <div class="outer">
         <div class="ptr"></div>
         <div class="wheel" id="w">
-            <!-- 8种动物头像依次排列 -->
-            <div class="sector" style="transform: rotate(0deg);"><div class="icon-box" style="transform: rotate(22.5deg);"><img src="https://img.icons8.com/color/144/tiger.png" class="animal-head"><span class="name-tag">老虎</span></div></div>
-            <div class="sector" style="transform: rotate(45deg);"><div class="icon-box" style="transform: rotate(22.5deg);"><img src="https://img.icons8.com/color/144/lion.png" class="animal-head"><span class="name-tag">狮子</span></div></div>
-            <div class="sector" style="transform: rotate(90deg);"><div class="icon-box" style="transform: rotate(22.5deg);"><img src="https://img.icons8.com/color/144/wolf.png" class="animal-head"><span class="name-tag">狼</span></div></div>
-            <div class="sector" style="transform: rotate(135deg);"><div class="icon-box" style="transform: rotate(22.5deg);"><img src="https://img.icons8.com/color/144/cat.png" class="animal-head"><span class="name-tag">猫</span></div></div>
-            <div class="sector" style="transform: rotate(180deg);"><div class="icon-box" style="transform: rotate(22.5deg);"><img src="https://img.icons8.com/color/144/dog.png" class="animal-head"><span class="name-tag">狗</span></div></div>
-            <div class="sector" style="transform: rotate(225deg);"><div class="icon-box" style="transform: rotate(22.5deg);"><img src="https://img.icons8.com/color/144/parrot.png" class="animal-head"><span class="name-tag">鹦鹉</span></div></div>
-            <div class="sector" style="transform: rotate(270deg);"><div class="icon-box" style="transform: rotate(22.5deg);"><img src="https://img.icons8.com/color/144/dolphin.png" class="animal-head"><span class="name-tag">海豚</span></div></div>
-            <div class="sector" style="transform: rotate(315deg);"><div class="icon-box" style="transform: rotate(22.5deg);"><img src="https://img.icons8.com/color/144/koala.png" class="animal-head"><span class="name-tag">考拉</span></div></div>
+            <div class="sector" style="transform: rotate(0deg); background: #a00;"><div class="icon-box" style="transform: rotate(22.5deg);"><img src="https://img.icons8.com/color/96/tiger.png" class="animal"><span>X50</span></div></div>
+            <div class="sector" style="transform: rotate(45deg); background: #111;"><div class="icon-box" style="transform: rotate(22.5deg);"><img src="https://img.icons8.com/color/96/lion.png" class="animal"><span>X10</span></div></div>
+            <div class="sector" style="transform: rotate(90deg); background: #a00;"><div class="icon-box" style="transform: rotate(22.5deg);"><img src="https://img.icons8.com/color/96/wolf.png" class="animal"><span>X5</span></div></div>
+            <div class="sector" style="transform: rotate(135deg); background: #111;"><div class="icon-box" style="transform: rotate(22.5deg);"><img src="https://img.icons8.com/color/96/cat.png" class="animal"><span>❌</span></div></div>
+            <div class="sector" style="transform: rotate(180deg); background: #a00;"><div class="icon-box" style="transform: rotate(22.5deg);"><img src="https://img.icons8.com/color/96/dog.png" class="animal"><span>X2</span></div></div>
+            <div class="sector" style="transform: rotate(225deg); background: #111;"><div class="icon-box" style="transform: rotate(22.5deg);"><img src="https://img.icons8.com/color/96/parrot.png" class="animal"><span>❌</span></div></div>
+            <div class="sector" style="transform: rotate(270deg); background: #a00;"><div class="icon-box" style="transform: rotate(22.5deg);"><img src="https://img.icons8.com/color/96/dolphin.png" class="animal"><span>X20</span></div></div>
+            <div class="sector" style="transform: rotate(315deg); background: #111;"><div class="icon-box" style="transform: rotate(22.5deg);"><img src="https://img.icons8.com/color/96/koala.png" class="animal"><span>❌</span></div></div>
         </div>
-        <div class="spin" onclick="run()">SPIN</div>
+        <div class="spin" onclick="runBot()">SPIN</div>
     </div>
-    <div class="gears">
-        <button class="gear active" id="g1" onclick="setG(1)">标准</button>
-        <button class="gear" id="g2" onclick="setG(2)">快速</button>
-        <button class="gear" id="g3" onclick="setG(3)">极速</button>
+
+    <!-- 机器人控制后台 (PB Control) -->
+    <div class="panel">
+        设定赔付率(RTP): <input type="number" id="target_rtp" value="95" step="5">% 
+        强制杀分模式: <input type="checkbox" id="kill_mode">
     </div>
+
     <script>
-        let b = 89037.00; let r = 0; let g = 1; let s = false;
-        function setG(v) { g=v; document.querySelectorAll('.gear').forEach(n=>n.classList.remove('active')); document.getElementById('g'+v).classList.add('active'); }
-        function run() {
-            if(s || b < 0.5) return; s=true; b-=0.5;
-            document.getElementById('bal').innerText = b.toLocaleString(undefined,{minimumFractionDigits:2});
-            let d = g==1?3500:g==2?1500:600;
-            let a = 2160 + Math.floor(Math.random()*360); r+=a;
+        let balance = 89037.00;
+        let totalIn = 0;
+        let totalOut = 0;
+        let currentRot = 0;
+        let busy = false;
+
+        // 奖项配置表 (按角度顺序)
+        const prizes = [
+            {id: 0, val: 50, deg: 0,   name: "老虎"},
+            {id: 1, val: 10, deg: 45,  name: "狮子"},
+            {id: 2, val: 5,  deg: 90,  name: "狼"},
+            {id: 3, val: 0,  deg: 135, name: "空"},
+            {id: 4, val: 2,  deg: 180, name: "狗"},
+            {id: 5, val: 0,  deg: 225, name: "空"},
+            {id: 6, val: 20, deg: 270, name: "海豚"},
+            {id: 7, val: 0,  deg: 315, name: "空"}
+        ];
+
+        function runBot() {
+            if(busy || balance < 0.5) return;
+            busy = true;
+            totalIn += 0.5;
+            balance -= 0.5;
+            updateMonitor();
+
+            // --- PB核心算法逻辑 ---
+            let targetRTP = parseFloat(document.getElementById('target_rtp').value) / 100;
+            let killMode = document.getElementById('kill_mode').checked;
+            let currentRTP = totalIn > 0 ? totalOut / totalIn : 0;
+            
+            let possiblePrizes = [];
+            
+            prizes.forEach(p => {
+                // 如果是强制杀分，只允许出“空奖”
+                if (killMode) {
+                    if (p.val === 0) possiblePrizes.push(p);
+                } else {
+                    // 如果当前RTP过高，通过系统算法过滤掉高倍大奖
+                    if (currentRTP > targetRTP && p.val > 2) {
+                        // 过滤
+                    } else {
+                        possiblePrizes.push(p);
+                    }
+                }
+            });
+
+            // 兜底逻辑：如果没有符合条件的奖项，强制给个低赔或空奖
+            if (possiblePrizes.length === 0) possiblePrizes = prizes.filter(p => p.val === 0);
+            
+            // 从符合算法的池子里随机选一个
+            let finalPrize = possiblePrizes[Math.floor(Math.random() * possiblePrizes.length)];
+            
+            // --- 计算旋转 ---
+            let rounds = 5 + Math.floor(Math.random() * 5);
+            // 目标角度计算：指针固定在顶部(0度)，转盘逆时针转，所以要用 360 - 奖项角度
+            let targetDeg = (360 - finalPrize.deg) % 360;
+            currentRot += (rounds * 360) + targetDeg - (currentRot % 360);
+            
             const w = document.getElementById('w');
-            w.style.transition = `transform ${d}ms cubic-bezier(0.1, 0, 0.1, 1.25)`;
-            w.style.transform = `rotate(${r}deg)`;
+            w.style.transform = `rotate(${currentRot}deg)`;
+
             setTimeout(() => {
-                document.getElementById('stg').classList.add('shake');
-                setTimeout(() => {
-                    document.getElementById('stg').classList.remove('shake');
-                    b += [10, 20, 5, 50, 2, 100, 15, 0][Math.floor(Math.random()*8)];
-                    document.getElementById('bal').innerText = b.toLocaleString(undefined,{minimumFractionDigits:2});
-                    s=false;
-                }, 400);
-            }, d);
+                totalOut += finalPrize.val;
+                balance += finalPrize.val;
+                updateMonitor();
+                busy = false;
+            }, 3200);
+        }
+
+        function updateMonitor() {
+            document.getElementById('bal').innerText = balance.toLocaleString(undefined,{minimumFractionDigits:2});
+            document.getElementById('total_in').innerText = totalIn.toFixed(2);
+            document.getElementById('total_out').innerText = totalOut.toFixed(2);
+            let realRTP = totalIn > 0 ? (totalOut / totalIn * 100).toFixed(1) : 0;
+            document.getElementById('rtp_real').innerText = realRTP + "%";
+            document.getElementById('water_level').innerText = realRTP > document.getElementById('target_rtp').value ? "WARNING: OVERPAY" : "STABLE";
         }
     </script>
 </body>
