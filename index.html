@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>QUANTUM TERMINAL V4.0 - 暗铸量化</title>
+<style>
+    /* --- 核心变量定义 --- */
+    :root {
+        --neon-green: #00ff41;
+        --dark-bg: #050a05;
+        --panel-bg: #0d1117;
+        --border-color: #1d4a2c;
+        --warn-red: #ff3e3e;
+        --gold: #ff9100;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+    body { 
+        background: var(--dark-bg); color: var(--neon-green); 
+        font-family: 'SF Mono', 'Courier New', monospace; 
+        height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+    }
+
+    /* --- 顶部高级状态栏 --- */
+    .header {
+        height: 40px; background: #000; border-bottom: 1px solid var(--border-color);
+        display: flex; align-items: center; justify-content: space-between; padding: 0 12px;
+        font-size: 10px; letter-spacing: 1px;
+    }
+    .status-item { display: flex; align-items: center; gap: 5px; }
+    .dot { width: 6px; height: 6px; background: var(--neon-green); border-radius: 50%; box-shadow: 0 0 5px var(--neon-green); }
+    .dot.blink { animation: blink 1s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* --- 余额展示区 (数值滚动效果) --- */
+    .balance-container {
+        padding: 20px 15px; background: linear-gradient(180deg, #000, var(--panel-bg));
+        text-align: center; border-bottom: 1px dashed var(--border-color);
+    }
+    .label { font-size: 11px; color: #666; margin-bottom: 8px; text-transform: uppercase; }
+    .amount { font-size: 46px; font-weight: 900; letter-spacing: -1px; text-shadow: 0 0 20px rgba(0,255,65,0.3); }
+
+    /* --- 核心转盘区 (物理引擎感) --- */
+    .main-stage {
+        flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        position: relative; overflow: hidden; background-image: radial-gradient(circle at center, #1a2a1a 0%, #050a05 100%);
+    }
+    .wheel-wrapper {
+        position: relative; width: 310px; height: 310px; transform: translateZ(0);
+    }
+    .pointer-top {
+        position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+        width: 30px; height: 40px; z-index: 100;
+        filter: drop-shadow(0 0 10px var(--warn-red));
+    }
+    .wheel-body {
+        width: 100%; height: 100%; border-radius: 50%;
+        border: 8px solid #161b22; position: relative;
+        box-shadow: 0 0 40px rgba(0,0,0,0.8), inset 0 0 60px rgba(0,0,0,0.9);
+        transition: transform 6s cubic-bezier(0.1, 0, 0.1, 1);
+        will-change: transform;
+    }
+    .sector {
+        position: absolute; width: 100%; height: 100%;
+        display: flex; flex-direction: column; align-items: center; padding-top: 25px;
+    }
+    .sector-icon { font-size: 26px; margin-bottom: 5px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+    .sector-label { font-size: 9px; font-weight: bold; background: rgba(0,0,0,0.6); padding: 2px 6px; border-radius: 10px; color: #fff; }
+
+    .center-hub {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: 75px; height: 75px; background: #161b22; border: 3px solid var(--border-color);
+        border-radius: 50%; z-index: 10; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(0,0,0,0.8);
+    }
+    .hub-mult { font-size: 18px; font-weight: 900; color: var(--gold); }
+
+    /* --- 交互控制区 (丝滑按键) --- */
+    .control-panel {
+        background: #000; padding: 15px; padding-bottom: calc(15px + env(safe-area-inset-bottom));
+        border-top: 2px solid var(--border-color);
+    }
+    .bet-info { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px; }
+    .bet-current { font-size: 24px; font-weight: 900; color: var(--warn-red); }
+
+    .grid-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+    .btn {
+        background: #111; border: 1px solid var(--border-color); color: var(--neon-green);
+        height: 50px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+        font-weight: 900; font-size: 13px; transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn:active { background: var(--neon-green); color: #000; transform: scale(0.92); box-shadow: 0 0 15px var(--neon-green); }
+    .btn.double { border-color: var(--gold); color: var(--gold); }
+    .btn.max { border-color: var(--warn-red); color: var(--warn-red); }
+
+    .execute-btn {
+        width: 100%; height: 65px; background: var(--neon-green); color: #000;
+        border: none; border-radius: 8px; font-size: 22px; font-weight: 900;
+        letter-spacing: 2px; box-shadow: 0 5px 0 #008f11;
+        transition: all 0.05s;
+    }
+    .execute-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #008f11; }
+    .execute-btn.loading { background: #1d4a2c; color: #050a05; pointer-events: none; box-shadow: none; }
+
+    /* --- 侧边历史记录栏 --- */
+    .history-drawer {
+        position: absolute; right: -120px; top: 15%; width: 110px; 
+        background: rgba(0,0,0,0.8); border: 1px solid var(--border-color);
+        border-right: none; border-radius: 10px 0 0 10px; padding: 10px;
+        transition: right 0.3s; z-index: 200;
+    }
+    .history-drawer.open { right: 0; }
+    .hist-item { font-size: 10px; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid #222; }
+
+    /* --- 动画辅助 --- */
+    .shake { animation: shake 0.1s infinite; }
+    @keyframes shake { 0% { transform: translate(1px, 1px); } 50% { transform: translate(-1px, -1px); } 100% { transform: translate(1px, -1px); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="status-item"><div class="dot blink"></div> API:CONNECTED [SSL]</div>
+    <div class="status-item">ORACLE_VRF: <span id="oracle-status">VERIFIED</span></div>
+    <div id="clock">00:00:00</div>
+</div>
+
+<div class="balance-container">
+    <div class="label">Total Quantized Assets (USDT)</div>
+    <div class="amount" id="balance">1,250.00</div>
+</div>
+
+<div class="main-stage">
+    <div class="wheel-wrapper">
+        <svg class="pointer-top" viewBox="0 0 30 40">
+            <path d="M15 40 L30 0 L0 0 Z" fill="#ff3e3e"/>
+        </svg>
+        <div class="center-hub">
+            <div id="hub-label" style="font-size: 9px; color: #666;">STATUS</div>
+            <div class="hub-mult" id="hub-res">IDLE</div>
+        </div>
+        <div id="wheel" class="wheel-body"></div>
+    </div>
+    
+    <div class="history-drawer" id="history">
+        <div style="font-size: 9px; color: var(--gold); margin-bottom: 8px;">RECENT_LOGS</div>
+        <div id="hist-list"></div>
+    </div>
+</div>
+
+<div class="control-panel">
+    <div class="bet-info">
+        <div>
+            <div class="label" style="text-align:left">Min Entry: 10.00</div>
+            <div class="bet-current" id="bet-display">10.00</div>
+        </div>
+        <div class="label" style="color: var(--neon-green)">Leverage: 1:1</div>
+    </div>
+
+    <div class="grid-btns" id="btn-grid">
+        <div class="btn" data-act="add" data-val="10">+10</div>
+        <div class="btn" data-act="add" data-val="100">+100</div>
+        <div class="btn" data-act="add" data-val="500">+500</div>
+        <div class="btn" data-act="add" data-val="1000">+1k</div>
+        <div class="btn double" data-act="double">X2 翻倍</div>
+        <div class="btn max" data-act="max">ALL IN</div>
+        <div class="btn" data-act="half">1/2 减半</div>
+        <div class="btn" data-act="reset">RESET</div>
+    </div>
+
+    <button id="exec-btn" class="execute-btn">INITIATE QUANTUM SPIN</button>
+</div>
+
+<script>
+/**
+ * 暗铸量化终端 - 核心逻辑引擎
+ * 包含：API传话、物理动画、数值平滑、事件驱动
+ */
+const CONFIG = {
+    sectors: [
+        { icon: "🐉", mult: 50, label: "SHENLONG", weight: 1 },
+        { icon: "💀", mult: 0, label: "NULL", weight: 30 },
+        { icon: "🐅", mult: 10, label: "TIGER", weight: 5 },
+        { icon: "💀", mult: 0, label: "VOID", weight: 30 },
+        { icon: "🦅", mult: 5, label: "EAGLE", weight: 10 },
+        { icon: "💀", mult: 0, label: "NULL", weight: 30 },
+        { icon: "🦊", mult: 2, label: "FOX", weight: 15 },
+        { icon: "💀", mult: 0, label: "VOID", weight: 30 }
+    ],
+    apiTimeout: 5000,
+    baseRot: 3600 // 基础转动10圈
+};
+
+const STATE = {
+    balance: 1250.45,
+    bet: 10.00,
+    isSpinning: false,
+    currentRot: 0,
+    history: []
+};
+
+// --- 初始化 ---
+function init() {
+    renderWheel();
+    bindFastEvents();
+    updateClock();
+    setInterval(updateClock, 1000);
+    smoothValueUpdate('balance', STATE.balance);
+}
+
+function renderWheel() {
+    const wheel = document.getElementById('wheel');
+    const angleStep = 360 / CONFIG.sectors.length;
+    
+    CONFIG.sectors.forEach((s, i) => {
+        const el = document.createElement('div');
+        el.className = 'sector';
+        el.style.transform = `rotate(${i * angleStep}deg)`;
+        el.innerHTML = `
+            <span class="sector-icon">${s.icon}</span>
+            <span class="sector-label">${s.label}</span>
+        `;
+        wheel.appendChild(el);
+    });
+}
+
+// --- 零延迟交互引擎 ---
+function bindFastEvents() {
+    const grid = document.getElementById('btn-grid');
+    
+    // 采用 TouchStart 零延迟响应
+    grid.addEventListener('touchstart', (e) => {
+        if (STATE.isSpinning) return;
+        const btn = e.target.closest('.btn');
+        if (!btn) return;
+        
+        e.preventDefault();
+        const { act, val } = btn.dataset;
+        handleBetAction(act, parseFloat(val));
+        vibrate(15); // 轻微触感反馈
+    }, { passive: false });
+
+    document.getElementById('exec-btn').addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (!STATE.isSpinning) executeSpin();
+    });
+    
+    // 侧边栏交互
+    document.querySelector('.main-stage').onclick = () => {
+        document.getElementById('history').classList.toggle('open');
+    };
+}
+
+function handleBetAction(act, val) {
+    switch(act) {
+        case 'add': STATE.bet += val; break;
+        case 'double': STATE.bet *= 2; break;
+        case 'half': STATE.bet /= 2; break;
+        case 'max': STATE.bet = STATE.balance; break;
+        case 'reset': STATE.bet = 10; break;
+    }
+    
+    // 边界风控
+    if (STATE.bet > STATE.balance) STATE.bet = STATE.balance;
+    if (STATE.bet < 1
