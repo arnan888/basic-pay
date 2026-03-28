@@ -3,99 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI_QUANT_TECH_PRO</title>
+    <title>AI_QUANT_DASHBOARD_V4</title>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-        body { background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%); color:#FFED00; font-family:sans-serif; height:100vh; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        body { 
+            background: #222; /* 工业深灰背景 */
+            background-image: linear-gradient(#2a2a2a 1px, transparent 1px), linear-gradient(90deg, #2a2a2a 1px, transparent 1px);
+            background-size: 20px 20px; /* 增加网格线，专业感 */
+            color:#FFF; font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            height:100vh; overflow:hidden; display:flex; flex-direction:column;
+        }
+
+        /* 顶部看板：双翼设计 */
+        .header-dash { 
+            display:grid; grid-template-columns: 1fr 1fr; gap:1px; 
+            background:#444; border-bottom:2px solid #555; height: 90px;
+        }
+        .dash-node { background:#1a1a1a; padding:10px; display:flex; flex-direction:column; justify-content:center; align-items:center; }
+        .node-label { font-size:10px; color:#888; text-transform:uppercase; margin-bottom:5px; letter-spacing:1px; }
+        .node-val { color:#FF0000; font-size:24px; font-weight:900; font-family:monospace; }
+
+        /* 状态条 */
+        .status-bar { background:#333; height:25px; display:flex; align-items:center; padding:0 10px; font-size:10px; color:#0f0; justify-content:space-between; }
+
+        /* 核心执行区 */
+        .core-section { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; }
         
-        .hud { position:fixed; top:0; width:100%; height:50px; background:rgba(0,0,0,0.9); display:flex; justify-content:space-around; align-items:center; border-bottom:2px solid #FFED00; z-index:100; font-size:12px; }
-        .bal-val { font-size:75px; font-weight:900; color:#FFED00; text-shadow:0 0 30px #f00; }
+        /* 余额看板 */
+        .balance-board { width:100%; background:rgba(0,0,0,0.4); border:1px solid #444; border-radius:8px; padding:15px; text-align:center; margin-bottom:20px; box-shadow:inset 0 0 20px #000; }
+        .bal-val { font-size:60px; font-weight:900; color:#FF0000; text-shadow:0 0 20px rgba(255,0,0,0.3); }
 
-        /* 技术控制区：自动与加速 */
-        .tech-ctrls { display:flex; gap:15px; margin:10px 0; }
-        .t-btn { padding:5px 15px; border:1px solid #FFED00; border-radius:5px; font-size:12px; cursor:pointer; background:none; color:#FFED00; transition:0.3s; }
-        .t-btn.active { background:#FFED00; color:#000; box-shadow:0 0 10px #FFED00; }
+        /* 转盘：模块化嵌套 */
+        .wheel-module { 
+            position:relative; width:260px; height:260px; 
+            border:8px solid #333; border-radius:15px; /* 方形外框包裹圆形，像仪器 */
+            background:#111; padding:10px; box-shadow:0 0 30px rgba(0,0,0,0.5);
+        }
+        .wheel-inner { 
+            width:100%; height:100%; border-radius:50%; border:2px solid #444;
+            transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1); 
+            position:relative; overflow:hidden; background:#1a1a1a;
+        }
+        .pointer-fixed { 
+            position:absolute; top:0; left:50%; transform:translateX(-50%); 
+            width:4px; height:30px; background:#FF0000; z-index:100; box-shadow:0 0 10px #F00;
+        }
+        .slot-item { position:absolute; width:100%; height:100%; text-align:center; padding-top:15px; font-weight:bold; font-size:14px; color:#666; }
 
-        .wheel-container { position:relative; width:300px; height:300px; border:10px solid #FFED00; border-radius:50%; box-shadow:0 0 40px #f40; background:#222; margin:15px 0; }
-        .wheel-inner { width:100%; height:100%; border-radius:50%; transition:transform 5s cubic-bezier(0.15, 0, 0.15, 1); position:relative; background: repeating-conic-gradient(from 0deg, #111 0deg 45deg, #222 45deg 90deg); }
-        .wheel-center { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:60px; height:60px; background:#FFED00; border-radius:50%; z-index:50; box-shadow:0 0 20px #FFED00; display:flex; align-items:center; justify-content:center; color:#000; font-weight:bold; }
-        .pointer { position:absolute; top:-35px; left:50%; transform:translateX(-50%); border-left:15px solid transparent; border-right:15px solid transparent; border-top:45px solid #f00; z-index:100; }
-        .slot { position:absolute; width:100%; height:100%; text-align:center; padding-top:20px; font-weight:900; font-size:16px; color:#fff; }
+        /* 操作台区块 */
+        .console-box { 
+            width:100%; background:#1a1a1a; border-top:2px solid #444; 
+            padding:20px 15px 100px 15px; /* 留出导航高度 */
+        }
+        .bet-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+        .adj-btn { width:50px; height:50px; background:#333; border:1px solid #555; color:#FFF; font-size:24px; border-radius:5px; display:flex; align-items:center; justify-content:center; }
+        .execute-btn { flex:1; margin:0 15px; height:55px; background:#FF0000; border:none; color:#FFF; font-size:22px; font-weight:900; letter-spacing:2px; border-radius:5px; }
 
-        /* 操作区 */
-        .op-area { display:flex; align-items:center; gap:15px; margin-bottom:100px; z-index:100; }
-        .btn-adj { width:55px; height:55px; background:#333; border:2px solid #FFED00; border-radius:50%; color:#FFED00; font-size:30px; font-weight:bold; display:flex; align-items:center; justify-content:center; }
-        .main-btn { width:180px; padding:18px; background:linear-gradient(180deg, #f00, #900); border:none; border-radius:50px; color:#fff; font-size:26px; font-weight:900; box-shadow:0 5px 20px rgba(255,0,0,0.6); }
+        .tech-row { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+        .mode-btn { padding:10px; background:#222; border:1px solid #444; color:#666; font-size:11px; font-weight:bold; text-align:center; border-radius:4px; }
+        .mode-btn.on { border-color:#FF0000; color:#FF0000; background:rgba(255,0,0,0.05); }
 
-        .bot-nav { position:fixed; bottom:0; width:100%; background:#111; display:flex; justify-content:space-around; padding:15px 5px; border-top:1px solid #444; }
-        .nav-item { flex:1; text-align:center; font-size:12px; color:#FFED00; cursor:pointer; }
+        /* 底部导航面板 */
+        .nav-panel { 
+            position:fixed; bottom:0; width:100%; height:75px; 
+            background:#000; border-top:1px solid #FF0000; 
+            display:grid; grid-template-columns: repeat(4, 1fr);
+        }
+        .nav-node { display:flex; flex-direction:column; align-items:center; justify-content:center; color:#555; font-size:11px; font-weight:bold; }
+        .nav-node.active { color:#FF0000; }
     </style>
 </head>
 <body>
 
-    <div class="hud">
-        <div>IN: <b id="st_in" style="color:#0f0">0.0</b></div>
-        <div style="font-size:10px; color:#0f0; border:1px solid #0f0; padding:1px 4px;">TECH_AUTO_V1</div>
-        <div>OUT: <b id="st_out" style="color:#f00">0.0</b></div>
-    </div>
-
-    <div class="bal-val" id="ui_bal">100.0</div>
-    <div style="color:#888; font-size:14px;">BET: <span id="ui_bet" style="color:#0f0">0.5</span></div>
-
-    <!-- 技术控制开关 -->
-    <div class="tech-ctrls">
-        <button id="auto_btn" class="t-btn" onclick="toggleAuto()">自动选择: OFF</button>
-        <button id="speed_btn" class="t-btn" onclick="toggleSpeed()">加速: 1X</button>
-    </div>
-
-    <div class="wheel-container">
-        <div class="pointer"></div>
-        <div class="wheel-center">AI</div>
-        <div id="ui_wheel" class="wheel-inner">
-            <div class="slot" style="transform:rotate(0deg)">🍀 1.5X</div>
-            <div class="slot" style="transform:rotate(45deg)">💀 0X</div>
-            <div class="slot" style="transform:rotate(90deg)">🔥 120X</div>
-            <div class="slot" style="transform:rotate(135deg)">👑 JACK</div>
-            <div class="slot" style="transform:rotate(180deg)">💰 88X</div>
-            <div class="slot" style="transform:rotate(225deg)">💎 50X</div>
-            <div class="slot" style="transform:rotate(270deg)">✨ 20X</div>
-            <div class="slot" style="transform:rotate(315deg)">💀 0X</div>
+    <!-- 顶部数据看板 -->
+    <div class="header-dash">
+        <div class="dash-node">
+            <div class="node-label">Settlement In</div>
+            <div id="st_in" class="node-val">0.0</div>
+        </div>
+        <div class="dash-node">
+            <div class="node-label">Liquidity Out</div>
+            <div id="st_out" class="node-val">0.0</div>
         </div>
     </div>
 
-    <div class="op-area">
-        <div class="btn-adj" onclick="changeBet(-0.5)">－</div>
-        <button id="go_btn" class="main-btn" onclick="go()">祝 贺</button>
-        <div class="btn-adj" onclick="changeBet(0.5)">＋</div>
+    <!-- 实时状态条 -->
+    <div class="status-bar">
+        <span>● SYSTEM_READY</span>
+        <span id="sys_time">RTP_LOCKED: 90.00%</span>
     </div>
 
-    <div class="bot-nav">
-        <div class="nav-item">🔍 查询</div>
-        <div class="nav-item">📥 上分</div>
-        <div class="nav-item">📤 下分</div>
-        <div class="nav-item" style="color:#f0f; font-weight:bold;">✨ 全攻</div>
+    <div class="core-section">
+        <!-- 余额面板 -->
+        <div class="balance-board">
+            <div class="node-label">Available Balance (USDT)</div>
+            <div class="bal-val" id="ui_bal">100.0</div>
+            <div style="font-size:12px; color:#888;">UNIT_BET: <span id="ui_bet" style="color:#F00">0.5</span></div>
+        </div>
+
+        <!-- 转盘执行模块 -->
+        <div class="wheel-module">
+            <div class="pointer-fixed"></div>
+            <div id="ui_wheel" class="wheel-inner">
+                <div class="slot-item" style="transform:rotate(0deg)">1.5X</div>
+                <div class="slot-item" style="transform:rotate(45deg)">0X</div>
+                <div class="slot-item" style="transform:rotate(90deg)">120X</div>
+                <div class="slot-item" style="transform:rotate(135deg)">500X</div>
+                <div class="slot-item" style="transform:rotate(180deg)">88X</div>
+                <div class="slot-item" style="transform:rotate(225deg)">50X</div>
+                <div class="slot-item" style="transform:rotate(270deg)">20X</div>
+                <div class="slot-item" style="transform:rotate(315deg)">0X</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 工业操作台 -->
+    <div class="console-box">
+        <div class="bet-row">
+            <div class="adj-btn" onclick="changeBet(-0.5)">－</div>
+            <button id="go_btn" class="execute-btn" onclick="go()">EXECUTE</button>
+            <div class="adj-btn" onclick="changeBet(0.5)">＋</div>
+        </div>
+        <div class="tech-row">
+            <div id="auto_btn" class="mode-btn" onclick="toggleAuto()">AUTO PILOT: OFF</div>
+            <div id="speed_btn" class="mode-btn" onclick="toggleSpeed()">BOOST MODE: 1X</div>
+        </div>
+    </div>
+
+    <!-- 底部导航面板 -->
+    <div class="nav-panel">
+        <div class="nav-node">MARKET</div>
+        <div class="nav-node">ASSETS</div>
+        <div class="nav-node">HISTORY</div>
+        <div class="nav-node active">QUANT</div>
     </div>
 
     <script>
         let balance = 100.0, bet = 0.5, totalIn = 0.0, totalOut = 0.0, rot = 0, busy = false;
-        let isAuto = false;
-        let speedMode = 1; // 1: 正常, 2: 加速
+        let isAuto = false, speedMode = 1;
 
         function toggleAuto() {
             isAuto = !isAuto;
             const btn = document.getElementById('auto_btn');
-            btn.innerText = `自动选择: ${isAuto ? 'ON' : 'OFF'}`;
-            btn.className = isAuto ? 't-btn active' : 't-btn';
+            btn.innerText = `AUTO PILOT: ${isAuto ? 'ON' : 'OFF'}`;
+            btn.className = isAuto ? 'mode-btn on' : 'mode-btn';
             if(isAuto && !busy) go();
         }
 
         function toggleSpeed() {
             speedMode = (speedMode === 1) ? 2 : 1;
             const btn = document.getElementById('speed_btn');
-            btn.innerText = `加速: ${speedMode === 1 ? '1X' : '2X'}`;
-            btn.className = speedMode === 2 ? 't-btn active' : 't-btn';
-            // 物理修改转盘过渡时间
-            document.getElementById('ui_wheel').style.transitionDuration = speedMode === 1 ? '5s' : '1.5s';
+            btn.innerText = `BOOST MODE: ${speedMode === 1 ? '1X' : '2X'}`;
+            btn.className = speedMode === 2 ? 'mode-btn on' : 'mode-btn';
+            document.getElementById('ui_wheel').style.transitionDuration = speedMode === 1 ? '5s' : '1.2s';
         }
 
         function changeBet(val) {
@@ -104,46 +164,56 @@
             if (n >= 0.5) { bet = n; document.getElementById('ui_bet').innerText = bet.toFixed(1); }
         }
 
+        function animateWin(prize) {
+            const balEl = document.getElementById('ui_bal');
+            let currentWin = 0.1;
+            const duration = 1200;
+            const increment = prize / (duration / 30);
+            const timer = setInterval(() => {
+                currentWin += increment;
+                if (currentWin >= prize) {
+                    currentWin = prize;
+                    clearInterval(timer);
+                    if(isAuto) setTimeout(go, 800);
+                }
+                const tempBal = (balance - prize) + currentWin;
+                balEl.innerText = tempBal.toFixed(1);
+            }, 30);
+        }
+
         function go() {
             if (busy || balance < bet) {
-                isAuto = false; // 余额不足自动停止
-                document.getElementById('auto_btn').className = 't-btn';
-                document.getElementById('auto_btn').innerText = '自动选择: OFF';
+                isAuto = false;
+                document.getElementById('auto_btn').className = 'mode-btn';
+                document.getElementById('auto_btn').innerText = 'AUTO PILOT: OFF';
                 return;
             }
             busy = true;
-            document.getElementById('go_btn').style.opacity = "0.5";
+            document.getElementById('go_btn').style.background = "#500";
 
-            // 90% RTP 锁死算法
             const r = Math.floor(Math.random() * 1000);
-            let idx = 1; 
-            if (r < 2) idx = 3; else if (r < 10) idx = 2; else if (r < 30) idx = 4;
-            else if (r < 480) idx = 1; else if (r < 950) idx = 0; else if (r < 995) idx = 7;
-            else if (r < 998) idx = 5; else idx = 6;
+            let idx = (r < 480) ? 1 : (r < 950 ? 0 : (r < 995 ? 7 : (r < 998 ? 5 : (r < 2 ? 3 : 2))));
 
             const targetAngle = idx * 45;
-            const extraSpins = (Math.floor(Math.random() * 5) + 12) * 360;
-            rot += extraSpins + (360 - targetAngle - (rot % 360)) + 360;
+            rot += (Math.floor(Math.random() * 5) + 12) * 360 + (360 - targetAngle - (rot % 360)) + 360;
             document.getElementById('ui_wheel').style.transform = `rotate(${rot}deg)`;
 
-            // 根据速度档位决定结算时间
-            const waitTime = speedMode === 1 ? 5000 : 1500;
+            const waitTime = speedMode === 1 ? 5000 : 1200;
 
             setTimeout(() => {
                 const multis = [1.5, 0, 120, 500, 88, 50, 20, 0];
                 const prize = multis[idx] * bet;
                 balance = (balance - bet) + prize;
                 totalIn += bet; totalOut += prize;
-                
-                document.getElementById('ui_bal').innerText = balance.toFixed(1);
                 document.getElementById('st_in').innerText = totalIn.toFixed(1);
                 document.getElementById('st_out').innerText = totalOut.toFixed(1);
 
-                busy = false;
-                document.getElementById('go_btn').style.opacity = "1";
-
-                // 自动模式续杯
-                if(isAuto) setTimeout(go, 1000);
+                if (prize > 0) animateWin(prize);
+                else {
+                    document.getElementById('ui_bal').innerText = balance.toFixed(1);
+                    if(isAuto) setTimeout(go, 1000);
+                }
+                setTimeout(() => { busy = false; document.getElementById('go_btn').style.background = "#F00"; }, 1500);
             }, waitTime);
         }
     </script>
