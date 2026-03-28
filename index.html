@@ -1,56 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+    /* 全局背景 */
+    body { 
+        background: #3fb950; 
+        background-image: radial-gradient(circle at 50% 50%, #4ade80 0%, #166534 100%);
+        color:#333; 
+        font-family: "PingFang SC", sans-serif; 
+        height:100vh; 
+        overflow:hidden; 
+        display:flex; 
+        flex-direction:column; 
+    }
+
+    .status-bar { background: rgba(0,0,0,0.3); height:28px; display:flex; align-items:center; padding:0 15px; font-size:10px; color:#fff; justify-content:center; }
+
+    .core-section { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:15px; gap:20px; }
+
+    /* --- 核心修改：灰色外凸内陷模板 --- */
+    .panel-grey-emboss {
+        width:100%;
+        background: #d1d5db; /* 基础灰色 */
+        border-radius: 20px;
+        /* 外凸效果：右下深色阴影，左上白色高光 */
+        box-shadow: 
+            8px 8px 16px rgba(0,0,0,0.2), 
+            -8px -8px 16px rgba(255,255,255,0.8);
+        padding: 20px;
+        position: relative;
+    }
+
+    /* 内嵌槽：用于放置数字或转盘 */
+    .inset-well {
+        background: #bdc3c7;
+        border-radius: 15px;
+        /* 内陷效果：内部上方深色阴影，内部下方白色高光 */
+        box-shadow: 
+            inset 6px 6px 12px rgba(0,0,0,0.15), 
+            inset -4px -4px 8px rgba(255,255,255,0.5);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* 余额区数字 */
+    .bal-val { 
+        font-size:62px; 
+        font-weight:900; 
+        color: #ef4444; /* 红色数字 */
+        font-family: 'Verdana', sans-serif;
+        margin: 10px 0;
+    }
+
+    /* 转盘外圈：同样做成灰色立体感 */
+    .wheel-outer { 
+        width: 260px; 
+        height: 260px; 
+        border-radius: 50%; 
+        position: relative; 
+        border: 4px solid #9ca3af;
+        background: #e5e7eb;
+        /* 转盘本身的立体感 */
+        box-shadow: 
+            5px 5px 10px rgba(0,0,0,0.1),
+            -5px -5px 10px rgba(255,255,255,0.6);
+        transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1);
+        overflow: hidden;
+    }
+
+    .wheel-center-val {
+        position: absolute;
+        z-index: 10;
+        width: 70px;
+        height: 70px;
+        background: #d1d5db;
+        border-radius: 50%;
+        border: 2px solid #9ca3af;
+        display: flex;
+        align-items:center;
+        justify-content:center;
+        color: #ef4444;
+        font-size: 20px;
+        font-weight: 900;
+        box-shadow: 3px 3px 6px rgba(0,0,0,0.1);
+    }
+
+    .slot-content { position:absolute; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; padding-top:15px; }
+    .beast-ico { font-size: 24px; }
+    .beast-txt { font-size: 10px; color:#4b5563; font-weight:bold; }
+
+    .pointer-line {
+        position:absolute; top:10px; left:50%; transform:translateX(-50%);
+        width:4px; height:40px; background:#ef4444; z-index:100; border-radius:2px;
+    }
+
+    /* --- 底部控制台 --- */
+    .console-area { 
+        width:100%; 
+        background:#bdc3c7; 
+        padding:20px 20px 85px 20px; 
+        border-radius: 30px 30px 0 0;
+        box-shadow: 0 -10px 20px rgba(0,0,0,0.1);
+    }
+
+    .main-row { display:flex; gap:12px; margin-bottom:15px; }
+
+    /* 加减按键：内嵌质感 */
+    .btn-deep-inset { 
+        background: #d1d5db; 
+        border: 1px solid #9ca3af; 
+        color:#4b5563; font-size:32px; border-radius:12px;
+        display:flex; align-items:center; justify-content:center;
+        width:65px; height:60px;
+        box-shadow: inset 4px 4px 8px rgba(0,0,0,0.1), inset -2px -2px 4px rgba(255,255,255,0.5);
+    }
+
+    /* --- 修改：红色对象开始按键（不发光） --- */
+    .exec-red-btn { 
+        flex:1; height:60px; 
+        background: #cc0000; /* 纯正红色 */
+        border: none;
+        border-bottom: 4px solid #880000; /* 底部深色模拟厚度 */
+        color:#fff; font-size:22px; font-weight:900; border-radius:12px;
+        letter-spacing:2px;
+        cursor: pointer;
+        /* 只有结构阴影，没有发光(glow) */
+        box-shadow: 0 4px 0 #880000, 0 8px 15px rgba(0,0,0,0.2);
+        transition: all 0.1s;
+    }
+    .exec-red-btn:active {
+        transform: translateY(3px);
+        border-bottom-width: 1px;
+        box-shadow: 0 1px 0 #880000, 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .tech-row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    .mode-btn { 
+        padding:12px; background:#d1d5db; border: 1px solid #9ca3af; 
+        color:#4b5563; font-size:12px; border-radius:10px; text-align:center;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+    }
+    .mode-btn.on { background: #ef4444; color: white; border-color: #b91c1c; }
+
+    .nav { position:fixed; bottom:0; width:100%; height:75px; background:#fff; border-top:1px solid #ddd; display:grid; grid-template-columns: repeat(4, 1fr); }
+    .nav-n { display:flex; flex-direction:column; align-items:center; justify-content:center; color:#9ca3af; font-size:11px; font-weight:bold; }
+    .nav-n.act { color:#ef4444; }
+</style>
+</head>
+<body>
+
+<div class="status-bar">● QUANT_PULSE_EXTERIOR_V2 ●</div>
+
+<div class="core-section">
+    <div class="panel-grey-emboss">
+        <div class="inset-well" style="padding: 15px;">
+            <div style="font-size:11px; color:#4b5563; margin-bottom:5px; font-weight:bold;">AVAILABLE BALANCE (USDT)</div>
+            <div class="bal-val" id="ui_bal">100.3</div>
+            <div style="font-size:12px; color:#666;">BET: <span id="ui_bet" style="color:#ef4444; font-weight:bold;">0.5</span></div>
+        </div>
+    </div>
+
+    <div class="panel-grey-emboss" style="display:flex; justify-content:center; align-items:center; padding: 25px;">
+        <div class="inset-well" style="width:280px; height:280px; border-radius:50%;">
+            <div class="pointer-line"></div>
+            <div class="wheel-center-val" id="center_val">READY</div>
+            <div id="ui_wheel" class="wheel-outer">
+                <div class="slot-content" style="transform:rotate(0deg)"><span class="beast-ico">🦢</span><span class="beast-txt">孤鸿</span></div>
+                <div class="slot-content" style="transform:rotate(45deg)"><span class="beast-ico">🐺</span><span class="beast-txt">孤狼</span></div>
+                <div class="slot-content" style="transform:rotate(90deg)"><span class="beast-ico">🐢</span><span class="beast-txt">玄武</span></div>
+                <div class="slot-content" style="transform:rotate(135deg)"><span class="beast-ico">鹿</span><span class="beast-txt">麒麟</span></div>
+                <div class="slot-content" style="transform:rotate(180deg)"><span class="beast-ico">🐲</span><span class="beast-txt" style="color:#ef4444">神龙</span></div>
+                <div class="slot-content" style="transform:rotate(225deg)"><span class="beast-ico">🔥</span><span class="beast-txt">凤凰</span></div>
+                <div class="slot-content" style="transform:rotate(270deg)"><span class="beast-ico">🦅</span><span class="beast-txt">大鹏</span></div>
+                <div class="slot-content" style="transform:rotate(315deg)"><span class="beast-ico">🦢</span><span class="beast-txt">仙鹤</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="console-area">
+    <div class="main-row">
+        <div class="btn-deep-inset" onclick="changeBet(-0.5)">－</div>
+        <button id="go_btn" class="exec-red-btn" onclick="go()">开始执行</button>
+        <div class="btn-deep-inset" onclick="changeBet(0.5)">＋</div>
+    </div>
+    <div class="tech-row">
+        <div id="auto_btn" class="mode-btn" onclick="toggleAuto()">🤖 自动模式: 关</div>
+        <div id="speed_btn" class="mode-btn" onclick="cycleSpeed()">⚡ 变速模式: 1X</div>
+    </div>
+</div>
+
+<div class="nav">
+    <div class="nav-n">行情</div><div class="nav-n">资产中心</div><div class="nav-n">历史记录</div><div class="nav-n act">量化终端</div>
+</div>
+
 <script>
-/* ===============================
-   机械噪音模块（低频工业感）
-   一键粘贴 · 不破原逻辑
-   =============================== */
+    let balance = 100.3, bet = 0.5, rot = 0, busy = false, isAuto = false, speedMode = 1;
+    const beastNames = ["X0", "X0", "X120", "X500", "X50", "X88", "X50", "X20"];
+    const multis = [0, 0, 120, 500, 50, 88, 50, 20];
 
-let audioCtx, noiseNode, gainNode;
-let noiseOn = true;
-
-/* 初始化噪音 */
-function initNoise() {
-    if (audioCtx) return;
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-    const bufferSize = 2 * audioCtx.sampleRate;
-    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    const output = noiseBuffer.getChannelData(0);
-
-    for (let i = 0; i < bufferSize; i++) {
-        output[i] = (Math.random() * 2 - 1) * 0.15; // 低强度噪音
+    function toggleAuto() {
+        isAuto = !isAuto;
+        document.getElementById('auto_btn').className = isAuto ? 'mode-btn on' : 'mode-btn';
+        document.getElementById('auto_btn').innerHTML = `🤖 自动模式: ${isAuto ? '开' : '关'}`;
+        if(isAuto && !busy) go();
     }
 
-    noiseNode = audioCtx.createBufferSource();
-    noiseNode.buffer = noiseBuffer;
-    noiseNode.loop = true;
-
-    gainNode = audioCtx.createGain();
-    gainNode.gain.value = 0.03; // ⚠️ 噪音强度（越小越稳）
-
-    noiseNode.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-}
-
-/* 开始噪音 */
-function startNoise() {
-    if (!noiseOn) return;
-    initNoise();
-    try { noiseNode.start(); } catch(e){}
-}
-
-/* 停止噪音 */
-function stopNoise() {
-    if (noiseNode) {
-        try { noiseNode.stop(); } catch(e){}
-        noiseNode = null;
+    function cycleSpeed() {
+        speedMode = (speedMode % 3) + 1;
+        document.getElementById('speed_btn').innerHTML = `⚡ 变速模式: ${speedMode}X`;
+        const times = ["", "5s", "1.2s", "0.5s"];
+        document.getElementById('ui_wheel').style.transitionDuration = times[speedMode];
     }
-}
 
-/* ===== 挂钩到你原有 go() ===== */
-const _go = go;
-go = function () {
-    startNoise();
-    _go();
-    setTimeout(stopNoise, 1200); // 转盘后自动停
-};
+    function changeBet(val) {
+        if (busy) return;
+        let n = bet + val;
+        if (n >= 0.5) { bet = n; document.getElementById('ui_bet').innerText = bet.toFixed(1); }
+    }
+
+    function go() {
+        if (busy || balance < bet) { isAuto = false; return; }
+        busy = true;
+        const r = Math.floor(Math.random() * 1000);
+        let idx = (r < 500) ? 0 : (r < 850 ? 1 : (r < 950 ? 7 : (r < 980 ? 6 : (r < 990 ? 2 : (r < 996 ? 5 : (r < 999 ? 4 : 3))))));
+        const targetAngle = idx * 45;
+        rot += (Math.floor(Math.random() * 5) + 10) * 360 + (360 - targetAngle - (rot % 360)) + 360;
+        document.getElementById('ui_wheel').style.transform = `rotate(${rot}deg)`;
+        
+        const waitTimes = [0, 5000, 1200, 500];
+        setTimeout(() => {
+            const prize = multis[idx] * bet;
+            balance = (balance - bet) + prize;
+            document.getElementById('ui_bal').innerText = balance.toFixed(1);
+            document.getElementById('center_val').innerText = beastNames[idx];
+            if(isAuto) setTimeout(go, 800);
+            setTimeout(() => { busy = false; }, 500);
+        }, waitTimes[speedMode]);
+    }
 </script>
+
+</body>
+</html>
