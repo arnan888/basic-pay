@@ -3,59 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CONGRATS_PB_SYSTEM_V2</title>
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { background:#000; color:#FFD700; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; overflow:hidden; font-family:sans-serif; }
-        .hud { position:fixed; top:0; width:100%; display:flex; justify-content:space-around; padding:10px; background:#111; font-size:10px; border-bottom:1px solid #FFD700; z-index:999; }
-        .bal { font-size:55px; font-weight:900; margin-bottom:20px; text-shadow:0 0 20px red; }
-        /* 物理死锁对齐：杜绝文字右偏 */
-        .stage { width:350px; height:350px; position:relative; border:10px solid #FFD700; border-radius:50%; background:radial-gradient(circle,#500,#100); box-shadow:0 0 50px rgba(255,0,0,0.6); }
-        .ptr { position:absolute; top:-20px; left:50%; transform:translateX(-50%); border:18px solid transparent; border-top:40px solid #f00; z-index:100; }
-        .wheel { width:100%; height:100%; position:relative; transition:transform 4s cubic-bezier(0.1,0,0,1.1); }
-        .slot { position:absolute; width:160px; height:100%; left:50%; margin-left:-80px; display:flex; flex-direction:column; align-items:center; transform-origin:50% 50%; }
-        .unit { margin-top:25px; display:flex; flex-direction:column; align-items:center; text-align:center; width:100%; }
-        .unit img { width:60px; height:60px; border-radius:50%; border:2px solid #FFD700; background:#200; box-shadow:0 4px 8px #000; }
-        .unit b { font-size:13px; color:#fff; white-space:nowrap; text-shadow:1px 1px 3px #000; margin-top:5px; font-weight:900; }
-        .unit i { font-style:normal; font-size:10px; color:#0f0; background:rgba(0,0,0,0.8); padding:0 6px; border-radius:10px; margin-top:2px; border:1px solid #0f0; }
-        /* 中心大字：祝贺 */
-        .btn { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:100px; height:100px; border-radius:50%; background:radial-gradient(circle,#f00,#900); border:4px solid #FFD700; color:#fff; z-index:200; display:flex; align-items:center; justify-content:center; font-size:32px; font-weight:900; box-shadow:0 8px 0 #400; cursor:pointer; text-shadow:2px 2px 4px #000; }
-        .btn:active { transform:translate(-50%,-50%) translateY(8px); box-shadow:0 2px 0 #400; }
+        /* =========================================
+           UI 样式层：物理对齐与视觉规范
+           ========================================= */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: #000; 
+            background: radial-gradient(circle at center, #300 0%, #000 100%);
+            color: #FFD700; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh; 
+            overflow: hidden; 
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif; 
+        }
+
+        /* 顶部 PB 监控集合展示 */
+        .pb-dashboard {
+            position: fixed; top: 0; width: 100%; height: 60px;
+            background: rgba(0,0,0,0.95); border-bottom: 2px solid #FFD700;
+            display: flex; justify-content: space-around; align-items: center;
+            z-index: 1000; font-family: monospace; font-size: 13px;
+        }
+        .pb-dashboard div span { color: #aaa; margin-right: 5px; }
+        .pb-dashboard div b { color: #0f0; text-shadow: 0 0 8px #0f0; }
+
+        /* 荣誉总额 UI */
+        .header-section { margin-top: 60px; text-align: center; }
+        .total-label { font-size: 16px; color: #FFD700; opacity: 0.9; letter-spacing: 3px; }
+        .total-value { 
+            font-size: 65px; font-weight: 900; color: #FFD700; 
+            text-shadow: 0 0 30px #FF0000; letter-spacing: -2px;
+            margin-bottom: 20px;
+        }
+
+        /* 转盘物理外框 */
+        .wheel-stage {
+            width: 380px; height: 380px; position: relative;
+            border: 12px solid #FFD700; border-radius: 50%;
+            background: #000; box-shadow: 0 0 100px rgba(255,0,0,0.4);
+            padding: 4px;
+        }
+        /* 定点指针 */
+        .top-pointer {
+            position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 24px solid transparent; border-right: 24px solid transparent;
+            border-top: 55px solid #FF0000; z-index: 100;
+            filter: drop-shadow(0 5px 10px #000);
+        }
+
+        /* 核心旋转容器 */
+        .wheel-outer {
+            width: 100%; height: 100%; position: relative;
+            border-radius: 50%; background: #0a0a0a;
+            transition: transform 5s cubic-bezier(0.15, 0, 0, 1.05);
+            overflow: hidden;
+        }
+
+        /* 物理死锁槽位：解决文字向心偏转、挤压问题 */
+        .item-slot {
+            position: absolute; width: 160px; height: 100%;
+            left: 50%; margin-left: -80px;
+            display: flex; flex-direction: column; align-items: center;
+            transform-origin: 50% 50%;
+        }
+        .item-container {
+            margin-top: 35px; width: 100%;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        /* 图标 UI 封装 */
+        .icon-box {
+            width: 65px; height: 65px; border-radius: 50%;
+            border: 3px solid #FFD700; background: #200;
+            margin-bottom: 8px; box-shadow: 0 6px 15px #000;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+        .icon-box img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* 祝贺文案：绝对垂直对齐 */
+        .item-label {
+            color: #fff; font-size: 13px; font-weight: 900;
+            text-shadow: 2px 2px 4px #000; white-space: nowrap;
+            letter-spacing: 1px;
+        }
+        .item-sub {
+            font-size: 11px; color: #00FF00; font-weight: bold;
+            margin-top: 2px; background: rgba(0,0,0,0.7);
+            padding: 1px 8px; border-radius: 10px; border: 1px solid #00FF00;
+        }
+
+        /* 中心大字：祝贺按钮 UI */
+        .center-trigger {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 110px; height: 110px; border-radius: 50%;
+            background: radial-gradient(circle, #FF0000 0%, #880000 100%);
+            border: 5px solid #FFF; z-index: 200;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 10px 0 #400, 0 15px 40px rgba(0,0,0,0.7);
+            cursor: pointer; user-select: none;
+        }
+        .center-trigger h2 { 
+            font-size: 34px; color: #FFF; font-weight: 900; 
+            text-shadow: 2px 2px 5px #000; letter-spacing: 2px;
+        }
+        .center-trigger:active { 
+            transform: translate(-50%, -50%) translateY(8px); 
+            box-shadow: 0 2px 0 #400; 
+        }
+
+        .footer-tag { margin-top: 35px; color: #666; font-size: 12px; letter-spacing: 2px; }
     </style>
 </head>
 <body>
-    <div class="hud"><span>RTP: <b id="r">0%</b></span><span>投: <b id="i">0</b></span><span>获: <b id="o">0</b></span></div>
-    <div class="bal" id="v">89,037.00</div>
-    <div class="stage">
-        <div class="ptr"></div>
-        <div class="wheel" id="w">
-            <div class="slot" style="transform:rotate(0deg)"><div class="unit"><img src="https://img.icons8.com/color/96/tiger.png"><b>大桥·旗开得胜</b><i>荣誉+88</i></div></div>
-            <div class="slot" style="transform:rotate(45deg)"><div class="unit"><img src="https://img.icons8.com/color/96/lion.png"><b>伶仃洋·无惧浪</b><i>荣誉+50</i></div></div>
-            <div class="slot" style="transform:rotate(90deg)"><div class="unit"><img src="https://img.icons8.com/color/96/wolf.png"><b>日月贝·乘风破</b><i>荣誉+20</i></div></div>
-            <div class="slot" style="transform:rotate(135deg)"><div class="unit"><img src="https://img.icons8.com/emoji/96/sparkles.png"><b>特区·首战告捷</b><i>捷报</i></div></div>
-            <div class="slot" style="transform:rotate(180deg)"><div class="unit"><img src="https://img.icons8.com/color/96/dog.png"><b>情侣路·屹立不</b><i>荣誉+15</i></div></div>
-            <div class="slot" style="transform:rotate(225deg)"><div class="unit"><img src="https://img.icons8.com/emoji/96/ocean.png"><b>渔女·站得稳</b><i>捷报</i></div></div>
-            <div class="slot" style="transform:rotate(270deg)"><div class="unit"><img src="https://img.icons8.com/color/96/dolphin.png"><b>横琴·马到成功</b><i>荣誉+120</i></div></div>
-            <div class="slot" style="transform:rotate(315deg)"><div class="unit"><img src="https://img.icons8.com/emoji/96/coffee.png"><b>九洲·万事如意</b><i>捷报</i></div></div>
-        </div>
-        <div class="btn" onclick="pb()">祝贺</div>
+
+    <!-- 后台 PB 集合实时数据 -->
+    <div class="pb-dashboard">
+        <div><span>RTP:</span><b id="ui_rtp">0.0%</b></div>
+        <div><span>IN:</span><b id="ui_in">0</b></div>
+        <div><span>OUT:</span><b id="ui_out">0</b></div>
     </div>
+
+    <!-- UI 总余额 -->
+    <div class="header-section">
+        <div class="total-label">总荣誉积分</div>
+        <div class="total-value" id="ui_bal">89,123.00</div>
+    </div>
+
+    <!-- 转盘 UI -->
+    <div class="wheel-stage">
+        <div class="top-pointer"></div>
+        <div class="wheel-outer" id="ui_wheel">
+            <!-- 8个功能槽位：后台集合对应 -->
+            <div class="item-slot" style="transform: rotate(0deg);"><div class="item-container"><div class="icon-box"><img src="https://img.icons8.com/color/96/tiger.png"></div><b class="item-label">大桥·旗开得胜</b><span class="item-sub">荣誉+88</span></div></div>
+            <div class="item-slot" style="transform: rotate(45deg);"><div class="item-container"><div class="icon-box"><img src="https://img.icons8.com/color/96/lion.png"></div><b class="item-label">伶仃洋·无惧浪</b><span class="item-sub">荣誉+50</span></div></div>
+            <div class="item-slot" style="transform: rotate(90deg);"><div class="item-container"><div class="icon-box"><img src="https://img.icons8.com/color/96/wolf.png"></div><b class="item-label">日月贝·乘风破</b><span class="item-sub">荣誉+20</span></div></div>
+            <div class="item-slot" style="transform: rotate(135deg);"><div class="item-container"><div class="icon-box"><img src="https://img.icons8.com/emoji/96/sparkles.png"></div><b class="item-label">特区·首战告捷</b><span class="item-sub">捷报</span></div></div>
+            <div class="item-slot" style="transform: rotate(180deg);"><div class="item-container"><div class="icon-box"><img src="https://img.icons8.com/color/96/dog.png"></div><b class="item-label">情侣路·屹立不</b><span class="item-sub">荣誉+15</span></div></div>
+            <div class="item-slot" style="transform: rotate(225deg);"><div class="item-container"><div class="icon-box"><img src="https://img.icons8.com/emoji/96/ocean.png"></div><b class="item-label">渔女·站得稳</b><span class="item-sub">捷报</span></div></div>
+            <div class="item-slot" style="transform: rotate(270deg);"><div class="item-container"><div class="icon-box"><img src="https://img.icons8.com/color/96/dolphin.png"></div><b class="item-label">横琴·马到成功</b><span class="item-sub">荣誉+120</span></div></div>
+            <div class="item-slot" style="transform: rotate(315deg);"><div class="item-container"><div class="icon-box"><img src="https://img.icons8.com/emoji/96/coffee.png"></div><b class="item-label">九洲·万事如意</b><span class="item-sub">捷报</span></div></div>
+        </div>
+
+        <!-- 中心大字：祝贺 -->
+        <div class="center-trigger" onclick="logic_execute()">
+            <h2>祝贺</h2>
+        </div>
+    </div>
+
+    <div class="footer-tag">祝贺珠海·旗开得胜·PB后台终端</div>
+
     <script>
-        let b=89037.0, ti=0, to=0, rot=0, busy=false;
-        const cfg=[{d:0,v:88},{d:45,v:50},{d:90,v:20},{d:135,v:0},{d:180,v:15},{d:225,v:0},{d:270,v:120},{d:315,v:0}];
-        function pb(){
-            if(busy || b<1) return; busy=true; ti++; b--;
-            let win = ((ti>5 && (to/ti)>0.95) ? cfg.filter(x=>x.v<=10) : cfg)[Math.floor(Math.random()*8)];
-            if(!win) win = cfg[3]; // 安全垫
-            rot += (3600 + (360 - win.d) - (rot % 360));
-            document.getElementById('w').style.transform = `rotate(${rot}deg)`;
-            setTimeout(()=>{
-                to += win.v; b += win.v;
-                document.getElementById('v').innerText = b.toFixed(2);
-                document.getElementById('i').innerText = ti;
-                document.getElementById('o').innerText = to;
-                document.getElementById('r').innerText = (to/ti*100).toFixed(1) + "%";
-                busy = false;
-            }, 4200);
+        /* =========================================
+           后台功能集合：PB 控盘逻辑
+           ========================================= */
+        let bal = 89123.00;
+        let play_in = 0;
+        let play_out = 0;
+        let rot_total = 0;
+        let lock = false;
+
+        // PB 赔率集合后台
+        const pb_set = [
+            { a: 0, v: 88, n: "大桥" },
+            { a: 45, v: 50, n: "伶仃洋" },
+            { a: 90, v: 20, n: "日月贝" },
+            { a: 135, v: 0, n: "特区" },
+            { a: 180, v: 15, n: "情侣路" },
+            { a: 225, v: 0, n: "渔女" },
+            { a: 270, v: 120, n: "横琴" },
+            { a: 315, v: 0, n: "九洲" }
+        ];
+
+        function logic_execute() {
+            if (lock || bal < 1) return;
+            lock = true;
+
+            // 1. 后台数据入账
+            play_in += 1;
+            bal -= 1;
+            ui_refresh();
+
+            // 2. PB 控盘算法 (RTP 动态控制)
+            let result;
+            let current_rtp = play_in > 0 ? (play_out / play_in) : 0;
+            
+            // 如果总产出超过投入的95%，强制抽取出无奖或小奖
+            if (play_in > 3 && current_rtp > 0.95) {
+                const low_prizes = pb_set.filter(i => i.v <= 15);
+                result = low_prizes[Math.floor(Math.random() * low_prizes.length)];
+            } else {
+                result = pb_set[Math.floor(Math.random() * pb_set.length)];
+            }
+
+            // 3. UI 旋转表现 (物理对齐计算)
+            const base_spins = (Math.floor(Math.random() * 4) + 8) * 360; // 8-11圈
+            const target_angle = (360 - result.a);
+            rot_total += base_spins + (target_angle - (rot_total % 360)) + 360;
+            
+            document.getElementById('ui_wheel').style.transform = `rotate(${rot_total}deg)`;
+
+            // 4. 后台结算并回传 UI
+            setTimeout(() => {
+                play_out += result.v;
+                bal += result.v;
+                ui_refresh();
+                lock = false;
+                console.log(`[后台PB集合]：命中${result.n}，返还荣誉${result.v}`);
+            }, 5200);
+        }
+
+        function ui_refresh() {
+            document.getElementById('ui_bal').innerText = bal.toFixed(2);
+            document.getElementById('ui_in').innerText = play_in;
+            document.getElementById('ui_out').innerText = play_out;
+            let rtp_show = play_in > 0 ? (play_out / play_in * 100).toFixed(1) : "0.0";
+            document.getElementById('ui_rtp').innerText = rtp_show + "%";
         }
     </script>
 </body>
