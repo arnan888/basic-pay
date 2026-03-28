@@ -3,28 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI_QUANT_COMMANDER_V7</title>
+    <title>AI_QUANT_FINAL_V8</title>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
         body { 
             background: #121212; 
             background-image: linear-gradient(#1a1a1a 1px, transparent 1px), linear-gradient(90deg, #1a1a1a 1px, transparent 1px);
             background-size: 20px 20px;
-            color:#FFF; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; height:100vh; overflow:hidden; display:flex; flex-direction:column;
+            color:#FFF; font-family: "PingFang SC", sans-serif; height:100vh; overflow:hidden; display:flex; flex-direction:column;
         }
 
-        /* 顶部：结算看板 */
+        /* 顶部数据看板 */
         .header-dash { display:grid; grid-template-columns: 1fr 1fr; background:#000; height: 85px; border-bottom:1px solid #333; }
         .dash-node { display:flex; flex-direction:column; justify-content:center; align-items:center; border-right:1px solid #222; }
-        .node-label { font-size:11px; color:#888; margin-bottom:4px; font-weight:bold; }
+        .node-label { font-size:11px; color:#666; margin-bottom:4px; font-weight:bold; }
         .node-val { color:#F00; font-size:24px; font-weight:900; font-family:monospace; }
 
-        /* 系统状态条 */
-        .status-bar { background:#000; height:26px; display:flex; align-items:center; padding:0 12px; font-size:11px; color:#0f0; justify-content:space-between; border-bottom:1px solid #222; font-weight:bold; }
+        /* 状态条 */
+        .status-bar { background:#000; height:26px; display:flex; align-items:center; padding:0 12px; font-size:11px; color:#0f0; justify-content:space-between; border-bottom:1px solid #222; }
 
         .core-section { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:15px; }
 
-        /* 资产主屏幕 */
+        /* 资产看板 */
         .balance-card { 
             width:100%; background:linear-gradient(145deg, #0a0a0a, #151515); 
             border:1px solid #333; border-radius:12px; padding:22px; text-align:center; margin-bottom:20px;
@@ -32,7 +32,7 @@
         }
         .bal-val { font-size:70px; font-weight:900; color:#F00; text-shadow:0 0 20px rgba(255,0,0,0.3); letter-spacing:-2px; }
 
-        /* --- 量化转盘模块 --- */
+        /* 转盘执行模块 */
         .wheel-module { 
             position:relative; width:275px; height:275px; 
             background:#1a1a1a; border-radius:15px; border:1px solid #333;
@@ -64,13 +64,17 @@
         }
         .high-m { color: #F00 !important; text-shadow: 0 0 10px #F00; font-size:18px; }
 
-        /* 操作台：纯中文大按钮 */
-        .console { width:100%; background:#0a0a0a; border-top:1px solid #333; padding:25px 15px 100px 15px; }
+        /* 控制台：极致极简符号版 */
+        .console { width:100%; background:#000; border-top:1px solid #333; padding:25px 15px 100px 15px; }
         .main-row { display:flex; gap:12px; margin-bottom:18px; }
-        .adj { width:60px; height:60px; background:#222; border:1px solid #444; color:#FFF; font-size:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; }
+        .adj { 
+            width:60px; height:60px; background:#1a1a1a; border:1px solid #444; color:#FFF; 
+            font-size:35px; font-weight:300; border-radius:8px; display:flex; align-items:center; justify-content:center; 
+        }
+        .adj:active { background: #333; }
         .exec { 
             flex:1; background:#F00; border:none; color:#FFF; 
-            font-size:26px; font-weight:900; border-radius:8px; 
+            font-size:24px; font-weight:900; border-radius:8px; 
             letter-spacing:6px; box-shadow: 0 5px 15px rgba(255,0,0,0.3);
         }
         
@@ -79,43 +83,39 @@
             padding:14px; background:#1a1a1a; border:1px solid #333; 
             color:#888; font-size:13px; font-weight:bold; text-align:center; border-radius:6px; 
         }
-        .mode-b.on { border-color:#F00; color:#F00; background:rgba(255,0,0,0.05); }
+        .mode-b.on { border-color:#F00; color:#F00; }
 
-        /* 底部导航：中文 */
+        /* 底部导航 */
         .nav { position:fixed; bottom:0; width:100%; height:75px; background:#000; border-top:1px solid #333; display:grid; grid-template-columns: repeat(4, 1fr); }
-        .nav-n { display:flex; flex-direction:column; align-items:center; justify-content:center; color:#555; font-size:13px; font-weight:bold; }
+        .nav-n { display:flex; flex-direction:column; align-items:center; justify-content:center; color:#444; font-size:13px; font-weight:bold; }
         .nav-n.act { color:#F00; }
     </style>
 </head>
 <body>
 
-    <!-- 顶部：结算与产出 -->
     <div class="header-dash">
         <div class="dash-node">
-            <div class="node-label">累计结算注入</div>
+            <div class="node-label">累计注入流水</div>
             <div id="st_in" class="node-val">0.5</div>
         </div>
         <div class="dash-node">
-            <div class="node-label">实时产出流动</div>
+            <div class="node-label">实时产出收益</div>
             <div id="st_out" class="node-val">0.8</div>
         </div>
     </div>
 
-    <!-- 状态条 -->
     <div class="status-bar">
-        <span>● 系统就绪 SYSTEM_READY</span>
-        <span>量化锁定: 90.00%</span>
+        <span>● 系统已就绪 SYSTEM_READY</span>
+        <span>锁定值: 90.00%</span>
     </div>
 
     <div class="core-section">
-        <!-- 资产面板 -->
         <div class="balance-card">
-            <div class="node-label" style="color:#AAA">可用余额 (USDT)</div>
+            <div class="node-label">可用余额 (USDT)</div>
             <div class="bal-val" id="ui_bal">100.3</div>
-            <div style="font-size:14px; color:#777; margin-top:5px;">当前单笔下注: <span id="ui_bet" style="color:#F00">0.5</span></div>
+            <div style="font-size:13px; color:#666; margin-top:5px;">当前执行额度: <span id="ui_bet" style="color:#F00">0.5</span></div>
         </div>
 
-        <!-- 量化执行核心 -->
         <div class="wheel-module">
             <div class="pointer-line"></div>
             <div id="ui_wheel" class="wheel-outer">
@@ -132,7 +132,6 @@
         </div>
     </div>
 
-    <!-- 控制台 -->
     <div class="console">
         <div class="main-row">
             <div class="adj" onclick="changeBet(-0.5)">－</div>
@@ -145,12 +144,11 @@
         </div>
     </div>
 
-    <!-- 底部导航 -->
     <div class="nav">
         <div class="nav-n">行情</div>
-        <div class="nav-n">资产</div>
-        <div class="nav-n">记录</div>
-        <div class="nav-n act">量化</div>
+        <div class="nav-n">资产中心</div>
+        <div class="nav-n">历史记录</div>
+        <div class="nav-n act">量化终端</div>
     </div>
 
     <script>
