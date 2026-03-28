@@ -1,96 +1,500 @@
-/* 直接在你的 <script> 标签内替换或补充以下逻辑 */
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="祝贺转盘系统 - 后台字段同步展示">
+    <title>ULITMATE_CONGRATS_PB</title>
+    <style>
+        /* 1. 物理环境锁死：适配 HP 电脑，强制正圆 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: #000; background: radial-gradient(circle, #500 0%, #000 100%);
+            color: #FFD700; display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; height: 100vh; width: 100vw; overflow: hidden; 
+            font-family: "Microsoft Yahei", "Segoe UI", sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            /* 新增：背景动态星光效果 */
+            position: relative;
+        }
 
+        /* 新增：动态星光背景 */
+        .star {
+            position: absolute;
+            width: 2px; height: 2px;
+            background: #fff;
+            border-radius: 50%;
+            opacity: 0;
+            animation: starTwinkle linear infinite;
+        }
+        @keyframes starTwinkle {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        /* 2. 后台操作字段：对接助手字段 */
+        .pb-admin-bar {
+            position: fixed; top: 0; width: 100%; height: 50px;
+            background: rgba(0,0,0,0.9); border-bottom: 3px solid #f40;
+            display: flex; justify-content: space-around; align-items: center;
+            z-index: 1000; font-family: "Consolas", monospace; font-size: 16px;
+            white-space: nowrap;
+            padding: 0 10px;
+            /* 新增：字段更新闪烁动画 */
+            transition: background 0.3s ease;
+        }
+        .pb-admin-bar.update { background: rgba(255,68,0,0.2); }
+        .pb-admin-bar b { 
+            color: #0f0; 
+            text-shadow: 0 0 5px #0f0;
+            /* 新增：数值变化时的缩放动画 */
+            transition: transform 0.2s ease;
+        }
+        .pb-admin-bar b.change { transform: scale(1.2); }
+        .pb-admin-bar span { color: #888; margin-right: 4px; }
+
+        /* 3. 实时账目 UI */
+        .ui-top { 
+            margin-top: 40px; text-align: center; 
+            z-index: 10;
+        }
+        .bal-val { 
+            font-size: clamp(40px, 12vw, 75px); 
+            font-weight: 900; color: #FFD700; 
+            text-shadow: 0 0 30px #f00; letter-spacing: -2px;
+            white-space: nowrap;
+            /* 新增：余额变化时的颜色闪烁 */
+            transition: color 0.3s ease;
+        }
+        .bal-val.gain { color: #0f0; text-shadow: 0 0 30px #0f0; }
+        .bal-val.lose { color: #f00; text-shadow: 0 0 30px #f00; }
+
+        /* 4. 祝贺转盘：vmin 锁定比例，拒绝变形 */
+        .stage {
+            width: clamp(380px, 78vmin, 700px); 
+            height: clamp(380px, 78vmin, 700px);
+            position: relative; border: 15px solid #FFD700; border-radius: 50%;
+            background: #000; box-shadow: 0 0 80px rgba(255,0,0,0.6);
+            touch-action: manipulation;
+            /* 新增：转盘外发光呼吸动画 */
+            animation: stagePulse 3s ease-in-out infinite;
+        }
+        @keyframes stagePulse {
+            0%, 100% { box-shadow: 0 0 80px rgba(255,0,0,0.6); }
+            50% { box-shadow: 0 0 120px rgba(255,100,0,0.8); }
+        }
+        .pointer {
+            position: absolute; top: -35px; left: 50%; transform: translateX(-50%);
+            border-left: 25px solid transparent; border-right: 25px solid transparent;
+            border-top: 55px solid #f00; z-index: 100;
+            filter: drop-shadow(0 3px 5px rgba(0,0,0,0.8));
+            /* 新增：指针高亮动画（旋转时触发） */
+            transition: filter 0.3s ease;
+        }
+        .pointer.active { filter: drop-shadow(0 0 15px #f00); }
+
+        .wheel {
+            width: 100%; height: 100%; position: relative; border-radius: 50%;
+            transition: transform 5s cubic-bezier(0.1, 0, 0, 1.02);
+            backface-visibility: hidden;
+            transform: translateZ(0);
+            /* 新增：转盘内部分割线，增强视觉层次 */
+            background: conic-gradient(
+                transparent 0deg 45deg, rgba(255,215,0,0.1) 45deg 90deg,
+                transparent 90deg 135deg, rgba(255,215,0,0.1) 135deg 180deg,
+                transparent 180deg 225deg, rgba(255,215,0,0.1) 225deg 270deg,
+                transparent 270deg 315deg, rgba(255,215,0,0.1) 315deg 360deg
+            );
+        }
+
+        /* 5. 坐标死锁：图标与文字推向边缘，不被按钮遮挡 */
+        .slot {
+            position: absolute; width: 160px; height: 100%;
+            left: 50%; margin-left: -80px;
+            display: flex; flex-direction: column; align-items: center;
+            transform-origin: 50% 50%;
+            overflow: visible;
+        }
+        .content {
+            margin-top: 30px; display: flex; flex-direction: column; align-items: center;
+            width: 100%;
+            /* 新增：中奖项高亮动画 */
+            transition: all 0.3s ease;
+        }
+        .content.win {
+            transform: scale(1.1);
+        }
+        .content.win .icon-svg {
+            border-color: #0f0;
+            box-shadow: 0 0 20px rgba(0,255,0,0.8);
+        }
+        .content.win b {
+            color: #0f0;
+            text-shadow: 0 0 10px #0f0;
+        }
+        .icon-svg {
+            width: 65px; height: 65px; border-radius: 50%;
+            border: 3px solid #FFD700; background: linear-gradient(45deg, #400, #900);
+            margin-bottom: 10px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+        .icon-svg svg {
+            width: 40px; height: 40px;
+            preserveAspectRatio: xMidYMid meet;
+        }
+        .content b { 
+            font-size: 14px; color: #fff; text-shadow: 2px 2px 4px #000; 
+            white-space: nowrap;
+            -webkit-font-smoothing: antialiased;
+        }
+        .content span { 
+            font-size: 11px; color: #0f0; margin-top: 2px;
+            background: #000; padding: 1px 8px; border-radius: 10px; border: 1px solid #0f0;
+            text-shadow: 0 0 3px #0f0;
+        }
+
+        /* 6. 中心大字：祝贺按钮 */
+        .btn-center {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px; height: 120px; border-radius: 50%;
+            background: radial-gradient(circle, #f00, #700);
+            border: 5px solid #fff; z-index: 200;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 10px 0 #300, 0 15px 40px rgba(0,0,0,0.8); 
+            cursor: pointer;
+            transition: all 0.1s ease;
+            pointer-events: auto;
+            /* 新增：按钮闲置时呼吸动画 */
+            animation: btnBreath 2s ease-in-out infinite;
+        }
+        @keyframes btnBreath {
+            0%, 100% { box-shadow: 0 10px 0 #300, 0 15px 40px rgba(0,0,0,0.8); }
+            50% { box-shadow: 0 10px 0 #300, 0 20px 50px rgba(255,0,0,0.6); }
+        }
+        .btn-center.busy {
+            background: radial-gradient(circle, #666, #333);
+            border-color: #999;
+            cursor: not-allowed;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 5px 0 #222, 0 10px 30px rgba(0,0,0,0.5);
+            animation: none;
+        }
+        .btn-center h2 { 
+            font-size: 36px; color: #fff; letter-spacing: 2px; 
+            text-shadow: 2px 2px 5px #000;
+            white-space: nowrap;
+        }
+        .btn-center.busy h2 { color: #ccc; }
+
+        /* 加载动画 */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-indicator {
+            display: none;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px; height: 40px;
+            border: 3px solid #fff;
+            border-top: 3px solid #f00;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            z-index: 201;
+        }
+        .loading-indicator.active { display: block; }
+
+        /* 新增：中奖提示弹窗 */
+        .win-modal {
+            display: none;
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.8);
+            z-index: 300;
+            align-items: center; justify-content: center;
+        }
+        .win-modal.active { display: flex; }
+        .win-card {
+            width: clamp(280px, 80%, 450px);
+            background: radial-gradient(circle, #300, #000);
+            border: 4px solid #FFD700;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(255,215,0,0.6);
+            animation: modalPop 0.5s ease-out forwards;
+        }
+        @keyframes modalPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .win-card h3 {
+            font-size: 32px; color: #fff;
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px #FFD700;
+        }
+        .win-card p {
+            font-size: 24px; color: #0f0;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px #0f0;
+        }
+        .win-card button {
+            padding: 10px 30px;
+            background: radial-gradient(circle, #f00, #700);
+            border: 2px solid #fff;
+            border-radius: 25px;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .win-card button:hover {
+            background: radial-gradient(circle, #ff4400, #900);
+            box-shadow: 0 0 15px rgba(255,0,0,0.8);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="pb-admin-bar" id="adminBar">
+        <div><span>IN:</span> <b id="op_in">0</b></div>
+        <div><span>OUT:</span> <b id="op_out">0</b></div>
+        <div><span>RTP:</span> <b id="op_rtp">0.0%</b></div>
+    </div>
+
+    <div class="ui-top">
+        <div class="bal-val" id="ui_bal">89,123.00</div>
+    </div>
+
+    <div class="stage">
+        <div class="pointer" id="pointer"></div>
+        <div class="wheel" id="ui_wheel">
+            <div class="slot" data-angle="0" style="transform: rotate(0deg);"><div class="content"><div class="icon-svg"><svg width="40" height="40" viewBox="0 0 24 24" fill="#FFD700"><path d="M12 2L1 21h22L12 2z"/></svg></div><b>旗开得胜</b><span>+88</span></div></div>
+            <div class="slot" data-angle="45" style="transform: rotate(45deg);"><div class="content"><div class="icon-svg"><svg width="40" height="40" viewBox="0 0 24 24" fill="#FFD700"><circle cx="12" cy="12" r="10"/></svg></div><b>无惧浪潮</b><span>+50</span></div></div>
+            <div class="slot" data-angle="90" style="transform: rotate(90deg);"><div class="content"><div class="icon-svg"><svg width="40" height="40" viewBox="0 0 24 24" fill="#FFD700"><rect x="4" y="4" width="16" height="16"/></svg></div><b>乘风破浪</b><span>+20</span></div></div>
+            <div class="slot" data-angle="135" style="transform: rotate(135deg);"><div class="content"><div class="icon-svg"><svg width="40" height="40" viewBox="0 0 24 24" fill="#FFD700"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></div><b>首战告捷</b><span>捷报</span></div></div>
+            <div class="slot" data-angle="180" style="transform: rotate(180deg);"><div class="content"><div class="icon-svg"><svg width="40" height="40" viewBox="0 0 24 24" fill="#FFD700"><path d="M12 2c-4.97 0-9 4.03-9 9 0 4.17 2.84 7.67 6.69 8.69L12 22l2.31-2.31C18.16 18.67 21 15.17 21 11c0-4.97-4.03-9-9-9z"/></svg></div><b>屹立不倒</b><span>+15</span></div></div>
+            <div class="slot" data-angle="225" style="transform: rotate(225deg);"><div class="content"><div class="icon-svg"><svg width="40" height="40" viewBox="0 0 24 24" fill="#FFD700"><path d="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42C17.99 7.86 19 9.81 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.19 1.01-4.14 2.58-5.42L6.17 5.17C4.23 6.82 3 9.26 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.74-1.23-5.18-3.17-6.83z"/></svg></div><b>站得稳</b><span>捷报</span></div></div>
+            <div class="slot" data-angle="270" style="transform: rotate(270deg);"><div class="content"><div class="icon-svg"><svg width="40" height="40" viewBox="0 0 24 24" fill="#FFD700"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div><b>马到成功</b><span>+120</span></div></div>
+            <div class="slot" data-angle="315" style="transform: rotate(315deg);"><div class="content"><div class="icon-svg"><svg width="40" height="40" viewBox="0 0 24 24" fill="#FFD700"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1z"/></svg></div><b>万事如意</b><span>大吉</span></div></div>
+        </div>
+        <div class="loading-indicator" id="loading"></div>
+        <div class="btn-center" id="mainBtn" onclick="exec()">
+            <h2>祝贺</h2>
+        </div>
+    </div>
+
+    <!-- 新增：中奖提示弹窗 -->
+    <div class="win-modal" id="winModal">
+        <div class="win-card">
+            <h3 id="winTitle">恭喜！</h3>
+            <p id="winDesc">获得荣誉奖励</p>
+            <button onclick="closeWinModal()">确认</button>
+        </div>
+    </div>
+
+    <script>
         let balance = 89123.0, 
             totalIn = 0,       
             totalOut = 0,      
             wheelRotation = 0, 
             isBusy = false,
-            storageKey = 'PB_DATA_COLLECTION'; // 后台字段集合存储键
+            // 新增：数据本地存储，防止刷新丢失
+            storageKey = 'congrats_pb_data';
+        
+        const rewardMatrix = [
+            {angle: 0, value: 88, name: '旗开得胜'},
+            {angle: 45, value: 50, name: '无惧浪潮'},
+            {angle: 90, value: 20, name: '乘风破浪'},
+            {angle: 135, value: 0, name: '首战告捷'},
+            {angle: 180, value: 15, name: '屹立不倒'},
+            {angle: 225, value: 0, name: '站得稳'},
+            {angle: 270, value: 120, name: '马到成功'},
+            {angle: 315, value: 0, name: '万事如意'}
+        ];
+        
+        const domElements = {
+            balance: document.getElementById('ui_bal'),
+            totalIn: document.getElementById('op_in'),
+            totalOut: document.getElementById('op_out'),
+            rtp: document.getElementById('op_rtp'),
+            wheel: document.getElementById('ui_wheel'),
+            mainBtn: document.getElementById('mainBtn'),
+            loading: document.getElementById('loading'),
+            adminBar: document.getElementById('adminBar'),
+            pointer: document.getElementById('pointer'),
+            winModal: document.getElementById('winModal'),
+            winTitle: document.getElementById('winTitle'),
+            winDesc: document.getElementById('winDesc'),
+            slots: document.querySelectorAll('.slot')
+        };
 
-        // 1. 初始化：从本地恢复后台字段，防止刷新归零
-        function loadBackendFields() {
+        // 新增：创建动态星光背景
+        function createStars(count = 100) {
+            for (let i = 0; i < count; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = `${Math.random() * 100}vw`;
+                star.style.top = `${Math.random() * 100}vh`;
+                star.style.animationDuration = `${Math.random() * 3 + 2}s`;
+                star.style.animationDelay = `${Math.random() * 5}s`;
+                document.body.appendChild(star);
+            }
+        }
+
+        // 新增：数值变化动画效果
+        function showValueChange(element) {
+            element.classList.add('change');
+            setTimeout(() => element.classList.remove('change'), 300);
+        }
+
+        // 新增：余额变化提示
+        function showBalanceChange(isGain) {
+            domElements.balance.classList.add(isGain ? 'gain' : 'lose');
+            setTimeout(() => domElements.balance.classList.remove(isGain ? 'gain' : 'lose'), 500);
+        }
+
+        // 新增：显示中奖弹窗
+        function showWinModal(reward) {
+            if (reward.value <= 0) return;
+            domElements.winTitle.innerText = `恭喜！${reward.name}`;
+            domElements.winDesc.innerText = `获得荣誉积分 +${reward.value}`;
+            domElements.winModal.classList.add('active');
+            // 高亮中奖槽位
+            const winSlot = document.querySelector(`.slot[data-angle="${reward.angle}"] .content`);
+            winSlot.classList.add('win');
+        }
+
+        // 新增：关闭中奖弹窗
+        function closeWinModal() {
+            domElements.winModal.classList.remove('active');
+            // 移除所有槽位高亮
+            domElements.slots.forEach(slot => slot.querySelector('.content').classList.remove('win'));
+        }
+
+        // 新增：本地数据存储与恢复
+        function saveData() {
+            const data = { balance, totalIn, totalOut, wheelRotation };
+            localStorage.setItem(storageKey, JSON.stringify(data));
+        }
+
+        function loadData() {
             const saved = localStorage.getItem(storageKey);
             if (saved) {
                 const data = JSON.parse(saved);
                 balance = data.balance || 89123.0;
                 totalIn = data.totalIn || 0;
                 totalOut = data.totalOut || 0;
-                syncUI();
+                wheelRotation = data.wheelRotation || 0;
+                domElements.wheel.style.transform = `rotate(${wheelRotation}deg)`;
             }
         }
 
-        // 2. 核心执行：对接“祝贺”按钮
+        function formatNumber(num) {
+            if (typeof num !== 'number' || isNaN(num)) return '0.00';
+            return num.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+        }
+
         function exec() {
-            if (isBusy || balance < 1) return;
-            isBusy = true;
-
-            // UI状态锁定
-            const btn = document.getElementById('mainBtn');
-            btn.classList.add('busy');
-            
-            // 后台字段实时入账
-            totalIn += 1;
-            balance -= 1;
-            syncUI();
-
-            // PB 控盘算法：水位检测
-            const matrix = [
-                {a:0,v:88,n:'旗开得胜'}, {a:45,v:50,n:'无惧浪潮'}, 
-                {a:90,v:20,n:'乘风破浪'}, {a:135,v:0,n:'首战告捷'},
-                {a:180,v:15,n:'屹立不倒'}, {a:225,v:0,n:'站得稳'}, 
-                {a:270,v:120,n:'马到成功'}, {a:315,v:0,n:'万事如意'}
-            ];
-
-            let res;
-            let rtp = totalIn > 0 ? (totalOut / totalIn) : 0;
-            // 杀数逻辑：RTP超过95%强制进入“小奖/空奖”区
-            if (totalIn > 5 && rtp > 0.95) {
-                const killSet = matrix.filter(i => i.v <= 15);
-                res = killSet[Math.floor(Math.random() * killSet.length)];
-            } else {
-                res = matrix[Math.floor(Math.random() * matrix.length)];
-            }
-
-            // 物理旋转：计算目标角度
-            const spins = (Math.floor(Math.random() * 5) + 12) * 360; 
-            const target = (360 - res.angle);
-            wheelRotation += spins + (target - (wheelRotation % 360)) + 360;
-            
-            document.getElementById('ui_wheel').style.transform = `rotate(${wheelRotation}deg)`;
-
-            // 结算回调
-            setTimeout(() => {
-                totalOut += res.v;
-                balance += res.v;
+            try {
+                if (isBusy || balance < 1) return;
                 
-                // 数据持久化存档
-                localStorage.setItem(storageKey, JSON.stringify({balance, totalIn, totalOut}));
+                isBusy = true;
+                domElements.mainBtn.classList.add('busy');
+                domElements.loading.classList.add('active');
+                domElements.pointer.classList.add('active');
+                domElements.adminBar.classList.add('update');
                 
+                // 扣除积分时显示变化
+                totalIn++;
+                balance--;
+                showBalanceChange(false);
                 syncUI();
-                if(res.v > 0) showWinEffect(res); // 弹出祝贺效果
+                showValueChange(domElements.totalIn);
+                showValueChange(domElements.balance);
 
+                const currentRtp = totalIn > 0 ? (totalOut / totalIn) : 0;
+                let selectedReward;
+
+                if (totalIn > 3 && currentRtp > 0.95) {
+                    const lowRewardSet = rewardMatrix.filter(item => item.value <= 15);
+                    selectedReward = lowRewardSet[Math.floor(Math.random() * lowRewardSet.length)];
+                } else {
+                    selectedReward = rewardMatrix[Math.floor(Math.random() * rewardMatrix.length)];
+                }
+
+                const baseSpins = (Math.floor(Math.random() * 5) + 12) * 360;
+                const targetAngle = 360 - selectedReward.angle;
+                wheelRotation += baseSpins + (targetAngle - (wheelRotation % 360)) + 360;
+                
+                domElements.wheel.style.transform = `rotate(${wheelRotation}deg)`;
+
+                setTimeout(() => {
+                    totalOut += selectedReward.value;
+                    balance += selectedReward.value;
+                    // 奖励到账时显示变化
+                    showBalanceChange(selectedReward.value > 0);
+                    syncUI();
+                    saveData(); // 保存数据
+                    
+                    showValueChange(domElements.totalOut);
+                    showValueChange(domElements.rtp);
+                    showValueChange(domElements.balance);
+                    
+                    // 显示中奖提示
+                    showWinModal(selectedReward);
+
+                    isBusy = false;
+                    domElements.mainBtn.classList.remove('busy');
+                    domElements.loading.classList.remove('active');
+                    domElements.pointer.classList.remove('active');
+                    setTimeout(() => domElements.adminBar.classList.remove('update'), 500);
+                }, 5500);
+            } catch (error) {
+                console.error('操作执行异常:', error);
                 isBusy = false;
-                btn.classList.remove('busy');
-            }, 5500);
+                domElements.mainBtn.classList.remove('busy');
+                domElements.loading.classList.remove('active');
+                domElements.pointer.classList.remove('active');
+                domElements.adminBar.classList.remove('update');
+            }
         }
 
         function syncUI() {
-            document.getElementById('ui_bal').innerText = balance.toLocaleString('en-US', {minimumFractionDigits: 2});
-            document.getElementById('op_in').innerText = totalIn;
-            document.getElementById('op_out').innerText = totalOut;
-            let rtpStr = totalIn > 0 ? (totalOut / totalIn * 100).toFixed(1) : "0.0";
-            document.getElementById('op_rtp').innerText = rtpStr + "%";
+            domElements.balance.innerText = formatNumber(balance);
+            domElements.totalIn.innerText = totalIn;
+            domElements.totalOut.innerText = totalOut;
+            
+            const rtpValue = totalIn > 0 ? (totalOut / totalIn * 100).toFixed(1) : "0.0";
+            domElements.rtp.innerText = `${rtpValue}%`;
         }
 
-        function showWinEffect(res) {
-            // 简单的中奖反馈提示
-            const modal = document.getElementById('winModal');
-            if(modal) {
-                document.getElementById('winTitle').innerText = "祝贺：" + res.n;
-                document.getElementById('winDesc').innerText = "获得荣誉积分 +" + res.v;
-                modal.classList.add('active');
-            }
-        }
+        // 新增：页面卸载前保存数据
+        window.addEventListener('beforeunload', saveData);
 
-        // 页面加载启动
-        window.onload = loadBackendFields;
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData(); // 恢复本地数据
+            syncUI(); 
+            createStars(); // 创建星光背景
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !isBusy) {
+                    exec();
+                }
+                // ESC关闭弹窗
+                if (e.key === 'Escape' && domElements.winModal.classList.contains('active')) {
+                    closeWinModal();
+                }
+            });
+
+            // 新增：点击空白处关闭弹窗
+            domElements.winModal.addEventListener('click', (e) => {
+                if (e.target === domElements.winModal) closeWinModal();
+            });
+        });
+    </script>
+</body>
+</html>
