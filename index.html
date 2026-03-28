@@ -3,176 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI_QUANT_POWER_ON</title>
+    <title>AI_QUANT_ULTIMATE_STABLE</title>
     <style>
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        body { background:#22c55e; background-image:radial-gradient(circle at 50% 50%,#4ade80 0%,#15803d 100%); color:#FFF; font-family:sans-serif; height:100vh; overflow:hidden; display:flex; flex-direction:column; }
         
-        body { 
-            background: #22c55e; 
-            background-image: radial-gradient(circle at 50% 50%, #4ade80 0%, #15803d 100%);
-            color:#FFF; font-family: "PingFang SC", sans-serif; 
-            height:100vh; overflow:hidden; display:flex; flex-direction:column;
-            position: relative;
-        }
+        /* 优化点缀：改用 opacity 替代模糊滤镜，极大提升性能 */
+        .glow-red { position:absolute; width:6px; height:6px; background:#f00; border-radius:50%; z-index:1; opacity:0.6; pointer-events:none; }
+        .status-bar { background:rgba(0,0,0,.5); height:24px; display:flex; align-items:center; justify-content:center; font-size:10px; z-index:10; }
+        
+        .core { flex:1; display:flex; flex-direction:column; align-items:center; padding:15px; gap:12px; z-index:5; }
+        .panel { width:100%; background:#080a09; border-radius:18px; box-shadow:inset 0 0 20px #000, 0 0 0 2px #000; border:1px solid #1a2f23; position:relative; }
+        
+        .bal-card { padding:20px; text-align:center; }
+        .bal-val { font-size:55px; font-weight:900; color:#ef4444; }
+        
+        .wheel-well { width:100%; max-width:320px; aspect-ratio:1; display:flex; align-items:center; justify-content:center; }
+        .pointer { position:absolute; top:2px; left:50%; transform:translateX(-50%); width:6px; height:48px; background:#ef4444; z-index:100; border-radius:0 0 4px 4px; box-shadow:0 0 10px #ef4444; }
+        
+        /* 关键：使用 transform-style 提升硬件加速 */
+        .wheel-outer { width:86%; height:86%; border-radius:50%; border:8px solid #000; background:#050807; transition:transform 4s cubic-bezier(0.2, 0, 0, 1.15); transform:translateZ(0); will-change:transform; position:relative; overflow:hidden; }
+        
+        .center-val { position:absolute; z-index:10; width:70px; height:70px; background:#0d1110; border-radius:50%; border:2px solid #222; display:flex; align-items:center; justify-content:center; color:#ef4444; font-size:22px; font-weight:900; }
+        
+        .slot { position:absolute; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; padding-top:10px; transition:0.2s; }
+        .slot.locked { transform:scale(0.85); background:rgba(255,0,0,0.1); } /* 压住感反馈 */
 
-        /* 1. 背景层红色指示灯：镶嵌在绿色机壳边缘 */
-        @keyframes pulse-red { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.2); } }
-        .glow-red { 
-            position: absolute; width: 5px; height: 5px; background: #ff0000; border-radius: 50%; 
-            box-shadow: 0 0 8px #ff0000; z-index: 1; animation: pulse-red 3s infinite; pointer-events: none;
-        }
-
-        .status-bar { background: rgba(0,0,0,0.5); height:28px; display:flex; align-items:center; justify-content:center; font-size:10px; color:#fff; z-index: 10; }
-        .core-section { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:15px; gap:12px; z-index: 5; }
-
-        /* 2. 深度内陷板块 */
-        .stable-inset-panel {
-            width:100%; background: #080a09; border-radius:18px;
-            box-shadow: inset 10px 10px 20px rgba(0,0,0,1), inset -2px -2px 6px rgba(255,255,255,0.02), 0 0 0 2px #000;
-            border: 1px solid #1a2f23; position: relative; overflow: hidden;
-        }
-
-        /* 槽位内部白色指示灯：固定在死角 */
-        @keyframes pulse-white { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.6; } }
-        .glow-white { 
-            position: absolute; width: 3px; height: 3px; background: #ffffff; border-radius: 50%; 
-            box-shadow: 0 0 6px #ffffff; z-index: 2; animation: pulse-white 2.5s infinite; pointer-events: none;
-        }
-
-        .balance-card { padding:22px; text-align:center; position: relative; z-index: 5; }
-        .bal-val { font-size:62px; font-weight:900; color: #ef4444; text-shadow: 0 0 20px rgba(239, 68, 68, 0.6); font-family: 'Verdana', sans-serif; }
-
-        /* 3. 转盘区：物理压住感 */
-        .wheel-well { width:100%; max-width:330px; aspect-ratio: 1/1; display:flex; align-items:center; justify-content:center; position: relative; z-index: 5; }
-        .pointer-line { 
-            position:absolute; top:2px; left:50%; transform:translateX(-50%); 
-            width:6px; height:52px; background:#ef4444; z-index:100; 
-            border-radius:0 0 4px 4px; box-shadow: 0 4px 10px rgba(0,0,0,0.8), 0 0 15px #ef4444;
-        }
-        .wheel-outer {
-            width: 86%; height: 86%; border-radius: 50%; position: relative; 
-            border: 10px solid #000; overflow: hidden; background: #050807;
-            transition: transform 4s cubic-bezier(0.2, 0, 0, 1.15); /* 强化回弹死锁感 */
-            box-shadow: 0 0 40px rgba(0,0,0,1); margin: auto; z-index: 6;
-        }
-        .wheel-center-val {
-            position: absolute; z-index: 10; width: 80px; height: 80px; background: #0d1110;
-            border-radius: 50%; border: 3px solid #222; display: flex; align-items:center; justify-content:center;
-            color: #ef4444; font-size: 24px; font-weight: 900; box-shadow: 0 0 30px rgba(0,0,0,1);
-        }
-        .slot-content { position:absolute; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; padding-top:10px; transition: 0.3s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
-        /* 选中时的“被压死”效果 */
-        .slot-content.locked { transform: scale(0.85) !important; filter: brightness(1.8) drop-shadow(0 0 10px #fff); }
-
-        .beast-ico { font-size: 40px; }
-        .beast-txt { font-size: 11px; color:#ffffff; font-weight:900; margin-top: 2px; text-shadow: 0 1px 2px #000; }
-
-        /* 4. 下分按键区 */
-        .console-area { width:100%; background:#0d1110; padding:20px 20px 85px 20px; border-radius: 25px 25px 0 0; border-top: 3px solid #000; z-index: 100; }
-        .main-row { display:flex; gap:12px; margin-bottom:15px; }
-        .btn-deep-inset {
-            background: #080a09; border: 1px solid #1a1a1a; color:#ffffff; font-size:32px; border-radius:12px;
-            display:flex; align-items:center; justify-content:center; width:65px; height:60px; font-weight:bold; cursor: pointer;
-            box-shadow: inset 8px 8px 16px rgba(0,0,0,0.9), inset -2px -2px 8px rgba(255,255,255,0.02); 
-        }
-        .btn-deep-inset:active { opacity: 0.6; }
-        .exec-red-inset { 
-            flex:1; height:60px; background: #991b1b; border: 1px solid #450a0a; color:#fff; font-size:24px; font-weight:900; border-radius:12px; letter-spacing:4px;
-            box-shadow: inset 6px 6px 12px rgba(0,0,0,0.7), inset -2px -2px 8px rgba(255,255,255,0.1); cursor: pointer;
-        }
-        .tech-row { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-        .mode-btn { padding:14px; background:#080a09; border: 1px solid #1a1a1a; color:#ffffff; font-size:12px; border-radius:10px; text-align:center; box-shadow: inset 5px 5px 10px rgba(0,0,0,0.7); cursor: pointer; }
-        .mode-btn.on { color:#ef4444; border-color:#991b1b; }
-
-        .nav { position:fixed; bottom:0; width:100%; height:75px; background:#000; border-top:1px solid #111; display:grid; grid-template-columns: repeat(4, 1fr); z-index: 200; }
-        .nav-n { display:flex; flex-direction:column; align-items:center; justify-content:center; color:#ffffff; font-size:11px; font-weight:bold; opacity: 0.6; }
-        .nav-n.act { color:#ef4444; opacity: 1; }
+        .console { width:100%; background:#0d1110; padding:15px 15px 80px; border-radius:20px 20px 0 0; border-top:3px solid #000; z-index:100; }
+        .row { display:flex; gap:10px; margin-bottom:10px; }
+        .btn-adj { width:60px; height:55px; background:#080a09; border:1px solid #1a1a1a; color:#fff; font-size:30px; border-radius:10px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+        .btn-go { flex:1; height:55px; background:#991b1b; border:1px solid #450a0a; color:#fff; font-size:20px; font-weight:900; border-radius:10px; cursor:pointer; }
+        .btn-mode { flex:1; padding:12px; background:#080a09; border:1px solid #1a1a1a; color:#fff; font-size:12px; border-radius:8px; text-align:center; cursor:pointer; }
+        .btn-mode.on { color:#ef4444; border-color:#991b1b; }
+        
+        .nav { position:fixed; bottom:0; width:100%; height:70px; background:#000; display:grid; grid-template-columns:repeat(4,1fr); z-index:200; }
+        .nav-n { display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:10px; color:#fff; opacity:.5; }
+        .nav-n.act { opacity:1; color:#ef4444; }
     </style>
 </head>
 <body>
-    <!-- 机壳红色灯 -->
     <div class="glow-red" style="top:5%; left:10%"></div>
-    <div class="glow-red" style="top:30%; right:5%; animation-delay: 0.5s"></div>
-    <div class="glow-red" style="bottom:20%; left:5%; animation-delay: 1.2s"></div>
-
-    <div class="status-bar">● MECHANICAL_LOCK_POWER_ON ● </div>
-
-    <div class="core-section">
-        <div class="stable-inset-panel balance-card">
-            <!-- 槽内白色灯 -->
-            <div class="glow-white" style="top:8px; left:8px"></div>
-            <div class="glow-white" style="bottom:8px; right:8px; animation-delay: 1s"></div>
-            
-            <div style="font-size:10px; color:#ffffff; margin-bottom:12px; letter-spacing:1px; font-weight:900; opacity:0.8;">AVAILABLE BALANCE (USDT)</div>
+    <div class="glow-red" style="bottom:20%; right:10%"></div>
+    
+    <div class="status-bar">● SYSTEM_STABLE_V4 ●</div>
+    
+    <div class="core">
+        <div class="panel bal-card">
+            <div style="font-size:10px; opacity:.8">BALANCE (USDT)</div>
             <div class="bal-val" id="ui_bal">100.3</div>
-            <div style="font-size:11px; color:#ffffff; margin-top:8px; opacity:0.8;">UNIT_BET: <span id="ui_bet" style="color:#ef4444; font-weight:900;">0.5</span></div>
+            <div style="font-size:11px">BET: <span id="ui_bet" style="color:#ef4444">0.5</span></div>
         </div>
 
-        <div class="stable-inset-panel wheel-well">
-            <!-- 槽内白色灯 -->
-            <div class="glow-white" style="top:12px; right:12px"></div>
-            <div class="glow-white" style="bottom:12px; left:12px; animation-delay: 1.5s"></div>
-
-            <div class="pointer-line"></div>
-            <div class="wheel-center-val" id="center_val">X0</div>
+        <div class="panel wheel-well">
+            <div class="pointer"></div>
+            <div class="center-val" id="center_val">X0</div>
             <div id="ui_wheel" class="wheel-outer">
-                <div class="slot-content" style="transform:rotate(0deg)"><span class="beast-ico">🐲</span><span class="beast-txt">神龙</span></div>
-                <div class="slot-content" style="transform:rotate(45deg)"><span class="beast-ico">🐯</span><span class="beast-txt">猛虎</span></div>
-                <div class="slot-content" style="transform:rotate(90deg)"><span class="beast-ico">🦅</span><span class="beast-txt">苍鹰</span></div>
-                <div class="slot-content" style="transform:rotate(135deg)"><span class="beast-ico">🦄</span><span class="beast-txt">麒麟</span></div>
-                <div class="slot-content" style="transform:rotate(180deg)"><span class="beast-ico">🔥</span><span class="beast-txt">凤凰</span></div>
-                <div class="slot-content" style="transform:rotate(225deg)"><span class="beast-ico">🐺</span><span class="beast-txt">贪狼</span></div>
-                <div class="slot-content" style="transform:rotate(270deg)"><span class="beast-ico">🐢</span><span class="beast-txt">玄武</span></div>
-                <div class="slot-content" style="transform:rotate(315deg)"><span class="beast-ico">🦁</span><span class="beast-txt">狂狮</span></div>
+                <!-- 图案 -->
+                <div class="slot" style="transform:rotate(0deg)"><span>🐲</span><small>神龙</small></div>
+                <div class="slot" style="transform:rotate(45deg)"><span>🐯</span><small>猛虎</small></div>
+                <div class="slot" style="transform:rotate(90deg)"><span>🦅</span><small>苍鹰</small></div>
+                <div class="slot" style="transform:rotate(135deg)"><span>🦄</span><small>麒麟</small></div>
+                <div class="slot" style="transform:rotate(180deg)"><span>🔥</span><small>凤凰</small></div>
+                <div class="slot" style="transform:rotate(225deg)"><span>🐺</span><small>贪狼</small></div>
+                <div class="slot" style="transform:rotate(270deg)"><span>🐢</span><small>玄武</small></div>
+                <div class="slot" style="transform:rotate(315deg)"><span>🦁</span><small>狂狮</small></div>
             </div>
         </div>
     </div>
 
-    <div class="console-area">
-        <div class="main-row">
-            <div class="btn-deep-inset" onclick="changeBet(-0.5)">－</div>
-            <button id="go_btn" class="exec-red-inset" onclick="go()">开始执行</button>
-            <div class="btn-deep-inset" onclick="changeBet(0.5)">＋</div>
+    <div class="console">
+        <div class="row">
+            <div class="btn-adj" onclick="changeBet(-0.5)">-</div>
+            <button class="btn-go" id="main_go" onclick="go()">开始执行</button>
+            <div class="btn-adj" onclick="changeBet(0.5)">+</div>
         </div>
-        <div class="tech-row">
-            <div id="auto_btn" class="mode-btn" onclick="toggleAuto()">🤖 自动模式: 关</div>
-            <div id="speed_btn" class="mode-btn" onclick="cycleSpeed()">⚡ 变速模式: 1X</div>
+        <div class="row">
+            <div id="auto_btn" class="btn-mode" onclick="toggleAuto()">🤖 自动: 关</div>
+            <div id="speed_btn" class="btn-mode" onclick="cycleSpeed()">⚡ 1X</div>
         </div>
     </div>
 
-    <div class="nav">
-        <div class="nav-n">行情</div><div class="nav-n">资产中心</div><div class="nav-n">历史记录</div><div class="nav-n act">量化终端</div>
-    </div>
+    <div class="nav"><div class="nav-n">行情</div><div class="nav-n">资产</div><div class="nav-n">历史</div><div class="nav-n act">量化</div></div>
 
     <script>
-        let balance = 100.3, bet = 0.5, rot = 0, busy = false, isAuto = false, speedMode = 1;
-        const beastNames = ["X500", "X88", "X50", "X200", "X150", "X10", "X0", "X30"];
-        const multis = [500, 88, 50, 200, 150, 10, 0, 30];
+        let balance=100.3, bet=0.5, rot=0, busy=false, isAuto=false, speed=1;
+        const multis=[500,88,50,200,150,10,0,30], names=["X500","X88","X50","X200","X150","X10","X0","X30"];
 
-        function toggleAuto() {
-            isAuto = !isAuto;
-            document.getElementById('auto_btn').classList.toggle('on', isAuto);
-            document.getElementById('auto_btn').innerHTML = `🤖 自动模式: ${isAuto ? '开' : '关'}`;
-            if(isAuto && !busy) go();
+        function toggleAuto(){ 
+            isAuto=!isAuto; 
+            document.getElementById('auto_btn').classList.toggle('on',isAuto); 
+            document.getElementById('auto_btn').innerText=`🤖 自动: ${isAuto?'开':'关'}`; 
+            if(isAuto && !busy) go(); 
         }
 
-        function cycleSpeed() {
-            speedMode = (speedMode % 3) + 1;
-            document.getElementById('speed_btn').innerHTML = `⚡ 变速模式: ${speedMode}X`;
-            document.getElementById('ui_wheel').style.transitionDuration = ["", "4s", "1s", "0.4s"][speedMode];
+        function cycleSpeed(){ 
+            speed=(speed%3)+1; 
+            document.getElementById('speed_btn').innerText=`⚡ ${speed}X`; 
+            document.getElementById('ui_wheel').style.transitionDuration=["","4s","1s","0.3s"][speed]; 
         }
 
-        function changeBet(val) {
-            if (busy) return;
-            let n = bet + val;
-            if (n >= 0.5) { bet = n; document.getElementById('ui_bet').innerText = bet.toFixed(1); }
-        }
+        function changeBet(v){ if(!busy){ bet=Math.max(0.5,bet+v); document.getElementById('ui_bet').innerText=bet.toFixed(1); }}
 
-        function go() {
-            if (busy || balance < bet) { isAuto = false; return; }
+        function go(){
+            if(busy || balance < bet) { isAuto=false; return; }
             busy = true;
-            document.querySelectorAll('.slot-content').forEach(el => el.classList.remove('locked'));
             
-            // 利益压制概率逻辑
-            const r = Math.floor(Math.random() * 100);
-            let idx = (r < 65) ? 6 : (r < 85 ? 5 : (r < 95 ? 7 : 1));
+            // 清除旧锁
+            const slots = document.querySelectorAll('.slot');
+            slots.forEach(s => s.classList.remove('locked'));
+
+            // 算法锁定 (利益压制)
+            const r = Math.random()*100;
+            const idx = (r < 65) ? 6 : (r < 85 ? 5 : (r < 95 ? 7 : 1));
+
+            // 转动
+            rot += 360 * 5 + (360 - idx * 45 - (rot % 360));
+            document.getElementById('ui_wheel').style.transform = `rotate(${rot}deg)`;
+
+            const wait = ["", 4000, 1000, 300][speed];
+            setTimeout(() => {
+                // 物理死锁效果
+                slots[idx].classList.add('locked');
+                
+                // 数值结算
+                balance = balance - bet + multis[idx] * bet;
+                document.getElementById('ui_bal').innerText = balance.toFixed(1);
+                document.getElementById('center_val').innerText = names[idx];
+
+                setTimeout(() => {
+                    busy = false;
+                    if(isAuto) go();
+                }, 400);
+            }, wait);
+        }
+    </script>
+</body>
+</html>
