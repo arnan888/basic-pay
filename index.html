@@ -1,103 +1,253 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOLA_旗舰终端_V45</title>
+    <title>互动转盘效果演示</title>
     <style>
-        :root { --neon: #00f2ff; --pink: #ff0055; }
-        * { box-sizing: border-box; }
-        body { 
-            margin: 0; padding: 0; background: #000; color: #fff; 
-            font-family: 'Arial Black', sans-serif; 
-            height: 100vh; width: 100vw; overflow: hidden;
-            /* 背景图：确保它在最底层 */
-            background: url('https://img.freepik.com/free-vector/abstract-technology-particle-background_23-2148426649.jpg') no-repeat center center;
-            background-size: cover;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #222;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        /* 转盘外框 */
+        .turntable-container {
+            width: 500px;
+            height: 500px;
+            border: 12px solid transparent;
+            background: linear-gradient(to bottom, #fffbf0, #d4af37, #856c00);
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.8), inset 0 0 10px rgba(0,0,0,0.5);
             position: relative;
+            padding: 8px;
+            /* 金属拉丝效果 */
+            background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.1) 0px, rgba(255,255,255,0.1) 1px, transparent 1px, transparent 5px);
         }
-        
-        /* 电视屏幕暗角滤镜 */
-        body::after {
-            content: ""; position: fixed; inset: 0;
-            background: radial-gradient(circle, transparent 30%, rgba(0,0,0,0.7) 100%);
-            pointer-events: none; z-index: 1; 
-        }
-
-        /* 顶部余额 HUD：强制置顶 */
-        .hud { 
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%); 
-            width: 80%; background: rgba(0,0,0,0.6); 
-            border: 1px solid var(--neon); border-radius: 10px; 
-            padding: 10px; text-align: center; z-index: 100;
-            backdrop-filter: blur(10px); box-shadow: 0 0 20px rgba(0,242,255,0.3);
-        }
-        .hud b { font-size: 22px; color: var(--neon); text-shadow: 0 0 10px var(--neon); }
-
-        /* 转盘容器：绝对定位，确保在背景之上 */
-        .wheel-box { 
-            position: absolute; top: 110px; left: 50%; 
-            transform: translateX(-50%); 
-            z-index: 50; /* 确保高于背景 */
-        }
-        
-        .wheel { 
-            width: 280px; height: 280px; border-radius: 50%; 
-            border: 6px solid #111;
-            background: conic-gradient(from 0deg, #ff0055 0 60deg, #1a1a1a 60deg 120deg, #00f2ff 120deg 180deg, #1a1a1a 180deg 240deg, #ffcc00 240deg 300deg, #1a1a1a 300deg 360deg);
-            box-shadow: 0 0 50px rgba(0,0,0,0.8), 0 0 20px var(--neon);
-            transition: transform 4s cubic-bezier(0.1, 0, 0.1, 1);
-            display: flex; align-items: center; justify-content: center;
+        /* 转盘盘面 */
+        .turntable {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
             position: relative;
+            overflow: hidden;
+            transform-origin: center center;
         }
-        
-        .item { position: absolute; font-size: 28px; }
-        .i1 { transform: rotate(30deg) translateY(-105px); } 
-        .i2 { transform: rotate(90deg) translateY(-105px); } 
-        .i3 { transform: rotate(150deg) translateY(-105px); } 
-        .i4 { transform: rotate(210deg) translateY(-105px); } 
-        .i5 { transform: rotate(270deg) translateY(-105px); } 
-        .i6 { transform: rotate(330deg) translateY(-105px); }
-        
-        .btn { 
-            position: absolute; width: 60px; height: 60px; background: #000; 
-            border: 3px solid var(--pink); border-radius: 50%; 
-            color: #fff; font-size: 14px; font-weight: bold; cursor: pointer; z-index: 60; 
-            display: flex; align-items: center; justify-content: center; 
-            box-shadow: 0 0 20px var(--pink); 
+        /* 奖项格子 */
+        .prize-item {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            transform-origin: bottom right;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #d4af37;
+            font-size: 20px;
+            font-weight: bold;
         }
-        
-        .pointer { 
-            position: absolute; top: -15px; left: 50%; transform: translateX(-50%); 
-            width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; 
-            border-top: 25px solid #fff; z-index: 70; filter: drop-shadow(0 0 10px var(--neon));
+        .prize-item:nth-child(odd) {
+            background: radial-gradient(circle at center, #c01f1f, #000);
         }
-
-        .ovl { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 200; }
+        .prize-item:nth-child(even) {
+            background: radial-gradient(circle at center, #000, #c01f1f);
+        }
+        /* 3D按钮 */
+        .spin-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #d4af37;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3), 0 0 0 8px rgba(212, 175, 55, 0.5);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        .spin-btn:active {
+            transform: translate(-50%, -50%) translateY(5px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 8px rgba(212, 175, 55, 0.5);
+        }
+        /* 档位选择 */
+        .speed-select {
+            position: absolute;
+            bottom: -80px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+        }
+        .speed-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #d4af37;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .speed-btn.active {
+            background-color: #fffbf0;
+            color: #856c00;
+        }
+        /* 数值显示 */
+        .score {
+            position: absolute;
+            top: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 36px;
+            color: #d4af37;
+            text-shadow: 0 0 5px #fff;
+        }
+        .score-animate {
+            animation: scoreBreathe 0.5s infinite alternate;
+        }
+        @keyframes scoreBreathe {
+            from { transform: translateX(-50%) scale(1); }
+            to { transform: translateX(-50%) scale(1.2); }
+        }
+        /* 中奖反馈 */
+        .prize-highlight {
+            position: absolute;
+            border: 4px solid #ffff00;
+            border-radius: 50%;
+            animation: blink 0.1s infinite alternate;
+            display: none;
+        }
+        @keyframes blink {
+            from { opacity: 0.5; }
+            to { opacity: 1; }
+        }
     </style>
 </head>
 <body>
-    <div class="hud">BALANCE: <b id="bal">1,000</b></div>
-    <div class="wheel-box">
-        <div class="pointer"></div>
-        <div class="wheel" id="wheel">
-            <div class="item i1">💎</div><div class="item i2">💀</div><div class="item i3">💰</div><div class="item i4">💀</div><div class="item i5">🎁</div><div class="item i6">💀</div>
-            <div class="btn" onclick="spin()">SPIN</div>
+    <div class="turntable-container">
+        <div class="turntable" id="turntable">
+            <!-- 奖项格子（示例8个） -->
+            <div class="prize-item" style="transform: rotate(0deg) skewY(-45deg);">一等奖</div>
+            <div class="prize-item" style="transform: rotate(45deg) skewY(-45deg);">二等奖</div>
+            <div class="prize-item" style="transform: rotate(90deg) skewY(-45deg);">三等奖</div>
+            <div class="prize-item" style="transform: rotate(135deg) skewY(-45deg);">谢谢参与</div>
+            <div class="prize-item" style="transform: rotate(180deg) skewY(-45deg);">四等奖</div>
+            <div class="prize-item" style="transform: rotate(225deg) skewY(-45deg);">五等奖</div>
+            <div class="prize-item" style="transform: rotate(270deg) skewY(-45deg);">六等奖</div>
+            <div class="prize-item" style="transform: rotate(315deg) skewY(-45deg);">谢谢参与</div>
+            <!-- 中奖高亮框 -->
+            <div class="prize-highlight" id="highlight" style="width: 500px; height: 500px;"></div>
         </div>
+        <div class="spin-btn" id="spinBtn">开始抽奖</div>
     </div>
-    <div class="ovl" id="ovl"><div id="res-txt" style="font-size:40px; font-weight:900;"></div><button style="margin-top:30px; padding:12px 30px; background:var(--neon); border:none; border-radius:5px; font-weight:bold;" onclick="location.reload()">AGAIN</button></div>
+    <div class="speed-select">
+        <button class="speed-btn active" data-speed="1">标准档</button>
+        <button class="speed-btn" data-speed="2">快速档</button>
+        <button class="speed-btn" data-speed="3">极速档</button>
+    </div>
+    <div class="score" id="score">0</div>
 
     <script>
-        let b=1000, r=0;
-        function spin(){ 
-            if(b<50)return alert('余额不足'); b-=50; document.getElementById('bal').innerText=b; 
-            let add=1800+Math.floor(Math.random()*360); r+=add; 
-            document.getElementById('wheel').style.transform="rotate("+r+"deg)";
-            setTimeout(()=>{ 
-                let win=[0,100,0,200,0,500][Math.floor(Math.random()*6)]; b+=win; 
-                document.getElementById('bal').innerText=b; document.getElementById('ovl').style.display='flex'; 
-                document.getElementById('res-txt').innerText=win>0?"WIN: "+win:"LOSE"; document.getElementById('res-txt').style.color=win>0?'#00f2ff':'#ff0055'; 
-            },4000); 
+        const turntable = document.getElementById('turntable');
+        const spinBtn = document.getElementById('spinBtn');
+        const speedBtns = document.querySelectorAll('.speed-btn');
+        const score = document.getElementById('score');
+        const highlight = document.getElementById('highlight');
+        let selectedSpeed = 1;
+        let isSpinning = false;
+
+        // 选择档位
+        speedBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                speedBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedSpeed = parseInt(btn.dataset.speed);
+            });
+        });
+
+        // 抽奖逻辑
+        spinBtn.addEventListener('click', () => {
+            if (isSpinning) return;
+            isSpinning = true;
+            highlight.style.display = 'none';
+            
+            let duration, timingFunc, reboundDeg;
+            // 根据档位设置参数
+            switch(selectedSpeed) {
+                case 1:
+                    duration = 2500;
+                    timingFunc = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+                    reboundDeg = 5;
+                    break;
+                case 2:
+                    duration = 1200;
+                    timingFunc = 'linear';
+                    reboundDeg = 2;
+                    break;
+                case 3:
+                    duration = 500;
+                    timingFunc = 'cubic-bezier(0.8, 0, 1, 0)';
+                    reboundDeg = 0;
+                    // 添加径向模糊
+                    turntable.style.filter = 'blur(2px)';
+                    setTimeout(() => {
+                        turntable.style.filter = 'none';
+                    }, 400);
+                    break;
+            }
+
+            // 随机目标角度
+            const targetDeg = 360 * 5 + Math.floor(Math.random() * 360);
+            // 转动动画
+            turntable.style.transition = `transform ${duration}ms ${timingFunc}`;
+            turntable.style.transform = `rotate(${targetDeg}deg)`;
+
+            // 动画结束处理
+            setTimeout(() => {
+                if (reboundDeg > 0) {
+                    turntable.style.transition = 'transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1)';
+                    turntable.style.transform = `rotate(${targetDeg + reboundDeg}deg)`;
+                    setTimeout(() => {
+                        turntable.style.transform = `rotate(${targetDeg}deg)`;
+                        finishSpin(targetDeg);
+                    }, 300);
+                } else {
+                    finishSpin(targetDeg);
+                }
+            }, duration);
+        });
+
+        // 抽奖结束处理
+        function finishSpin(deg) {
+            // 计算中奖奖项
+            const realDeg = deg % 360;
+            const prizeIndex = Math.floor(realDeg / 45);
+            // 随机生成分数
+            const randomScore = Math.floor(Math.random() * 1000);
+            // 分数动画
+            score.textContent = '0';
+            score.classList.add('score-animate');
+            let count = 0;
+            const scoreTimer = setInterval(() => {
+                count += Math.ceil(randomScore / 20);
+                if (count >= randomScore) {
+                    count = randomScore;
+                    clearInterval(scoreTimer);
+                    score.classList.remove('score-animate');
+                }
+                score.textContent = count;
+            }, 30);
+            // 中奖高亮
+            highlight.style.display = 'block';
+            isSpinning = false;
         }
     </script>
 </body>
