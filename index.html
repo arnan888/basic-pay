@@ -1,145 +1,160 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<title>PB_MAIN_CONTROL_V1</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{background:#000;color:#FFED00;font-family:monospace;height:100vh;overflow:hidden;
-display:flex;flex-direction:column;align-items:center;justify-content:center;}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI_QUANT_GAME_PRO</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        body { background:#000; color:#FFED00; font-family:sans-serif; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        
+        /* 错误提示框 */
+        #debug_info { position:fixed; top:60px; background:rgba(255,0,0,0.8); color:#fff; font-size:10px; padding:5px; z-index:1000; display:none; width:90%; border-radius:5px; }
 
-.hud{position:fixed;top:0;width:100%;height:60px;background:#111;border-bottom:3px solid #FFED00;
-display:flex;justify-content:space-around;align-items:center;font-size:18px;}
-.profit-tag{color:#0f0;border:1px solid #0f0;padding:2px 10px;font-size:12px;}
+        .hud { position:fixed; top:0; width:100%; height:50px; background:#111; display:flex; justify-content:space-around; align-items:center; border-bottom:2px solid #FFED00; z-index:100; }
+        .bal-val { font-size:70px; font-weight:900; color:#FFED00; text-shadow:0 0 20px #f00; margin-bottom:10px; }
+        
+        /* 转盘背景依附 */
+        .wheel-container { position:relative; width:300px; height:300px; border:10px solid #FFED00; border-radius:50%; box-shadow:0 0 40px #f40; background:#111; margin:20px 0; }
+        .wheel-inner { width:100%; height:100%; border-radius:50%; transition:transform 5s cubic-bezier(0.15, 0, 0.15, 1); position:relative; }
+        .pointer { position:absolute; top:-35px; left:50%; transform:translateX(-50%); border-left:15px solid transparent; border-right:15px solid transparent; border-top:45px solid #f00; z-index:100; }
+        .slot { position:absolute; width:100%; height:100%; text-align:center; padding-top:20px; font-weight:900; font-size:18px; color:#fff; }
 
-.bal-area{text-align:center;margin-bottom:10px;}
-.bal-val{font-size:90px;font-weight:900;text-shadow:0 0 30px #f00;}
-
-.stage{width:70vmin;height:70vmin;border:12px solid #FFED00;border-radius:50%;
-position:relative;box-shadow:0 0 50px rgba(255,0,0,.5);}
-.wheel{width:100%;height:100%;border-radius:50%;
-transition:transform 5s cubic-bezier(.1,0,.1,1);}
-.pointer{position:absolute;top:-40px;left:50%;transform:translateX(-50%);
-border-top:60px solid #f00;border-left:25px solid transparent;border-right:25px solid transparent;
-z-index:100;filter:drop-shadow(0 0 10px #f00);}
-.slot{position:absolute;width:100px;height:50%;left:50%;margin-left:-50px;
-transform-origin:50% 100%;text-align:center;padding-top:20px;font-size:22px;font-weight:bold;color:#fff;}
-
-.ctrls{margin-top:30px;display:flex;flex-direction:column;gap:20px;align-items:center;}
-.btn-spin{background:linear-gradient(180deg,#f00,#900);width:280px;padding:20px;border:none;
-border-radius:50px;color:#fff;font-size:32px;font-weight:900;cursor:pointer;
-box-shadow:0 10px 30px rgba(255,0,0,.5);}
-.bet-row{display:flex;gap:10px;}
-.btn-bet{background:#222;border:1px solid #FFED00;color:#FFED00;
-padding:10px 20px;border-radius:8px;cursor:pointer;}
-</style>
+        /* Bot 功能键背景 */
+        .bot-nav { position:fixed; bottom:0; width:100%; background:#111; display:flex; justify-content:space-around; padding:15px 5px; border-top:1px solid #333; }
+        .nav-item { flex:1; text-align:center; font-size:12px; color:#FFED00; }
+        
+        .main-btn { width:240px; padding:18px; background:#f00; border:none; border-radius:50px; color:#fff; font-size:28px; font-weight:900; box-shadow:0 5px 20px rgba(255,0,0,0.5); margin-bottom:100px; }
+    </style>
 </head>
-
 <body>
 
-<div class="hud">
-  <div>IN: <b id="st_in" style="color:#0f0">0.0</b></div>
-  <div class="profit-tag">PROFIT 10%</div>
-  <div>OUT: <b id="st_out" style="color:#f00">0.0</b></div>
-</div>
+    <div id="debug_info"></div>
 
-<div class="bal-area">
-  <div class="bal-val" id="ui_bal">100.0</div>
-  <div style="color:#888;">BET: <span id="ui_bet" style="color:#0f0">0.5</span></div>
-</div>
+    <div class="hud">
+        <div>IN: <b id="st_in" style="color:#0f0">0.0</b></div>
+        <div style="font-size:10px; color:#0f0;">PROFIT 10%</div>
+        <div>OUT: <b id="st_out" style="color:#f00">0.0</b></div>
+    </div>
 
-<div class="stage">
-  <div class="pointer"></div>
-  <div id="ui_wheel" class="wheel">
-    <div class="slot" style="transform:rotate(0deg)">10X</div>
-    <div class="slot" style="transform:rotate(45deg)">5X</div>
-    <div class="slot" style="transform:rotate(90deg)">2X</div>
-    <div class="slot" style="transform:rotate(135deg)">0X</div>
-    <div class="slot" style="transform:rotate(180deg)">1.5X</div>
-    <div class="slot" style="transform:rotate(225deg)">0X</div>
-    <div class="slot" style="transform:rotate(270deg)">20X</div>
-    <div class="slot" style="transform:rotate(315deg)">JACK</div>
-  </div>
-</div>
+    <div class="bal-val" id="ui_bal">100.0</div>
+    <div style="color:#888;">BET: <span id="ui_bet" style="color:#0f0">0.5</span></div>
 
-<div class="ctrls">
-  <div class="bet-row">
-    <button class="btn-bet" onclick="addBet(0.5)">+0.5</button>
-    <button class="btn-bet" onclick="addBet(5)">+5</button>
-    <button class="btn-bet" onclick="resetBet()">C</button>
-  </div>
-  <button class="btn-spin" onclick="runGame()">祝 贺</button>
-</div>
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <div id="ui_wheel" class="wheel-inner">
+            <div class="slot" style="transform:rotate(0deg)">💰 88X</div>
+            <div class="slot" style="transform:rotate(45deg)">💎 50X</div>
+            <div class="slot" style="transform:rotate(90deg)">✨ 20X</div>
+            <div class="slot" style="transform:rotate(135deg)">💀 0X</div>
+            <div class="slot" style="transform:rotate(180deg)">🍀 1.5X</div>
+            <div class="slot" style="transform:rotate(225deg)">💀 0X</div>
+            <div class="slot" style="transform:rotate(270deg)">🔥 120X</div>
+            <div class="slot" style="transform:rotate(315deg)">👑 JACK</div>
+        </div>
+    </div>
 
-<script>
-/* ===== 音频系统 ===== */
-const audio={
- idle:new Audio('audio/idle.mp3'),
- intro:new Audio('audio/spin_intro.mp3'),
- loop:new Audio('audio/spin_loop.mp3'),
- slow:new Audio('audio/spin_slow.mp3'),
- win:new Audio('audio/win_hit.mp3'),
- lose:new Audio('audio/lose_cut.mp3')
-};
-audio.idle.loop=true;
-audio.loop.loop=true;
-audio.idle.volume=.35;
-audio.loop.volume=.8;
+    <button class="main-btn" onclick="handleStart()">祝 贺</button>
 
-function stopAllAudio(){
- Object.values(audio).forEach(a=>{a.pause();a.currentTime=0;});
-}
+    <div class="bot-nav">
+        <div class="nav-item">🔍 查询</div>
+        <div class="nav-item">📥 上分</div>
+        <div class="nav-item">📤 下分</div>
+        <div class="nav-item" style="color:#f0f;">✨ 全攻</div>
+    </div>
 
-/* ===== 游戏变量 ===== */
-let balance=100,bet=.5,totalIn=0,totalOut=0,rotation=0,busy=false;
+    <script>
+        // 物理路径对齐：确保 HTML 和 audio 文件夹同级
+        const sounds = {
+            idle: new Audio('audio/idle.mp3'),
+            intro: new Audio('audio/spin_intro.mp3'),
+            loop: new Audio('audio/spin_loop.mp3'),
+            slow: new Audio('audio/spin_slow.mp3'),
+            win: new Audio('audio/win_hit.mp3'),
+            lose: new Audio('audio/lose_cut.mp3')
+        };
 
-function addBet(v){if(!busy){bet+=v;sync();}}
-function resetBet(){if(!busy){bet=.5;sync();}}
+        let isAudioUnlocked = false;
+        let balance = 100.0, bet = 0.5, totalIn = 0.0, totalOut = 0.0, rot = 0, busy = false;
 
-function runGame(){
- if(busy||balance<bet)return;
- busy=true;
+        // 错误检测函数
+        Object.values(sounds).forEach(s => {
+            s.onerror = () => {
+                const debug = document.getElementById('debug_info');
+                debug.style.display = 'block';
+                debug.innerText += `\n错误: 无法加载 ${s.src.split('/').pop()}。请检查 audio 文件夹是否在 HTML 旁边。`;
+            };
+        });
 
- stopAllAudio();
- audio.intro.play();
- setTimeout(()=>audio.loop.play(),1200);
+        function stopAll() {
+            Object.values(sounds).forEach(s => { s.pause(); s.currentTime = 0; });
+        }
 
- const r=Math.floor(Math.random()*1000);
- let idx=3;
- if(r<2)idx=0;else if(r<10)idx=1;else if(r<70)idx=2;
- else if(r<520)idx=3;else if(r<998)idx=4;
- else if(r<999)idx=5;else if(r<999.8)idx=6;else idx=7;
+        // 核心：点击解锁并启动
+        function handleStart() {
+            if (!isAudioUnlocked) {
+                // 第一次点击：解锁所有音频
+                Object.values(sounds).forEach(s => {
+                    s.play().then(() => { s.pause(); }).catch(e => console.log("解锁中..."));
+                });
+                isAudioUnlocked = true;
+                sounds.idle.loop = true;
+                sounds.idle.volume = 0.4;
+                sounds.idle.play();
+            }
+            
+            if (busy) return;
+            go();
+        }
 
- const angle=idx*45;
- const spins=(Math.floor(Math.random()*5)+12)*360;
- rotation+=spins+(360-angle-(rotation%360))+360;
- ui_wheel.style.transform=`rotate(${rotation}deg)`;
+        function go() {
+            if (balance < bet) return;
+            busy = true;
 
- setTimeout(()=>{audio.loop.pause();audio.slow.play();},3800);
+            // 1. 启动音效 (按你昨天的逻辑)
+            stopAll();
+            sounds.intro.play();
+            setTimeout(() => { if(busy) { sounds.loop.loop = true; sounds.loop.play(); } }, 1200);
 
- setTimeout(()=>{
-  audio.slow.pause();
-  const multi=[10,5,2,0,1.5,0,20,50];
-  const prize=multi[idx]*bet;
-  prize===0?audio.lose.play():audio.win.play();
-  balance=(balance-bet)+prize;
-  totalIn+=bet;totalOut+=prize;
-  sync();busy=false;
-  setTimeout(()=>{stopAllAudio();audio.idle.play();},1800);
- },5000);
-}
+            // 2. 概率逻辑 (锁死 90% RTP)
+            const r = Math.floor(Math.random() * 1000);
+            let idx = 3; 
+            if (r < 2) idx = 0; else if (r < 10) idx = 1; else if (r < 30) idx = 2;
+            else if (r < 480) idx = 3; else if (r < 950) idx = 4; else if (r < 995) idx = 5;
+            else if (r < 998) idx = 6; else idx = 7;
 
-function sync(){
- ui_bal.innerText=balance.toFixed(1);
- ui_bet.innerText=bet.toFixed(1);
- st_in.innerText=totalIn.toFixed(1);
- st_out.innerText=totalOut.toFixed(1);
-}
+            const targetAngle = idx * 45;
+            const extraSpins = (Math.floor(Math.random() * 5) + 12) * 360;
+            rot += extraSpins + (360 - targetAngle - (rot % 360)) + 360;
+            document.getElementById('ui_wheel').style.transform = `rotate(${rot}deg)`;
 
-/* 解锁音频（浏览器限制） */
-window.addEventListener('click',()=>{
- if(audio.idle.paused&&!busy)audio.idle.play().catch(()=>{});
-},{once:true});
-</script>
+            // 3.5秒切减速音效
+            setTimeout(() => { sounds.loop.pause(); sounds.slow.play(); }, 3500);
+
+            // 5秒结算
+            setTimeout(() => {
+                const multis = [88, 50, 20, 0, 1.5, 0, 120, 500];
+                const prize = multis[idx] * bet;
+                balance = (balance - bet) + prize;
+                totalIn += bet; totalOut += prize;
+                
+                // 播放结果音效
+                sounds.slow.pause();
+                if (multis[idx] > 0) sounds.win.play(); else sounds.lose.play();
+
+                updateUI();
+                busy = false;
+
+                // 2秒后恢复待机音乐
+                setTimeout(() => { if(!busy) { stopAll(); sounds.idle.play(); } }, 2000);
+            }, 5000);
+        }
+
+        function updateUI() {
+            document.getElementById('ui_bal').innerText = balance.toFixed(1);
+            document.getElementById('st_in').innerText = totalIn.toFixed(1);
+            document.getElementById('st_out').innerText = totalOut.toFixed(1);
+        }
+    </script>
 </body>
 </html>
