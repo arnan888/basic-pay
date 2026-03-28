@@ -1,54 +1,190 @@
-const idle  = new Audio('audio/idle.mp3');
-const intro = new Audio('audio/spin_intro.mp3');
-const loop  = new Audio('audio/spin_loop.mp3');
-const slow  = new Audio('audio/spin_slow.mp3');
-const win   = new Audio('audio/win_hit.mp3');
-const lose  = new Audio('audio/lose_cut.mp3');
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI_QUANT_GAME_PRO</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { 
+            background: radial-gradient(circle, #222 0%, #000 100%); 
+            color:#FFED00; font-family:sans-serif; height:100vh; overflow:hidden; 
+            display:flex; flex-direction:column; align-items:center; 
+        }
 
-idle.loop = true;
-loop.loop = true;
+        .hud { width:100%; height:50px; background:rgba(0,0,0,0.8); display:flex; justify-content:space-around; align-items:center; border-bottom:2px solid #FFED00; font-size:14px; z-index:100; }
+        .p-tag { color:#0f0; border:1px solid #0f0; padding:1px 5px; font-size:10px; border-radius:3px; }
 
-// 初始化：进入等待状态
-function enterIdle() {
-  stopAll();
-  idle.volume = 0.4;
-  idle.play();
-}
+        .bg-fx { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:100%; height:100%; background:url('https://www.transparenttextures.com/patterns/carbon-fibre.png'); opacity:0.3; pointer-events:none; }
 
-// 点击开始
-function startSpin() {
-  stopAll();
-  intro.play();
-  setTimeout(() => {
-    loop.play();
-  }, 1200);
-}
+        .assets-box { margin-top:20px; text-align:center; z-index:10; }
+        .bal-val { font-size:70px; font-weight:900; color:#FFED00; text-shadow:0 0 20px #f00; }
+        .bet-label { color:#888; font-size:16px; margin-top:-10px; }
 
-// 减速
-function slowDown() {
-  loop.pause();
-  slow.play();
-}
+        .wheel-container { position:relative; width:320px; height:320px; margin:20px 0; border:12px solid #FFED00; border-radius:50%; box-shadow:0 0 50px rgba(255,215,0,0.4); z-index:10; background:#000; }
+        .wheel-inner { width:100%; height:100%; border-radius:50%; transition:transform 5s cubic-bezier(0.15, 0, 0.15, 1); position:relative; }
+        .pointer { position:absolute; top:-35px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:20px solid transparent; border-right:20px solid transparent; border-top:50px solid #f00; z-index:100; filter:drop-shadow(0 0 10px #f00); }
+        .slot { position:absolute; width:100%; height:100%; text-align:center; padding-top:25px; font-weight:900; font-size:18px; color:#fff; }
 
-// 出结果
-function showResult(multiplier) {
-  slow.pause();
-  if (multiplier === 0) {
-    lose.play();
-  } else {
-    win.play();
-  }
+        .bot-nav { position:fixed; bottom:0; width:100%; background:rgba(20,20,20,0.95); display:flex; justify-content:space-around; padding:15px 5px; border-top:2px solid #444; z-index:200; }
+        .nav-item { flex:1; text-align:center; color:#FFED00; font-size:12px; cursor:pointer; }
+        .nav-item i { display:block; font-size:20px; margin-bottom:5px; }
+        .nav-item:active { color:#fff; }
 
-  // 结果结束后回到 idle
-  setTimeout(() => {
-    enterIdle();
-  }, 2000);
-}
+        .main-btn { width:240px; padding:15px; background:linear-gradient(180deg, #f00, #900); border:none; border-radius:50px; color:#fff; font-size:28px; font-weight:900; cursor:pointer; box-shadow:0 5px 20px rgba(255,0,0,0.6); margin-bottom:100px; z-index:100; }
+        .main-btn:active { transform:scale(0.95); }
+        
+        .bet-ctrls { display:flex; gap:10px; margin-bottom:15px; z-index:100; }
+        .btn-s { background:#333; border:1px solid #FFED00; color:#FFED00; padding:8px 15px; border-radius:5px; font-size:14px; }
+    </style>
+</head>
+<body>
 
-// 工具函数
-function stopAll() {
-  [idle, intro, loop, slow, win, lose].forEach(a => {
-    a.pause();
-    a.currentTime = 0;
-  });
-}
+    <div class="bg-fx"></div>
+    
+    <!-- 音乐文件路径按你给的目录结构 -->
+    <audio id="idle" src="audio/idle.mp3" loop>
+    <audio id="intro" src="audio/spin_intro.mp3">
+    <audio id="loop" src="audio/spin_loop.mp3" loop>
+    <audio id="slow" src="audio/spin_slow.mp3">
+    <audio id="win" src="audio/win_hit.mp3">
+    <audio id="lose" src="audio/lose_cut.mp3">
+
+    <div class="hud">
+        <div>IN: <b id="st_in" style="color:#0f0">0.0</b></div>
+        <div class="p-tag">PROFIT: 10% (RTP 90%)</div>
+        <div>OUT: <b id="st_out" style="color:#f00">0.0</b></div>
+    </div>
+
+    <div class="assets-box">
+        <div class="bal-val" id="ui_bal">100.0</div>
+        <div class="bet-label">BET: <span id="ui_bet" style="color:#0f0">0.5</span></div>
+    </div>
+
+    <div class="wheel-container">
+        <div class="pointer"></div>
+        <div id="ui_wheel" class="wheel-inner">
+            <div class="slot" style="transform:rotate(0deg)">💰 88X</div>
+            <div class="slot" style="transform:rotate(45deg)">💎 50X</div>
+            <div class="slot" style="transform:rotate(90deg)">✨ 20X</div>
+            <div class="slot" style="transform:rotate(135deg)">💀 0X</div>
+            <div class="slot" style="transform:rotate(180deg)">🍀 1.5X</div>
+            <div class="slot" style="transform:rotate(225deg)">💀 0X</div>
+            <div class="slot" style="transform:rotate(270deg)">🔥 120X</div>
+            <div class="slot" style="transform:rotate(315deg)">👑 JACK</div>
+        </div>
+    </div>
+
+    <div class="bet-ctrls">
+        <button class="btn-s" onclick="addB(0.5)">+0.5</button>
+        <button class="btn-s" onclick="addB(5)">+5.0</button>
+        <button class="btn-s" onclick="resB()" style="color:#f00;">RESET</button>
+    </div>
+
+    <button class="main-btn" onclick="go()">祝 贺</button>
+
+    <div class="bot-nav">
+        <div class="nav-item"><span>🔍</span><br>查询</div>
+        <div class="nav-item"><span>📥</span><br>上分</div>
+        <div class="nav-item"><span>📤</span><br>下分</div>
+        <div class="nav-item" style="color:#f0f;"><span>✨</span><br>全攻</div>
+        <div class="nav-item"><span>⚙️</span><br>设置</div>
+    </div>
+
+    <script>
+        // === 音乐控制 ===
+        const idle  = document.getElementById('idle');
+        const intro = document.getElementById('intro');
+        const loop  = document.getElementById('loop');
+        const slow  = document.getElementById('slow');
+        const win   = document.getElementById('win');
+        const lose  = document.getElementById('lose');
+
+        idle.loop = true;
+        loop.loop = true;
+
+        function stopAll() {
+          [idle, intro, loop, slow, win, lose].forEach(a => {
+            a.pause();
+            a.currentTime = 0;
+          });
+        }
+
+        function enterIdle() {
+          stopAll();
+          idle.volume = 0.4;
+          idle.play();
+        }
+
+        function startSpin() {
+          stopAll();
+          intro.play();
+          setTimeout(() => { loop.play(); }, 1200);
+        }
+
+        function slowDown() {
+          loop.pause();
+          slow.play();
+        }
+
+        function showResult(multiplier) {
+          slow.pause();
+          if (multiplier === 0) { lose.play(); } 
+          else { win.play(); }
+          setTimeout(() => { enterIdle(); }, 2000);
+        }
+
+        // === 游戏逻辑 ===
+        let balance = 100.0, bet = 0.5, totalIn = 0.0, totalOut = 0.0, rot = 0, busy = false;
+
+        function addB(v) { if(!busy) { bet += v; sync(); } }
+        function resB() { if(!busy) { bet = 0.5; sync(); } }
+
+        function go() {
+            if(busy || balance < bet) return;
+            busy = true;
+            
+            // 启动音乐 & 转动
+            startSpin();
+
+            // 概率逻辑
+            const r = Math.floor(Math.random() * 1000);
+            let idx = 3; 
+            if (r < 2) idx = 0; else if (r < 10) idx = 1; else if (r < 30) idx = 2;
+            else if (r < 480) idx = 3; else if (r < 950) idx = 4; else if (r < 995) idx = 5;
+            else if (r < 998) idx = 6; else idx = 7;
+
+            const targetAngle = idx * 45;
+            const spins = (Math.floor(Math.random() * 5) + 12) * 360;
+            rot += spins + (360 - targetAngle - (rot % 360)) + 360;
+            
+            document.getElementById('ui_wheel').style.transform = `rotate(${rot}deg)`;
+
+            // 3.5秒触发减速音效
+            setTimeout(() => { slowDown(); }, 3500);
+
+            // 5秒结算
+            setTimeout(() => {
+                const multis = [88, 50, 20, 0, 1.5, 0, 120, 500];
+                const prize = multis[idx] * bet;
+                balance = (balance - bet) + prize;
+                totalIn += bet; totalOut += prize;
+                
+                showResult(multis[idx]); // 播放结果音效
+                sync();
+                busy = false;
+            }, 5000);
+        }
+
+        function sync() {
+            document.getElementById('ui_bal').innerText = balance.toFixed(1);
+            document.getElementById('ui_bet').innerText = bet.toFixed(1);
+            document.getElementById('st_in').innerText = totalIn.toFixed(1);
+            document.getElementById('st_out').innerText = totalOut.toFixed(1);
+        }
+
+        // 页面加载完成自动进入待机音乐
+        window.onload = () => { enterIdle(); };
+    </script>
+</body>
+</html>
