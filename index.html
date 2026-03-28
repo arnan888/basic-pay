@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>量化终端 · 暗铸转盘 · 红底丝滑版</title>
+<title>量化终端 · 暗铸转盘 · 稳定版</title>
 <style>
     * {
         margin: 0;
@@ -125,7 +125,6 @@
         border: 1px solid #161e28;
     }
 
-    /* 扇区样式 */
     .slot-content {
         position: absolute;
         top: 0;
@@ -176,15 +175,15 @@
         filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
     }
 
-    /* ========= 红色控制台 - 整屏宽，内陷立体 ========= */
+    /* 红色控制台 - 整屏宽，立体内嵌 */
     .console-area {
         width: 100%;
-        background-color: #6a1a1a;  /* 深红基底 */
+        background-color: #6a1a1a;
         background-image: linear-gradient(rgba(0, 0, 0, 0.45) 1.2px, transparent 1.2px),
                           linear-gradient(90deg, rgba(0, 0, 0, 0.45) 1.2px, transparent 1.2px);
         background-size: 22px 22px;
         padding: 24px 20px 30px;
-        border-radius: 0;           /* 直角长方形 */
+        border-radius: 0;
         box-shadow: inset 8px 8px 18px rgba(0, 0, 0, 0.7),
                     inset -4px -4px 10px rgba(255, 80, 80, 0.2),
                     0 -6px 16px rgba(0,0,0,0.5);
@@ -201,7 +200,6 @@
         margin-bottom: 28px;
     }
 
-    /* 加减按钮 - 深色内嵌，按压下沉 */
     .btn-deep-inset {
         background: #4a1a1a;
         color: #ffc6a0;
@@ -223,7 +221,6 @@
         box-shadow: inset 5px 5px 12px rgba(0, 0, 0, 0.8), inset -1px -1px 2px rgba(255, 100, 70, 0.2);
     }
 
-    /* 执行按钮 - 亮红色，突出 */
     .exec-red-btn {
         flex: 1;
         height: 68px;
@@ -251,7 +248,6 @@
         margin-bottom: 20px;
     }
 
-    /* 模式按钮 - 深红内嵌 */
     .mode-btn {
         padding: 16px 10px;
         background: #4a1a1a;
@@ -276,7 +272,6 @@
         border-color: #9f2a1a;
     }
 
-    /* 音效栏 - 融入红色背景，但保持独立功能，改为红褐色调 */
     .audio-row {
         display: flex;
         align-items: center;
@@ -358,7 +353,7 @@
 </head>
 <body>
 
-<div class="status-bar">⚡ QUANTUM_ENGRAVING · 红底丝滑 ⚡</div>
+<div class="status-bar">⚡ QUANTUM_ENGRAVING · 永不卡死 ⚡</div>
 
 <div class="core-section">
     <div class="pit-panel" style="text-align: center;">
@@ -373,9 +368,7 @@
         <div class="wheel-pit">
             <div class="pointer-arrow"></div>
             <div class="wheel-center-val" id="center_val">X0</div>
-            <div id="ui_wheel" class="wheel-outer">
-                <!-- 扇区由JS动态生成 -->
-            </div>
+            <div id="ui_wheel" class="wheel-outer"></div>
         </div>
     </div>
 </div>
@@ -420,6 +413,7 @@
     const beastNames = beasts.map(b => b.display);
 
     let balance = 146.8, bet = 5.5, rot = 0, busy = false, isAuto = false, speedMode = 1;
+    let pendingAuto = false;
 
     // 动态生成转盘扇区
     function buildWheel() {
@@ -443,7 +437,7 @@
         });
     }
 
-    // ---------- 音效系统 ----------
+    // ---------- 音效系统（带异常保护）----------
     let audioCtx = null;
     let isAudioEnabled = true;
     let currentVolume = 0.7;
@@ -451,95 +445,96 @@
 
     function initAudio() {
         if (audioCtx) return;
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch(e) { console.warn("Web Audio 不支持"); }
     }
 
     function playEffect(type) {
         if (!isAudioEnabled) return;
         if (!audioCtx || audioCtx.state === 'closed') return;
+        const playSafe = () => {
+            try {
+                if (type === 'spin') doSpinSound();
+                else if (type === 'stop') doStopSound();
+                else if (type === 'jackpot') doJackpotSound();
+            } catch(e) { console.warn("音效播放失败", e); }
+        };
         if (audioCtx.state === 'suspended') {
-            audioCtx.resume().then(() => doPlay(type)).catch(e => console.log);
+            audioCtx.resume().then(playSafe).catch(()=>{});
         } else {
-            doPlay(type);
+            playSafe();
         }
     }
 
-    function doPlay(type) {
+    function doSpinSound() {
         if (!audioCtx) return;
         const now = audioCtx.currentTime;
-        const gainNode = audioCtx.createGain();
-        gainNode.gain.value = currentVolume;
-        gainNode.connect(audioCtx.destination);
-        let osc = audioCtx.createOscillator();
-        osc.connect(gainNode);
-        if (type === 'spin') {
-            osc.type = 'sawtooth';
-            osc.frequency.value = 400;
-            osc.frequency.exponentialRampToValue(800, 0.25);
-            gainNode.gain.exponentialRampToValue(0.0001, 0.25);
-            osc.start();
-            osc.stop(now + 0.25);
-        } 
-        else if (type === 'stop') {
-            osc.type = 'sine';
-            osc.frequency.value = 880;
-            gainNode.gain.setValueAtTime(currentVolume, now);
-            gainNode.gain.exponentialRampToValue(0.0001, now + 0.2);
-            osc.start();
-            osc.stop(now + 0.2);
-        }
-        else if (type === 'jackpot') {
-            const dur = 0.25;
-            const freq1 = 523.25;
-            const freq2 = 659.25;
-            const gainJack = audioCtx.createGain();
-            gainJack.gain.value = currentVolume;
-            gainJack.connect(audioCtx.destination);
-            const osc1 = audioCtx.createOscillator();
-            osc1.type = 'triangle';
-            osc1.frequency.value = freq1;
-            osc1.connect(gainJack);
-            osc1.start();
-            osc1.stop(now + dur);
-            const osc2 = audioCtx.createOscillator();
-            osc2.type = 'triangle';
-            osc2.frequency.value = freq2;
-            osc2.connect(gainJack);
-            osc2.start(now + dur);
-            osc2.stop(now + dur * 2);
-            gainJack.gain.setValueAtTime(currentVolume, now);
-            gainJack.gain.exponentialRampToValue(0.0001, now + dur * 2);
-        }
+        const gain = audioCtx.createGain();
+        gain.gain.value = currentVolume;
+        gain.connect(audioCtx.destination);
+        const osc = audioCtx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.value = 400;
+        osc.frequency.exponentialRampToValue(800, 0.25);
+        gain.gain.exponentialRampToValue(0.0001, 0.25);
+        osc.connect(gain);
+        osc.start();
+        osc.stop(now + 0.25);
+    }
+    function doStopSound() {
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const gain = audioCtx.createGain();
+        gain.gain.value = currentVolume;
+        gain.connect(audioCtx.destination);
+        const osc = audioCtx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(currentVolume, now);
+        gain.gain.exponentialRampToValue(0.0001, now + 0.2);
+        osc.connect(gain);
+        osc.start();
+        osc.stop(now + 0.2);
+    }
+    function doJackpotSound() {
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const gain = audioCtx.createGain();
+        gain.gain.value = currentVolume;
+        gain.connect(audioCtx.destination);
+        const freq1 = 523.25, freq2 = 659.25, dur = 0.25;
+        const osc1 = audioCtx.createOscillator();
+        osc1.type = 'triangle';
+        osc1.frequency.value = freq1;
+        osc1.connect(gain);
+        osc1.start();
+        osc1.stop(now + dur);
+        const osc2 = audioCtx.createOscillator();
+        osc2.type = 'triangle';
+        osc2.frequency.value = freq2;
+        osc2.connect(gain);
+        osc2.start(now + dur);
+        osc2.stop(now + dur * 2);
+        gain.gain.setValueAtTime(currentVolume, now);
+        gain.gain.exponentialRampToValue(0.0001, now + dur * 2);
     }
 
     function unlockAudio() {
         if (audioUnlocked) return;
         initAudio();
         if (audioCtx && audioCtx.state === 'suspended') {
-            audioCtx.resume().then(() => {
-                audioUnlocked = true;
-                const buffer = audioCtx.createBuffer(1, 1, 22050);
-                const source = audioCtx.createBufferSource();
-                source.buffer = buffer;
-                source.connect(audioCtx.destination);
-                source.start();
-            }).catch(e => console.log);
+            audioCtx.resume().then(() => { audioUnlocked = true; }).catch(()=>{});
         } else if (audioCtx && audioCtx.state === 'running') {
             audioUnlocked = true;
         }
     }
 
-    function setVolume(val) {
-        currentVolume = Math.max(0, Math.min(1, val / 100));
-    }
-
+    function setVolume(val) { currentVolume = Math.max(0, Math.min(1, val / 100)); }
     function toggleAudio() {
         isAudioEnabled = !isAudioEnabled;
-        const btn = document.getElementById('audioToggleBtn');
-        btn.innerHTML = isAudioEnabled ? "🔊 音效开" : "🔇 音效关";
-        if (isAudioEnabled && audioCtx && audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
+        document.getElementById('audioToggleBtn').innerHTML = isAudioEnabled ? "🔊 音效开" : "🔇 音效关";
+        if (isAudioEnabled && audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
     }
 
     // ---------- 游戏逻辑 ----------
@@ -563,7 +558,11 @@
         const btn = document.getElementById('auto_btn');
         btn.className = isAuto ? 'mode-btn on' : 'mode-btn';
         btn.innerHTML = `🤖 自动模式: ${isAuto ? '开' : '关'}`;
-        if (isAuto && !busy && balance >= bet) setTimeout(() => { if(isAuto && !busy && balance >= bet) go(); }, 100);
+        if (isAuto && !busy && balance >= bet) {
+            if (pendingAuto) return;
+            pendingAuto = true;
+            setTimeout(() => { pendingAuto = false; if(isAuto && !busy && balance >= bet) go(); }, 150);
+        }
     }
 
     function cycleSpeed() {
@@ -587,13 +586,15 @@
     }
 
     function go() {
-        if (busy || balance < bet) {
-            if (balance < bet && isAuto) toggleAuto();
+        if (busy) return;
+        if (balance < bet) {
+            if (isAuto) toggleAuto();
             return;
         }
+        busy = true;
         playEffect('spin');
         unlockAudio();
-        busy = true;
+
         const idx = getRandomIndex();
         const angleStep = 360 / beasts.length;
         const targetBase = idx * angleStep;
@@ -602,35 +603,50 @@
         let delta = (targetStop - currentMod + 360) % 360;
         let extra = 8 + Math.floor(Math.random() * 6);
         rot += delta + extra * 360;
-        document.getElementById('ui_wheel').style.transform = `rotate(${rot}deg)`;
+        const wheel = document.getElementById('ui_wheel');
+        wheel.style.transform = `rotate(${rot}deg)`;
 
+        // 监听动画结束
+        const onFinish = () => {
+            wheel.removeEventListener('transitionend', onFinish);
+            try {
+                const prize = multis[idx] * bet;
+                balance = balance - bet + prize;
+                if (balance < 0) balance = 0;
+                updateUI();
+                if (multis[idx] >= 100) playEffect('jackpot');
+                else playEffect('stop');
+                document.getElementById('center_val').innerText = beastNames[idx];
+            } finally {
+                busy = false;
+                if (isAuto && balance >= bet && !busy) {
+                    setTimeout(() => { if(isAuto && !busy && balance >= bet) go(); }, 300);
+                } else if (balance < bet && isAuto) {
+                    toggleAuto();
+                }
+            }
+        };
+        wheel.addEventListener('transitionend', onFinish, { once: true });
+        // 兜底：防止 transitionend 不触发（极少情况）
         const delayMap = {1:5000,2:1200,3:500};
         setTimeout(() => {
-            const prize = multis[idx] * bet;
-            balance = balance - bet + prize;
-            if (balance < 0) balance = 0;
-            updateUI();
-            if (multis[idx] >= 100) playEffect('jackpot');
-            else playEffect('stop');
-            document.getElementById('center_val').innerText = beastNames[idx];
-            busy = false;
-            if (isAuto && balance >= bet) setTimeout(() => go(), 500);
-            else if (balance < bet && isAuto) toggleAuto();
-        }, delayMap[speedMode]);
+            if (busy) {
+                wheel.removeEventListener('transitionend', onFinish);
+                onFinish();
+            }
+        }, delayMap[speedMode] + 100);
     }
 
     // 绑定事件
     document.getElementById('decBetBtn').onclick = () => { changeBet(-0.5); unlockAudio(); };
     document.getElementById('incBetBtn').onclick = () => { changeBet(0.5); unlockAudio(); };
-    document.getElementById('go_btn').onclick = () => { go(); unlockAudio(); };
+    document.getElementById('go_btn').onclick = () => { if(!busy) go(); unlockAudio(); };
     window.toggleAuto = toggleAuto;
     window.cycleSpeed = cycleSpeed;
     window.go = go;
 
-    const audioToggleBtn = document.getElementById('audioToggleBtn');
-    const volumeSlider = document.getElementById('volumeSlider');
-    audioToggleBtn.onclick = () => { toggleAudio(); unlockAudio(); };
-    volumeSlider.oninput = (e) => { setVolume(e.target.value); };
+    document.getElementById('audioToggleBtn').onclick = () => { toggleAudio(); unlockAudio(); };
+    document.getElementById('volumeSlider').oninput = (e) => { setVolume(e.target.value); };
     setVolume(70);
 
     buildWheel();
