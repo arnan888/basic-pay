@@ -3,99 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>量化终端 · 暗铸转盘</title>
+    <title>DOLA 旗舰量化终端</title>
     <style>
-        /* 1. 复刻 27416 的深色科技感网格背景 */
+        /* 1. 全局科技网格背景 */
         body { 
-            background-color: #0b0f0d; 
-            color: #fff; 
-            font-family: sans-serif; 
-            margin: 0; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-            /* 画出那种墨绿色的十字网格 */
-            background-image: 
-                linear-gradient(rgba(45, 62, 52, 0.3) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(45, 62, 52, 0.3) 1px, transparent 1px);
-            background-size: 25px 25px;
+            background: #0b0f0d; color: #fff; font-family: sans-serif; margin: 0; 
+            background-image: linear-gradient(rgba(45, 62, 52, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(45, 62, 52, 0.2) 1px, transparent 1px);
+            background-size: 25px 25px; height: 100vh; display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* 2. 顶部余额卡片 - 强制 0.00 */
-        .header-card { 
-            background: #161b22; 
-            margin: 20px; 
-            padding: 30px 20px; 
-            border-radius: 20px; 
-            text-align: center; 
-            border: 1px solid #30363d;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
-        }
-        .balance-title { color: #8b949e; font-size: 14px; margin-bottom: 10px; }
-        .balance-num { font-size: 60px; color: #ff5a5a; font-weight: bold; letter-spacing: -2px; }
-        .bet-info { color: #f1c40f; font-size: 14px; margin-top: 10px; }
+        /* 2. 0.00 余额展示区 */
+        .card { background: #161b22; margin: 15px; padding: 25px; border-radius: 20px; text-align: center; border: 1px solid #30363d; box-shadow: inset 0 0 15px rgba(0,0,0,0.5); }
+        .bal-title { color: #8b949e; font-size: 13px; margin-bottom: 10px; }
+        .bal-val { font-size: 60px; color: #ff5a5a; font-weight: bold; }
+        .bet-info { color: #f1c40f; font-size: 13px; margin-top: 5px; }
 
-        /* 3. 8 神兽彩色转盘 */
-        .wheel-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
+        /* 3. 8奖项转盘复刻 */
+        .wheel-area { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
         #wheel { 
-            width: 320px; height: 320px; border-radius: 50%; border: 15px solid #21262d;
-            background: conic-gradient(
-                #ff4d4d 0 45deg, #f1c40f 45deg 90deg, #3498db 90deg 135deg, #9b59b6 135deg 180deg, 
-                #2ecc71 180deg 225deg, #e67e22 225deg 270deg, #1abc9c 270deg 315deg, #444 315deg 360deg
-            );
-            transition: transform 5s cubic-bezier(0.1, 0.9, 0.3, 1);
-            position: relative;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            width: 310px; height: 310px; border-radius: 50%; border: 12px solid #233129;
+            background: conic-gradient(#ff4d4d 0 45deg, #f1c40f 45deg 90deg, #3498db 90deg 135deg, #9b59b6 135deg 180deg, #2ecc71 180deg 225deg, #e67e22 225deg 270deg, #1abc9c 270deg 315deg, #444 315deg 360deg);
+            transition: transform 5s cubic-bezier(0.1, 0.9, 0.3, 1); position: relative;
         }
-        /* 中心 X0 标识 */
-        .wheel-center { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            width: 80px; height: 80px; background: #161b22; border-radius: 50%; 
-            display: flex; align-items: center; justify-content: center; 
-            color: #ff5a5a; font-weight: bold; font-size: 24px; border: 4px solid #21262d;
-            z-index: 5;
-        }
-        .pointer { position: absolute; top: 8%; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 35px solid #ff0000; z-index: 10; }
-        .animal-tag { position: absolute; width: 100%; height: 100%; text-align: center; font-size: 11px; font-weight: bold; padding-top: 30px; box-sizing: border-box; color: #fff; text-shadow: 1px 1px 2px #000; }
+        #wheel::after { content: "X0"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 75px; height: 75px; background: #161b22; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff5a5a; font-weight: bold; font-size: 22px; border: 4px solid #233129; }
+        .pointer { position: absolute; top: 10%; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 30px solid #ff0000; z-index: 10; }
+        .tag { position: absolute; width: 100%; height: 100%; text-align: center; font-size: 11px; font-weight: bold; padding-top: 25px; box-sizing: border-box; color: #fff; text-shadow: 1px 1px 2px #000; }
 
-        /* 4. 底部红色主按钮 */
-        .action-area { background: #4a1414; padding: 25px; text-align: center; border-top: 2px solid #631b1b; }
-        .spin-btn { background: #ff4d4d; color: #fff; padding: 18px 90px; border-radius: 45px; font-size: 26px; font-weight: bold; border: none; box-shadow: 0 6px 0 #b33636; }
-        
-        /* 5. 底部菜单栏 */
-        .nav-footer { display: flex; justify-content: space-around; padding: 15px; background: #000; color: #8aa095; font-size: 12px; }
+        /* 4. 底部执行按钮 */
+        .footer { background: #4a1414; padding: 25px; text-align: center; border-top: 2px solid #631b1b; }
+        .btn-play { background: #ff4d4d; color: #fff; padding: 18px 85px; border-radius: 40px; font-size: 24px; font-weight: bold; border: none; box-shadow: 0 5px 0 #b33636; }
+        .nav { display: flex; justify-content: space-around; padding: 12px; background: #000; font-size: 11px; color: #8aa095; }
     </style>
 </head>
 <body>
 
-    <div class="header-card">
-        <div class="balance-title">💰 可用余额 (USDT)</div>
-        <div class="balance-num">0.00</div>
+    <div class="card">
+        <div class="bal-title">💰 可用余额 (USDT)</div>
+        <div class="bal-val">0.00</div>
         <div class="bet-info">🔥 单注额度: 5.5</div>
     </div>
 
-    <div class="wheel-container">
+    <div class="wheel-area">
         <div class="pointer"></div>
         <div id="wheel">
-            <div class="wheel-center">X0</div>
-            <div class="animal-tag" style="transform:rotate(22.5deg)">🐺 孤狼</div>
-            <div class="animal-tag" style="transform:rotate(67.5deg)">🦢 仙鹤</div>
-            <div class="animal-tag" style="transform:rotate(112.5deg)">🐢 玄武</div>
-            <div class="animal-tag" style="transform:rotate(157.5deg)">🦅 大鹏</div>
-            <div class="animal-tag" style="transform:rotate(202.5deg)">🐯 猛虎</div>
-            <div class="animal-tag" style="transform:rotate(247.5deg)">🦄 麒麟</div>
-            <div class="animal-tag" style="transform:rotate(292.5deg)">🐲 神龙</div>
-            <div class="animal-tag" style="transform:rotate(337.5deg)">🔥 凤凰</div>
+            <div class="tag" style="transform:rotate(22.5deg)">🐺 孤狼</div>
+            <div class="tag" style="transform:rotate(67.5deg)">🦢 仙鹤</div>
+            <div class="tag" style="transform:rotate(112.5deg)">🐢 玄武</div>
+            <div class="tag" style="transform:rotate(157.5deg)">🦅 大鹏</div>
+            <div class="tag" style="transform:rotate(202.5deg)">🐯 猛虎</div>
+            <div class="tag" style="transform:rotate(247.5deg)">🦄 麒麟</div>
+            <div class="tag" style="transform:rotate(292.5deg)">🐲 神龙</div>
+            <div class="tag" style="transform:rotate(337.5deg)">🔥 凤凰</div>
         </div>
     </div>
 
-    <div class="action-area">
-        <button class="spin-btn" onclick="alert('余额不足，请联系客服充值')">▶ 执行抽取</button>
-    </div>
-
-    <div class="nav-footer">
-        <span>📈 行情</span><span>💹 资产中心</span><span>📜 历史记录</span><span style="color:#fff">🎚️ 量化终端</span>
-    </div>
+    <div class="footer"><button class="btn-play" onclick="alert('余额不足，请联系客服')">▶ 执行抽取</button></div>
+    <div class="nav"><span>📈 行情</span><span>💹 资产中心</span><span>📜 历史记录</span><span style="color:#fff">🎚️ 量化终端</span></div>
 
 </body>
 </html>
