@@ -3,202 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOLA · 旗舰量化终端</title>
+    <title>DOLA · 量化终端 PRO</title>
     <style>
         :root {
-            --bg-deep: #050806;
-            --panel-hex: #111814;
-            --red-main: #ff4d4d;
-            --gold-text: #f1c40f;
-            --grid-line: rgba(45, 90, 68, 0.12);
+            --bg-color: #050706;
+            --panel-bg: #101512;
+            --text-red: #ff4d4d;
+            --btn-red: #cc2929;
+            --btn-shadow: #801a1a;
+            --grid-color: rgba(0, 255, 127, 0.05);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        
         body { 
-            background: var(--bg-deep); color: #fff; font-family: -apple-system, "Helvetica Neue", sans-serif;
-            margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden;
-            /* 45度菱形网格背景 */
+            background: var(--bg-color); color: #fff; font-family: "PingFang SC", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+            /* 深度还原：45度微亮菱形网格 */
             background-image: 
-                linear-gradient(45deg, var(--grid-line) 1px, transparent 1px),
-                linear-gradient(-45deg, var(--grid-line) 1px, transparent 1px);
-            background-size: 40px 40px;
+                linear-gradient(45deg, var(--grid-color) 1px, transparent 1px),
+                linear-gradient(-45deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 36px 36px;
         }
 
-        /* 顶部余额卡片 */
-        .balance-card { 
-            background: var(--panel-hex); margin: 20px 18px; padding: 30px 10px; border-radius: 20px; 
-            border: 1px solid #1d2922; box-shadow: 0 15px 35px rgba(0,0,0,0.6); text-align: center;
-            position: relative; z-index: 2;
+        /* 顶部面板：内陷质感 */
+        .header-card { 
+            background: var(--panel-bg); margin: 15px; padding: 30px 10px; border-radius: 24px; 
+            border: 1px solid #1a231e;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.8), 0 5px 15px rgba(0,0,0,0.5);
+            text-align: center;
         }
-        .label { color: #8aa095; font-size: 13px; margin-bottom: 8px; display: block; }
-        .amount { font-size: 68px; color: var(--red-main); font-weight: 800; line-height: 1; font-family: 'Arial Black', sans-serif; }
-        .bet-display { color: var(--gold-text); margin-top: 15px; font-size: 15px; font-weight: 500; }
+        .header-card .label { color: #6e8579; font-size: 14px; margin-bottom: 8px; display: block; }
+        .header-card .balance { font-size: 64px; color: var(--text-red); font-weight: 700; font-family: 'DIN Alternate', sans-serif; }
+        .header-card .bet-info { color: #f1c40f; margin-top: 12px; font-size: 15px; display: flex; justify-content: center; align-items: center; gap: 4px; }
 
-        /* 核心转盘区 */
+        /* 转盘舞台 */
         .stage { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
         .pointer { 
-            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
-            width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; 
-            border-top: 22px solid #ff0000; z-index: 10; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
+            position: absolute; top: 10%; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; 
+            border-top: 26px solid #ff0000; z-index: 100; drop-shadow: 0 4px 4px rgba(0,0,0,0.5);
         }
 
-        #wheel { 
-            width: 310px; height: 310px; border-radius: 50%; border: 12px solid #1a231e;
-            background: #141c18; position: relative;
-            transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1);
-            box-shadow: 0 0 60px rgba(0,0,0,0.7);
+        #wheel-container { 
+            width: 320px; height: 320px; border-radius: 50%; border: 12px solid #1a231e;
+            background: #151d19; position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            /* 丝滑旋转的核心：cubic-bezier 自定义减速曲线 */
+            transition: transform 5s cubic-bezier(0.2, 0, 0, 1);
         }
         
-        /* 转盘内部网格 */
-        #wheel::after {
+        /* 转盘内部菱形纹理 */
+        #wheel-container::before {
             content: ""; position: absolute; inset: 0; border-radius: 50%;
             background-image: linear-gradient(45deg, rgba(255,255,255,0.02) 1px, transparent 1px),
                               linear-gradient(-45deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-            background-size: 20px 20px; pointer-events: none;
+            background-size: 20px 20px;
         }
 
-        .center-hub {
+        .hub {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 80px; height: 80px; background: #080c0a; border-radius: 50%;
+            width: 86px; height: 86px; background: #0a0e0c; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            color: var(--red-main); font-weight: bold; font-size: 22px; border: 4px solid #1d2922;
-            z-index: 5; writing-mode: vertical-rl; letter-spacing: 2px;
-            box-shadow: 0 0 15px rgba(255,77,77,0.1);
+            color: var(--text-red); font-weight: bold; font-size: 24px; border: 4px solid #1a231e;
+            z-index: 10; writing-mode: vertical-rl; letter-spacing: 4px;
         }
 
-        .item {
+        .symbol {
             position: absolute; width: 100%; height: 100%; text-align: center;
-            padding-top: 25px; font-size: 26px; transform-origin: center center;
+            padding-top: 22px; font-size: 28px;
         }
 
-        /* 底部控制区 */
-        .footer-ctrl { 
-            background: linear-gradient(to bottom, #2a0a0a, #1a0505); 
-            padding: 25px 20px 40px; border-radius: 35px 35px 0 0;
+        /* 底部操作区：深度还原色彩 */
+        .control-panel { 
+            background: #2b0b0b; /* 还原暗红色底部 */
+            padding: 30px 20px 45px; border-radius: 36px 36px 0 0;
             display: flex; align-items: center; justify-content: space-between; gap: 15px;
-            border-top: 1px solid #4a1515;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
         }
-        .adj-btn { 
-            width: 65px; height: 60px; background: #0d0404; border-radius: 12px;
-            border: 1px solid #3d1414; color: var(--red-main); font-size: 32px; font-weight: 300;
+
+        .btn-side { 
+            width: 64px; height: 56px; background: #150808; border-radius: 14px;
+            border: 1px solid #4a1515; color: var(--text-red); font-size: 32px;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
+            transition: all 0.1s;
         }
-        .adj-btn:active { background: #1a0808; }
+        .btn-side:active { transform: scale(0.92); background: #250a0a; }
 
-        .draw-btn { 
-            flex: 1; height: 80px; background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%);
-            border-radius: 40px; border: none; color: #fff; font-size: 26px; font-weight: bold;
-            box-shadow: 0 6px 0 #8c1e1e, 0 10px 20px rgba(0,0,0,0.4);
-            cursor: pointer; position: relative;
+        .btn-main { 
+            flex: 1; height: 78px; background: linear-gradient(180deg, #e74c3c 0%, #b02418 100%);
+            border-radius: 39px; border: none; color: #fff; font-size: 26px; font-weight: bold;
+            box-shadow: 0 7px 0 #7e1616; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
-        .draw-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #8c1e1e; }
-        .draw-btn:disabled { filter: grayscale(1); opacity: 0.6; }
+        .btn-main:active { transform: translateY(4px); box-shadow: 0 3px 0 #7e1616; }
+        .btn-main:disabled { filter: grayscale(0.8); opacity: 0.7; pointer-events: none; }
 
-        /* 动画逻辑 */
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-        .loading { animation: blink 0.8s infinite; color: var(--gold-text) !important; }
-
+        /* 动画态 */
+        .status-sync { animation: pulse 1s infinite; color: #f1c40f !important; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div class="balance-card">
+    <div class="header-card">
         <span class="label">💰 可用余额 (USDT)</span>
-        <div class="amount" id="balText">990.00</div>
-        <div class="bet-display">🔥 单注额度: <span id="betText">10.0</span></div>
+        <div class="balance" id="ui-bal">990.00</div>
+        <div class="bet-info">🔥 单注额度: <span id="ui-bet">10.0</span></div>
     </div>
 
     <div class="stage">
         <div class="pointer"></div>
-        <div id="wheel">
-            <div class="center-hub" id="hubText">准备</div>
-            <div class="item" style="transform: rotate(0deg)">🦢</div>
-            <div class="item" style="transform: rotate(45deg)">🐺</div>
-            <div class="item" style="transform: rotate(90deg)">🐢</div>
-            <div class="item" style="transform: rotate(135deg)">🦅</div>
-            <div class="item" style="transform: rotate(180deg)">🐯</div>
-            <div class="item" style="transform: rotate(225deg)">🦄</div>
-            <div class="item" style="transform: rotate(270deg)">🐲</div>
-            <div class="item" style="transform: rotate(315deg)">🔥</div>
+        <div id="wheel-container">
+            <div class="hub" id="ui-status">准备</div>
+            <div class="symbol" style="transform: rotate(0deg)">🦢</div>
+            <div class="symbol" style="transform: rotate(45deg)">🐺</div>
+            <div class="symbol" style="transform: rotate(90deg)">🐢</div>
+            <div class="symbol" style="transform: rotate(135deg)">🦅</div>
+            <div class="symbol" style="transform: rotate(180deg)">🐯</div>
+            <div class="symbol" style="transform: rotate(225deg)">🦄</div>
+            <div class="symbol" style="transform: rotate(270deg)">🐲</div>
+            <div class="symbol" style="transform: rotate(315deg)">🔥</div>
         </div>
     </div>
 
-    <div class="footer-ctrl">
-        <div class="adj-btn" onclick="updateBet(-1)">−</div>
-        <button class="draw-btn" id="mainBtn" onclick="executeDraw()">
-            ▶ 执行抽取
-        </button>
-        <div class="adj-btn" onclick="updateBet(1)">+</div>
+    <div class="control-panel">
+        <div class="btn-side" id="btn-sub">−</div>
+        <button class="btn-main" id="btn-go">▶ 执行抽取</button>
+        <div class="btn-side" id="btn-add">+</div>
     </div>
 
     <script>
-        let state = {
-            balance: 990.00,
-            bet: 10.0,
-            isRolling: false,
-            rotation: 0
+        // 生产环境逻辑封装
+        const App = {
+            data: {
+                balance: 990.00,
+                bet: 10.0,
+                isRolling: false,
+                currentDeg: 0
+            },
+
+            init() {
+                this.cacheDOM();
+                this.bindEvents();
+                this.render();
+            },
+
+            cacheDOM() {
+                this.dom = {
+                    bal: document.getElementById('ui-bal'),
+                    bet: document.getElementById('ui-bet'),
+                    status: document.getElementById('ui-status'),
+                    wheel: document.getElementById('wheel-container'),
+                    btnGo: document.getElementById('btn-go'),
+                    btnAdd: document.getElementById('btn-add'),
+                    btnSub: document.getElementById('btn-sub')
+                };
+            },
+
+            bindEvents() {
+                this.dom.btnAdd.onclick = () => this.updateBet(1);
+                this.dom.btnSub.onclick = () => this.updateBet(-1);
+                this.dom.btnGo.onclick = () => this.start();
+            },
+
+            updateBet(val) {
+                if(this.data.isRolling) return;
+                this.data.bet = Math.max(1, this.data.bet + val);
+                this.render();
+                if(window.navigator.vibrate) window.navigator.vibrate(5);
+            },
+
+            render() {
+                this.dom.bal.innerText = this.data.balance.toFixed(2);
+                this.dom.bet.innerText = this.data.bet.toFixed(1);
+            },
+
+            start() {
+                if(this.data.isRolling || this.data.balance < this.data.bet) return;
+
+                this.data.isRolling = true;
+                this.data.balance -= this.data.bet;
+                this.render();
+
+                // 切换UI状态
+                this.dom.btnGo.disabled = true;
+                this.dom.status.innerText = "抽取";
+                this.dom.status.classList.add('status-sync');
+
+                // 物理仿真旋转：确保每次旋转都是基于当前位置累加，且圈数随机但足够多
+                const rounds = 8 + Math.floor(Math.random() * 5); // 8-12圈
+                const extra = Math.floor(Math.random() * 360);
+                this.data.currentDeg += (rounds * 360) + extra;
+                
+                this.dom.wheel.style.transform = `rotate(${this.data.currentDeg}deg)`;
+
+                // 监听旋转结束
+                setTimeout(() => {
+                    this.data.isRolling = false;
+                    this.dom.btnGo.disabled = false;
+                    this.dom.status.innerText = "准备";
+                    this.dom.status.classList.remove('status-sync');
+                    
+                    // 模拟结果判定 (根据实际生产需求接入API)
+                    this.processResult();
+                }, 5100); 
+            },
+
+            processResult() {
+                // 这里是盈利逻辑接入点
+                if(Math.random() > 0.6) {
+                    const win = this.data.bet * 2;
+                    this.data.balance += win;
+                    this.render();
+                }
+            }
         };
 
-        const balEl = document.getElementById('balText');
-        const betEl = document.getElementById('betText');
-        const hubEl = document.getElementById('hubText');
-        const wheelEl = document.getElementById('wheel');
-        const btnEl = document.getElementById('mainBtn');
-
-        function updateBet(offset) {
-            if (state.isRolling) return;
-            state.bet = Math.max(1, state.bet + offset);
-            betEl.innerText = state.bet.toFixed(1);
-            vibrate(10); // 微震反馈
-        }
-
-        function executeDraw() {
-            if (state.isRolling || state.balance < state.bet) return;
-
-            state.isRolling = true;
-            btnEl.disabled = true;
-            
-            // 1. 扣费
-            state.balance -= state.bet;
-            renderBalance();
-
-            // 2. 视觉反馈
-            hubEl.innerText = "计算";
-            hubEl.classList.add('loading');
-            vibrate(30);
-
-            // 3. 随机旋转 (5圈起步 + 随机偏移)
-            const extra = Math.floor(Math.random() * 360);
-            state.rotation += (360 * 6) + extra;
-            wheelEl.style.transform = `rotate(${state.rotation}deg)`;
-
-            // 4. 结算
-            setTimeout(() => {
-                state.isRolling = false;
-                btnEl.disabled = false;
-                hubEl.innerText = "准备";
-                hubEl.classList.remove('loading');
-                
-                // 模拟盈利逻辑 (30% 概率中奖 2.5倍)
-                if(Math.random() > 0.7) {
-                    const win = state.bet * 2.5;
-                    state.balance += win;
-                    renderBalance();
-                    alert(`量化成功！回填盈利: ${win.toFixed(2)} USDT`);
-                }
-            }, 5000);
-        }
-
-        function renderBalance() {
-            balEl.innerText = state.balance.toFixed(2);
-        }
-
-        function vibrate(ms) {
-            if (window.navigator && window.navigator.vibrate) {
-                window.navigator.vibrate(ms);
-            }
-        }
+        App.init();
     </script>
 </body>
 </html>
