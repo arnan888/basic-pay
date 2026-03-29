@@ -2,254 +2,74 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>量化转盘 · 远程可控</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DOLA 旗舰量化终端</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-        body {
-            background: #1a2a1a;
-            background-image: radial-gradient(circle at 30% 20%, #2c4a2c 0%, #0a1f0a 100%);
-            font-family: "PingFang SC", "Segoe UI", system-ui, sans-serif;
-            min-height: 100vh;
-            display: flex; flex-direction: column; padding-bottom: 85px;
-        }
-        .status-bar {
-            background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(4px); height: 32px;
-            display: flex; align-items: center; padding: 0 18px; font-size: 10px; font-weight: 500;
-            color: #cbd5e1; justify-content: center; border-bottom: 1px solid rgba(0,0,0,0.3);
-        }
-        .core-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; gap: 16px; }
-        .pit-panel {
-            width: 100%; max-width: 420px; background-color: #2a323f;
-            background-image: linear-gradient(rgba(0,0,0,0.35) 1.2px, transparent 1.2px), linear-gradient(90deg, rgba(0,0,0,0.35) 1.2px, transparent 1.2px);
-            background-size: 22px 22px; border-radius: 32px; border: 2px solid #1d4a2c; padding: 18px 16px; text-align: center;
-            box-shadow: inset 8px 8px 16px rgba(0,0,0,0.55), inset -4px -4px 8px rgba(255,255,255,0.08), 0px 10px 20px rgba(0,0,0,0.4);
-        }
-        .bal-val { font-size: 52px; font-weight: 900; color: #ff5e5e; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-family: monospace; }
-        .balance-label { font-size: 12px; background: rgba(0,0,0,0.5); display: inline-block; padding: 4px 14px; border-radius: 30px; color: #cddeff; }
-        .wheel-pit { width: 280px; height: 280px; display: flex; align-items: center; justify-content: center; position: relative; margin: 8px auto; }
-        .wheel-outer {
-            width: 250px; height: 250px; border-radius: 50%; position: relative;
-            background-color: #2b6e3c; background-image: linear-gradient(rgba(210,255,180,0.2) 1.2px, transparent 1.2px), linear-gradient(90deg, rgba(210,255,180,0.2) 1.2px, transparent 1.2px);
-            background-size: 16px 16px; border: 3px solid #1d4a2c; z-index: 5;
-            transition: transform 5s cubic-bezier(0.12,0.72,0.28,0.98);
-            box-shadow: 8px 12px 24px rgba(0,0,0,0.6), inset 0px 1px 2px rgba(255,255,240,0.3);
-        }
-        .wheel-center-val {
-            position: absolute; z-index: 20; width: 68px; height: 68px; background: #2e3a48; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; color: #ff8a6f; font-size: 18px; font-weight: 900;
-            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.6), 0 2px 6px black; border: 1px solid #161e28;
-        }
-        .slot-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; padding-top: 18px; pointer-events: none; }
-        .slot-content-inner { display: flex; flex-direction: column; align-items: center; }
-        .beast-ico { font-size: 32px; filter: drop-shadow(1px 2px 4px rgba(0,0,0,0.5)); }
-        .beast-txt { font-size: 10px; font-weight: bold; color: #f9f3cf; background: rgba(0,0,0,0.55); padding: 2px 6px; border-radius: 50px; }
-        .pointer-arrow { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-top: 28px solid #e32020; z-index: 100; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); }
-        .console-area {
-            width: 100%; background-color: #6a1a1a; padding: 24px 20px 35px; border-top: 3px solid #8b2c2c;
-            background-image: linear-gradient(rgba(0,0,0,0.45) 1.2px, transparent 1.2px), linear-gradient(90deg, rgba(0,0,0,0.45) 1.2px, transparent 1.2px);
-            background-size: 22px 22px; box-shadow: inset 8px 8px 18px rgba(0,0,0,0.7), 0 -6px 16px rgba(0,0,0,0.5);
-        }
-        .main-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 28px; }
-        .btn-deep-inset {
-            background: #4a1a1a; color: #ffc6a0; font-size: 28px; font-weight: bold; width: 68px; height: 68px;
-            display: flex; align-items: center; justify-content: center; border-radius: 28px; border: 1px solid #6a2a2a;
-            box-shadow: inset 3px 3px 7px rgba(0,0,0,0.6), 3px 5px 8px rgba(0,0,0,0.4); cursor: pointer;
-        }
-        .btn-deep-inset:active { transform: scale(0.94); }
-        .exec-red-btn {
-            flex: 1; height: 68px; background: linear-gradient(145deg, #d43f3f, #a51e1e); color: #fff4e8; font-size: 22px; font-weight: 900; border-radius: 42px;
-            border: none; border-bottom: 3px solid #6f1414; box-shadow: 0 8px 14px rgba(0,0,0,0.5); cursor: pointer;
-        }
-        .exec-red-btn:active { transform: translateY(3px); border-bottom-width: 1px; }
-        .tech-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 20px; }
-        .mode-btn {
-            padding: 16px 10px; background: #4a1a1a; border-radius: 42px; color: #ffcfb0; font-size: 14px; font-weight: bold;
-            text-align: center; border: 1px solid #6a2a2a; box-shadow: inset 3px 3px 7px rgba(0,0,0,0.6); cursor: pointer;
-        }
-        .mode-btn.on { background: #bc3f2e; color: white; border-color: #9f2a1a; }
-        .audio-row {
-            display: flex; align-items: center; justify-content: space-between; gap: 15px; border-radius: 50px; padding: 8px 18px;
-            background-color: #3d1414; border: 1px solid #8b3a2a; box-shadow: inset 3px 3px 6px rgba(0,0,0,0.5);
-        }
-        .audio-toggle { background: #2a1a1a; border: none; border-radius: 40px; padding: 8px 16px; color: #ffbb88; font-size: 13px; font-weight: bold; cursor: pointer; }
-        .volume-slider { flex: 1; height: 4px; -webkit-appearance: none; background: #5a2a2a; border-radius: 4px; outline: none; }
-        .volume-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #ffb072; cursor: pointer; }
-        .nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 78px; background: #11161f; border-top: 1px solid #2c3543; display: grid; grid-template-columns: repeat(4, 1fr); z-index: 1200; }
-        .nav-n { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #7e8a9b; font-size: 11px; font-weight: 600; }
-        .nav-n.act { color: #ff6b5b; }
+        body { background: #121614; color: #fff; font-family: -apple-system, sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        /* 🌙 登录注册遮罩层 (凹陷质感) */
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18,22,20,0.98); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(15px); }
+        .login-box { background: #1a1f1c; padding: 40px 30px; border-radius: 25px; box-shadow: 10px 10px 20px #090b0a, -10px -10px 20px #222a25; text-align: center; width: 85%; max-width: 360px; }
+        .login-box h2 { color: #00ff88; font-weight: 300; margin-bottom: 10px; }
+        .login-box p { color: #666; font-size: 13px; margin-bottom: 25px; }
+        #user-id-input { width: 100%; padding: 15px; border: none; border-radius: 15px; background: #121614; color: #00ff88; box-shadow: inset 4px 4px 8px #090b0a, inset -4px -4px 8px #1b211e; outline: none; margin-bottom: 25px; text-align: center; font-size: 18px; box-sizing: border-box; }
+        .btn-login { width: 100%; padding: 16px; border: none; border-radius: 15px; background: linear-gradient(145deg, #00e67a, #00cc6d); color: #121614; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 5px 5px 15px #090b0a; transition: 0.2s; }
+        /* 游戏主界面 (默认隐藏) */
+        #game-content { display: none; text-align: center; width: 100%; }
+        .balance-card { background: #1a1f1c; margin: 20px; padding: 30px; border-radius: 20px; box-shadow: inset 5px 5px 10px #090b0a, inset -5px -5px 10px #222a25; }
+        .balance-num { font-size: 42px; color: #ff4d4d; font-weight: bold; margin: 10px 0; }
     </style>
 </head>
 <body>
-<div class="status-bar">⚡ 量化终端 · 公平游戏 ⚡</div>
-<div class="core-section">
-    <div class="pit-panel">
-        <div class="balance-label">💰 可用余额 (USDT)</div>
-        <div class="bal-val" id="ui_bal">1000.00</div>
-        <div style="font-size: 13px; margin-top: 6px; background: rgba(0,0,0,0.4); display: inline-block; padding: 4px 20px; border-radius: 50px;">
-            🔥 单注额度: <span id="ui_bet" style="color:#ff9166; font-size:18px; font-weight:900;">10.0</span>
+
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2>终端激活</h2>
+            <p>请输入您的专属 ID 或 手机号</p>
+            <input type="number" id="user-id-input" placeholder="ID 数字" autofocus>
+            <button class="btn-login" onclick="handleLogin()">立即进入</button>
         </div>
     </div>
-    <div class="pit-panel" style="padding: 12px;">
-        <div class="wheel-pit">
-            <div class="pointer-arrow"></div>
-            <div class="wheel-center-val" id="center_val">准备</div>
-            <div id="ui_wheel" class="wheel-outer"></div>
+
+    <div id="game-content">
+        <div class="balance-card">
+            <div style="color:#888; font-size:14px;">可用余额 (USDT)</div>
+            <div class="balance-num" id="display-balance">0.00</div>
+            <div style="color:#00ff88; font-size:12px;">当前爆率强度: <span id="display-rate">--</span>%</div>
         </div>
+        <button class="btn-login" style="width:80%; margin-top:50px;">执行量化抽取</button>
+        <p style="color:#444; margin-top:20px; font-size:12px;">ID: <span id="display-id">--</span></p>
     </div>
-</div>
-<div class="console-area">
-    <div class="main-row">
-        <button class="btn-deep-inset" id="decBetBtn">−</button>
-        <button id="go_btn" class="exec-red-btn">▶ 执 行 抽 取</button>
-        <button class="btn-deep-inset" id="incBetBtn">＋</button>
-    </div>
-    <div class="tech-row">
-        <div id="auto_btn" class="mode-btn">🤖 自动模式: 关</div>
-        <div id="speed_btn" class="mode-btn">⚡ 变速: 1X</div>
-    </div>
-    <div class="audio-row">
-        <button id="audioToggleBtn" class="audio-toggle">🔊 音效开</button>
-        <span class="volume-icon">🔉</span>
-        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="70">
-    </div>
-</div>
-<div class="nav">
-    <div class="nav-n">📊 行情</div>
-    <div class="nav-n">🏦 资产中心</div>
-    <div class="nav-n">📜 历史记录</div>
-    <div class="nav-n act">🎛️ 量化终端</div>
-</div>
 
-<script>
-    // ---------- 配置 ----------
-    const API_BASE_URL = "https://你的cloudflared地址"; 
-    const urlParams = new URLSearchParams(window.location.search);
-    const userId = urlParams.get('user_id');
+    <script>
+        const API_BASE = "http://你的Termux公网IP:5000/api/status"; // 或者是你的内网穿透地址
+        const urlParams = new URLSearchParams(window.location.search);
+        const uid = urlParams.get('user_id');
 
-    const beasts = [
-        { icon: "🐺", name: "孤狼", multiplier: 0, display: "0倍" },
-        { icon: "🦢", name: "仙鹤", multiplier: 0, display: "0倍" },
-        { icon: "🐢", name: "玄武", multiplier: 0.5, display: "0.5倍" },
-        { icon: "🦅", name: "大鹏", multiplier: 1, display: "1倍" },
-        { icon: "🐯", name: "猛虎", multiplier: 2, display: "2倍" },
-        { icon: "鹿", name: "麒麟", multiplier: 5, display: "5倍" },
-        { icon: "🐲", name: "神龙", multiplier: 20, display: "20倍" },
-        { icon: "🔥", name: "凤凰", multiplier: 100, display: "100倍" }
-    ];
-    const normalProbs = [650, 120, 100, 70, 40, 15, 3, 2];
-    const maxCompassionProbs = [300, 100, 180, 150, 120, 90, 40, 20];
+        if (uid) {
+            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('game-content').style.display = 'block';
+            fetchData(uid);
+        }
 
-    let currentProbs = [...normalProbs];
-    let balance = 1000.0, bet = 10.0, rot = 0, busy = false, isAuto = false, speedMode = 1;
-    let audioCtx = null, isAudioEnabled = true, currentVolume = 0.7, audioUnlocked = false;
+        function handleLogin() {
+            const val = document.getElementById('user-id-input').value;
+            if (val.length < 5) return alert("请输入正确格式的ID");
+            window.location.href = window.location.origin + window.location.pathname + "?user_id=" + val;
+        }
 
-    // ---------- API & 状态 ----------
-    if (userId && API_BASE_URL.includes("http")) {
-        fetch(`${API_BASE_URL}/api/status?user_id=${userId}`)
-            .then(res => res.json())
-            .then(data => { if (data.enabled) updateProbs(data.strength); })
-            .catch(err => console.log("API Offline"));
-    }
-
-    function updateProbs(strength = 0) {
-        const t = strength / 100;
-        currentProbs = normalProbs.map((p, i) => Math.round(p * (1 - t) + maxCompassionProbs[i] * t));
-        let sum = currentProbs.reduce((a,b)=>a+b,0);
-        if (sum !== 1000) currentProbs[0] += 1000 - sum;
-    }
-
-    // ---------- 音效 ----------
-    function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-    function playEffect(type) {
-        if (!isAudioEnabled || !audioCtx) return;
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        gain.connect(audioCtx.destination);
-        osc.connect(gain);
-        gain.gain.value = currentVolume;
-        if (type === 'spin') { osc.frequency.value = 400; osc.start(); osc.stop(audioCtx.currentTime+0.1); }
-        else { osc.frequency.value = 800; osc.start(); osc.stop(audioCtx.currentTime+0.1); }
-    }
-
-    // ---------- 核心逻辑 ----------
-    function buildWheel() {
-        const wheel = document.getElementById('ui_wheel');
-        const angleStep = 360 / beasts.length;
-        beasts.forEach((beast, idx) => {
-            const slot = document.createElement('div');
-            slot.className = 'slot-content';
-            slot.style.transform = `rotate(${idx * angleStep}deg)`;
-            slot.innerHTML = `<div class="slot-content-inner" style="transform:rotate(-${idx * angleStep}deg)">
-                <span class="beast-ico">${beast.icon}</span><span class="beast-txt">${beast.name}</span>
-            </div>`;
-            wheel.appendChild(slot);
-        });
-    }
-
-    function updateUI() {
-        document.getElementById('ui_bal').innerText = balance.toFixed(2);
-        document.getElementById('ui_bet').innerText = bet.toFixed(1);
-    }
-
-    function go() {
-        if (busy || balance < bet) { if(balance < bet && isAuto) toggleAuto(); return; }
-        busy = true;
-        if (!audioUnlocked) { initAudio(); audioUnlocked = true; }
-        
-        balance -= bet; // 先扣费
-        updateUI();
-        playEffect('spin');
-
-        const idx = Math.floor(Math.random() * beasts.length); // 示例随机，实际可用权重逻辑
-        const angleStep = 360 / beasts.length;
-        const extra = (speedMode === 1 ? 5 : 2) * 360;
-        const targetAngle = (360 - (idx * angleStep));
-        rot += extra + (targetAngle - (rot % 360) + 360) % 360;
-
-        document.getElementById('ui_wheel').style.transform = `rotate(${rot}deg)`;
-        
-        const delay = {1:5000, 2:1200, 3:500}[speedMode];
-        setTimeout(() => {
-            const win = beasts[idx].multiplier * bet;
-            balance += win;
-            updateUI();
-            document.getElementById('center_val').innerText = beasts[idx].display;
-            playEffect('stop');
-            busy = false;
-            if (isAuto) setTimeout(go, 300);
-        }, delay + 50);
-    }
-
-    function toggleAuto() {
-        isAuto = !isAuto;
-        document.getElementById('auto_btn').className = isAuto ? 'mode-btn on' : 'mode-btn';
-        document.getElementById('auto_btn').innerText = `🤖 自动模式: ${isAuto ? '开' : '关'}`;
-        if (isAuto) go();
-    }
-
-    function changeBet(val) { if(!busy) { bet = Math.max(0.5, Math.min(balance, bet + val)); updateUI(); } }
-
-    // ---------- 初始化 ----------
-    window.onload = () => {
-        buildWheel();
-        updateUI();
-        document.getElementById('go_btn').onclick = go;
-        document.getElementById('auto_btn').onclick = toggleAuto;
-        document.getElementById('decBetBtn').onclick = () => changeBet(-1);
-        document.getElementById('incBetBtn').onclick = () => changeBet(1);
-        document.getElementById('speed_btn').onclick = () => {
-            speedMode = (speedMode % 3) + 1;
-            const ds = {1:"5s", 2:"1.2s", 3:"0.5s"};
-            document.getElementById('ui_wheel').style.transitionDuration = ds[speedMode];
-            document.getElementById('speed_btn').innerText = `⚡ 变速: ${speedMode}X`;
-        };
-        document.getElementById('volumeSlider').oninput = (e) => { currentVolume = e.target.value / 100; };
-        document.getElementById('audioToggleBtn').onclick = () => {
-            isAudioEnabled = !isAudioEnabled;
-            document.getElementById('audioToggleBtn').innerText = isAudioEnabled ? "🔊 音效开" : "🔇 音效关";
-        };
-    };
-</script>
+        function fetchData(id) {
+            // 这里对接你的 Termux 后台
+            fetch(`http://127.0.0.1:5000/api/status?user_id=${id}`) // 注意：生产环境需改为实际地址
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('display-balance').innerText = data.balance.toFixed(2);
+                    document.getElementById('display-rate').innerText = data.strength;
+                    document.getElementById('display-id').innerText = id;
+                }).catch(() => {
+                    document.getElementById('display-balance').innerText = "0.00";
+                    document.getElementById('display-id').innerText = id + " (未连接后台)";
+                });
+        }
+    </script>
 </body>
 </html>
