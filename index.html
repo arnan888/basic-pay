@@ -3,67 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantum Terminal</title>
-    <link rel="stylesheet" href="index.css">
+    <title>量化终端 - 暗刻模式</title>
+    <style>
+        /* 直接把样式写在里面，保证 100% 生效 */
+        body { background-color: #121916; color: white; font-family: sans-serif; margin: 0; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 400px; padding: 20px; }
+        
+        /* 顶部余额区域 */
+        .card { background: #2b343b; border-radius: 25px; padding: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; }
+        .balance-label { color: #889; font-size: 14px; }
+        .balance-val { color: #ff5e5e; font-size: 50px; font-weight: bold; margin: 10px 0; }
+        
+        /* 转盘区域 */
+        .wheel-box { background: #1e262c; border-radius: 25px; padding: 40px 10px; position: relative; display: flex; justify-content: center; background-image: radial-gradient(#334 1px, transparent 1px); background-size: 20px 20px; }
+        .pointer { position: absolute; top: 25px; z-index: 10; width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid #ff3b30; }
+        .wheel { width: 240px; height: 240px; border-radius: 50%; background: #2e7d5c; border: 8px solid #222; position: relative; transition: transform 4s cubic-bezier(0.1, 0, 0.1, 1); overflow: hidden; }
+        .item { position: absolute; width: 100%; height: 100%; text-align: center; font-size: 30px; padding-top: 15px; transform-origin: 50% 50%; }
+
+        /* 红色执行按钮 */
+        .btn-row { display: flex; align-items: center; gap: 10px; margin-top: 20px; }
+        .main-btn { flex: 1; background: linear-gradient(#ff4b4b, #a51d1d); border: none; border-radius: 50px; color: white; padding: 15px; font-size: 22px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 0 #6e1313; }
+        .side-btn { background: #2b343b; border: none; border-radius: 15px; color: #f1c40f; width: 50px; height: 50px; font-size: 24px; cursor: pointer; }
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- 顶部状态 -->
-        <div class="header">
-            <span class="brand">QUANTUM • TERMINAL</span>
-            <span class="status"><i class="dot"></i> API ONLINE</span>
+    <div class="container">
+        <div class="card">
+            <div class="balance-label">💰 可用余额 (USDT)</div>
+            <div class="balance-val">146.8</div>
+            <div style="color:#889">🔥 单注额度: <span style="color:#ff9500">5.5</span></div>
         </div>
 
-        <!-- 余额卡片 -->
-        <div class="balance-card">
-            <div class="label">ESTIMATED BALANCE (USDT)</div>
-            <div class="amount">1,250.45</div>
-            <button class="deposit-btn">+ QUICK DEPOSIT 立即充值</button>
-        </div>
-
-        <!-- 转盘区域 -->
-        <div class="wheel-section">
+        <div class="wheel-box">
             <div class="pointer"></div>
-            <div class="wheel-outer">
-                <div class="wheel-inner" id="wheel">
-                    <div class="item" style="--i:1;">💎</div>
-                    <div class="item" style="--i:2;">💩</div>
-                    <div class="item" style="--i:3;">🔥</div>
-                    <div class="item" style="--i:4;">💰</div>
-                    <div class="item" style="--i:5;">💩</div>
-                    <div class="item" style="--i:6;">⚡</div>
-                    <div class="item" style="--i:7;">💩</div>
-                    <div class="item" style="--i:8;">💩</div>
-                </div>
+            <div id="wheel" class="wheel">
+                <!-- 动物图标布局 -->
+                <div class="item" style="transform: rotate(0deg)">🦢</div>
+                <div class="item" style="transform: rotate(45deg)">🐺</div>
+                <div class="item" style="transform: rotate(90deg)">🐯</div>
+                <div class="item" style="transform: rotate(135deg)">🐢</div>
+                <div class="item" style="transform: rotate(180deg)">🦌</div>
+                <div class="item" style="transform: rotate(225deg)">🐲</div>
+                <div class="item" style="transform: rotate(270deg)">🔥</div>
+                <div class="item" style="transform: rotate(315deg)">🦅</div>
             </div>
         </div>
 
-        <!-- 交易面板 -->
-        <div class="trade-panel">
-            <div class="panel-header">
-                <span>TRANSACTION AMOUNT</span>
-                <span class="total">1250.45</span>
-            </div>
-            <div class="grid">
-                <button class="grid-btn">+10</button>
-                <button class="grid-btn">+100</button>
-                <button class="grid-btn">+500</button>
-                <button class="grid-btn highlight">×2</button>
-                <button class="grid-btn">+1k</button>
-                <button class="grid-btn">1/2</button>
-                <button class="grid-btn">MAX</button>
-                <button class="grid-btn dim">RST</button>
-            </div>
+        <div class="btn-row">
+            <button class="side-btn">−</button>
+            <button class="main-btn" onclick="spin()">▶ 执 行 抽 取</button>
+            <button class="side-btn">+</button>
         </div>
     </div>
 
     <script>
-        // 点击余额模拟转动
-        document.querySelector('.balance-card').onclick = function() {
+        let deg = 0;
+        function spin() {
             const wheel = document.getElementById('wheel');
-            let randomDeg = Math.floor(Math.random() * 360) + 1440; // 至少转4圈
-            wheel.style.transform = `rotate(${randomDeg}deg)`;
-        };
+            deg += 1800 + Math.random() * 360; // 每次至少转5圈
+            wheel.style.transform = `rotate(${deg}deg)`;
+        }
     </script>
 </body>
 </html>
