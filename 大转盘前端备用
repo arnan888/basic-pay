@@ -3,73 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOLA 旗舰量化终端</title>
+    <title>量化终端 · 旗舰版</title>
     <style>
-        body { background: #121614; color: #fff; font-family: -apple-system, sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
-        /* 🌙 登录注册遮罩层 (凹陷质感) */
-        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18,22,20,0.98); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(15px); }
-        .login-box { background: #1a1f1c; padding: 40px 30px; border-radius: 25px; box-shadow: 10px 10px 20px #090b0a, -10px -10px 20px #222a25; text-align: center; width: 85%; max-width: 360px; }
-        .login-box h2 { color: #00ff88; font-weight: 300; margin-bottom: 10px; }
-        .login-box p { color: #666; font-size: 13px; margin-bottom: 25px; }
-        #user-id-input { width: 100%; padding: 15px; border: none; border-radius: 15px; background: #121614; color: #00ff88; box-shadow: inset 4px 4px 8px #090b0a, inset -4px -4px 8px #1b211e; outline: none; margin-bottom: 25px; text-align: center; font-size: 18px; box-sizing: border-box; }
-        .btn-login { width: 100%; padding: 16px; border: none; border-radius: 15px; background: linear-gradient(145deg, #00e67a, #00cc6d); color: #121614; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 5px 5px 15px #090b0a; transition: 0.2s; }
-        /* 游戏主界面 (默认隐藏) */
-        #game-content { display: none; text-align: center; width: 100%; }
-        .balance-card { background: #1a1f1c; margin: 20px; padding: 30px; border-radius: 20px; box-shadow: inset 5px 5px 10px #090b0a, inset -5px -5px 10px #222a25; }
-        .balance-num { font-size: 42px; color: #ff4d4d; font-weight: bold; margin: 10px 0; }
+        /* 1. 还原 27444 的深墨绿背景与全局网格 */
+        body { 
+            background: #0d120f; color: #fff; font-family: sans-serif; margin: 0; 
+            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+            background-image: linear-gradient(rgba(45, 62, 52, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(45, 62, 52, 0.3) 1px, transparent 1px);
+            background-size: 25px 25px;
+        }
+
+        /* 2. 内陷式卡片设计 */
+        .panel { 
+            background: #1a231e; margin: 10px 15px; padding: 20px; border-radius: 25px; 
+            border: 1px solid #2d3e34; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); text-align: center;
+        }
+        .bal-val { font-size: 55px; color: #ff5a5a; font-weight: bold; }
+        .bet-info { color: #f1c40f; font-size: 14px; margin-top: 5px; }
+
+        /* 3. 雷达网格转盘 */
+        .wheel-area { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
+        #wheel { 
+            width: 320px; height: 320px; border-radius: 50%; border: 12px solid #233129;
+            /* 还原图 27444 的绿色雷达网格底纹 */
+            background: #1a231e;
+            background-image: radial-gradient(#2d3e34 1px, transparent 1px), linear-gradient(#2d3e34 1px, transparent 1px), linear-gradient(90deg, #2d3e34 1px, transparent 1px);
+            background-size: 100% 100%, 20px 20px, 20px 20px;
+            position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
+        #wheel::after { content: "准备"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85px; height: 85px; background: #1a231e; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff5a5a; font-weight: bold; font-size: 22px; border: 4px solid #233129; }
+        
+        .animal-node { position: absolute; width: 100%; height: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; padding-top: 25px; box-sizing: border-box; }
+        .animal-icon { font-size: 24px; margin-bottom: 2px; }
+        .animal-name { font-size: 11px; font-weight: bold; color: #8aa095; }
+
+        /* 4. 底部红色操作面板 */
+        .ctrl-panel { background: #3d0e0e; padding: 20px; border-radius: 30px 30px 0 0; border-top: 2px solid #631b1b; }
+        .main-row { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 15px; }
+        .side-btn { width: 55px; height: 55px; background: #261111; border-radius: 15px; color: #ff5a5a; font-size: 30px; display: flex; align-items: center; justify-content: center; border: 1px solid #631b1b; }
+        .btn-play { background: #cc2929; color: #fff; padding: 18px 70px; border-radius: 40px; font-size: 24px; font-weight: bold; border: none; box-shadow: 0 6px 0 #801a1a; }
+        
+        .status-row { display: flex; justify-content: space-around; margin-bottom: 10px; }
+        .status-pill { background: #261111; padding: 8px 25px; border-radius: 20px; font-size: 12px; color: #8aa095; border: 1px solid #4a1414; }
+        .nav { display: flex; justify-content: space-around; padding: 15px 0; background: #000; font-size: 11px; color: #8aa095; }
     </style>
 </head>
 <body>
 
-    <div id="login-overlay">
-        <div class="login-box">
-            <h2>终端激活</h2>
-            <p>请输入您的专属 ID 或 手机号</p>
-            <input type="number" id="user-id-input" placeholder="ID 数字" autofocus>
-            <button class="btn-login" onclick="handleLogin()">立即进入</button>
+    <div style="text-align:center; padding:10px; color:#f1c40f; font-size:12px;">⚡ 量化终端 · 公平游戏 ⚡</div>
+
+    <div class="panel">
+        <div style="color:#8aa095; font-size:13px;">💰 可用余额 (USDT)</div>
+        <div class="bal-val">1000.00</div> <div class="bet-info">🔥 单注额度: 10.0</div>
+    </div>
+
+    <div class="wheel-area">
+        <div style="position:absolute; top:5%; left:50%; transform:translateX(-50%); width:0; height:0; border-left:20px solid transparent; border-right:20px solid transparent; border-top:30px solid #ff0000; z-index:10;"></div>
+        <div id="wheel">
+            <div class="animal-node" style="transform:rotate(0deg)"><span class="animal-icon">🐺</span><span class="animal-name">孤狼</span></div>
+            <div class="animal-node" style="transform:rotate(45deg)"><span class="animal-icon">🦢</span><span class="animal-name" style="transform:rotate(-45deg)">仙鹤</span></div>
+            <div class="animal-node" style="transform:rotate(90deg)"><span class="animal-icon">🐢</span><span class="animal-name" style="transform:rotate(-90deg)">玄武</span></div>
+            <div class="animal-node" style="transform:rotate(135deg)"><span class="animal-icon">🦅</span><span class="animal-name" style="transform:rotate(-135deg)">大鹏</span></div>
+            <div class="animal-node" style="transform:rotate(180deg)"><span class="animal-icon">🐯</span><span class="animal-name" style="transform:rotate(-180deg)">猛虎</span></div>
+            <div class="animal-node" style="transform:rotate(225deg)"><span class="animal-icon">🦄</span><span class="animal-name" style="transform:rotate(-225deg)">麒麟</span></div>
+            <div class="animal-node" style="transform:rotate(270deg)"><span class="animal-icon">🐲</span><span class="animal-name" style="transform:rotate(-270deg)">神龙</span></div>
+            <div class="animal-node" style="transform:rotate(315deg)"><span class="animal-icon">🔥</span><span class="animal-name" style="transform:rotate(-315deg)">凤凰</span></div>
         </div>
     </div>
 
-    <div id="game-content">
-        <div class="balance-card">
-            <div style="color:#888; font-size:14px;">可用余额 (USDT)</div>
-            <div class="balance-num" id="display-balance">0.00</div>
-            <div style="color:#00ff88; font-size:12px;">当前爆率强度: <span id="display-rate">--</span>%</div>
+    <div class="ctrl-panel">
+        <div class="main-row">
+            <div class="side-btn">−</div>
+            <button class="btn-play" onclick="alert('执行中...')">▶ 执行抽取</button>
+            <div class="side-btn">+</div>
         </div>
-        <button class="btn-login" style="width:80%; margin-top:50px;">执行量化抽取</button>
-        <p style="color:#444; margin-top:20px; font-size:12px;">ID: <span id="display-id">--</span></p>
+        <div class="status-row">
+            <div class="status-pill">🤖 自动模式：关</div>
+            <div class="status-pill">⚡ 变速：1X</div>
+        </div>
     </div>
 
-    <script>
-        const API_BASE = "http://你的Termux公网IP:5000/api/status"; // 或者是你的内网穿透地址
-        const urlParams = new URLSearchParams(window.location.search);
-        const uid = urlParams.get('user_id');
+    <div class="nav">
+        <span>📈 行情</span><span>💹 资产中心</span><span>📜 历史记录</span><span style="color:#fff">🎚️ 量化终端</span>
+    </div>
 
-        if (uid) {
-            document.getElementById('login-overlay').style.display = 'none';
-            document.getElementById('game-content').style.display = 'block';
-            fetchData(uid);
-        }
-
-        function handleLogin() {
-            const val = document.getElementById('user-id-input').value;
-            if (val.length < 5) return alert("请输入正确格式的ID");
-            window.location.href = window.location.origin + window.location.pathname + "?user_id=" + val;
-        }
-
-        function fetchData(id) {
-            // 这里对接你的 Termux 后台
-            fetch(`http://127.0.0.1:5000/api/status?user_id=${id}`) // 注意：生产环境需改为实际地址
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('display-balance').innerText = data.balance.toFixed(2);
-                    document.getElementById('display-rate').innerText = data.strength;
-                    document.getElementById('display-id').innerText = id;
-                }).catch(() => {
-                    document.getElementById('display-balance').innerText = "0.00";
-                    document.getElementById('display-id').innerText = id + " (未连接后台)";
-                });
-        }
-    </script>
 </body>
 </html>
