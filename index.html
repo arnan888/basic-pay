@@ -2,67 +2,168 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>量化终端 - 暗刻模式</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>AI 量化</title>
     <style>
-        /* 直接把样式写在里面，保证 100% 生效 */
-        body { background-color: #121916; color: white; font-family: sans-serif; margin: 0; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 400px; padding: 20px; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #0d1213; color: white; font-family: "PingFang SC", "Helvetica Neue", sans-serif; margin: 0; display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden; }
         
-        /* 顶部余额区域 */
-        .card { background: #2b343b; border-radius: 25px; padding: 20px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; }
-        .balance-label { color: #889; font-size: 14px; }
-        .balance-val { color: #ff5e5e; font-size: 50px; font-weight: bold; margin: 10px 0; }
-        
-        /* 转盘区域 */
-        .wheel-box { background: #1e262c; border-radius: 25px; padding: 40px 10px; position: relative; display: flex; justify-content: center; background-image: radial-gradient(#334 1px, transparent 1px); background-size: 20px 20px; }
-        .pointer { position: absolute; top: 25px; z-index: 10; width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid #ff3b30; }
-        .wheel { width: 240px; height: 240px; border-radius: 50%; background: #2e7d5c; border: 8px solid #222; position: relative; transition: transform 4s cubic-bezier(0.1, 0, 0.1, 1); overflow: hidden; }
-        .item { position: absolute; width: 100%; height: 100%; text-align: center; font-size: 30px; padding-top: 15px; transform-origin: 50% 50%; }
+        .iphone { width: 100%; max-width: 414px; padding: 25px 20px; }
 
-        /* 红色执行按钮 */
-        .btn-row { display: flex; align-items: center; gap: 10px; margin-top: 20px; }
-        .main-btn { flex: 1; background: linear-gradient(#ff4b4b, #a51d1d); border: none; border-radius: 50px; color: white; padding: 15px; font-size: 22px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 0 #6e1313; }
-        .side-btn { background: #2b343b; border: none; border-radius: 15px; color: #f1c40f; width: 50px; height: 50px; font-size: 24px; cursor: pointer; }
+        /* 余额卡片 - 增加磨砂感和顶部微边框 */
+        .balance-card {
+            background: #232d34;
+            border-radius: 32px;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.08), 0 20px 40px rgba(0,0,0,0.6);
+            border: 1px solid rgba(0,0,0,0.3);
+            margin-bottom: 25px;
+        }
+        .bal-title { color: #8a969e; font-size: 14px; display: flex; justify-content: center; align-items: center; gap: 6px; }
+        .bal-icon { color: #d4af37; font-size: 16px; }
+        .bal-val { color: #ff5252; font-size: 68px; font-weight: bold; margin: 10px 0; letter-spacing: -2px; }
+        .bet-info { color: #8a969e; font-size: 16px; }
+        .bet-num { color: #ffb344; font-weight: 600; margin-left: 4px; }
+
+        /* 转盘区 - 增强背景网格对比度和圆角 */
+        .wheel-section {
+            background: #1e262c;
+            border-radius: 32px;
+            padding: 60px 10px;
+            position: relative;
+            background-image: radial-gradient(rgba(255,255,255,0.06) 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
+            display: flex;
+            justify-content: center;
+            box-shadow: inset 0 0 80px rgba(0,0,0,0.4), 0 10px 30px rgba(0,0,0,0.3);
+            margin-bottom: 35px;
+        }
+        
+        .pointer {
+            position: absolute;
+            top: 40px;
+            z-index: 100;
+            width: 0; height: 0;
+            border-left: 16px solid transparent;
+            border-right: 16px solid transparent;
+            border-top: 24px solid #ff3b30;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+        }
+
+        /* 转盘 - 增加金属厚度感 */
+        .wheel-plate {
+            width: 260px; height: 260px;
+            border-radius: 50%;
+            background: #2e7d5c;
+            border: 12px solid #161d23;
+            position: relative;
+            transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1);
+            box-shadow: 0 0 0 2px #2d3842, 0 15px 35px rgba(0,0,0,0.7), inset 0 0 20px rgba(0,0,0,0.3);
+        }
+        
+        .icon-item {
+            position: absolute;
+            width: 100%; height: 100%;
+            text-align: center;
+            font-size: 36px;
+            padding-top: 25px;
+            transform-origin: 50% 50%;
+        }
+
+        /* 底部控制区 - 极致3D按钮细节 */
+        .controls { display: flex; align-items: center; gap: 15px; }
+        
+        .side-btn {
+            width: 65px; height: 65px;
+            background: #232d34;
+            border: none;
+            border-radius: 20px;
+            color: #ffb344;
+            font-size: 32px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #0d1213, 0 10px 20px rgba(0,0,0,0.5);
+            transition: all 0.1s;
+        }
+        .side-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #0d1213; }
+        
+        .main-btn {
+            flex: 1;
+            background: linear-gradient(180deg, #ff4d4d 0%, #b02424 100%);
+            border: none;
+            border-radius: 45px;
+            color: white;
+            height: 70px;
+            font-size: 26px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            box-shadow: 0 7px 0 #7a1515, 0 12px 25px rgba(0,0,0,0.4);
+            text-shadow: 0 2px 3px rgba(0,0,0,0.4);
+            transition: all 0.1s;
+        }
+        .main-btn:active { transform: translateY(5px); box-shadow: 0 2px 0 #7a1515; }
+        .play-triangle { font-size: 22px; margin-right: 5px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="card">
-            <div class="balance-label">💰 可用余额 (USDT)</div>
-            <div class="balance-val">146.8</div>
-            <div style="color:#889">🔥 单注额度: <span style="color:#ff9500">5.5</span></div>
-        </div>
 
-        <div class="wheel-box">
-            <div class="pointer"></div>
-            <div id="wheel" class="wheel">
-                <!-- 动物图标布局 -->
-                <div class="item" style="transform: rotate(0deg)">🦢</div>
-                <div class="item" style="transform: rotate(45deg)">🐺</div>
-                <div class="item" style="transform: rotate(90deg)">🐯</div>
-                <div class="item" style="transform: rotate(135deg)">🐢</div>
-                <div class="item" style="transform: rotate(180deg)">🦌</div>
-                <div class="item" style="transform: rotate(225deg)">🐲</div>
-                <div class="item" style="transform: rotate(270deg)">🔥</div>
-                <div class="item" style="transform: rotate(315deg)">🦅</div>
-            </div>
-        </div>
+<div class="iphone">
+    <!-- 余额面板 -->
+    <div class="balance-card">
+        <div class="bal-title"><span class="bal-icon">💰</span> 可用余额 (USDT)</div>
+        <div id="displayBal" class="bal-val">146.8</div>
+        <div class="bet-info">🔥 单注额度: <span id="displayBet" class="bet-num">5.5</span></div>
+    </div>
 
-        <div class="btn-row">
-            <button class="side-btn">−</button>
-            <button class="main-btn" onclick="spin()">▶ 执 行 抽 取</button>
-            <button class="side-btn">+</button>
+    <!-- 转盘面板 -->
+    <div class="wheel-section">
+        <div class="pointer"></div>
+        <div id="plate" class="wheel-plate">
+            <!-- 按照原图顺序排列图标 -->
+            <div class="icon-item" style="transform: rotate(0deg)">🦢</div>
+            <div class="icon-item" style="transform: rotate(45deg)">🐺</div>
+            <div class="icon-item" style="transform: rotate(90deg)">🐯</div>
+            <div class="icon-item" style="transform: rotate(135deg)">🐢</div>
+            <div class="icon-item" style="transform: rotate(180deg)">🦌</div>
+            <div class="icon-item" style="transform: rotate(225deg)">🐲</div>
+            <div class="icon-item" style="transform: rotate(270deg)">🔥</div>
+            <div class="icon-item" style="transform: rotate(315deg)">🦅</div>
         </div>
     </div>
 
-    <script>
-        let deg = 0;
-        function spin() {
-            const wheel = document.getElementById('wheel');
-            deg += 1800 + Math.random() * 360; // 每次至少转5圈
-            wheel.style.transform = `rotate(${deg}deg)`;
-        }
-    </script>
+    <!-- 控制按钮 -->
+    <div class="controls">
+        <button class="side-btn" onclick="changeBet(-0.5)">−</button>
+        <button class="main-btn" onclick="runWheel()">
+            <span class="play-triangle">▶</span>执行抽取
+        </button>
+        <button class="side-btn" onclick="changeBet(0.5)">+</button>
+    </div>
+</div>
+
+<script>
+    let rotation = 0;
+    let betValue = 5.5;
+
+    // 旋转逻辑
+    function runWheel() {
+        const plate = document.getElementById('plate');
+        // 增加随机旋转圈数和角度，保证每次停在不同位置
+        const spinDeg = Math.floor(Math.random() * 360) + 2160; // 至少转6圈
+        rotation += spinDeg;
+        plate.style.transform = `rotate(${rotation}deg)`;
+    }
+
+    // 加减额度逻辑
+    function changeBet(val) {
+        betValue = Math.max(0, betValue + val);
+        document.getElementById('displayBet').innerText = betValue.toFixed(1);
+    }
+</script>
+
 </body>
 </html>
