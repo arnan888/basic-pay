@@ -5,75 +5,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DOLA · 旗舰量化终端</title>
     <style>
-        /* 1. 还原 27444 的深墨绿雷达格纹背景 */
-        body { 
-            background: #0d120f; color: #fff; font-family: sans-serif; margin: 0; 
-            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
-            background-image: linear-gradient(rgba(45, 62, 52, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(45, 62, 52, 0.3) 1px, transparent 1px);
-            background-size: 25px 25px;
-        }
+        /* 1. 还原 27444 的墨绿拉丝网格背景 */
+        body { background: #0d120f; color: #fff; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background-image: linear-gradient(rgba(45, 62, 52, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(45, 62, 52, 0.3) 1px, transparent 1px); background-size: 25px 25px; }
+        
+        /* 内陷式面板 */
+        .panel { background: #1a231e; margin: 10px 15px; padding: 25px; border-radius: 25px; border: 1px solid #2d3e34; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); text-align: center; }
+        .bal-val { font-size: 60px; color: #ff5a5a; font-weight: bold; }
 
-        /* 2. 顶级内陷式卡片设计 */
-        .header-panel { 
-            background: #1a231e; margin: 10px 15px; padding: 25px; border-radius: 25px; 
-            border: 1px solid #2d3e34; box-shadow: inset 0 0 25px rgba(0,0,0,0.9); text-align: center;
-        }
-        .balance-num { font-size: 60px; color: #ff5a5a; font-weight: bold; letter-spacing: -2px; }
-
-        /* 3. 核心雷达转盘：8神兽图标精准归位 */
-        .wheel-wrap { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
-        #wheel { 
-            width: 310px; height: 310px; border-radius: 50%; border: 12px solid #233129;
-            background: #1a231e;
-            background-image: radial-gradient(#2d3e34 1px, transparent 1px), linear-gradient(#2d3e34 1px, transparent 1px), linear-gradient(90deg, #2d3e34 1px, transparent 1px);
-            background-size: 100% 100%, 20px 20px, 20px 20px;
-            position: relative; box-shadow: 0 0 50px rgba(0,0,0,1);
-        }
-        /* 中心“准备”标识 */
+        /* 转盘 */
+        .wheel-box { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
+        #wheel { width: 310px; height: 310px; border-radius: 50%; border: 12px solid #233129; background: #1a231e; background-image: radial-gradient(#2d3e34 1px, transparent 1px), linear-gradient(#2d3e34 1px, transparent 1px), linear-gradient(90deg, #2d3e34 1px, transparent 1px); background-size: 100% 100%, 20px 20px, 20px 20px; position: relative; transition: transform 4s cubic-bezier(0.1, 0.9, 0.3, 1); box-shadow: 0 0 50px rgba(0,0,0,1); }
         #wheel::after { content: "准备"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; background: #1a231e; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff5a5a; font-weight: bold; font-size: 20px; border: 4px solid #233129; z-index: 5; }
         
-        .animal-item { position: absolute; width: 100%; height: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; padding-top: 25px; box-sizing: border-box; }
-        .animal-icon { font-size: 26px; margin-bottom: 2px; }
-        .animal-text { font-size: 10px; color: #8aa095; font-weight: bold; }
+        .node { position: absolute; width: 100%; height: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; padding-top: 25px; box-sizing: border-box; }
+        .node span { font-size: 10px; color: #8aa095; font-weight: bold; }
 
-        /* 4. 底部红色操作区：1:1 还原按钮质感 */
+        /* 红色操作面板 */
         .action-area { background: #3d0e0e; padding: 25px; border-radius: 35px 35px 0 0; border-top: 2px solid #631b1b; }
         .btn-flex { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 15px; }
-        .side-ctrl { width: 55px; height: 55px; background: #261111; border-radius: 15px; color: #ff5a5a; font-size: 30px; display: flex; align-items: center; justify-content: center; border: 1px solid #631b1b; }
-        .play-btn { background: #cc2929; color: #fff; padding: 18px 75px; border-radius: 40px; font-size: 24px; font-weight: bold; border: none; box-shadow: 0 6px 0 #801a1a; }
         
-        /* 导航栏 */
-        .bottom-nav { display: flex; justify-content: space-around; padding: 12px 0; background: #000; font-size: 11px; color: #8aa095; border-top: 1px solid #222; }
+        /* 💡 修复：确保按键有点击质感 (图 27444) */
+        .ctrl-btn { width: 55px; height: 55px; background: #261111; border-radius: 15px; color: #ff5a5a; font-size: 30px; display: flex; align-items: center; justify-content: center; border: 1px solid #631b1b; cursor: pointer; user-select: none; }
+        .ctrl-btn:active { background: #4a1414; }
+
+        /* 💡 修复：确保主按钮可以点 (图 27444) */
+        .play-btn { background: #cc2929; color: #fff; padding: 18px 75px; border-radius: 40px; font-size: 24px; font-weight: bold; border: none; box-shadow: 0 6px 0 #801a1a; cursor: pointer; user-select: none; }
+        .play-btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #801a1a; }
+        
+        .nav { display: flex; justify-content: space-around; padding: 12px 0; background: #000; font-size: 11px; color: #8aa095; border-top: 1px solid #222; }
     </style>
 </head>
 <body>
 
     <div style="text-align:center; padding:10px; color:#f1c40f; font-size:12px; font-weight:bold;">⚡ 量化终端 · 公平游戏 ⚡</div>
 
-    <div class="header-panel">
+    <div class="panel">
         <div style="color:#8aa095; font-size:13px;">💰 可用余额 (USDT)</div>
-        <div class="balance-num">1000.00</div> <div style="color:#f1c40f; font-size:14px; margin-top:5px;">🔥 单注额度: 10.0</div>
+        <div class="bal-val" id="balance">1000.00</div> <div style="color:#f1c40f; font-size:14px; margin-top:5px;">🔥 单注额度: <span id="bet">10.0</span></div>
     </div>
 
-    <div class="wheel-wrap">
-        <div style="position:absolute; top:6%; left:50%; transform:translateX(-50%); width:0; height:0; border-left:18px solid transparent; border-right:18px solid transparent; border-top:28px solid #ff0000; z-index:10;"></div>
+    <div class="wheel-box">
+        <div style="position:absolute; top:8%; left:50%; transform:translateX(-50%); width:0; height:0; border-left:18px solid transparent; border-right:18px solid transparent; border-top:28px solid #ff0000; z-index:10;"></div>
         <div id="wheel">
-            <div class="animal-item" style="transform:rotate(0deg)"><span class="animal-icon">🐺</span><span class="animal-text">孤狼</span></div>
-            <div class="animal-item" style="transform:rotate(45deg)"><span class="animal-icon">🦢</span><span class="animal-text">仙鹤</span></div>
-            <div class="animal-item" style="transform:rotate(90deg)"><span class="animal-icon">🐢</span><span class="animal-text">玄武</span></div>
-            <div class="animal-item" style="transform:rotate(135deg)"><span class="animal-icon">🦅</span><span class="animal-text">大鹏</span></div>
-            <div class="animal-item" style="transform:rotate(180deg)"><span class="animal-icon">🐯</span><span class="animal-text">猛虎</span></div>
-            <div class="animal-item" style="transform:rotate(225deg)"><span class="animal-icon">🦄</span><span class="animal-text">麒麟</span></div>
-            <div class="animal-item" style="transform:rotate(270deg)"><span class="animal-icon">🐲</span><span class="animal-text">神龙</span></div>
-            <div class="animal-item" style="transform:rotate(315deg)"><span class="animal-icon">🔥</span><span class="animal-text">凤凰</span></div>
+            <div class="node" style="transform:rotate(0deg)">🐺<span>孤狼</span></div>
+            <div class="node" style="transform:rotate(45deg)">🦢<span>仙鹤</span></div>
+            <div class="node" style="transform:rotate(90deg)">🐢<span>玄武</span></div>
+            <div class="node" style="transform:rotate(135deg)">🦅<span>大鹏</span></div>
+            <div class="node" style="transform:rotate(180deg)">🐯<span>猛虎</span></div>
+            <div class="node" style="transform:rotate(225deg)">🦄<span>麒麟</span></div>
+            <div class="node" style="transform:rotate(270deg)">🐲<span>神龙</span></div>
+            <div class="node" style="transform:rotate(315deg)">🔥<span>凤凰</span></div>
         </div>
     </div>
 
     <div class="action-area">
         <div class="btn-flex">
-            <div class="side-ctrl">−</div>
-            <button class="play-btn">▶ 执行抽取</button>
-            <div class="side-ctrl">+</div>
+            <div class="ctrl-btn" onclick="changeBet(-1)">−</div>
+            <button class="play-btn" onclick="startSpin()">▶ 执行抽取</button>
+            <div class="ctrl-btn" onclick="changeBet(1)">+</div>
         </div>
         <div style="display:flex; justify-content:space-around; color:#8aa095; font-size:12px;">
             <span>🤖 自动模式：关</span>
@@ -81,9 +70,42 @@
         </div>
     </div>
 
-    <div class="bottom-nav">
+    <div class="nav">
         <span>📈 行情</span><span>💹 资产中心</span><span>📜 历史记录</span><span style="color:#fff">🎚️ 量化终端</span>
     </div>
 
+    <script>
+        // 初始化数据
+        let balance = 1000.00;
+        let bet = 10.0;
+        let isSpinning = false;
+
+        // 1. 修复：激活单注额度微调功能
+        function changeBet(val) {
+            // 确保不低于 1.0 注额
+            bet = Math.max(1, bet + val);
+            document.getElementById('bet').innerText = bet.toFixed(1);
+        }
+
+        // 2. 修复：激活转盘旋转逻辑
+        function startSpin() {
+            if(isSpinning) return;
+            if(balance < bet) { alert("余额不足！"); return; }
+            
+            isSpinning = true;
+            // 扣除金额
+            balance -= bet;
+            document.getElementById('balance').innerText = balance.toFixed(2);
+            
+            // 随机旋转
+            const randomDeg = Math.floor(Math.random() * 360) + 1440; // 旋转至少4圈
+            document.getElementById('wheel').style.transform = `rotate(${randomDeg}deg)`;
+            
+            setTimeout(() => {
+                isSpinning = false;
+                alert("量化完成，等待结果同步...");
+            }, 4000); // 旋转时长与 transition 一致
+        }
+    </script>
 </body>
 </html>
