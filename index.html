@@ -1,262 +1,69 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>量化终端 · 暗铸美容版</title>
-<style>
-    :root {
-        --neon: #00ff9d;
-        --gold: #ffcc00;
-        --danger: #ff4141;
-        --bg: #020804;
-        --glass: rgba(10, 25, 15, 0.7);
-    }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    body { 
-        background: var(--bg); color: #fff; font-family: 'PingFang SC', sans-serif; 
-        height: 100vh; display: flex; flex-direction: column; overflow: hidden;
-    }
-
-    /* 背景流光动画 */
-    body::before {
-        content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-        background: radial-gradient(circle at center, #0a2f1a 0%, transparent 70%);
-        animation: rotateBg 20s linear infinite; z-index: -1;
-    }
-    @keyframes rotateBg { 100% { transform: rotate(360deg); } }
-
-    /* 顶部导航 - 美容细节：磨砂玻璃 */
-    .nav-bar {
-        padding: 15px; background: var(--glass); backdrop-filter: blur(15px);
-        border-bottom: 1px solid rgba(0, 255, 157, 0.2); display: flex; justify-content: space-between; align-items: center;
-    }
-    .logo { font-size: 14px; font-weight: 900; letter-spacing: 2px; color: var(--neon); text-shadow: 0 0 10px var(--neon); }
-
-    /* 资产面板 - 美容细节：悬浮卡片 */
-    .asset-card {
-        margin: 15px; padding: 25px; background: linear-gradient(135deg, rgba(20,40,30,0.8), rgba(5,15,10,0.9));
-        border-radius: 24px; border: 1px solid rgba(255,255,255,0.1);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.4); text-align: center;
-    }
-    .asset-label { font-size: 12px; color: #889988; margin-bottom: 10px; letter-spacing: 1px; }
-    .asset-value { font-size: 44px; font-weight: 900; font-family: 'Courier New', monospace; background: linear-gradient(to bottom, #fff, var(--neon)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-
-    /* 充值按钮 - 美容细节：呼吸光效 */
-    .dep-btn {
-        margin-top: 15px; padding: 8px 24px; background: transparent; border: 1px solid var(--neon);
-        color: var(--neon); border-radius: 50px; font-size: 12px; font-weight: bold;
-        box-shadow: 0 0 15px rgba(0,255,157,0.2); animation: breath 2s infinite;
-    }
-    @keyframes breath { 0%, 100% { box-shadow: 0 0 5px var(--neon); } 50% { box-shadow: 0 0 20px var(--neon); } }
-
-    /* 转盘容器 */
-    .wheel-section { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
-    .wheel-main {
-        width: 320px; height: 320px; border-radius: 50%; border: 12px solid #111;
-        position: relative; transform: translateZ(0); 
-        box-shadow: 0 0 0 4px var(--neon), 0 30px 60px rgba(0,0,0,0.8);
-        transition: transform 6s cubic-bezier(0.1, 0, 0.1, 1);
-    }
-    /* 指针美容：宝石质感 */
-    .pointer {
-        position: absolute; top: -15px; left: 50%; transform: translateX(-50%); width: 30px; height: 40px;
-        background: var(--danger); clip-path: polygon(50% 100%, 0 0, 100% 0); z-index: 100;
-        filter: drop-shadow(0 0 15px var(--danger));
-    }
-
-    /* 操控台 - 美容细节：底部内凹设计 */
-    .console {
-        background: var(--glass); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.1);
-        padding: 20px 20px 40px; border-radius: 30px 30px 0 0;
-    }
-    .bet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .bet-num { font-size: 28px; font-weight: 900; color: var(--danger); font-family: monospace; }
-
-    .btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
-    .btn-m {
-        height: 50px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 12px; color: #ccc; display: flex; align-items: center; justify-content: center;
-        font-weight: bold; font-size: 14px; transition: 0.2s;
-    }
-    .btn-m:active { background: var(--neon); color: #000; transform: scale(0.9); }
-    .btn-x2 { border-color: var(--gold); color: var(--gold); }
-
-    .start-btn {
-        width: 100%; height: 64px; background: var(--neon); color: #000; border: none;
-        border-radius: 16px; font-size: 20px; font-weight: 900; letter-spacing: 5px;
-        box-shadow: 0 10px 20px rgba(0,255,157,0.3);
-    }
-
-    /* 充值弹窗 - 美容细节：弹出式毛玻璃 */
-    .modal {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-        background: rgba(0,0,0,0.8); z-index: 1000; display: none; align-items: center; justify-content: center;
-    }
-    .modal-content {
-        width: 85%; background: #111; border: 1px solid var(--neon); padding: 30px; border-radius: 20px;
-        text-align: center;
-    }
-    .addr-box { background: #000; padding: 15px; border-radius: 10px; margin: 20px 0; word-break: break-all; font-size: 12px; color: var(--neon); border: 1px dashed var(--neon); }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Terminal</title>
+    <link rel="stylesheet" href="index.css">
 </head>
 <body>
+    <div class="app-container">
+        <!-- 顶部状态 -->
+        <div class="header">
+            <span class="brand">QUANTUM • TERMINAL</span>
+            <span class="status"><i class="dot"></i> API ONLINE</span>
+        </div>
 
-<div class="nav-bar">
-    <div class="logo">QUANTUM • TERMINAL</div>
-    <div style="font-size: 10px; color: var(--neon)">● API ONLINE</div>
-</div>
+        <!-- 余额卡片 -->
+        <div class="balance-card">
+            <div class="label">ESTIMATED BALANCE (USDT)</div>
+            <div class="amount">1,250.45</div>
+            <button class="deposit-btn">+ QUICK DEPOSIT 立即充值</button>
+        </div>
 
-<div class="asset-card">
-    <div class="asset-label">ESTIMATED BALANCE (USDT)</div>
-    <div class="asset-value" id="ui-bal">1,250.00</div>
-    <button class="dep-btn" onclick="showModal()">+ QUICK DEPOSIT 立即充值</button>
-</div>
+        <!-- 转盘区域 -->
+        <div class="wheel-section">
+            <div class="pointer"></div>
+            <div class="wheel-outer">
+                <div class="wheel-inner" id="wheel">
+                    <div class="item" style="--i:1;">💎</div>
+                    <div class="item" style="--i:2;">💩</div>
+                    <div class="item" style="--i:3;">🔥</div>
+                    <div class="item" style="--i:4;">💰</div>
+                    <div class="item" style="--i:5;">💩</div>
+                    <div class="item" style="--i:6;">⚡</div>
+                    <div class="item" style="--i:7;">💩</div>
+                    <div class="item" style="--i:8;">💩</div>
+                </div>
+            </div>
+        </div>
 
-<div class="wheel-section">
-    <div class="pointer"></div>
-    <div class="wheel-main" id="wheel">
-        <!-- 扇区由JS生成 -->
+        <!-- 交易面板 -->
+        <div class="trade-panel">
+            <div class="panel-header">
+                <span>TRANSACTION AMOUNT</span>
+                <span class="total">1250.45</span>
+            </div>
+            <div class="grid">
+                <button class="grid-btn">+10</button>
+                <button class="grid-btn">+100</button>
+                <button class="grid-btn">+500</button>
+                <button class="grid-btn highlight">×2</button>
+                <button class="grid-btn">+1k</button>
+                <button class="grid-btn">1/2</button>
+                <button class="grid-btn">MAX</button>
+                <button class="grid-btn dim">RST</button>
+            </div>
+        </div>
     </div>
-</div>
 
-<div class="console">
-    <div class="bet-header">
-        <span style="font-size: 12px; color: #666;">TRANSACTION AMOUNT</span>
-        <span class="bet-num" id="ui-bet">100.00</span>
-    </div>
-    
-    <div class="btn-grid">
-        <div class="btn-m" onclick="addBet(10)">+10</div>
-        <div class="btn-m" onclick="addBet(100)">+100</div>
-        <div class="btn-m" onclick="addBet(500)">+500</div>
-        <div class="btn-m btn-x2" onclick="multBet(2)">×2</div>
-        <div class="btn-m" onclick="addBet(1000)">+1k</div>
-        <div class="btn-m" onclick="multBet(0.5)">1/2</div>
-        <div class="btn-m" onclick="maxBet()">MAX</div>
-        <div class="btn-m" style="color:#666" onclick="resetBet()">RST</div>
-    </div>
-
-    <button class="start-btn" onclick="startSpin()">START QUANTUM EXECUTION</button>
-</div>
-
-<!-- 充值弹窗 -->
-<div class="modal" id="dep-modal" onclick="closeModal()">
-    <div class="modal-content" onclick="event.stopPropagation()">
-        <h3 style="color: var(--neon)">RECHARGE ASSETS</h3>
-        <p style="font-size: 12px; color: #888; margin-top: 10px;">Network: TRC-20 (USDT)</p>
-        <div class="addr-box" id="addr">TXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</div>
-        <button class="dep-btn" onclick="copyAddr()">COPY ADDRESS 复制地址</button>
-    </div>
-</div>
-
-<script>
-    let bal = 1250.45, bet = 100.0, rot = 0, isBusy = false;
-
-    // 扇区数据
-    const config = [
-        { i: "💎", m: 50, c: "#1a1a1a" }, { i: "💩", m: 0, c: "#0a0a0a" },
-        { i: "🔥", m: 10, c: "#1a1a1a" }, { i: "💩", m: 0, c: "#0a0a0a" },
-        { i: "💰", m: 5, c: "#1a1a1a" }, { i: "💩", m: 0, c: "#0a0a0a" },
-        { i: "⚡", m: 2, c: "#1a1a1a" }, { i: "💩", m: 0, c: "#0a0a0a" }
-    ];
-
-    function init() {
-        const w = document.getElementById('wheel');
-        config.forEach((s, i) => {
-            const div = document.createElement('div');
-            div.style.position = "absolute";
-            div.style.width = "100%"; div.style.height = "100%";
-            div.style.transform = `rotate(${i * 45}deg)`;
-            div.style.display = "flex"; div.style.justifyContent = "center"; div.style.paddingTop = "30px";
-            div.innerHTML = `<span style="font-size:30px; filter:drop-shadow(0 0 10px rgba(255,255,255,0.3))">${s.i}</span>`;
-            w.appendChild(div);
-        });
-        updateUI();
-    }
-
-    function updateUI() {
-        document.getElementById('ui-bal').innerText = bal.toLocaleString('en-US', {minimumFractionDigits: 2});
-        document.getElementById('ui-bet').innerText = bet.toFixed(2);
-    }
-
-    // 交互逻辑
-    function addBet(v) { if(!isBusy) { bet += v; if(bet>bal) bet=bal; updateUI(); } }
-    function multBet(m) { if(!isBusy) { bet *= m; if(bet>bal) bet=bal; if(bet<10) bet=10; updateUI(); } }
-    function maxBet() { if(!isBusy) { bet = bal; updateUI(); } }
-    function resetBet() { if(!isBusy) { bet = 100; updateUI(); } }
-
-    function showModal() { document.getElementById('dep-modal').style.display = 'flex'; }
-    function closeModal() { document.getElementById('dep-modal').style.display = 'none'; }
-    function copyAddr() { alert("地址已复制到剪贴板！"); }
-
-    function startSpin() {
-        if(isBusy || bal < bet) return;
-        isBusy = true;
-        
-        const target = Math.floor(Math.random() * 8);
-        const rounds = 10 + Math.floor(Math.random() * 5);
-        rot += (rounds * 360) + (360 - target * 45) - (rot % 360);
-        
-        document.getElementById('wheel').style.transform = `rotate(${rot}deg)`;
-
-        setTimeout(() => {
-            const win = config[target].m * bet;
-            bal = bal - bet + win;
-            updateUI();
-            isBusy = false;
-            if(win > 0) alert(`交易成功！获取 ${config[target].m}X 回报`);
-        }, 6000);
-    }
-
-    init();
-</script>
+    <script>
+        // 点击余额模拟转动
+        document.querySelector('.balance-card').onclick = function() {
+            const wheel = document.getElementById('wheel');
+            let randomDeg = Math.floor(Math.random() * 360) + 1440; // 至少转4圈
+            wheel.style.transform = `rotate(${randomDeg}deg)`;
+        };
+    </script>
 </body>
 </html>
-<!-- 你之前的旧代码保持不变 -->
-<h1>我的第一个网页</h1>
-<p>这是我之前的练习内容...</p>
-
-<!-- --- 下面是新加的游戏部分 --- -->
-<hr> <!-- 画一条横线区分一下 -->
-<div class="game-container">
-    <h2>猜数字小游戏</h2>
-    <p>我已经想好了一个 1 到 100 之间的数字。</p>
-    <div class="input-section">
-        <input type="number" id="guessInput" placeholder="输入数字...">
-        <button onclick="checkGuess()">提交猜想</button>
-    </div>
-    <p id="message"></p>
-    <button id="resetBtn" onclick="resetGame()" style="display:none;">重新开始</button>
-</div>
-
-<!-- 游戏逻辑脚本也放后面 -->
-<script>
-    let randomNumber = Math.floor(Math.random() * 100) + 1;
-    let attempts = 0;
-    function checkGuess() {
-        const guess = document.getElementById('guessInput').value;
-        const message = document.getElementById('message');
-        const resetBtn = document.getElementById('resetBtn');
-        attempts++;
-        if (guess == randomNumber) {
-            message.innerHTML = `🎉 猜对了！数字是 ${randomNumber}。用了 ${attempts} 次。`;
-            resetBtn.style.display = "inline-block";
-        } else if (guess > randomNumber) {
-            message.textContent = "太大了！";
-        } else {
-            message.textContent = "太小了！";
-        }
-    }
-    function resetGame() {
-        randomNumber = Math.floor(Math.random() * 100) + 1;
-        attempts = 0;
-        document.getElementById('message').textContent = "";
-        document.getElementById('guessInput').value = "";
-        document.getElementById('resetBtn').style.display = "none";
-    }
-</script>
-<!-- --- 游戏部分结束 --- -->
-
-</body> <!-- 确保代码在 body 结束标签之前 -->
