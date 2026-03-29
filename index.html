@@ -4,104 +4,88 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DOLA 旗舰量化终端</title>
-    
-    <script>
-        /* ========================================================
-           🎮 庄家控制台：以后想改游戏，只改下面这几个参数！
-           ======================================================== */
-        
-        const INITIAL_BALANCE = "0.00";       // 初始显示余额
-        const SPIN_COST = 10.0;              // 每次抽取的费用
-        const WIN_RATE = 0.08;               // 初始中奖率 (0.08 = 8%)
-        const WHEEL_IMG = "https://i.imgur.com/8QdY6U7.png"; // 转盘图片链接
-        const GAME_TITLE = "量化终端 · 公平游戏"; // 顶部小字标题
-        const BTN_TEXT = "开始量化执行";      // 绿色大按钮文字
-        
-        /* ========================================================
-           以下是复杂代码，眼睛累就别看了，它会自动读取上面的设置
-           ======================================================== */
-    </script>
-
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        body { background: #111; color: #fff; font-family: sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
         
-        /* 🔒 翡翠绿激活遮罩 (2.8mm) */
+        /* 🔒 激活遮罩层 */
         #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .login-box { background: #1c221e; padding: 50px 30px; border-radius: 25px; border: 11px solid #00ff88; box-shadow: 0 0 40px rgba(0,255,136,0.6); text-align: center; width: 85%; max-width: 360px; box-sizing: border-box; }
-        #user-id-input { width: 100%; padding: 18px; border: 3px solid #ff3333; border-radius: 12px; background: #fff; color: #000; text-align: center; font-size: 26px; font-weight: bold; margin-bottom: 30px; }
-        .btn-red { width: 100%; padding: 20px; border: none; border-radius: 12px; background: #ff0000; color: #fff; font-weight: bold; font-size: 22px; cursor: pointer; box-shadow: inset 8px 8px 16px #800000, inset -8px -8px 16px #ff4d4d; }
+        .login-box { background: #1c221e; padding: 40px 25px; border-radius: 20px; border: 11px solid #00ff88; box-shadow: 0 0 40px #00ff8888; text-align: center; width: 85%; max-width: 350px; }
+        #id-box { width: 100%; padding: 15px; background: #fff; color: #000; font-size: 28px; font-weight: bold; border-radius: 10px; border: 3px solid #ff3333; margin: 20px 0; box-sizing: border-box; }
+        .btn-go { width: 100%; padding: 18px; background: #ff0000; color: #fff; border: none; border-radius: 10px; font-size: 22px; font-weight: bold; cursor: pointer; box-shadow: inset 5px 5px 10px #800, inset -5px -5px 10px #f33; }
 
-        /* 🎮 豪华游戏界面 (完全复刻你发给我的 27444.jpg) */
-        #game-content { display: none; width: 100%; max-width: 480px; height: 100vh; flex-direction: column; background: #1a251f; }
-        .game-header { text-align: center; padding: 10px; font-size: 12px; color: #f1c40f; letter-spacing: 2px; }
-        .balance-section { background: #233129; margin: 15px; padding: 30px; border-radius: 18px; text-align: center; border: 1px solid #333; box-shadow: inset 0 0 15px #000; }
-        .balance-num { font-size: 50px; color: #ff6b6b; font-weight: bold; }
-        .wheel-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; background: #121915; border-top: 2px solid #333; }
-        .wheel-img-wrap { width: 300px; height: 300px; border-radius: 50%; border: 10px solid #2d3e34; position: relative; overflow: hidden; transition: transform 4s cubic-bezier(0.15, 0.85, 0.35, 1); }
-        .pointer { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid #ff4d4d; z-index: 10; }
-        .control-panel { background: #5a1414; padding: 25px; display: flex; align-items: center; justify-content: center; gap: 15px; }
-        .btn-main { background: #00ff88; color: #000; padding: 20px 50px; border-radius: 40px; font-size: 20px; font-weight: bold; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        /* 🎮 游戏主界面 */
+        #game-page { display: none; width: 100%; height: 100vh; flex-direction: column; background: #1a251f; }
+        .header { background: #233129; padding: 20px; text-align: center; border-bottom: 2px solid #333; }
+        .bal-val { font-size: 45px; color: #ff6b6b; font-weight: bold; margin: 10px 0; }
+        
+        /* 🎡 代码手绘神兽转盘 */
+        .wheel-box { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
+        #wheel { 
+            width: 300px; height: 300px; border-radius: 50%; border: 10px solid #2d3e34;
+            background: conic-gradient(
+                #ff4d4d 0 45deg, #f1c40f 45deg 90deg, #3498db 90deg 135deg, #9b59b6 135deg 180deg,
+                #2ecc71 180deg 225deg, #e67e22 225deg 270deg, #1abc9c 270deg 315deg, #444 315deg 360deg
+            );
+            transition: transform 4s cubic-bezier(0.15, 0.85, 0.35, 1);
+            display: flex; align-items: center; justify-content: center;
+        }
+        #wheel::after { content: '神兽转盘'; font-size: 14px; color: white; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 10px; }
+        .arrow { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 30px solid #fff; z-index: 10; }
+
+        .footer { background: #5a1414; padding: 25px; text-align: center; }
+        .btn-spin { background: #ff3333; color: white; padding: 15px 50px; border-radius: 30px; font-size: 20px; font-weight: bold; border: none; box-shadow: 0 4px 10px #000; }
     </style>
 </head>
 <body>
 
     <div id="login-overlay">
         <div class="login-box">
-            <h2>终端激活</h2>
-            <input type="text" id="user-id-input" readonly>
-            <button class="btn-red" onclick="confirmEntry()">确认进入</button>
-            <p style="color:#00ff88; font-weight:bold; margin-top:20px;">● 分配唯一激活序列</p>
+            <h2 style="margin:0;">终端激活</h2>
+            <div id="id-box">加载中...</div>
+            <button class="btn-go" onclick="start()">确认进入</button>
+            <p style="color:#00ff88; font-size:13px; margin-top:15px;">● 系统已自动分配激活序列号</p>
         </div>
     </div>
 
-    <div id="game-content">
-        <div class="game-header" id="header-text">⚡ 量化终端 · 公平游戏 ⚡</div>
-        <div class="balance-section">
+    <div id="game-page">
+        <div class="header">
             <div style="color:#888; font-size:14px;">💰 可用余额 (USDT)</div>
-            <div class="balance-num" id="bal-display">0.00</div>
-            <div style="color:#f1c40f; font-size:13px; margin-top:10px;">🔥 单注额度: <span id="cost-display">10.0</span></div>
+            <div class="bal-val">1000.00</div>
+            <div style="color:#f1c40f; font-size:12px;">🔥 单注额度: 10.0</div>
         </div>
-
-        <div class="wheel-container">
-            <div class="pointer"></div>
-            <div class="wheel-img-wrap" id="wheel-wrap">
-                <img id="wheel-img-src" src="" style="width:100%; height:100%;">
-            </div>
+        <div class="wheel-box">
+            <div class="arrow"></div>
+            <div id="wheel"></div>
         </div>
-
-        <div class="control-panel">
-            <button class="btn-main" id="main-btn" onclick="playGame()">开始量化执行</button>
+        <div class="footer">
+            <button class="btn-spin" onclick="spinNow()">执行抽取</button>
         </div>
     </div>
 
     <script>
-        // 初始化读取控制台参数
-        window.onload = function() {
-            document.getElementById('header-text').innerText = "⚡ " + GAME_TITLE + " ⚡";
-            document.getElementById('bal-display').innerText = INITIAL_BALANCE;
-            document.getElementById('cost-display').innerText = SPIN_COST.toFixed(1);
-            document.getElementById('wheel-img-src').src = WHEEL_IMG;
-            document.getElementById('main-btn').innerText = BTN_TEXT;
+        // 1. 初始化 ID
+        const randomId = Math.floor(100000 + Math.random() * 900000);
+        document.getElementById('id-box').innerText = randomId;
 
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('user_id')) {
-                document.getElementById('login-overlay').style.display = 'none';
-                document.getElementById('game-content').style.display = 'flex';
-            } else {
-                document.getElementById('user-id-input').value = Math.floor(100000 + Math.random() * 900000);
-            }
-        };
-
-        function confirmEntry() {
-            const id = document.getElementById('user-id-input').value;
-            window.location.href = window.location.origin + window.location.pathname + "?user_id=" + id;
+        // 2. 检查 URL 跳转状态
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('user_id')) {
+            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('game-page').style.display = 'flex';
         }
 
-        function playGame() {
-            const wrap = document.getElementById('wheel-wrap');
-            wrap.style.transform = `rotate(${Math.floor(3000 + Math.random() * 2000)}deg)`;
-            // 这里可以加更多扣费逻辑，现在只是演示转动
+        // 3. 确认进入
+        function start() {
+            const currentUrl = window.location.origin + window.location.pathname;
+            window.location.href = currentUrl + "?user_id=" + randomId;
+        }
+
+        // 4. 转盘逻辑
+        function spinNow() {
+            const w = document.getElementById('wheel');
+            const target = Math.floor(3000 + Math.random() * 2000);
+            w.style.transform = `rotate(${target}deg)`;
         }
     </script>
 </body>
-</html> 
+</html>
