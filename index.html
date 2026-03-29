@@ -3,57 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DOLA · 旗舰量化终端</title>
+    <title>AI量化终端</title>
     <style>
-        /* 1. 严格还原 27444 墨绿拉丝背景 */
-        body { background: #0d120f; color: #fff; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background-image: linear-gradient(rgba(45, 62, 52, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(45, 62, 52, 0.3) 1px, transparent 1px); background-size: 25px 25px; }
-        /* 2. 带有内陷阴影的高级面板 */
-        .panel { background: #1a231e; margin: 10px 15px; padding: 25px; border-radius: 25px; border: 1px solid #2d3e34; box-shadow: inset 0 0 25px rgba(0,0,0,0.9); text-align: center; }
-        .bal-val { font-size: 60px; color: #ff5a5a; font-weight: bold; }
-        /* 3. 雷达转盘 8神兽还原 */
-        .wheel-box { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
-        #wheel { width: 320px; height: 320px; border-radius: 50%; border: 15px solid #233129; background: #1a231e; background-image: radial-gradient(#2d3e34 1px, transparent 1px), linear-gradient(#2d3e34 1px, transparent 1px), linear-gradient(90deg, #2d3e34 1px, transparent 1px); background-size: 100% 100%, 20px 20px, 20px 20px; position: relative; transition: transform 4s cubic-bezier(0.1, 0.9, 0.3, 1); }
-        #wheel::after { content: "准备"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 85px; height: 85px; background: #1a231e; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff5a5a; font-weight: bold; font-size: 22px; border: 5px solid #233129; }
-        .node { position: absolute; width: 100%; height: 100%; text-align: center; display: flex; flex-direction: column; align-items: center; padding-top: 30px; box-sizing: border-box; }
-        /* 4. 修复红色面板按键逻辑 */
-        .footer { background: #3d0e0e; padding: 25px; border-radius: 35px 35px 0 0; border-top: 2px solid #631b1b; }
-        .btn-row { display: flex; align-items: center; justify-content: center; gap: 20px; }
-        .side-btn { width: 60px; height: 60px; background: #261111; border-radius: 18px; color: #ff5a5a; font-size: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid #631b1b; cursor: pointer; }
-        .main-btn { background: #cc2929; color: #fff; padding: 20px 80px; border-radius: 45px; font-size: 26px; font-weight: bold; border: none; box-shadow: 0 7px 0 #801a1a; cursor: pointer; }
-        .main-btn:active { transform: translateY(4px); box-shadow: 0 3px 0 #801a1a; }
+        :root {
+            --bg-dark: #0a110d;
+            --panel-bg: #141c18;
+            --accent-red: #ff4d4d;
+            --accent-green: #2d5a44;
+            --text-gray: #7a8c83;
+        }
+
+        body { 
+            background: var(--bg-dark); color: #fff; font-family: -apple-system, sans-serif; margin: 0; 
+            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+            background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* 顶部余额面板 */
+        .header-panel { 
+            background: var(--panel-bg); margin: 15px; padding: 30px 10px; border-radius: 20px; 
+            border: 1px solid #1d2922; box-shadow: inset 0 0 15px rgba(0,0,0,0.5); text-align: center;
+        }
+        .bal-val { font-size: 72px; color: var(--accent-red); font-weight: 600; line-height: 1; }
+        .bet-info { color: #f1c40f; margin-top: 10px; font-size: 14px; display: flex; justify-content: center; align-items: center; gap: 5px; }
+
+        /* 转盘区域 */
+        .wheel-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        .pointer { width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 20px solid #ff3b30; position: absolute; top: 15px; z-index: 10; }
+        
+        #wheel { 
+            width: 280px; height: 280px; border-radius: 50%; border: 12px solid #1d2922;
+            background: var(--accent-green); position: relative; transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+        
+        /* 轴心 */
+        .wheel-center {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 70px; height: 70px; background: #141c18; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; z-index: 5;
+            color: var(--accent-red); font-size: 24px; font-weight: bold; border: 4px solid #1d2922;
+        }
+
+        /* 奖项节点布局 */
+        .node {
+            position: absolute; width: 100%; height: 100%; text-align: center;
+            display: flex; flex-direction: column; align-items: center; padding-top: 15px; box-sizing: border-box;
+        }
+        .node span { font-size: 10px; color: #fff; margin-top: 2px; writing-mode: vertical-rl; }
+        .node i { font-style: normal; font-size: 24px; }
+
+        /* 底部控制区 */
+        .controls { padding: 20px; }
+        .mode-row { display: flex; justify-content: space-around; margin-bottom: 20px; }
+        .mode-item { background: rgba(255,255,255,0.05); padding: 8px 15px; border-radius: 20px; font-size: 13px; color: #ccc; border: 1px solid rgba(255,255,255,0.1); }
+
+        .action-row { display: flex; align-items: center; justify-content: center; gap: 15px; }
+        .btn-side { width: 70px; height: 50px; background: #1a231e; border-radius: 12px; border: 1px solid #2d3e34; color: #fff; font-size: 24px; cursor: pointer; }
+        .btn-main { flex: 1; height: 70px; background: linear-gradient(to bottom, #d63031, #b02020); border-radius: 35px; border: none; color: #fff; font-size: 22px; font-weight: bold; box-shadow: 0 5px 0 #7e1616; cursor: pointer; }
+        .btn-main:active { transform: translateY(3px); box-shadow: 0 2px 0 #7e1616; }
+
+        /* 底部导航栏模拟 */
+        .nav-bar { display: flex; justify-content: space-around; padding: 15px 0; background: #050806; border-top: 1px solid #1d2922; }
+        .nav-item { text-align: center; color: var(--text-gray); font-size: 11px; }
+        .nav-item.active { color: var(--accent-red); }
     </style>
 </head>
 <body>
-    <div class="panel">
-        <div style="color:#8aa095;">💰 可用余额 (USDT)</div>
-        <div class="bal-val" id="balance">1000.00</div> <div style="color:#f1c40f; margin-top:8px;">🔥 单注额度: <span id="bet">10.0</span></div>
+    <div class="header-panel">
+        <div class="bal-val" id="balance">146.8</div>
+        <div class="bet-info">🔥 单注额度: <span id="bet">5.5</span></div>
     </div>
-    <div class="wheel-box">
-        <div style="position:absolute; top:8%; left:50%; transform:translateX(-50%); width:0; height:0; border-left:20px solid transparent; border-right:20px solid transparent; border-top:30px solid #ff0000; z-index:10;"></div>
+
+    <div class="wheel-container">
+        <div class="pointer"></div>
         <div id="wheel">
-            <div class="node" style="transform:rotate(0deg)"><span>🐺</span></div><div class="node" style="transform:rotate(45deg)"><span>🦢</span></div>
-            <div class="node" style="transform:rotate(90deg)"><span>🐢</span></div><div class="node" style="transform:rotate(135deg)"><span>🦅</span></div>
-            <div class="node" style="transform:rotate(180deg)"><span>🐯</span></div><div class="node" style="transform:rotate(225deg)"><span>🦄</span></div>
-            <div class="node" style="transform:rotate(270deg)"><span>🐲</span></div><div class="node" style="transform:rotate(315deg)"><span>🔥</span></div>
+            <div class="wheel-center" id="status">X0</div>
+            <div class="node" style="transform: rotate(0deg)"><i>🦢</i><span>仙鹤</span></div>
+            <div class="node" style="transform: rotate(45deg)"><i>🐺</i><span>孤狼</span></div>
+            <div class="node" style="transform: rotate(90deg)"><i>🐯</i><span>猛虎</span></div>
+            <div class="node" style="transform: rotate(135deg)"><i>🐢</i><span>灵龟</span></div>
+            <div class="node" style="transform: rotate(180deg)"><i>🦌</i><span>麒麟</span></div>
+            <div class="node" style="transform: rotate(225deg)"><i>🐲</i><span>神龙</span></div>
+            <div class="node" style="transform: rotate(270deg)"><i>🔥</i><span>凤凰</span></div>
+            <div class="node" style="transform: rotate(315deg)"><i>🦅</i><span>大鹏</span></div>
         </div>
     </div>
-    <div class="footer">
-        <div class="btn-row">
-            <div class="side-btn" onclick="changeBet(-1)">−</div>
-            <button class="main-btn" onclick="startSpin()">▶ 执行抽取</button>
-            <div class="side-btn" onclick="changeBet(1)">+</div>
+
+    <div class="controls">
+        <div class="mode-row">
+            <div class="mode-item">🤖 自动模式：关</div>
+            <div class="mode-item">⚡ 变速：1X</div>
+        </div>
+        <div class="action-row">
+            <button class="btn-side" onclick="changeBet(-0.5)">−</button>
+            <button class="btn-main" onclick="startSpin()">▶ 执行抽取</button>
+            <button class="btn-side" onclick="changeBet(0.5)">+</button>
         </div>
     </div>
+
+    <div class="nav-bar">
+        <div class="nav-item">📊<br>行情</div>
+        <div class="nav-item">💼<br>资产中心</div>
+        <div class="nav-item">📜<br>历史记录</div>
+        <div class="nav-item active">🎯<br>量化终端</div>
+    </div>
+
     <script>
-        let balance = 1000.00; let bet = 10.0; let isSpinning = false;
-        function changeBet(val) { bet = Math.max(1, bet + val); document.getElementById('bet').innerText = bet.toFixed(1); }
+        let balance = 146.8; 
+        let bet = 5.5; 
+        let isSpinning = false;
+        let currentRotation = 0;
+
+        function changeBet(val) {
+            if(isSpinning) return;
+            bet = Math.max(0.5, parseFloat((bet + val).toFixed(1)));
+            document.getElementById('bet').innerText = bet.toFixed(1);
+        }
+
         function startSpin() {
             if(isSpinning || balance < bet) return;
-            isSpinning = true; balance -= bet;
-            document.getElementById('balance').innerText = balance.toFixed(2);
-            const deg = Math.floor(Math.random() * 360) + 1440;
-            document.getElementById('wheel').style.transform = `rotate(${deg}deg)`;
-            setTimeout(() => { isSpinning = false; alert("量化结果已同步！"); }, 4000);
+            
+            isSpinning = true;
+            balance = parseFloat((balance - bet).toFixed(2));
+            document.getElementById('balance').innerText = balance;
+            document.getElementById('status').innerText = "...";
+
+            // 随机旋转圈数 (至少4圈) + 随机角度
+            const extraDeg = Math.floor(Math.random() * 360);
+            currentRotation += (360 * 5) + extraDeg; 
+            
+            const wheel = document.getElementById('wheel');
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                isSpinning = false;
+                document.getElementById('status').innerText = "X" + (Math.floor(Math.random() * 5) + 1);
+                // 模拟余额增加逻辑
+                let win = bet * (Math.random() > 0.5 ? 2 : 0);
+                balance = parseFloat((balance + win).toFixed(2));
+                document.getElementById('balance').innerText = balance;
+            }, 4000);
         }
     </script>
 </body>
