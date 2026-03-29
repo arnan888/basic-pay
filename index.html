@@ -3,126 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>量化终端 · 暗铸转盘</title>
+    <title>量化终端 · 暗铸模式</title>
     <style>
-        :root { --mg-border: #14281d; --panel: #232d36; --red: #c93434; --gold: #f0a04b; --bg: #071a10; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: "PingFang SC", sans-serif; }
-        body { background: var(--bg); color: white; margin: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
+        :root { --mg: #14281d; --pn: #232d36; --rd: #c93434; --gd: #f0a04b; --bg: #071a10; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; }
         
-        /* 1:1 还原外框 */
-        .app { width: 100%; max-width: 414px; display: flex; flex-direction: column; padding: 12px; gap: 12px; }
-        .frame-outer { background: var(--panel); border-radius: 35px; padding: 10px; border: 3px solid var(--mg-border); box-shadow: 0 15px 35px rgba(0,0,0,0.8); }
-        .frame-inner { background: #232d36; border-radius: 28px; padding: 20px; text-align: center; box-shadow: inset 4px 6px 15px rgba(0,0,0,0.6); background-image: linear-gradient(rgba(255,255,255,0.03) 1.5px, transparent 1.5px), linear-gradient(90deg, rgba(255,255,255,0.03) 1.5px, transparent 1.5px); background-size: 20px 20px; }
+        .app-shell { flex: 1; display: flex; flex-direction: column; padding: 12px; gap: 10px; overflow-y: auto; padding-bottom: 80px; }
 
-        /* 余额区 */
-        .bal-val { color: #ff5252; font-size: 68px; font-weight: bold; margin: 5px 0; letter-spacing: -3px; }
-        .bet-info { font-size: 14px; color: #8a969e; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        /* 顶部余额 - 像素级还原阴影 */
+        .box-frame { background: var(--pn); border-radius: 30px; padding: 8px; border: 2px solid var(--mg); box-shadow: 0 10px 20px #000; }
+        .box-inner { background: #232d36; border-radius: 24px; padding: 18px; text-align: center; box-shadow: inset 4px 6px 12px #000; background-image: radial-gradient(rgba(255,255,255,0.03) 1.5px, transparent 1.5px); background-size: 20px 20px; }
+        .val { color: #ff5252; font-size: 60px; font-weight: bold; margin: 5px 0; letter-spacing: -2px; }
 
         /* 转盘区 */
-        .wheel-panel { position: relative; display: flex; justify-content: center; padding: 35px 0; }
-        .pointer { position: absolute; top: 15px; z-index: 100; width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 30px solid #ff3b30; filter: drop-shadow(0 4px 6px #000); }
-        .plate { width: 270px; height: 270px; border-radius: 50%; background: #2d7053; border: 12px solid #141a1f; outline: 3px solid var(--mg-border); position: relative; box-shadow: 0 15px 45px #000; transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1); }
-        .center-x0 { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 85px; height: 85px; background: #141a1f; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff5252; font-weight: bold; font-size: 28px; border: 4px solid var(--mg-border); box-shadow: inset 0 0 15px #000; z-index: 10; }
-        
+        .wheel-panel { background: var(--pn); border-radius: 35px; border: 2px solid var(--mg); padding: 30px 0; position: relative; box-shadow: inset 0 0 20px #000; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px; }
+        .pointer { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 50; width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 30px solid #ff3b30; }
+        .plate { width: 260px; height: 260px; border-radius: 50%; background: #2d7053; border: 12px solid #141a1f; outline: 3px solid var(--mg); position: relative; margin: 0 auto; transition: transform 5s cubic-bezier(0.1, 0, 0.1, 1); }
+        .x0 { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 85px; height: 85px; background: #141a1f; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff5252; font-weight: bold; font-size: 28px; border: 3px solid var(--mg); z-index: 10; }
         .item { position: absolute; width: 100%; height: 100%; text-align: center; transform-origin: 50% 50%; padding-top: 15px; }
-        .item span { font-size: 32px; display: block; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5)); }
-        .item label { display: block; font-size: 11px; color: #fff; margin-top: -3px; font-weight: bold; text-shadow: 1px 1px 2px #000; }
+        .item label { display: block; font-size: 10px; color: #fff; margin-top: -2px; }
 
-        /* 控制按钮 */
-        .ctrl-btns { display: flex; gap: 15px; align-items: center; }
-        .side-btn { width: 75px; height: 75px; background: var(--panel); border: 2px solid var(--mg-border); border-radius: 22px; color: var(--gold); font-size: 40px; box-shadow: 5px 8px 15px #000; cursor: pointer; }
-        .side-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #000; }
-        .draw-btn { flex: 1; background: linear-gradient(180deg, #d33838, #8a1a1a); border: none; border-radius: 50px; height: 75px; color: white; font-size: 26px; font-weight: bold; box-shadow: 0 8px 0 #5e1111, 0 15px 25px rgba(0,0,0,0.5); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .draw-btn:active { transform: translateY(5px); box-shadow: 0 2px 0 #5e1111; }
+        /* 按键区 */
+        .row { display: flex; gap: 12px; }
+        .side { width: 70px; height: 70px; background: var(--pn); border: 2px solid var(--mg); border-radius: 20px; color: var(--gd); font-size: 35px; box-shadow: 4px 6px 10px #000; cursor: pointer; }
+        .draw { flex: 1; background: linear-gradient(180deg, #d33838, #8a1a1a); border: none; border-radius: 50px; height: 70px; color: white; font-size: 24px; font-weight: bold; box-shadow: 0 7px 0 #5e1111; cursor: pointer; }
+        .opt { flex: 1; height: 50px; background: #232d36; border: 2px solid var(--mg); border-radius: 20px; color: #fff; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: inset 2px 2px 4px #000; }
 
-        /* 功能切换 */
-        .opt-bar { display: flex; gap: 10px; }
-        .opt-btn { flex: 1; height: 55px; background: var(--panel); border: 2px solid var(--mg-border); border-radius: 25px; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); }
-
-        /* 导航栏 */
-        .nav { margin-top: auto; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #1a2e24; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 11px; color: #8a969e; }
+        /* 底部导航栏 - 严格还原 */
+        .navbar { position: fixed; bottom: 0; width: 100%; max-width: 414px; height: 75px; background: #0d1210; border-top: 1px solid #1a2e24; display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #8a969e; font-size: 11px; }
         .nav-active { color: #ff5252; }
-        .nav-icon { width: 22px; height: 22px; border-radius: 4px; }
+        .nav-icon { width: 24px; height: 24px; border-radius: 5px; background: #232d36; }
     </style>
 </head>
 <body>
 
-<div class="app">
-    <!-- 余额 -->
-    <div class="frame-outer">
-        <div class="frame-inner">
-            <div class="bet-info"><span style="color:var(--gold)">💰</span> 可用余额 (USDT)</div>
-            <div id="bal" class="bal-val">146.8</div>
-            <div class="bet-info">🔥 单注额度: <span id="bet" style="color:var(--gold); font-weight:bold">5.5</span></div>
+<div class="app-shell">
+    <div class="box-frame">
+        <div class="box-inner">
+            <div style="font-size:12px; color:#8a969e">💰 可用余额 (USDT)</div>
+            <div id="bText" class="val">146.8</div>
+            <div style="font-size:14px; color:#8a969e">🔥 单注额度: <span id="aText" style="color:var(--gd); font-weight:bold">5.5</span></div>
         </div>
     </div>
 
-    <!-- 转盘 -->
-    <div class="frame-outer" style="padding:5px;">
-        <div class="frame-inner" style="padding:0; overflow:hidden;">
-            <div class="wheel-panel">
-                <div class="pointer"></div>
-                <div id="plate" class="plate">
-                    <div class="center-x0">X0</div>
-                    <div class="item" style="transform:rotate(0deg)"><span>🦢</span><label>仙鹤</label></div>
-                    <div class="item" style="transform:rotate(45deg)"><span>🐺</span><label>孤狼</label></div>
-                    <div class="item" style="transform:rotate(90deg)"><span>🐯</span><label>猛虎</label></div>
-                    <div class="item" style="transform:rotate(135deg)"><span>🐢</span><label>玄武</label></div>
-                    <div class="item" style="transform:rotate(180deg)"><span>🦌</span><label>麒麟</label></div>
-                    <div class="item" style="transform:rotate(225deg)"><span>🐲</span><label>神龙</label></div>
-                    <div class="item" style="transform:rotate(270deg)"><span>🔥</span><label>凤凰</label></div>
-                    <div class="item" style="transform:rotate(315deg)"><span>🦅</span><label>大鹏</label></div>
-                </div>
-            </div>
+    <div class="wheel-panel">
+        <div class="pointer"></div>
+        <div id="plate" class="plate">
+            <div class="x0">X0</div>
+            <div class="item" style="transform:rotate(0deg)">🦢<label>仙鹤</label></div>
+            <div class="item" style="transform:rotate(45deg)">🐺<label>孤狼</label></div>
+            <div class="item" style="transform:rotate(90deg)">🐯<label>猛虎</label></div>
+            <div class="item" style="transform:rotate(135deg)">🐢<label>玄武</label></div>
+            <div class="item" style="transform:rotate(180deg)">🦌<label>麒麟</label></div>
+            <div class="item" style="transform:rotate(225deg)">🐲<label>神龙</label></div>
+            <div class="item" style="transform:rotate(270deg)">🔥<label>凤凰</label></div>
+            <div class="item" style="transform:rotate(315deg)">🦅<label>大鹏</label></div>
         </div>
     </div>
 
-    <!-- 按钮 -->
-    <div class="ctrl-btns">
-        <button class="side-btn" onclick="adj(-0.5)">−</button>
-        <button id="mainBtn" class="draw-btn" onclick="run()">▶ 执行抽取</button>
-        <button class="side-btn" onclick="adj(0.5)">+</button>
+    <div class="row">
+        <button class="side" onclick="adj(-0.5)">−</button>
+        <button class="draw" onclick="spin()">▶ 执行抽取</button>
+        <button class="side" onclick="adj(0.5)">+</button>
     </div>
 
-    <!-- 模式 -->
-    <div class="opt-bar">
-        <button class="opt-btn" onclick="auto()">🤖 自动模式: <span id="autoStat">关</span></button>
-        <button class="opt-btn" onclick="speed()">⚡ 变速: <span id="spText">1X</span></button>
-    </div>
-
-    <!-- 导航 -->
-    <div class="nav">
-        <div class="nav-item"><div class="nav-icon" style="background:#4a5a6a"></div>行情</div>
-        <div class="nav-item"><div class="nav-icon" style="background:#2d7053"></div>资产中心</div>
-        <div class="nav-item"><div class="nav-icon" style="background:var(--gold)"></div>历史记录</div>
-        <div class="nav-item nav-active"><div class="nav-icon" style="background:var(--red)"></div>量化终端</div>
+    <div class="row" style="margin-top:5px;">
+        <button class="opt" onclick="auto()">🤖 自动模式: <span id="as">关</span></button>
+        <button class="opt" onclick="speed()">⚡ 变速: <span id="ss">1X</span></button>
     </div>
 </div>
 
-<script>
-    let b = 146.8, a = 5.5, r = 0, isA = false, sp = 1, busy = false;
-    
-    function adj(v) { if(busy) return; a = Math.max(0, a + v); document.getElementById('bet').innerText = a.toFixed(1); }
-    function auto() { isA = !isA; document.getElementById('autoStat').innerText = isA ? '开' : '关'; if(isA && !busy) run(); }
-    function speed() { sp = sp === 1 ? 2 : 1; document.getElementById('spText').innerText = sp + 'X'; }
+<!-- 底部导航 -->
+<div class="navbar">
+    <div class="nav-item">📊<span>行情</span></div>
+    <div class="nav-item">🏢<span>资产中心</span></div>
+    <div class="nav-item">📂<span>历史记录</span></div>
+    <div class="nav-item nav-active">🎯<span>量化终端</span></div>
+</div>
 
-    function run() {
-        if(busy || b < a) { isA = false; document.getElementById('autoStat').innerText = '关'; return; }
-        busy = true; b -= a;
-        document.getElementById('bal').innerText = b.toFixed(1);
-        
+<script>
+    let bal = 146.8, amt = 5.5, rot = 0, isA = false, sp = 1, busy = false;
+    function adj(v) { if(!busy){ amt = Math.max(0, amt+v); document.getElementById('aText').innerText = amt.toFixed(1); } }
+    function speed() { sp = sp === 1 ? 2 : 1; document.getElementById('ss').innerText = sp+'X'; }
+    function auto() { isA = !isA; document.getElementById('as').innerText = isA?'开':'关'; if(isA && !busy) spin(); }
+    function spin() {
+        if(busy || bal < amt) { isA = false; document.getElementById('as').innerText = '关'; return; }
+        busy = true; bal -= amt; document.getElementById('bText').innerText = bal.toFixed(1);
         const p = document.getElementById('plate');
-        const prize = Math.floor(Math.random() * 8) * 45;
-        r += 1800 + (360 - (r % 360)) + (360 - prize);
-        
-        p.style.transition = `transform ${5/sp}s cubic-bezier(0.15, 0, 0.15, 1)`;
-        p.style.transform = `rotate(${r}deg)`;
-        
-        setTimeout(() => {
-            busy = false;
-            if(isA) setTimeout(run, 800);
-        }, (5000 / sp) + 200);
+        const target = Math.floor(Math.random()*8)*45;
+        rot += 1800 + (360 - (rot%360)) + (360 - target);
+        p.style.transition = `transform ${5/sp}s cubic-bezier(0.1, 0, 0.1, 1)`;
+        p.style.transform = `rotate(${rot}deg)`;
+        setTimeout(() => { busy = false; if(isA) setTimeout(spin, 800); }, (5000/sp)+200);
     }
 </script>
 </body>
