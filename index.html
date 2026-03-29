@@ -3,477 +3,207 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="DOLA QUANT PRO - 量化抽取系统">
-    <title>DOLA QUANT PRO</title>
+    <title>DOLA · 旗舰量化终端 PRO</title>
     <style>
         :root {
-            --bg-black: #0a0e0c;
-            --card-bg: #121a15;
-            --accent-red: #ff4d4d;
-            --btn-red-dark: #b02525;
-            --panel-red: #2b0b0b;
+            --bg: #0d120f;
+            --panel: #1a231e;
+            --red: #ff5a5a;
             --gold: #f1c40f;
-            --green: #2ecc71;
-            --dark-green: #27ae60;
-            --border-gray: #1d2922;
-            --text-light: #8aa095;
+            --dark-red: #3d0e0e;
+            --border: #2d3e34;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        
         body { 
-            background: var(--bg-black); color: #fff; font-family: "Microsoft Yahei", sans-serif; 
+            background: var(--bg); color: #fff; font-family: -apple-system, sans-serif;
             margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden;
-            background-image: radial-gradient(circle at 50% 50%, #1a231e 0%, var(--bg-black) 100%);
-            /* 防止字体抖动 */
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* 顶部面板 - 增强质感 */
-        .top-panel { 
-            background: var(--card-bg); margin: 15px; padding: 25px 10px; border-radius: 20px;
-            border: 1px solid var(--border-gray); text-align: center;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.6), 0 4px 10px rgba(0,0,0,0.4);
-            position: relative; overflow: hidden;
-            /* 呼吸光效 */
-            animation: panelGlow 4s ease-in-out infinite;
-        }
-        @keyframes panelGlow {
-            0%, 100% { box-shadow: inset 0 0 20px rgba(0,0,0,0.6), 0 4px 10px rgba(0,0,0,0.4); }
-            50% { box-shadow: inset 0 0 20px rgba(0,0,0,0.6), 0 4px 15px rgba(255,77,77,0.15); }
-        }
-        .top-panel::before {
-            content: ""; position: absolute; inset: 0; opacity: 0.08;
-            background: linear-gradient(45deg, #fff 1px, transparent 1px), linear-gradient(-45deg, #fff 1px, transparent 1px);
+            /* 还原：菱形拉丝质感背景 */
+            background-image: 
+                linear-gradient(45deg, rgba(45, 62, 52, 0.2) 1px, transparent 1px),
+                linear-gradient(-45deg, rgba(45, 62, 52, 0.2) 1px, transparent 1px);
             background-size: 30px 30px;
-            /* 缓慢移动的暗纹 */
-            animation: patternMove 20s linear infinite;
-        }
-        @keyframes patternMove {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(30px, 30px); }
         }
 
-        .bal-label { 
-            color: var(--text-light); font-size: 13px; 
-            margin-bottom: 8px; letter-spacing: 1px;
+        /* 顶部：内陷式资产面板 */
+        .header { 
+            background: var(--panel); margin: 15px; padding: 25px 15px; border-radius: 25px; 
+            border: 1px solid var(--border); box-shadow: inset 0 0 25px rgba(0,0,0,0.9);
+            text-align: center; position: relative;
         }
-        .bal-val { 
-            font-size: clamp(40px, 10vw, 60px); 
-            color: var(--accent-red); font-weight: bold; 
-            font-family: 'Consolas', 'Courier New', Courier, monospace;
-            /* 数值变化动画 */
-            transition: all 0.3s ease;
-        }
-        .bal-val.gain { color: var(--green); transform: scale(1.05); }
-        .bal-val.lose { color: var(--accent-red); }
-        .bet-row { 
-            color: var(--gold); font-size: 14px; margin-top: 10px; 
-            display: flex; justify-content: center; gap: clamp(10px, 5vw, 15px);
-            flex-wrap: wrap;
-        }
-        .bet-item {
-            background: rgba(0,0,0,0.3);
-            padding: 4px 12px;
-            border-radius: 12px;
-            border: 1px solid rgba(241,196,15,0.2);
-        }
+        .bal-val { font-size: 60px; color: var(--red); font-weight: 800; font-family: 'DIN Alternate', sans-serif; letter-spacing: -2px; }
+        .bet-status { display: flex; justify-content: center; gap: 10px; margin-top: 10px; font-size: 14px; color: var(--gold); }
+        .bet-status b { background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(241,196,15,0.3); }
 
-        /* 转盘舞台 - 升级视觉层次 */
-        .wheel-stage { 
-            flex: 1; display: flex; align-items: center; justify-content: center; 
-            position: relative; padding: 10px;
-        }
-        .indicator { 
-            position: absolute; top: clamp(5px, 2vw, 10px); z-index: 10;
-            width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; 
-            border-top: 25px solid var(--accent-red); 
-            filter: drop-shadow(0 2px 4px #000);
-            /* 旋转时高亮 */
-            transition: all 0.3s ease;
-        }
-        .indicator.active {
-            border-top-color: var(--gold);
-            filter: drop-shadow(0 0 10px rgba(241,196,15,0.8));
+        /* 中间：量化转盘舞台 */
+        .stage { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
+        .pointer { 
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 10;
+            width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; 
+            border-top: 28px solid #ff0000; filter: drop-shadow(0 4px 8px #000);
         }
 
         #wheel { 
-            width: clamp(280px, 70vmin, 310px); 
-            height: clamp(280px, 70vmin, 310px); 
-            border-radius: 50%; border: 12px solid #1a231e;
-            background: #141c18; position: relative;
-            transition: transform 6s cubic-bezier(0.1, 0, 0, 1);
-            box-shadow: 0 0 40px rgba(0,0,0,0.8), 0 0 60px rgba(255,77,77,0.05);
-            /* 转盘内发光 */
-            background-image: radial-gradient(circle at center, #1a231e 0%, #0f1613 100%);
-        }
-        /* 转盘分割线 */
-        #wheel::before {
-            content: ""; position: absolute; inset: 0;
-            background: conic-gradient(
-                transparent 0deg 45deg, rgba(29,41,34,0.3) 45deg 90deg,
-                transparent 90deg 135deg, rgba(29,41,34,0.3) 135deg 180deg,
-                transparent 180deg 225deg, rgba(29,41,34,0.3) 225deg 270deg,
-                transparent 270deg 315deg, rgba(29,41,34,0.3) 315deg 360deg
-            );
-            border-radius: 50%;
+            width: 310px; height: 310px; border-radius: 50%; border: 14px solid #233129;
+            background: #1a231e; position: relative;
+            /* 物理减速曲线：启动极快，结尾极慢且丝滑 */
+            transition: transform 6s cubic-bezier(0.15, 0, 0, 1);
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            background-image: radial-gradient(circle at center, #2d3e34 1px, transparent 1px);
+            background-size: 20px 20px;
         }
         
-        .center-btn {
+        .hub {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 80px; height: 80px; background: var(--bg-black); border-radius: 50%;
-            border: 4px solid #1a231e; display: flex; align-items: center; justify-content: center;
-            color: var(--accent-red); font-weight: bold; writing-mode: vertical-rl; letter-spacing: 3px;
-            box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5);
-            /* 状态切换动画 */
-            transition: all 0.5s ease;
-        }
-        .center-btn.running {
-            background: #1a0808;
-            border-color: var(--accent-red);
-            animation: btnRotate 2s linear infinite;
-        }
-        @keyframes btnRotate {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
+            width: 85px; height: 85px; background: #1a231e; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--red); font-weight: bold; font-size: 22px; border: 5px solid #233129;
+            z-index: 5; text-align: center; line-height: 1.1;
         }
 
-        .slot { 
-            position: absolute; width: 100%; height: 100%; text-align: center; 
-            padding-top: 25px; font-size: clamp(22px, 5vw, 26px);
-            /* 图标居中校准 */
-            transform-origin: center center;
-        }
-        /* 中奖项高亮 */
-        .slot.win {
-            color: var(--gold);
-            text-shadow: 0 0 15px rgba(241,196,15,0.8);
-            animation: winPulse 1s ease-in-out infinite;
-        }
-        @keyframes winPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+        .node {
+            position: absolute; width: 100%; height: 100%; text-align: center;
+            padding-top: 28px; font-size: 28px;
         }
 
-        /* 底部控制区 - 强化专业感 */
-        .bottom-ctrl { 
-            background: var(--panel-red); padding: 25px 15px 40px; border-radius: 35px 35px 0 0;
-            display: flex; align-items: center; justify-content: space-between; gap: 12px;
-            border-top: 1px solid #4a1515;
-            box-shadow: 0 -4px 15px rgba(0,0,0,0.4);
-            position: relative;
-        }
-        .bottom-ctrl::before {
-            content: ""; position: absolute; top: 0; left: 50%;
-            transform: translateX(-50%);
-            width: 60px; height: 4px;
-            background: var(--accent-red);
-            border-radius: 2px;
+        /* 底部：暗红操作面板 */
+        .footer { 
+            background: var(--dark-red); padding: 25px 20px 45px; border-radius: 40px 40px 0 0;
+            border-top: 2px solid #631b1b; display: flex; align-items: center; justify-content: space-between; gap: 15px;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
         }
 
-        .btn-step { 
-            width: 60px; height: 60px; background: #1a0808; border-radius: 15px;
-            border: 1px solid #4a1515; color: var(--accent-red); font-size: 32px;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 3px 0 #0d0404;
+        .side-btn { 
+            width: 65px; height: 60px; background: #261111; border-radius: 16px; 
+            color: var(--red); font-size: 32px; display: flex; align-items: center; justify-content: center; 
+            border: 1px solid #631b1b; cursor: pointer; transition: 0.1s;
         }
-        .btn-step:hover { background: #250a0a; border-color: #6a2020; }
-        .btn-step:active { 
-            transform: scale(0.95) translateY(3px); 
-            box-shadow: 0 1px 0 #0d0404; 
-        }
-        .btn-step.disabled {
-            opacity: 0.5; cursor: not-allowed;
-            background: #1a0808; border-color: #3a1010;
-        }
+        .side-btn:active { transform: scale(0.9); background: #3d1a1a; }
 
-        .btn-main { 
-            flex: 1; height: 80px; background: linear-gradient(180deg, #d63031 0%, #a01a1a 100%);
-            border-radius: 40px; border: none; color: #fff; font-size: clamp(18px, 4vw, 24px); 
-            font-weight: bold; letter-spacing: 1px;
-            box-shadow: 0 6px 0 #701010; cursor: pointer;
-            transition: all 0.2s ease;
+        .main-btn { 
+            flex: 1; height: 85px; background: linear-gradient(180deg, #cc2929 0%, #991a1a 100%);
+            color: #fff; border-radius: 45px; font-size: 26px; font-weight: bold; border: none;
+            box-shadow: 0 8px 0 #801a1a; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .btn-main:hover {
-            background: linear-gradient(180deg, #e74c3c 0%, #c0392b 100%);
-        }
-        .btn-main:active { 
-            transform: translateY(4px); 
-            box-shadow: 0 2px 0 #701010; 
-        }
-        .btn-main.disabled {
-            background: linear-gradient(180deg, #662020 0%, #4a1515 100%);
-            box-shadow: 0 6px 0 #300a0a;
-            cursor: not-allowed;
-            color: rgba(255,255,255,0.5);
-        }
+        .main-btn span { font-size: 12px; opacity: 0.7; font-weight: normal; margin-top: 2px; letter-spacing: 2px; }
+        .main-btn:active { transform: translateY(4px); box-shadow: 0 4px 0 #801a1a; }
+        .main-btn:disabled { filter: grayscale(1); opacity: 0.6; cursor: not-allowed; }
 
-        /* 快捷档位指示器 */
-        .preset-info { 
-            font-size: 10px; color: rgba(255,255,255,0.3); margin-top: 4px; 
-            letter-spacing: 1px;
-        }
-
-        /* 中奖提示 */
-        .win-toast {
-            position: fixed; top: 40%; left: 50%;
-            transform: translate(-50%, -50%) scale(0.8);
-            background: radial-gradient(circle, #1a0808 0%, var(--panel-red) 100%);
-            border: 2px solid var(--gold);
-            border-radius: 15px;
-            padding: 20px 30px;
-            text-align: center;
-            z-index: 100;
-            opacity: 0;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 30px rgba(241,196,15,0.5);
-        }
-        .win-toast.active {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-        }
-        .win-toast h3 {
-            color: var(--gold);
-            font-size: 22px;
-            margin: 0 0 10px;
-        }
-        .win-toast p {
-            color: #fff;
-            font-size: 18px;
-            margin: 0;
-        }
-
-        /* 加载遮罩 */
-        .loading-mask {
-            position: fixed; inset: 0;
-            background: rgba(10,14,12,0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 200;
-        }
-        .loading-mask.active { display: flex; }
-        .loading-spinner {
-            width: 50px; height: 50px;
-            border: 4px solid rgba(255,77,77,0.3);
-            border-top: 4px solid var(--accent-red);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        /* 动画态 */
+        .working { animation: pulse 1s infinite; color: var(--gold) !important; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div class="top-panel">
-        <div class="bal-label">💰 可用余额 (USDT)</div>
-        <div class="bal-val" id="bal">990.00</div>
-        <div class="bet-row">
-            <div class="bet-item">🔥 当前档次: <b id="tier">1级</b></div>
-            <div class="bet-item">单注: <b id="bet">10.0</b> USDT</div>
-            <div class="bet-item">累计盈利: <b id="total-profit">0.00</b> USDT</div>
+    <div class="header">
+        <div style="color:#8aa095; font-size: 13px; margin-bottom: 5px;">💰 可用余额 (USDT)</div>
+        <div class="bal-val" id="ui-bal">1000.00</div>
+        <div class="bet-status">
+            <span>档次: <b id="ui-tier">1</b></span>
+            <span>单注: <b id="ui-bet">10.0</b></span>
         </div>
     </div>
 
-    <div class="wheel-stage">
-        <div class="indicator" id="indicator"></div>
+    <div class="stage">
+        <div class="pointer"></div>
         <div id="wheel">
-            <div class="center-btn" id="status">准备</div>
-            <div class="slot" data-icon="🦢" style="transform: rotate(0deg)">🦢</div>
-            <div class="slot" data-icon="🐺" style="transform: rotate(45deg)">🐺</div>
-            <div class="slot" data-icon="🐢" style="transform: rotate(90deg)">🐢</div>
-            <div class="slot" data-icon="🦅" style="transform: rotate(135deg)">🦅</div>
-            <div class="slot" data-icon="🐯" style="transform: rotate(180deg)">🐯</div>
-            <div class="slot" data-icon="🦄" style="transform: rotate(225deg)">🦄</div>
-            <div class="slot" data-icon="🐲" style="transform: rotate(270deg)">🐲</div>
-            <div class="slot" data-icon="🔥" style="transform: rotate(315deg)">🔥</div>
+            <div class="hub" id="ui-hub">准备<br>同步</div>
+            <div class="node" style="transform:rotate(0deg)">🐺</div>
+            <div class="node" style="transform:rotate(45deg)">🦢</div>
+            <div class="node" style="transform:rotate(90deg)">🐢</div>
+            <div class="node" style="transform:rotate(135deg)">🦅</div>
+            <div class="node" style="transform:rotate(180deg)">🐯</div>
+            <div class="node" style="transform:rotate(225deg)">🦄</div>
+            <div class="node" style="transform:rotate(270deg)">🐲</div>
+            <div class="node" style="transform:rotate(315deg)">🔥</div>
         </div>
     </div>
 
-    <div class="bottom-ctrl">
-        <div class="btn-step" id="btn-minus" onclick="changeTier(-1)">−</div>
-        <button class="btn-main" id="btn-start" onclick="start()">
+    <div class="footer">
+        <div class="side-btn" onclick="Control.changeTier(-1)">−</div>
+        <button class="main-btn" id="ui-go" onclick="Control.execute()">
             ▶ 执行抽取
-            <div class="preset-info">QUANTUM SYNC v3.0</div>
+            <span>QUANTUM TERMINAL V2.4</span>
         </button>
-        <div class="btn-step" id="btn-plus" onclick="changeTier(1)">+</div>
-    </div>
-
-    <!-- 新增：中奖提示 -->
-    <div class="win-toast" id="winToast">
-        <h3>🎉 恭喜中奖！</h3>
-        <p>获得奖励 <span id="winAmount">0.00</span> USDT</p>
-    </div>
-
-    <!-- 新增：加载遮罩 -->
-    <div class="loading-mask" id="loadingMask">
-        <div class="loading-spinner"></div>
+        <div class="side-btn" onclick="Control.changeTier(1)">+</div>
     </div>
 
     <script>
-        // 生产环境盈利作品核心逻辑 - 全面升级
-        const CONFIG = {
-            tiers: [10.0, 50.0, 100.0, 500.0, 1000.0], // 五个档次
-            tierNames: ["入门级", "进阶级", "专业级", "大师级", "至尊级"], // 档次名称
-            rewardRates: [1.8, 1.9, 2.0, 2.1, 2.2], // 对应档次返奖率
-            balance: 990.00,
-            currentTierIdx: 0,
-            isRolling: false,
-            rotation: 0,
-            totalProfit: 0.00, // 累计盈利
-            storageKey: "dola_quant_pro_data" // 本地存储键
+        // 生产环境加固逻辑封装
+        const Control = {
+            // 五个核心档次定义 (盈利作品专用档位)
+            tiers: [10.0, 50.0, 100.0, 500.0, 1000.0],
+            currentIdx: 0,
+            balance: 1000.00,
+            isLocked: false,
+            totalRotation: 0,
+
+            // 初始化
+            init() {
+                this.render();
+            },
+
+            // 切换档次
+            changeTier(dir) {
+                if(this.isLocked) return;
+                // 5档循环逻辑
+                this.currentIdx = (this.currentIdx + dir + 5) % 5;
+                this.render();
+                if(window.navigator.vibrate) window.navigator.vibrate(15);
+            },
+
+            // 执行量化同步
+            execute() {
+                const bet = this.tiers[this.currentIdx];
+                if(this.isLocked || this.balance < bet) return;
+
+                // 1. 状态锁定
+                this.isLocked = true;
+                this.balance -= bet;
+                this.render();
+
+                const hub = document.getElementById('ui-hub');
+                const btn = document.getElementById('ui-go');
+                
+                btn.disabled = true;
+                hub.innerHTML = "同步<br>中...";
+                hub.classList.add('working');
+
+                // 2. 物理仿真旋转 (5圈起步 + 随机偏移)
+                const rounds = 8 + Math.floor(Math.random() * 5);
+                const extra = Math.floor(Math.random() * 360);
+                this.totalRotation += (rounds * 360) + extra;
+                
+                document.getElementById('wheel').style.transform = `rotate(${this.totalRotation}deg)`;
+
+                // 3. 结果结算 (根据生产概率回填)
+                setTimeout(() => {
+                    this.isLocked = false;
+                    btn.disabled = false;
+                    hub.innerHTML = "准备<br>同步";
+                    hub.classList.remove('working');
+
+                    // 模拟盈利概率 (生产环境应对接API)
+                    if(Math.random() > 0.65) {
+                        const win = bet * 2.5; 
+                        this.balance += win;
+                        this.render();
+                        // 简单提醒
+                        // alert("同步成功，资产已回填");
+                    }
+                }, 6000); // 必须与CSS中的6s一致
+            },
+
+            render() {
+                document.getElementById('ui-bal').innerText = this.balance.toFixed(2);
+                document.getElementById('ui-tier').innerText = this.currentIdx + 1;
+                document.getElementById('ui-bet').innerText = this.tiers[this.currentIdx].toFixed(1);
+            }
         };
 
-        // DOM元素缓存
-        const DOM = {
-            bal: document.getElementById('bal'),
-            tier: document.getElementById('tier'),
-            bet: document.getElementById('bet'),
-            totalProfit: document.getElementById('total-profit'),
-            status: document.getElementById('status'),
-            wheel: document.getElementById('wheel'),
-            indicator: document.getElementById('indicator'),
-            btnMinus: document.getElementById('btn-minus'),
-            btnPlus: document.getElementById('btn-plus'),
-            btnStart: document.getElementById('btn-start'),
-            winToast: document.getElementById('winToast'),
-            winAmount: document.getElementById('winAmount'),
-            loadingMask: document.getElementById('loadingMask'),
-            slots: document.querySelectorAll('.slot')
-        };
-
-        // 初始化：加载本地数据
-        function init() {
-            loadData();
-            updateUI();
-            updateButtonStates();
-            // 监听窗口大小变化，适配布局
-            window.addEventListener('resize', updateButtonStates);
-        }
-
-        // 档次切换 - 优化逻辑
-        function changeTier(dir) {
-            if(CONFIG.isRolling) return;
-            
-            const newIdx = CONFIG.currentTierIdx + dir;
-            // 边界检查，防止越界
-            if(newIdx < 0 || newIdx >= CONFIG.tiers.length) {
-                if(window.navigator.vibrate) window.navigator.vibrate(50); // 震动提示
-                return;
-            }
-            
-            CONFIG.currentTierIdx = newIdx;
-            DOM.tier.innerText = `${CONFIG.currentTierIdx + 1}级(${CONFIG.tierNames[CONFIG.currentTierIdx]})`;
-            DOM.bet.innerText = CONFIG.tiers[CONFIG.currentTierIdx].toFixed(1);
-            
-            // 视觉反馈
-            DOM.bet.parentElement.classList.add('change');
-            setTimeout(() => DOM.bet.parentElement.classList.remove('change'), 300);
-            
-            // 震动反馈
-            if(window.navigator.vibrate) window.navigator.vibrate(10);
-            
-            updateButtonStates();
-            saveData();
-        }
-
-        // 开始抽取 - 强化流程控制
-        function start() {
-            const currentBet = CONFIG.tiers[CONFIG.currentTierIdx];
-            
-            // 状态检查
-            if(CONFIG.isRolling) return;
-            if(CONFIG.balance < currentBet) {
-                showToast("余额不足，请充值或降低档位");
-                return;
-            }
-
-            // 更新状态
-            CONFIG.isRolling = true;
-            CONFIG.balance -= currentBet;
-            updateUI();
-            updateButtonStates();
-            
-            // 视觉反馈
-            DOM.status.innerText = "抽取";
-            DOM.status.style.color = "var(--gold)";
-            DOM.status.classList.add('running');
-            DOM.indicator.classList.add('active');
-            DOM.bal.classList.add('lose');
-            setTimeout(() => DOM.bal.classList.remove('lose'), 500);
-            
-            // 显示加载遮罩
-            DOM.loadingMask.classList.add('active');
-
-            // 计算旋转角度：基础圈数(10-12圈) + 随机角度 + 目标位置校准
-            const baseRot = 360 * (10 + Math.floor(Math.random() * 3));
-            const targetAngle = Math.floor(Math.random() * 8) * 45; // 精准停在某个槽位
-            const extraRot = 360 - (CONFIG.rotation % 360) + targetAngle;
-            CONFIG.rotation += baseRot + extraRot;
-            
-            DOM.wheel.style.transform = `rotate(${CONFIG.rotation}deg)`;
-
-            // 停稳后的逻辑 - 模拟真实计算耗时
-            setTimeout(() => {
-                // 隐藏加载遮罩
-                DOM.loadingMask.classList.remove('active');
-                
-                // 计算中奖结果 - 关联档次概率
-                const winProb = CONFIG.currentTierIdx < 3 ? 0.4 : 0.55; // 高档次概率更高
-                const isWin = Math.random() < winProb;
-                let winAmount = 0;
-
-                if(isWin) {
-                    winAmount = currentBet * CONFIG.rewardRates[CONFIG.currentTierIdx];
-                    CONFIG.balance += winAmount;
-                    CONFIG.totalProfit += (winAmount - currentBet);
-                    
-                    // 显示中奖提示
-                    showWinToast(winAmount);
-                    // 高亮中奖项
-                    highlightWinSlot(targetAngle);
-                }
-
-                // 恢复状态
-                CONFIG.isRolling = false;
-                DOM.status.innerText = "准备";
-                DOM.status.style.color = "var(--accent-red)";
-                DOM.status.classList.remove('running');
-                DOM.indicator.classList.remove('active');
-                
-                // 更新UI
-                if(isWin) {
-                    DOM.bal.classList.add('gain');
-                    setTimeout(() => DOM.bal.classList.remove('gain'), 800);
-                }
-                updateUI();
-                updateButtonStates();
-                saveData();
-
-            }, 6000); // 与CSS过渡时间一致
-        }
-
-        // 更新UI - 集中管理
-        function updateUI() {
-            DOM.bal.innerText = CONFIG.balance.toFixed(2);
-            DOM.totalProfit.innerText = CONFIG.totalProfit.toFixed(2);
-        }
-
-        // 更新按钮状态 - 禁用逻辑
-        function updateButtonStates() {
-            const currentBet = CONFIG.tiers[CONFIG.currentTierIdx];
-            
-            // 主按钮状态
-            if(CONFIG.isRolling || CONFIG.balance < currentBet) {
-                DOM.btnStart.classList.add('disabled');
-                DOM.btnStart.disabled = true;
-            } else {
-                DOM.btnStart.classList.remove('disabled');
-                DOM.btnStart.disabled = false;
-            }
-            
-            // 档位按钮状态
-            DOM.btnMinus.classList.toggle('disabled', CONFIG.currentTierIdx
+        Control.init();
+    </script>
+</body>
+</html>
