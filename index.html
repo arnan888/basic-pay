@@ -5,18 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DOLA 旗舰量化终端</title>
     <style>
-        body { background: #121614; color: #fff; font-family: -apple-system, sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
-        /* 🌙 登录注册遮罩层 (凹陷质感) */
-        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18,22,20,0.98); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(15px); }
-        .login-box { background: #1a1f1c; padding: 40px 30px; border-radius: 25px; box-shadow: 10px 10px 20px #090b0a, -10px -10px 20px #222a25; text-align: center; width: 85%; max-width: 360px; }
-        .login-box h2 { color: #00ff88; font-weight: 300; margin-bottom: 10px; }
-        .login-box p { color: #666; font-size: 13px; margin-bottom: 25px; }
-        #user-id-input { width: 100%; padding: 15px; border: none; border-radius: 15px; background: #121614; color: #00ff88; box-shadow: inset 4px 4px 8px #090b0a, inset -4px -4px 8px #1b211e; outline: none; margin-bottom: 25px; text-align: center; font-size: 18px; box-sizing: border-box; }
-        .btn-login { width: 100%; padding: 16px; border: none; border-radius: 15px; background: linear-gradient(145deg, #00e67a, #00cc6d); color: #121614; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 5px 5px 15px #090b0a; transition: 0.2s; }
-        /* 游戏主界面 (默认隐藏) */
+        body { background: #0a0d0b; color: #fff; font-family: sans-serif; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        /* 🏮 登录框：红框白字 */
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .login-box { background: #1a1f1c; padding: 40px 30px; border-radius: 20px; border: 2px solid #ff4d4d; box-shadow: 0 0 20px rgba(255,77,77,0.3); text-align: center; width: 85%; max-width: 360px; }
+        .login-box h2 { color: #fff; font-weight: bold; margin-bottom: 25px; letter-spacing: 2px; }
+        #user-id-input { width: 100%; padding: 15px; border: 1px solid #444; border-radius: 10px; background: #000; color: #ffffff; outline: none; margin-bottom: 25px; text-align: center; font-size: 20px; box-sizing: border-box; }
+        .btn-login { width: 100%; padding: 16px; border: none; border-radius: 10px; background: #ff4d4d; color: #fff; font-weight: bold; font-size: 18px; cursor: pointer; }
+        /* 游戏界面 */
         #game-content { display: none; text-align: center; width: 100%; }
-        .balance-card { background: #1a1f1c; margin: 20px; padding: 30px; border-radius: 20px; box-shadow: inset 5px 5px 10px #090b0a, inset -5px -5px 10px #222a25; }
-        .balance-num { font-size: 42px; color: #ff4d4d; font-weight: bold; margin: 10px 0; }
+        .balance-card { background: #161a18; margin: 20px; padding: 40px; border-radius: 15px; box-shadow: inset 0 0 15px #000; border: 1px solid #222; }
+        .balance-num { font-size: 50px; color: #ff4d4d; font-weight: bold; margin: 10px 0; }
     </style>
 </head>
 <body>
@@ -24,51 +23,42 @@
     <div id="login-overlay">
         <div class="login-box">
             <h2>终端激活</h2>
-            <p>请输入您的专属 ID 或 手机号</p>
-            <input type="number" id="user-id-input" placeholder="ID 数字" autofocus>
-            <button class="btn-login" onclick="handleLogin()">立即进入</button>
+            <input type="text" id="user-id-input" readonly>
+            <button class="btn-login" onclick="handleLogin()">立即激活</button>
+            <p style="color:#666; font-size:12px; margin-top:15px;">系统已为您自动分配临时 ID</p>
         </div>
     </div>
 
     <div id="game-content">
         <div class="balance-card">
-            <div style="color:#888; font-size:14px;">可用余额 (USDT)</div>
+            <div style="color:#888;">可用余额 (USDT)</div>
             <div class="balance-num" id="display-balance">0.00</div>
-            <div style="color:#00ff88; font-size:12px;">当前爆率强度: <span id="display-rate">--</span>%</div>
         </div>
-        <button class="btn-login" style="width:80%; margin-top:50px;">执行量化抽取</button>
-        <p style="color:#444; margin-top:20px; font-size:12px;">ID: <span id="display-id">--</span></p>
+        <button class="btn-login" style="width:80%; background:#00ff88; color:#000;">开始量化</button>
+        <p style="color:#444; margin-top:30px;">终端序列: <span id="display-id"></span></p>
     </div>
 
     <script>
-        const API_BASE = "http://你的Termux公网IP:5000/api/status"; // 或者是你的内网穿透地址
-        const urlParams = new URLSearchParams(window.location.search);
-        const uid = urlParams.get('user_id');
-
-        if (uid) {
-            document.getElementById('login-overlay').style.display = 'none';
-            document.getElementById('game-content').style.display = 'block';
-            fetchData(uid);
+        // 1. 自动生成 6 位随机 ID
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const existingId = urlParams.get('user_id');
+            
+            if (existingId) {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('game-content').style.display = 'block';
+                document.getElementById('display-id').innerText = existingId;
+                // 此处对接后台逻辑...
+            } else {
+                const randomId = Math.floor(100000 + Math.random() * 900000);
+                document.getElementById('user-id-input').value = "ID: " + randomId;
+            }
         }
 
         function handleLogin() {
-            const val = document.getElementById('user-id-input').value;
-            if (val.length < 5) return alert("请输入正确格式的ID");
-            window.location.href = window.location.origin + window.location.pathname + "?user_id=" + val;
-        }
-
-        function fetchData(id) {
-            // 这里对接你的 Termux 后台
-            fetch(`http://127.0.0.1:5000/api/status?user_id=${id}`) // 注意：生产环境需改为实际地址
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('display-balance').innerText = data.balance.toFixed(2);
-                    document.getElementById('display-rate').innerText = data.strength;
-                    document.getElementById('display-id').innerText = id;
-                }).catch(() => {
-                    document.getElementById('display-balance').innerText = "0.00";
-                    document.getElementById('display-id').innerText = id + " (未连接后台)";
-                });
+            const fullId = document.getElementById('user-id-input').value;
+            const idOnly = fullId.replace("ID: ", "");
+            window.location.href = window.location.origin + window.location.pathname + "?user_id=" + idOnly;
         }
     </script>
 </body>
