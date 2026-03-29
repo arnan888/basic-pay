@@ -3,16 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>量化终端 · 暗铸转盘 · 完美交互</title>
+    <title>量化终端 · 后台可控</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
         body {
             background: #1a2a1a;
             background-image: radial-gradient(circle at 30% 20%, #2c4a2c 0%, #0a1f0a 100%);
@@ -22,7 +15,6 @@
             flex-direction: column;
             padding-bottom: 78px;
         }
-
         .status-bar {
             background: rgba(0, 0, 0, 0.45);
             backdrop-filter: blur(4px);
@@ -34,232 +26,107 @@
             font-weight: 500;
             color: #cbd5e1;
             justify-content: center;
-            flex-shrink: 0;
             border-bottom: 1px solid rgba(0,0,0,0.3);
         }
-
         .core-section {
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 16px 16px 8px;
+            padding: 16px;
             gap: 16px;
         }
-
         .pit-panel {
             width: 100%;
             max-width: 420px;
             background-color: #2a323f;
-            background-image: linear-gradient(rgba(0, 0, 0, 0.35) 1.2px, transparent 1.2px),
-                              linear-gradient(90deg, rgba(0, 0, 0, 0.35) 1.2px, transparent 1.2px);
+            background-image: linear-gradient(rgba(0,0,0,0.35) 1.2px, transparent 1.2px),
+                              linear-gradient(90deg, rgba(0,0,0,0.35) 1.2px, transparent 1.2px);
             background-size: 22px 22px;
             border-radius: 32px;
-            box-shadow: inset 8px 8px 16px rgba(0, 0, 0, 0.55),
-                        inset -4px -4px 8px rgba(255, 255, 255, 0.08),
-                        0px 10px 20px rgba(0, 0, 0, 0.4);
+            box-shadow: inset 8px 8px 16px rgba(0,0,0,0.55), inset -4px -4px 8px rgba(255,255,255,0.08), 0px 10px 20px rgba(0,0,0,0.4);
             border: 2px solid #1d4a2c;
             padding: 18px 16px;
             text-align: center;
         }
-
         .bal-val {
             font-size: 52px;
             font-weight: 900;
             color: #ff5e5e;
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
             font-family: monospace;
+            cursor: pointer;
+            transition: 0.1s;
         }
-
-        .balance-label {
-            font-size: 12px;
-            background: rgba(0,0,0,0.5);
-            display: inline-block;
-            padding: 4px 14px;
-            border-radius: 30px;
-            color: #cddeff;
-        }
-
-        .wheel-pit {
-            width: 280px;
-            height: 280px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            margin: 8px auto;
-        }
-
+        .bal-val:active { transform: scale(0.98); }
+        .balance-label { font-size: 12px; background: rgba(0,0,0,0.5); display: inline-block; padding: 4px 14px; border-radius: 30px; color: #cddeff; }
+        .wheel-pit { width: 280px; height: 280px; display: flex; align-items: center; justify-content: center; position: relative; margin: 8px auto; }
         .wheel-outer {
-            width: 250px;
-            height: 250px;
-            border-radius: 50%;
-            position: relative;
+            width: 250px; height: 250px; border-radius: 50%; position: relative;
             background-color: #2b6e3c;
-            background-image: linear-gradient(rgba(210, 255, 180, 0.2) 1.2px, transparent 1.2px),
-                              linear-gradient(90deg, rgba(210, 255, 180, 0.2) 1.2px, transparent 1.2px);
+            background-image: linear-gradient(rgba(210,255,180,0.2) 1.2px, transparent 1.2px),
+                              linear-gradient(90deg, rgba(210,255,180,0.2) 1.2px, transparent 1.2px);
             background-size: 16px 16px;
-            box-shadow: 8px 12px 24px rgba(0, 0, 0, 0.6), inset 0px 1px 2px rgba(255,255,240,0.3);
+            box-shadow: 8px 12px 24px rgba(0,0,0,0.6), inset 0px 1px 2px rgba(255,255,240,0.3);
             border: 3px solid #1d4a2c;
-            transition: transform 5s cubic-bezier(0.12, 0.72, 0.28, 0.98);
+            transition: transform 5s cubic-bezier(0.12,0.72,0.28,0.98);
             z-index: 5;
         }
-
         .wheel-center-val {
-            position: absolute;
-            z-index: 20;
-            width: 68px;
-            height: 68px;
-            background: #2e3a48;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #ff8a6f;
-            font-size: 22px;
-            font-weight: 900;
+            position: absolute; z-index: 20; width: 68px; height: 68px; background: #2e3a48; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: #ff8a6f; font-size: 22px; font-weight: 900;
             box-shadow: inset 4px 4px 8px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(255,255,255,0.15), 0 2px 6px black;
             border: 1px solid #161e28;
         }
-
-        .slot-content {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            padding-top: 18px;
-            pointer-events: none;
-        }
-        .slot-content-inner {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            transform: rotate(0deg);
-        }
+        .slot-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 18px; pointer-events: none; }
+        .slot-content-inner { display: flex; flex-direction: column; align-items: center; transform: rotate(0deg); }
         .beast-ico { font-size: 32px; filter: drop-shadow(1px 2px 4px rgba(0,0,0,0.5)); margin-bottom: 2px; }
-        .beast-txt {
-            font-size: 10px;
-            font-weight: bold;
-            color: #f9f3cf;
-            background: rgba(0,0,0,0.55);
-            padding: 2px 6px;
-            border-radius: 50px;
-            white-space: nowrap;
-        }
-
-        .pointer-arrow {
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 16px solid transparent;
-            border-right: 16px solid transparent;
-            border-top: 28px solid #e32020;
-            z-index: 100;
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
-        }
-
-        /* 红色控制台 */
+        .beast-txt { font-size: 10px; font-weight: bold; color: #f9f3cf; background: rgba(0,0,0,0.55); padding: 2px 6px; border-radius: 50px; white-space: nowrap; }
+        .pointer-arrow { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-top: 28px solid #e32020; z-index: 100; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); }
         .console-area {
-            width: 100%;
-            background-color: #6a1a1a;
-            background-image: linear-gradient(rgba(0, 0, 0, 0.45) 1.2px, transparent 1.2px),
-                              linear-gradient(90deg, rgba(0, 0, 0, 0.45) 1.2px, transparent 1.2px);
+            width: 100%; background-color: #6a1a1a;
+            background-image: linear-gradient(rgba(0,0,0,0.45) 1.2px, transparent 1.2px),
+                              linear-gradient(90deg, rgba(0,0,0,0.45) 1.2px, transparent 1.2px);
             background-size: 22px 22px;
             padding: 24px 20px 30px;
-            box-shadow: inset 8px 8px 18px rgba(0, 0, 0, 0.7),
-                        inset -4px -4px 10px rgba(255, 80, 80, 0.2),
-                        0 -6px 16px rgba(0,0,0,0.5);
+            box-shadow: inset 8px 8px 18px rgba(0,0,0,0.7), inset -4px -4px 10px rgba(255,80,80,0.2), 0 -6px 16px rgba(0,0,0,0.5);
             border-top: 3px solid #8b2c2c;
             border-bottom: 1px solid #4a1010;
             margin-top: 8px;
         }
-
-        .main-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 18px;
-            margin-bottom: 28px;
-        }
-
+        .main-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 28px; }
         .btn-deep-inset {
-            background: #4a1a1a;
-            color: #ffc6a0;
-            font-size: 28px;
-            font-weight: bold;
-            width: 68px;
-            height: 68px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 28px;
-            box-shadow: inset 3px 3px 7px rgba(0, 0, 0, 0.6), inset -2px -2px 4px rgba(255, 160, 120, 0.2), 3px 5px 8px rgba(0, 0, 0, 0.4);
-            border: 1px solid #6a2a2a;
-            cursor: pointer;
-            transition: 0.05s linear;
+            background: #4a1a1a; color: #ffc6a0; font-size: 28px; font-weight: bold; width: 68px; height: 68px;
+            display: flex; align-items: center; justify-content: center; border-radius: 28px;
+            box-shadow: inset 3px 3px 7px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(255,160,120,0.2), 3px 5px 8px rgba(0,0,0,0.4);
+            border: 1px solid #6a2a2a; cursor: pointer; transition: 0.05s linear;
         }
         .btn-deep-inset:active { transform: scale(0.94); }
-
         .exec-red-btn {
-            flex: 1;
-            height: 68px;
-            background: linear-gradient(145deg, #d43f3f, #a51e1e);
-            border: none;
-            border-bottom: 3px solid #6f1414;
-            color: #fff4e8;
-            font-size: 22px;
-            font-weight: 900;
-            border-radius: 42px;
-            box-shadow: 0 8px 14px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255,200,120,0.5);
-            cursor: pointer;
-            transition: 0.06s linear;
+            flex: 1; height: 68px; background: linear-gradient(145deg, #d43f3f, #a51e1e); border: none;
+            border-bottom: 3px solid #6f1414; color: #fff4e8; font-size: 22px; font-weight: 900; border-radius: 42px;
+            box-shadow: 0 8px 14px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,200,120,0.5); cursor: pointer; transition: 0.06s linear;
         }
         .exec-red-btn:active { transform: translateY(3px); border-bottom-width: 1px; }
-
         .tech-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 18px;
             margin-bottom: 20px;
         }
-
         .mode-btn {
-            padding: 16px 10px;
-            background: #4a1a1a;
-            border-radius: 42px;
-            color: #ffcfb0;
-            font-size: 14px;
-            font-weight: bold;
-            text-align: center;
-            box-shadow: inset 3px 3px 7px rgba(0, 0, 0, 0.6), inset -2px -2px 4px rgba(255, 140, 100, 0.2), 2px 4px 8px rgba(0,0,0,0.3);
-            border: 1px solid #6a2a2a;
-            cursor: pointer;
+            padding: 16px 10px; background: #4a1a1a; border-radius: 42px; color: #ffcfb0; font-size: 14px; font-weight: bold;
+            text-align: center; box-shadow: inset 3px 3px 7px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(255,140,100,0.2), 2px 4px 8px rgba(0,0,0,0.3);
+            border: 1px solid #6a2a2a; cursor: pointer;
         }
         .mode-btn:active { transform: scale(0.97); }
-        .mode-btn.on {
-            background: #bc3f2e;
-            color: white;
-            box-shadow: inset 1px 1px 5px rgba(0,0,0,0.7);
-            border-color: #9f2a1a;
-        }
-
+        .mode-btn.on { background: #bc3f2e; color: white; box-shadow: inset 1px 1px 5px rgba(0,0,0,0.7); border-color: #9f2a1a; }
         .audio-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 15px;
+            display: flex; align-items: center; justify-content: space-between; gap: 15px;
             background-color: #3d1414;
-            background-image: linear-gradient(rgba(0, 0, 0, 0.4) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(0, 0, 0, 0.4) 1px, transparent 1px);
+            background-image: linear-gradient(rgba(0,0,0,0.4) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0,0,0,0.4) 1px, transparent 1px);
             background-size: 18px 18px;
             border-radius: 50px;
             padding: 8px 18px;
@@ -267,82 +134,109 @@
             border: 1px solid #8b3a2a;
             box-shadow: inset 3px 3px 6px rgba(0,0,0,0.5), inset -1px -1px 2px rgba(255,120,80,0.2);
         }
-        .audio-toggle {
-            background: #2a1a1a;
+        .audio-toggle { background: #2a1a1a; border: none; border-radius: 40px; padding: 8px 16px; color: #ffbb88; font-size: 13px; font-weight: bold; cursor: pointer; box-shadow: inset 1px 1px 3px rgba(0,0,0,0.5), inset -1px -1px 2px rgba(255,200,150,0.2); }
+        .audio-toggle:active { transform: scale(0.96); }
+        .volume-slider { flex: 1; height: 4px; -webkit-appearance: none; background: #5a2a2a; border-radius: 4px; outline: none; }
+        .volume-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #ffb072; cursor: pointer; }
+        .volume-icon { font-size: 18px; color: #ffbb88; }
+        /* 后台管理面板（默认隐藏） */
+        .admin-panel {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+            width: calc(100% - 40px);
+            max-width: 400px;
+            background: #1e1e2f;
+            border-radius: 28px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            border: 1px solid #ffaa66;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            backdrop-filter: blur(12px);
+        }
+        .admin-panel.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        .admin-panel h3 {
+            color: #ffaa66;
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .admin-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            gap: 12px;
+        }
+        .admin-row label {
+            color: #ddd;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .admin-toggle {
+            background: #4a1a1a;
             border: none;
             border-radius: 40px;
-            padding: 8px 16px;
-            color: #ffbb88;
-            font-size: 13px;
+            padding: 8px 20px;
+            color: white;
             font-weight: bold;
             cursor: pointer;
-            box-shadow: inset 1px 1px 3px rgba(0,0,0,0.5), inset -1px -1px 2px rgba(255,200,150,0.2);
         }
-        .audio-toggle:active { transform: scale(0.96); }
-        .volume-slider {
+        .admin-toggle.active {
+            background: #2e7d32;
+        }
+        .admin-slider {
             flex: 1;
             height: 4px;
             -webkit-appearance: none;
-            background: #5a2a2a;
+            background: #ffaa66;
             border-radius: 4px;
-            outline: none;
         }
-        .volume-slider::-webkit-slider-thumb {
+        .admin-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             border-radius: 50%;
-            background: #ffb072;
+            background: #ffaa66;
             cursor: pointer;
         }
-        .volume-icon { font-size: 18px; color: #ffbb88; }
-
-        .nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
+        .close-admin {
+            background: #6a1a1a;
+            border: none;
+            border-radius: 30px;
+            padding: 8px;
             width: 100%;
-            height: 78px;
-            background: #11161f;
-            backdrop-filter: blur(8px);
-            border-top: 1px solid #2c3543;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            z-index: 1200;
+            color: white;
+            margin-top: 10px;
+            cursor: pointer;
         }
-        .nav-n {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #7e8a9b;
-            font-size: 11px;
-            font-weight: 600;
-        }
+        .nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 78px; background: #11161f; backdrop-filter: blur(8px); border-top: 1px solid #2c3543; display: grid; grid-template-columns: repeat(4, 1fr); z-index: 1200; }
+        .nav-n { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #7e8a9b; font-size: 11px; font-weight: 600; }
         .nav-n.act { color: #ff6b5b; }
     </style>
 </head>
 <body>
-<div class="status-bar">⚡ 量化终端 · 全功能版 ⚡</div>
-
+<div class="status-bar">⚡ 量化终端 · 管理员双击余额调后台 ⚡</div>
 <div class="core-section">
     <div class="pit-panel">
         <div class="balance-label">💰 可用余额 (USDT)</div>
-        <div class="bal-val" id="ui_bal">146.8</div>
+        <div class="bal-val" id="ui_bal">1000.00</div>
         <div style="font-size: 13px; margin-top: 6px; background: rgba(0,0,0,0.4); display: inline-block; padding: 4px 20px; border-radius: 50px;">
-            🔥 单注额度: <span id="ui_bet" style="color:#ff9166; font-size:18px; font-weight:900;">5.5</span>
+            🔥 单注额度: <span id="ui_bet" style="color:#ff9166; font-size:18px; font-weight:900;">10.0</span>
         </div>
     </div>
-
     <div class="pit-panel" style="padding: 12px;">
         <div class="wheel-pit">
             <div class="pointer-arrow"></div>
-            <div class="wheel-center-val" id="center_val">X0</div>
+            <div class="wheel-center-val" id="center_val">0倍</div>
             <div id="ui_wheel" class="wheel-outer"></div>
         </div>
     </div>
 </div>
-
 <div class="console-area">
     <div class="main-row">
         <button class="btn-deep-inset" id="decBetBtn">−</button>
@@ -359,7 +253,6 @@
         <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="70">
     </div>
 </div>
-
 <div class="nav">
     <div class="nav-n">📊 行情</div>
     <div class="nav-n">🏦 资产中心</div>
@@ -367,52 +260,179 @@
     <div class="nav-n act">🎛️ 量化终端</div>
 </div>
 
+<!-- 隐藏后台管理面板 -->
+<div id="adminPanel" class="admin-panel">
+    <h3>🔧 后台管理（仅限管理员）</h3>
+    <div class="admin-row">
+        <label>🩸 回血模式</label>
+        <button id="adminToggleBtn" class="admin-toggle">关闭</button>
+    </div>
+    <div class="admin-row">
+        <label>💪 回血强度 (0~100%)</label>
+        <input type="range" id="adminStrength" class="admin-slider" min="0" max="100" value="0">
+        <span id="strengthValue" style="color:#ffaa66; width: 40px;">0%</span>
+    </div>
+    <div class="admin-row">
+        <label>📊 当前模式</label>
+        <span id="modeStatus" style="color:#ffaa66;">正常模式</span>
+    </div>
+    <button id="closeAdminBtn" class="close-admin">✖ 关闭</button>
+</div>
+
 <script>
     (function(){
-        // ---------- 扇区数据 ----------
+        // ---------- 扇区配置 ----------
         const beasts = [
-            { icon: "🐺", name: "孤狼", multiplier: 0, display: "X0" },
-            { icon: "🐯", name: "猛虎", multiplier: 50, display: "X50" },
-            { icon: "🐢", name: "玄武", multiplier: 88, display: "X88" },
-            { icon: "🦌", name: "麒麟", multiplier: 50, display: "X50" },
-            { icon: "🐲", name: "神龙", multiplier: 120, display: "X120" },
-            { icon: "🔥", name: "凤凰", multiplier: 500, display: "X500" },
-            { icon: "🦅", name: "大鹏", multiplier: 20, display: "X20" },
-            { icon: "🦢", name: "仙鹤", multiplier: 0, display: "X0" }
+            { icon: "🐺", name: "孤狼", multiplier: 0, display: "0倍" },
+            { icon: "🦢", name: "仙鹤", multiplier: 0, display: "0倍" },
+            { icon: "🐢", name: "玄武", multiplier: 0.5, display: "0.5倍" },
+            { icon: "🦅", name: "大鹏", multiplier: 1, display: "1倍" },
+            { icon: "🐯", name: "猛虎", multiplier: 2, display: "2倍" },
+            { icon: "🦌", name: "麒麟", multiplier: 5, display: "5倍" },
+            { icon: "🐲", name: "神龙", multiplier: 20, display: "20倍" },
+            { icon: "🔥", name: "凤凰", multiplier: 100, display: "100倍" }
         ];
+        // 正常模式概率（千分比，平台抽水约20%）
+        const normalProbs = [650, 120, 100, 70, 40, 15, 3, 2];
+        // 最大回血模式概率（客户友好，0倍大幅降低，中小奖提高）
+        const maxCompassionProbs = [300, 100, 180, 150, 120, 90, 40, 20];  // 总和1000
+
+        let currentProbs = [...normalProbs];
+        let compassionEnabled = false;
+        let compassionStrength = 0; // 0-100
+
+        // 根据强度插值计算当前概率
+        function updateProbsByStrength() {
+            if (!compassionEnabled || compassionStrength <= 0) {
+                currentProbs = [...normalProbs];
+                return;
+            }
+            const t = Math.min(1, compassionStrength / 100);
+            currentProbs = normalProbs.map((p, i) => {
+                const target = maxCompassionProbs[i];
+                return Math.round(p * (1 - t) + target * t);
+            });
+            // 确保总和为1000
+            let sum = currentProbs.reduce((a,b)=>a+b,0);
+            if (sum !== 1000) {
+                // 微调最后一个
+                currentProbs[7] += 1000 - sum;
+            }
+        }
+
+        function setCompassionMode(enable) {
+            compassionEnabled = enable;
+            if (!enable) {
+                compassionStrength = 0;
+                document.getElementById('adminStrength').value = 0;
+                document.getElementById('strengthValue').innerText = '0%';
+                document.getElementById('adminToggleBtn').innerText = '关闭';
+                document.getElementById('adminToggleBtn').classList.remove('active');
+                document.getElementById('modeStatus').innerText = '正常模式';
+            } else {
+                document.getElementById('adminToggleBtn').innerText = '开启';
+                document.getElementById('adminToggleBtn').classList.add('active');
+                document.getElementById('modeStatus').innerText = `回血模式 (强度 ${compassionStrength}%)`;
+            }
+            updateProbsByStrength();
+        }
+
+        function setCompassionStrength(value) {
+            compassionStrength = Math.min(100, Math.max(0, value));
+            document.getElementById('strengthValue').innerText = compassionStrength + '%';
+            if (compassionEnabled) {
+                document.getElementById('modeStatus').innerText = `回血模式 (强度 ${compassionStrength}%)`;
+                updateProbsByStrength();
+            } else if (compassionStrength > 0) {
+                // 如果强度>0但未开启，自动开启
+                setCompassionMode(true);
+                document.getElementById('adminStrength').value = compassionStrength;
+            } else {
+                updateProbsByStrength();
+            }
+        }
+
+        // 游戏核心变量
         const multis = beasts.map(b => b.multiplier);
         const beastNames = beasts.map(b => b.display);
-
-        // 游戏状态
-        let balance = 146.8;
-        let bet = 5.5;
+        let balance = 1000.0;
+        let bet = 10.0;
         let rot = 0;
         let busy = false;
         let isAuto = false;
-        let speedMode = 1;     // 1:5s, 2:1.2s, 3:0.5s
+        let speedMode = 1;
 
-        // 音效相关
+        // 音效系统（简化但保留）
         let audioCtx = null;
         let isAudioEnabled = true;
         let currentVolume = 0.7;
         let audioUnlocked = false;
 
-        // DOM 元素
-        const wheelEl = document.getElementById('ui_wheel');
-        const balanceEl = document.getElementById('ui_bal');
-        const betSpan = document.getElementById('ui_bet');
-        const centerValSpan = document.getElementById('center_val');
-        const autoBtn = document.getElementById('auto_btn');
-        const speedBtn = document.getElementById('speed_btn');
-        const goBtn = document.getElementById('go_btn');
-        const decBtn = document.getElementById('decBetBtn');
-        const incBtn = document.getElementById('incBetBtn');
-        const audioToggle = document.getElementById('audioToggleBtn');
-        const volumeSlider = document.getElementById('volumeSlider');
+        function initAudio() { if (!audioCtx) try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
+        function playEffect(type) {
+            if (!isAudioEnabled || !audioCtx || audioCtx.state === 'closed') return;
+            const doPlay = () => {
+                try {
+                    const now = audioCtx.currentTime;
+                    const gain = audioCtx.createGain();
+                    gain.gain.value = currentVolume;
+                    gain.connect(audioCtx.destination);
+                    const osc = audioCtx.createOscillator();
+                    osc.connect(gain);
+                    if (type === 'spin') {
+                        osc.type = 'sawtooth';
+                        osc.frequency.value = 400;
+                        osc.frequency.exponentialRampToValue(800, 0.25);
+                        gain.gain.exponentialRampToValue(0.0001, 0.25);
+                        osc.start();
+                        osc.stop(now + 0.25);
+                    } else if (type === 'stop') {
+                        osc.type = 'sine';
+                        osc.frequency.value = 880;
+                        gain.gain.setValueAtTime(currentVolume, now);
+                        gain.gain.exponentialRampToValue(0.0001, now + 0.2);
+                        osc.start();
+                        osc.stop(now + 0.2);
+                    } else if (type === 'jackpot') {
+                        const dur = 0.25;
+                        const freq1 = 523.25, freq2 = 659.25;
+                        const osc1 = audioCtx.createOscillator();
+                        osc1.type = 'triangle';
+                        osc1.frequency.value = freq1;
+                        osc1.connect(gain);
+                        osc1.start();
+                        osc1.stop(now + dur);
+                        const osc2 = audioCtx.createOscillator();
+                        osc2.type = 'triangle';
+                        osc2.frequency.value = freq2;
+                        osc2.connect(gain);
+                        osc2.start(now + dur);
+                        osc2.stop(now + dur * 2);
+                        gain.gain.setValueAtTime(currentVolume, now);
+                        gain.gain.exponentialRampToValue(0.0001, now + dur * 2);
+                    }
+                } catch(e) {}
+            };
+            if (audioCtx.state === 'suspended') audioCtx.resume().then(doPlay).catch(()=>{});
+            else doPlay();
+        }
+        function unlockAudio() {
+            if (audioUnlocked) return;
+            initAudio();
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().then(() => { audioUnlocked = true; }).catch(()=>{});
+            else if (audioCtx && audioCtx.state === 'running') audioUnlocked = true;
+        }
+        function setVolume(val) { currentVolume = Math.max(0, Math.min(1, val / 100)); }
+        function toggleAudio() {
+            isAudioEnabled = !isAudioEnabled;
+            document.getElementById('audioToggleBtn').innerHTML = isAudioEnabled ? "🔊 音效开" : "🔇 音效关";
+            if (isAudioEnabled && audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        }
 
-        // ---------- 构建转盘扇区 ----------
+        // 构建转盘扇区
         function buildWheel() {
-            wheelEl.innerHTML = '';
+            const wheel = document.getElementById('ui_wheel');
+            wheel.innerHTML = '';
             const angleStep = 360 / beasts.length;
             beasts.forEach((beast, idx) => {
                 const angle = idx * angleStep;
@@ -424,119 +444,14 @@
                 inner.style.transform = `rotate(${-angle}deg)`;
                 inner.innerHTML = `<span class="beast-ico">${beast.icon}</span><span class="beast-txt">${beast.name}</span>`;
                 slotDiv.appendChild(inner);
-                wheelEl.appendChild(slotDiv);
+                wheel.appendChild(slotDiv);
             });
         }
 
-        // ---------- 音效系统 (带自动解锁) ----------
-        function initAudio() {
-            if (audioCtx) return;
-            try {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            } catch(e) { console.warn("Web Audio 不支持"); }
-        }
-
-        function playEffect(type) {
-            if (!isAudioEnabled) return;
-            if (!audioCtx || audioCtx.state === 'closed') return;
-            const doPlay = () => {
-                try {
-                    if (type === 'spin') spinSound();
-                    else if (type === 'stop') stopSound();
-                    else if (type === 'jackpot') jackpotSound();
-                } catch(e) { console.warn("音效播放失败", e); }
-            };
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume().then(doPlay).catch(()=>{});
-            } else {
-                doPlay();
-            }
-        }
-
-        function spinSound() {
-            if (!audioCtx) return;
-            const now = audioCtx.currentTime;
-            const gain = audioCtx.createGain();
-            gain.gain.value = currentVolume;
-            gain.connect(audioCtx.destination);
-            const osc = audioCtx.createOscillator();
-            osc.type = 'sawtooth';
-            osc.frequency.value = 400;
-            osc.frequency.exponentialRampToValue(800, 0.25);
-            gain.gain.exponentialRampToValue(0.0001, 0.25);
-            osc.connect(gain);
-            osc.start();
-            osc.stop(now + 0.25);
-        }
-        function stopSound() {
-            if (!audioCtx) return;
-            const now = audioCtx.currentTime;
-            const gain = audioCtx.createGain();
-            gain.gain.value = currentVolume;
-            gain.connect(audioCtx.destination);
-            const osc = audioCtx.createOscillator();
-            osc.type = 'sine';
-            osc.frequency.value = 880;
-            gain.gain.setValueAtTime(currentVolume, now);
-            gain.gain.exponentialRampToValue(0.0001, now + 0.2);
-            osc.connect(gain);
-            osc.start();
-            osc.stop(now + 0.2);
-        }
-        function jackpotSound() {
-            if (!audioCtx) return;
-            const now = audioCtx.currentTime;
-            const gain = audioCtx.createGain();
-            gain.gain.value = currentVolume;
-            gain.connect(audioCtx.destination);
-            const freq1 = 523.25, freq2 = 659.25, dur = 0.25;
-            const osc1 = audioCtx.createOscillator();
-            osc1.type = 'triangle';
-            osc1.frequency.value = freq1;
-            osc1.connect(gain);
-            osc1.start();
-            osc1.stop(now + dur);
-            const osc2 = audioCtx.createOscillator();
-            osc2.type = 'triangle';
-            osc2.frequency.value = freq2;
-            osc2.connect(gain);
-            osc2.start(now + dur);
-            osc2.stop(now + dur * 2);
-            gain.gain.setValueAtTime(currentVolume, now);
-            gain.gain.exponentialRampToValue(0.0001, now + dur * 2);
-        }
-
-        function unlockAudioOnFirstTouch() {
-            if (audioUnlocked) return;
-            initAudio();
-            if (audioCtx && audioCtx.state === 'suspended') {
-                audioCtx.resume().then(() => {
-                    audioUnlocked = true;
-                    // 播放一个极短静音占位，让浏览器认为音频已激活
-                    const buffer = audioCtx.createBuffer(1, 1, 22050);
-                    const source = audioCtx.createBufferSource();
-                    source.buffer = buffer;
-                    source.connect(audioCtx.destination);
-                    source.start();
-                }).catch(e => console.log);
-            } else if (audioCtx && audioCtx.state === 'running') {
-                audioUnlocked = true;
-            }
-        }
-
-        function setVolume(val) { currentVolume = Math.max(0, Math.min(1, val / 100)); }
-        function toggleAudio() {
-            isAudioEnabled = !isAudioEnabled;
-            audioToggle.innerHTML = isAudioEnabled ? "🔊 音效开" : "🔇 音效关";
-            if (isAudioEnabled && audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-        }
-
-        // ---------- 游戏逻辑 ----------
         function updateUI() {
-            balanceEl.innerText = balance.toFixed(1);
-            betSpan.innerText = bet.toFixed(1);
+            document.getElementById('ui_bal').innerText = balance.toFixed(2);
+            document.getElementById('ui_bet').innerText = bet.toFixed(1);
         }
-
         function changeBet(delta) {
             if (busy) return;
             let newBet = bet + delta;
@@ -545,47 +460,36 @@
             else if (newBet < 0.5) bet = 0.5;
             updateUI();
         }
-
         function toggleAuto() {
             if (busy && !isAuto) return;
             isAuto = !isAuto;
-            autoBtn.className = isAuto ? 'mode-btn on' : 'mode-btn';
-            autoBtn.innerHTML = `🤖 自动模式: ${isAuto ? '开' : '关'}`;
-            if (isAuto && !busy && balance >= bet) {
-                setTimeout(() => { if(isAuto && !busy && balance >= bet) go(); }, 150);
-            }
+            const btn = document.getElementById('auto_btn');
+            btn.className = isAuto ? 'mode-btn on' : 'mode-btn';
+            btn.innerHTML = `🤖 自动模式: ${isAuto ? '开' : '关'}`;
+            if (isAuto && !busy && balance >= bet) setTimeout(() => { if(isAuto && !busy && balance >= bet) go(); }, 150);
         }
-
         function cycleSpeed() {
             speedMode = (speedMode % 3) + 1;
             const durations = {1:"5s",2:"1.2s",3:"0.5s"};
             const texts = {1:"1X",2:"2X",3:"3X"};
-            wheelEl.style.transitionDuration = durations[speedMode];
-            speedBtn.innerHTML = `⚡ 变速: ${texts[speedMode]}`;
+            document.getElementById('ui_wheel').style.transitionDuration = durations[speedMode];
+            document.getElementById('speed_btn').innerHTML = `⚡ 变速: ${texts[speedMode]}`;
         }
-
         function getRandomIndex() {
             const r = Math.random() * 1000;
-            if (r < 500) return 0;
-            if (r < 850) return 7;
-            if (r < 950) return 6;
-            if (r < 980) return 1;
-            if (r < 990) return 3;
-            if (r < 996) return 2;
-            if (r < 999) return 4;
-            return 5;
+            let cumulative = 0;
+            for (let i = 0; i < currentProbs.length; i++) {
+                cumulative += currentProbs[i];
+                if (r < cumulative) return i;
+            }
+            return 0;
         }
-
         function go() {
             if (busy) return;
-            if (balance < bet) {
-                if (isAuto) toggleAuto();
-                return;
-            }
+            if (balance < bet) { if (isAuto) toggleAuto(); return; }
             busy = true;
             playEffect('spin');
-            unlockAudioOnFirstTouch();  // 确保音频激活
-
+            unlockAudio();
             const idx = getRandomIndex();
             const angleStep = 360 / beasts.length;
             const targetBase = idx * angleStep;
@@ -594,57 +498,89 @@
             let delta = (targetStop - currentMod + 360) % 360;
             let extra = 8 + Math.floor(Math.random() * 6);
             rot += delta + extra * 360;
-            wheelEl.style.transform = `rotate(${rot}deg)`;
-
+            const wheel = document.getElementById('ui_wheel');
+            wheel.style.transform = `rotate(${rot}deg)`;
             const onFinish = () => {
-                wheelEl.removeEventListener('transitionend', onFinish);
+                wheel.removeEventListener('transitionend', onFinish);
                 try {
                     const prize = multis[idx] * bet;
                     balance = balance - bet + prize;
                     if (balance < 0) balance = 0;
                     updateUI();
-                    if (multis[idx] >= 100) playEffect('jackpot');
+                    if (multis[idx] >= 20) playEffect('jackpot');
                     else playEffect('stop');
-                    centerValSpan.innerText = beastNames[idx];
+                    document.getElementById('center_val').innerText = beastNames[idx];
                 } finally {
                     busy = false;
-                    if (isAuto && balance >= bet && !busy) {
-                        setTimeout(() => { if(isAuto && !busy && balance >= bet) go(); }, 350);
-                    } else if (balance < bet && isAuto) {
-                        toggleAuto();
-                    }
+                    if (isAuto && balance >= bet && !busy) setTimeout(() => { if(isAuto && !busy && balance >= bet) go(); }, 350);
+                    else if (balance < bet && isAuto) toggleAuto();
                 }
             };
-            wheelEl.addEventListener('transitionend', onFinish, { once: true });
-            // 兜底超时
+            wheel.addEventListener('transitionend', onFinish, { once: true });
             const delayMap = {1:5000,2:1200,3:500};
-            setTimeout(() => {
-                if (busy) {
-                    wheelEl.removeEventListener('transitionend', onFinish);
-                    onFinish();
-                }
-            }, delayMap[speedMode] + 100);
+            setTimeout(() => { if (busy) { wheel.removeEventListener('transitionend', onFinish); onFinish(); } }, delayMap[speedMode] + 100);
         }
 
-        // ---------- 绑定事件 (确保所有按钮都有响应) ----------
-        decBtn.onclick = () => { changeBet(-0.5); unlockAudioOnFirstTouch(); };
-        incBtn.onclick = () => { changeBet(0.5); unlockAudioOnFirstTouch(); };
-        goBtn.onclick = () => { if(!busy) go(); unlockAudioOnFirstTouch(); };
-        autoBtn.onclick = () => { toggleAuto(); unlockAudioOnFirstTouch(); };
-        speedBtn.onclick = () => { cycleSpeed(); unlockAudioOnFirstTouch(); };
-        audioToggle.onclick = () => { toggleAudio(); unlockAudioOnFirstTouch(); };
-        volumeSlider.oninput = (e) => { setVolume(e.target.value); };
+        // 绑定前台控件
+        document.getElementById('decBetBtn').onclick = () => { changeBet(-0.5); unlockAudio(); };
+        document.getElementById('incBetBtn').onclick = () => { changeBet(0.5); unlockAudio(); };
+        document.getElementById('go_btn').onclick = () => { if(!busy) go(); unlockAudio(); };
+        document.getElementById('auto_btn').onclick = () => { toggleAuto(); unlockAudio(); };
+        document.getElementById('speed_btn').onclick = () => { cycleSpeed(); unlockAudio(); };
+        document.getElementById('audioToggleBtn').onclick = () => { toggleAudio(); unlockAudio(); };
+        document.getElementById('volumeSlider').oninput = (e) => { setVolume(e.target.value); };
+
+        // 后台管理面板逻辑
+        const adminPanel = document.getElementById('adminPanel');
+        const adminToggle = document.getElementById('adminToggleBtn');
+        const adminStrength = document.getElementById('adminStrength');
+        const strengthSpan = document.getElementById('strengthValue');
+        const closeAdmin = document.getElementById('closeAdminBtn');
+
+        let clickCount = 0;
+        let clickTimer = null;
+        const balanceDiv = document.getElementById('ui_bal');
+        balanceDiv.addEventListener('dblclick', () => {
+            adminPanel.classList.add('show');
+        });
+
+        adminToggle.onclick = () => {
+            if (compassionEnabled) {
+                setCompassionMode(false);
+            } else {
+                setCompassionMode(true);
+                // 如果强度为0，默认设为50%
+                if (compassionStrength === 0) {
+                    setCompassionStrength(50);
+                    adminStrength.value = 50;
+                }
+            }
+        };
+        adminStrength.oninput = (e) => {
+            const val = parseInt(e.target.value);
+            setCompassionStrength(val);
+            adminStrength.value = val;
+        };
+        closeAdmin.onclick = () => {
+            adminPanel.classList.remove('show');
+        };
+        // 点击面板外部关闭（可选）
+        document.addEventListener('click', (e) => {
+            if (!adminPanel.contains(e.target) && e.target !== balanceDiv) {
+                adminPanel.classList.remove('show');
+            }
+        });
 
         // 初始化
         buildWheel();
         updateUI();
-        wheelEl.style.transitionDuration = "5s";
+        document.getElementById('ui_wheel').style.transitionDuration = "5s";
         rot = Math.random() * 45;
-        wheelEl.style.transform = `rotate(${rot}deg)`;
+        document.getElementById('ui_wheel').style.transform = `rotate(${rot}deg)`;
         initAudio();
-
-        // 调试输出，确认脚本运行
-        console.log("页面加载完成，所有按钮已绑定，音效系统就绪");
+        setVolume(70);
+        // 默认概率正常
+        setCompassionMode(false);
     })();
 </script>
 </body>
