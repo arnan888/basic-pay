@@ -2,147 +2,650 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>量化终端 · 暗铸转盘</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>量化终端 · 暗铸转盘 · 完美交互</title>
     <style>
-        :root { --mg: #14281d; --pn: #232d36; --rd: #c93434; --gd: #f0a04b; --bg: #071a10; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
-        body { background: var(--bg); color: white; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        
-        .app { flex: 1; display: flex; flex-direction: column; padding: 12px; gap: 15px; overflow-y: auto; padding-bottom: 100px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-        /* 余额面板 - 严谨的小数点对齐 */
-        .card { background: var(--pn); border-radius: 35px; padding: 10px; border: 3px solid var(--mg); box-shadow: 0 15px 30px #000; }
-        .card-in { background: #232d36; border-radius: 28px; padding: 25px; text-align: center; box-shadow: inset 5px 8px 15px #000; background-image: linear-gradient(rgba(255,255,255,0.03) 1.5px, transparent 1.5px), linear-gradient(90deg, rgba(255,255,255,0.03) 1.5px, transparent 1.5px); background-size: 20px 20px; }
-        .num { color: #ff5252; font-size: 72px; font-weight: bold; margin: 5px 0; letter-spacing: -3px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-        .sub { font-size: 14px; color: #8a969e; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        body {
+            background: #1a2a1a;
+            background-image: radial-gradient(circle at 30% 20%, #2c4a2c 0%, #0a1f0a 100%);
+            font-family: "PingFang SC", "Segoe UI", system-ui, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 78px;
+        }
 
-        /* 转盘主模块 */
-        .wh-box { background: var(--pn); border-radius: 40px; border: 3px solid var(--mg); padding: 40px 10px; position: relative; box-shadow: 0 20px 40px #000, inset 0 0 20px #000; display: flex; justify-content: center; background-image: linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 20px 20px; }
-        .ptr { position: absolute; top: 15px; z-index: 100; width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 32px solid #ff3b30; filter: drop-shadow(0 5px 8px #000); }
-        .wh-body { width: 270px; height: 270px; border-radius: 50%; background: #2d7053; border: 12px solid #141a1f; outline: 3px solid var(--mg); position: relative; box-shadow: 0 15px 50px #000; transition: transform 5s cubic-bezier(0.15, 0, 0.15, 1); }
-        .x0 { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 88px; height: 88px; background: #141a1f; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ff5252; font-weight: bold; font-size: 30px; border: 4px solid var(--mg); z-index: 10; }
-        
-        .slt { position: absolute; width: 100%; height: 100%; text-align: center; transform-origin: 50% 50%; padding-top: 15px; }
-        .slt i { font-style: normal; font-size: 34px; display: block; }
-        .slt b { display: block; font-size: 11px; color: #fff; margin-top: -2px; font-weight: bold; text-shadow: 1px 1px 2px #000; }
+        .status-bar {
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(4px);
+            height: 32px;
+            display: flex;
+            align-items: center;
+            padding: 0 18px;
+            font-size: 10px;
+            font-weight: 500;
+            color: #cbd5e1;
+            justify-content: center;
+            flex-shrink: 0;
+            border-bottom: 1px solid rgba(0,0,0,0.3);
+        }
 
-        /* 操作按钮 */
-        .btns { display: flex; gap: 15px; align-items: center; }
-        .btn-s { width: 75px; height: 75px; background: var(--pn); border: 2.5px solid var(--mg); border-radius: 22px; color: var(--gd); font-size: 40px; box-shadow: 5px 8px 15px #000; cursor: pointer; }
-        .btn-m { flex: 1; background: linear-gradient(180deg, #d33838, #8a1a1a); border: none; border-radius: 50px; height: 75px; color: white; font-size: 26px; font-weight: bold; box-shadow: 0 8px 0 #5e1111, 0 15px 30px rgba(0,0,0,0.5); cursor: pointer; }
-        
-        /* 切换按钮 */
-        .opts { display: flex; gap: 12px; }
-        .btn-o { flex: 1; height: 55px; background: var(--pn); border: 2.5px solid var(--mg); border-radius: 25px; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; box-shadow: inset 2px 2px 5px #000; }
+        .core-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 16px 8px;
+            gap: 16px;
+        }
 
-        /* 底部指示点 */
-        .dots { display: flex; justify-content: center; gap: 8px; margin-top: 5px; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: #2d3842; }
-        .dot.active { background: #5c6b76; }
+        .pit-panel {
+            width: 100%;
+            max-width: 420px;
+            background-color: #2a323f;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.35) 1.2px, transparent 1.2px),
+                              linear-gradient(90deg, rgba(0, 0, 0, 0.35) 1.2px, transparent 1.2px);
+            background-size: 22px 22px;
+            border-radius: 32px;
+            box-shadow: inset 8px 8px 16px rgba(0, 0, 0, 0.55),
+                        inset -4px -4px 8px rgba(255, 255, 255, 0.08),
+                        0px 10px 20px rgba(0, 0, 0, 0.4);
+            border: 2px solid #1d4a2c;
+            padding: 18px 16px;
+            text-align: center;
+        }
 
-        /* 底部导航栏 - 1:1 严谨还原图中的图标与红色选中态 */
-        .nav { position: fixed; bottom: 0; left: 0; right: 0; height: 85px; background: #0d1210; border-top: 1px solid #1a2e24; display: flex; justify-content: space-around; align-items: center; padding-bottom: 15px; z-index: 1000; }
-        .nav-a { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #8a969e; font-size: 12px; text-decoration: none; width: 25%; }
-        .nav-a.active { color: #ff5252; }
-        .ico { width: 26px; height: 26px; border-radius: 6px; background: #232d36; display: flex; align-items: center; justify-content: center; font-size: 16px; margin-bottom: 2px; }
-        .active .ico { background: rgba(255, 82, 82, 0.2); }
+        .bal-val {
+            font-size: 52px;
+            font-weight: 900;
+            color: #ff5e5e;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            font-family: monospace;
+        }
+
+        .balance-label {
+            font-size: 12px;
+            background: rgba(0,0,0,0.5);
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 30px;
+            color: #cddeff;
+        }
+
+        .wheel-pit {
+            width: 280px;
+            height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin: 8px auto;
+        }
+
+        .wheel-outer {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            position: relative;
+            background-color: #2b6e3c;
+            background-image: linear-gradient(rgba(210, 255, 180, 0.2) 1.2px, transparent 1.2px),
+                              linear-gradient(90deg, rgba(210, 255, 180, 0.2) 1.2px, transparent 1.2px);
+            background-size: 16px 16px;
+            box-shadow: 8px 12px 24px rgba(0, 0, 0, 0.6), inset 0px 1px 2px rgba(255,255,240,0.3);
+            border: 3px solid #1d4a2c;
+            transition: transform 5s cubic-bezier(0.12, 0.72, 0.28, 0.98);
+            z-index: 5;
+        }
+
+        .wheel-center-val {
+            position: absolute;
+            z-index: 20;
+            width: 68px;
+            height: 68px;
+            background: #2e3a48;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ff8a6f;
+            font-size: 22px;
+            font-weight: 900;
+            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(255,255,255,0.15), 0 2px 6px black;
+            border: 1px solid #161e28;
+        }
+
+        .slot-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 18px;
+            pointer-events: none;
+        }
+        .slot-content-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: rotate(0deg);
+        }
+        .beast-ico { font-size: 32px; filter: drop-shadow(1px 2px 4px rgba(0,0,0,0.5)); margin-bottom: 2px; }
+        .beast-txt {
+            font-size: 10px;
+            font-weight: bold;
+            color: #f9f3cf;
+            background: rgba(0,0,0,0.55);
+            padding: 2px 6px;
+            border-radius: 50px;
+            white-space: nowrap;
+        }
+
+        .pointer-arrow {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 16px solid transparent;
+            border-right: 16px solid transparent;
+            border-top: 28px solid #e32020;
+            z-index: 100;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+        }
+
+        /* 红色控制台 */
+        .console-area {
+            width: 100%;
+            background-color: #6a1a1a;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.45) 1.2px, transparent 1.2px),
+                              linear-gradient(90deg, rgba(0, 0, 0, 0.45) 1.2px, transparent 1.2px);
+            background-size: 22px 22px;
+            padding: 24px 20px 30px;
+            box-shadow: inset 8px 8px 18px rgba(0, 0, 0, 0.7),
+                        inset -4px -4px 10px rgba(255, 80, 80, 0.2),
+                        0 -6px 16px rgba(0,0,0,0.5);
+            border-top: 3px solid #8b2c2c;
+            border-bottom: 1px solid #4a1010;
+            margin-top: 8px;
+        }
+
+        .main-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+
+        .btn-deep-inset {
+            background: #4a1a1a;
+            color: #ffc6a0;
+            font-size: 28px;
+            font-weight: bold;
+            width: 68px;
+            height: 68px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 28px;
+            box-shadow: inset 3px 3px 7px rgba(0, 0, 0, 0.6), inset -2px -2px 4px rgba(255, 160, 120, 0.2), 3px 5px 8px rgba(0, 0, 0, 0.4);
+            border: 1px solid #6a2a2a;
+            cursor: pointer;
+            transition: 0.05s linear;
+        }
+        .btn-deep-inset:active { transform: scale(0.94); }
+
+        .exec-red-btn {
+            flex: 1;
+            height: 68px;
+            background: linear-gradient(145deg, #d43f3f, #a51e1e);
+            border: none;
+            border-bottom: 3px solid #6f1414;
+            color: #fff4e8;
+            font-size: 22px;
+            font-weight: 900;
+            border-radius: 42px;
+            box-shadow: 0 8px 14px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255,200,120,0.5);
+            cursor: pointer;
+            transition: 0.06s linear;
+        }
+        .exec-red-btn:active { transform: translateY(3px); border-bottom-width: 1px; }
+
+        .tech-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            padding: 16px 10px;
+            background: #4a1a1a;
+            border-radius: 42px;
+            color: #ffcfb0;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: inset 3px 3px 7px rgba(0, 0, 0, 0.6), inset -2px -2px 4px rgba(255, 140, 100, 0.2), 2px 4px 8px rgba(0,0,0,0.3);
+            border: 1px solid #6a2a2a;
+            cursor: pointer;
+        }
+        .mode-btn:active { transform: scale(0.97); }
+        .mode-btn.on {
+            background: #bc3f2e;
+            color: white;
+            box-shadow: inset 1px 1px 5px rgba(0,0,0,0.7);
+            border-color: #9f2a1a;
+        }
+
+        .audio-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            background-color: #3d1414;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.4) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0, 0, 0, 0.4) 1px, transparent 1px);
+            background-size: 18px 18px;
+            border-radius: 50px;
+            padding: 8px 18px;
+            margin-top: 10px;
+            border: 1px solid #8b3a2a;
+            box-shadow: inset 3px 3px 6px rgba(0,0,0,0.5), inset -1px -1px 2px rgba(255,120,80,0.2);
+        }
+        .audio-toggle {
+            background: #2a1a1a;
+            border: none;
+            border-radius: 40px;
+            padding: 8px 16px;
+            color: #ffbb88;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: inset 1px 1px 3px rgba(0,0,0,0.5), inset -1px -1px 2px rgba(255,200,150,0.2);
+        }
+        .audio-toggle:active { transform: scale(0.96); }
+        .volume-slider {
+            flex: 1;
+            height: 4px;
+            -webkit-appearance: none;
+            background: #5a2a2a;
+            border-radius: 4px;
+            outline: none;
+        }
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #ffb072;
+            cursor: pointer;
+        }
+        .volume-icon { font-size: 18px; color: #ffbb88; }
+
+        .nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 78px;
+            background: #11161f;
+            backdrop-filter: blur(8px);
+            border-top: 1px solid #2c3543;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            z-index: 1200;
+        }
+        .nav-n {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #7e8a9b;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .nav-n.act { color: #ff6b5b; }
     </style>
 </head>
 <body>
+<div class="status-bar">⚡ 量化终端 · 全功能版 ⚡</div>
 
-<div class="app">
-    <!-- 余额面板 -->
-    <div class="card">
-        <div class="card-in">
-            <div class="sub"><span style="color:var(--gd)">💰</span> 可用余额 (USDT)</div>
-            <div id="bal" class="num">146.8</div>
-            <div class="sub">🔥 单注额度: <span id="bet-v" style="color:var(--gd); font-weight:bold">5.5</span></div>
+<div class="core-section">
+    <div class="pit-panel">
+        <div class="balance-label">💰 可用余额 (USDT)</div>
+        <div class="bal-val" id="ui_bal">146.8</div>
+        <div style="font-size: 13px; margin-top: 6px; background: rgba(0,0,0,0.4); display: inline-block; padding: 4px 20px; border-radius: 50px;">
+            🔥 单注额度: <span id="ui_bet" style="color:#ff9166; font-size:18px; font-weight:900;">5.5</span>
         </div>
     </div>
 
-    <!-- 转盘模块 -->
-    <div class="wh-box">
-        <div class="ptr"></div>
-        <div id="plate" class="wh-body">
-            <div class="x0">X0</div>
-            <div class="slt" style="transform:rotate(0deg)"><i>🦢</i><b>仙鹤</b></div>
-            <div class="slt" style="transform:rotate(45deg)"><i>🐺</i><b>孤狼</b></div>
-            <div class="slt" style="transform:rotate(90deg)"><i>🐯</i><b>猛虎</b></div>
-            <div class="slt" style="transform:rotate(135deg)"><i>🐢</i><b>玄武</b></div>
-            <div class="slt" style="transform:rotate(180deg)"><i>🦌</i><b>麒麟</b></div>
-            <div class="slt" style="transform:rotate(225deg)"><i>🐲</i><b>神龙</b></div>
-            <div class="slt" style="transform:rotate(270deg)"><i>🔥</i><b>凤凰</b></div>
-            <div class="slt" style="transform:rotate(315deg)"><i>🦅</i><b>大鹏</b></div>
+    <div class="pit-panel" style="padding: 12px;">
+        <div class="wheel-pit">
+            <div class="pointer-arrow"></div>
+            <div class="wheel-center-val" id="center_val">X0</div>
+            <div id="ui_wheel" class="wheel-outer"></div>
         </div>
-    </div>
-
-    <!-- 底部五点指示器 -->
-    <div class="dots">
-        <div class="dot"></div>
-        <div class="dot"></div>
-        <div class="dot active"></div>
-        <div class="dot"></div>
-        <div class="dot"></div>
-    </div>
-
-    <!-- 执行按钮 -->
-    <div class="btns">
-        <button class="btn-s" onclick="adj(-0.5)">−</button>
-        <button id="draw-btn" class="btn-m" onclick="run()">▶ 执行抽取</button>
-        <button class="btn-s" onclick="adj(0.5)">+</button>
-    </div>
-
-    <!-- 功能切换 -->
-    <div class="opts">
-        <button id="auto-btn" class="btn-o" onclick="auto()">🤖 自动模式: <span id="auto-s">关</span></button>
-        <button id="sp-btn" class="btn-o" onclick="sp()">⚡ 变速: <span id="sp-v">1X</span></button>
     </div>
 </div>
 
-<!-- 底部固定导航 -->
-<nav class="nav">
-    <a href="#" class="nav-a"><div class="ico">📈</div>行情</a>
-    <a href="#" class="nav-a"><div class="ico">💼</div>资产中心</a>
-    <a href="#" class="nav-a"><div class="ico">📜</div>历史记录</a>
-    <a href="#" class="nav-a active"><div class="ico">🎯</div>量化终端</a>
-</nav>
+<div class="console-area">
+    <div class="main-row">
+        <button class="btn-deep-inset" id="decBetBtn">−</button>
+        <button id="go_btn" class="exec-red-btn">▶ 执 行 抽 取</button>
+        <button class="btn-deep-inset" id="incBetBtn">＋</button>
+    </div>
+    <div class="tech-row">
+        <div id="auto_btn" class="mode-btn">🤖 自动模式: 关</div>
+        <div id="speed_btn" class="mode-btn">⚡ 变速: 1X</div>
+    </div>
+    <div class="audio-row">
+        <button id="audioToggleBtn" class="audio-toggle">🔊 音效开</button>
+        <span class="volume-icon">🔉</span>
+        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="70">
+    </div>
+</div>
+
+<div class="nav">
+    <div class="nav-n">📊 行情</div>
+    <div class="nav-n">🏦 资产中心</div>
+    <div class="nav-n">📜 历史记录</div>
+    <div class="nav-n act">🎛️ 量化终端</div>
+</div>
 
 <script>
-    let B = 146.8, A = 5.5, R = 0, isAuto = false, S = 1, busy = false;
+    (function(){
+        // ---------- 扇区数据 ----------
+        const beasts = [
+            { icon: "🐺", name: "孤狼", multiplier: 0, display: "X0" },
+            { icon: "🐯", name: "猛虎", multiplier: 50, display: "X50" },
+            { icon: "🐢", name: "玄武", multiplier: 88, display: "X88" },
+            { icon: "🦌", name: "麒麟", multiplier: 50, display: "X50" },
+            { icon: "🐲", name: "神龙", multiplier: 120, display: "X120" },
+            { icon: "🔥", name: "凤凰", multiplier: 500, display: "X500" },
+            { icon: "🦅", name: "大鹏", multiplier: 20, display: "X20" },
+            { icon: "🦢", name: "仙鹤", multiplier: 0, display: "X0" }
+        ];
+        const multis = beasts.map(b => b.multiplier);
+        const beastNames = beasts.map(b => b.display);
 
-    function upd() {
-        document.getElementById('bal').innerText = B.toFixed(1);
-        document.getElementById('bet-v').innerText = A.toFixed(1);
-    }
+        // 游戏状态
+        let balance = 146.8;
+        let bet = 5.5;
+        let rot = 0;
+        let busy = false;
+        let isAuto = false;
+        let speedMode = 1;     // 1:5s, 2:1.2s, 3:0.5s
 
-    function adj(v) { if(!busy) { A = Math.max(0.5, A + v); upd(); } }
+        // 音效相关
+        let audioCtx = null;
+        let isAudioEnabled = true;
+        let currentVolume = 0.7;
+        let audioUnlocked = false;
 
-    function auto() {
-        isAuto = !isAuto;
-        document.getElementById('auto-s').innerText = isAuto ? '开' : '关';
-        if(isAuto && !busy) run();
-    }
+        // DOM 元素
+        const wheelEl = document.getElementById('ui_wheel');
+        const balanceEl = document.getElementById('ui_bal');
+        const betSpan = document.getElementById('ui_bet');
+        const centerValSpan = document.getElementById('center_val');
+        const autoBtn = document.getElementById('auto_btn');
+        const speedBtn = document.getElementById('speed_btn');
+        const goBtn = document.getElementById('go_btn');
+        const decBtn = document.getElementById('decBetBtn');
+        const incBtn = document.getElementById('incBetBtn');
+        const audioToggle = document.getElementById('audioToggleBtn');
+        const volumeSlider = document.getElementById('volumeSlider');
 
-    function sp() { S = S === 1 ? 2 : 1; document.getElementById('sp-v').innerText = S + 'X'; }
+        // ---------- 构建转盘扇区 ----------
+        function buildWheel() {
+            wheelEl.innerHTML = '';
+            const angleStep = 360 / beasts.length;
+            beasts.forEach((beast, idx) => {
+                const angle = idx * angleStep;
+                const slotDiv = document.createElement('div');
+                slotDiv.className = 'slot-content';
+                slotDiv.style.transform = `rotate(${angle}deg)`;
+                const inner = document.createElement('div');
+                inner.className = 'slot-content-inner';
+                inner.style.transform = `rotate(${-angle}deg)`;
+                inner.innerHTML = `<span class="beast-ico">${beast.icon}</span><span class="beast-txt">${beast.name}</span>`;
+                slotDiv.appendChild(inner);
+                wheelEl.appendChild(slotDiv);
+            });
+        }
 
-    async function run() {
-        if(busy || B < A) { isAuto = false; document.getElementById('auto-s').innerText = '关'; return; }
-        busy = true; B -= A; upd();
-        const p = document.getElementById('plate');
-        const prize = Math.floor(Math.random() * 8) * 45;
-        R += 1800 + (360 - (R % 360)) + (360 - prize);
-        const dur = 5 / S;
-        p.style.transition = `transform ${dur}s cubic-bezier(0.15, 0, 0.15, 1)`;
-        p.style.transform = `rotate(${R}deg)`;
-        setTimeout(() => {
-            busy = false;
-            // 简单中奖逻辑模拟
-            if(Math.random() > 0.7) B += A * 2.5; 
-            upd();
-            if(isAuto) setTimeout(run, 800);
-        }, (dur * 1000) + 200);
-    }
+        // ---------- 音效系统 (带自动解锁) ----------
+        function initAudio() {
+            if (audioCtx) return;
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            } catch(e) { console.warn("Web Audio 不支持"); }
+        }
+
+        function playEffect(type) {
+            if (!isAudioEnabled) return;
+            if (!audioCtx || audioCtx.state === 'closed') return;
+            const doPlay = () => {
+                try {
+                    if (type === 'spin') spinSound();
+                    else if (type === 'stop') stopSound();
+                    else if (type === 'jackpot') jackpotSound();
+                } catch(e) { console.warn("音效播放失败", e); }
+            };
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume().then(doPlay).catch(()=>{});
+            } else {
+                doPlay();
+            }
+        }
+
+        function spinSound() {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const gain = audioCtx.createGain();
+            gain.gain.value = currentVolume;
+            gain.connect(audioCtx.destination);
+            const osc = audioCtx.createOscillator();
+            osc.type = 'sawtooth';
+            osc.frequency.value = 400;
+            osc.frequency.exponentialRampToValue(800, 0.25);
+            gain.gain.exponentialRampToValue(0.0001, 0.25);
+            osc.connect(gain);
+            osc.start();
+            osc.stop(now + 0.25);
+        }
+        function stopSound() {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const gain = audioCtx.createGain();
+            gain.gain.value = currentVolume;
+            gain.connect(audioCtx.destination);
+            const osc = audioCtx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.value = 880;
+            gain.gain.setValueAtTime(currentVolume, now);
+            gain.gain.exponentialRampToValue(0.0001, now + 0.2);
+            osc.connect(gain);
+            osc.start();
+            osc.stop(now + 0.2);
+        }
+        function jackpotSound() {
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const gain = audioCtx.createGain();
+            gain.gain.value = currentVolume;
+            gain.connect(audioCtx.destination);
+            const freq1 = 523.25, freq2 = 659.25, dur = 0.25;
+            const osc1 = audioCtx.createOscillator();
+            osc1.type = 'triangle';
+            osc1.frequency.value = freq1;
+            osc1.connect(gain);
+            osc1.start();
+            osc1.stop(now + dur);
+            const osc2 = audioCtx.createOscillator();
+            osc2.type = 'triangle';
+            osc2.frequency.value = freq2;
+            osc2.connect(gain);
+            osc2.start(now + dur);
+            osc2.stop(now + dur * 2);
+            gain.gain.setValueAtTime(currentVolume, now);
+            gain.gain.exponentialRampToValue(0.0001, now + dur * 2);
+        }
+
+        function unlockAudioOnFirstTouch() {
+            if (audioUnlocked) return;
+            initAudio();
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume().then(() => {
+                    audioUnlocked = true;
+                    // 播放一个极短静音占位，让浏览器认为音频已激活
+                    const buffer = audioCtx.createBuffer(1, 1, 22050);
+                    const source = audioCtx.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(audioCtx.destination);
+                    source.start();
+                }).catch(e => console.log);
+            } else if (audioCtx && audioCtx.state === 'running') {
+                audioUnlocked = true;
+            }
+        }
+
+        function setVolume(val) { currentVolume = Math.max(0, Math.min(1, val / 100)); }
+        function toggleAudio() {
+            isAudioEnabled = !isAudioEnabled;
+            audioToggle.innerHTML = isAudioEnabled ? "🔊 音效开" : "🔇 音效关";
+            if (isAudioEnabled && audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        // ---------- 游戏逻辑 ----------
+        function updateUI() {
+            balanceEl.innerText = balance.toFixed(1);
+            betSpan.innerText = bet.toFixed(1);
+        }
+
+        function changeBet(delta) {
+            if (busy) return;
+            let newBet = bet + delta;
+            if (newBet >= 0.5 && newBet <= balance) bet = parseFloat(newBet.toFixed(1));
+            else if (newBet > balance && delta > 0 && balance >= 0.5) bet = balance;
+            else if (newBet < 0.5) bet = 0.5;
+            updateUI();
+        }
+
+        function toggleAuto() {
+            if (busy && !isAuto) return;
+            isAuto = !isAuto;
+            autoBtn.className = isAuto ? 'mode-btn on' : 'mode-btn';
+            autoBtn.innerHTML = `🤖 自动模式: ${isAuto ? '开' : '关'}`;
+            if (isAuto && !busy && balance >= bet) {
+                setTimeout(() => { if(isAuto && !busy && balance >= bet) go(); }, 150);
+            }
+        }
+
+        function cycleSpeed() {
+            speedMode = (speedMode % 3) + 1;
+            const durations = {1:"5s",2:"1.2s",3:"0.5s"};
+            const texts = {1:"1X",2:"2X",3:"3X"};
+            wheelEl.style.transitionDuration = durations[speedMode];
+            speedBtn.innerHTML = `⚡ 变速: ${texts[speedMode]}`;
+        }
+
+        function getRandomIndex() {
+            const r = Math.random() * 1000;
+            if (r < 500) return 0;
+            if (r < 850) return 7;
+            if (r < 950) return 6;
+            if (r < 980) return 1;
+            if (r < 990) return 3;
+            if (r < 996) return 2;
+            if (r < 999) return 4;
+            return 5;
+        }
+
+        function go() {
+            if (busy) return;
+            if (balance < bet) {
+                if (isAuto) toggleAuto();
+                return;
+            }
+            busy = true;
+            playEffect('spin');
+            unlockAudioOnFirstTouch();  // 确保音频激活
+
+            const idx = getRandomIndex();
+            const angleStep = 360 / beasts.length;
+            const targetBase = idx * angleStep;
+            let currentMod = rot % 360;
+            let targetStop = (360 - targetBase + angleStep/2) % 360;
+            let delta = (targetStop - currentMod + 360) % 360;
+            let extra = 8 + Math.floor(Math.random() * 6);
+            rot += delta + extra * 360;
+            wheelEl.style.transform = `rotate(${rot}deg)`;
+
+            const onFinish = () => {
+                wheelEl.removeEventListener('transitionend', onFinish);
+                try {
+                    const prize = multis[idx] * bet;
+                    balance = balance - bet + prize;
+                    if (balance < 0) balance = 0;
+                    updateUI();
+                    if (multis[idx] >= 100) playEffect('jackpot');
+                    else playEffect('stop');
+                    centerValSpan.innerText = beastNames[idx];
+                } finally {
+                    busy = false;
+                    if (isAuto && balance >= bet && !busy) {
+                        setTimeout(() => { if(isAuto && !busy && balance >= bet) go(); }, 350);
+                    } else if (balance < bet && isAuto) {
+                        toggleAuto();
+                    }
+                }
+            };
+            wheelEl.addEventListener('transitionend', onFinish, { once: true });
+            // 兜底超时
+            const delayMap = {1:5000,2:1200,3:500};
+            setTimeout(() => {
+                if (busy) {
+                    wheelEl.removeEventListener('transitionend', onFinish);
+                    onFinish();
+                }
+            }, delayMap[speedMode] + 100);
+        }
+
+        // ---------- 绑定事件 (确保所有按钮都有响应) ----------
+        decBtn.onclick = () => { changeBet(-0.5); unlockAudioOnFirstTouch(); };
+        incBtn.onclick = () => { changeBet(0.5); unlockAudioOnFirstTouch(); };
+        goBtn.onclick = () => { if(!busy) go(); unlockAudioOnFirstTouch(); };
+        autoBtn.onclick = () => { toggleAuto(); unlockAudioOnFirstTouch(); };
+        speedBtn.onclick = () => { cycleSpeed(); unlockAudioOnFirstTouch(); };
+        audioToggle.onclick = () => { toggleAudio(); unlockAudioOnFirstTouch(); };
+        volumeSlider.oninput = (e) => { setVolume(e.target.value); };
+
+        // 初始化
+        buildWheel();
+        updateUI();
+        wheelEl.style.transitionDuration = "5s";
+        rot = Math.random() * 45;
+        wheelEl.style.transform = `rotate(${rot}deg)`;
+        initAudio();
+
+        // 调试输出，确认脚本运行
+        console.log("页面加载完成，所有按钮已绑定，音效系统就绪");
+    })();
 </script>
 </body>
 </html>
