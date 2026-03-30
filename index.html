@@ -3,141 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI_QUANT_PRO_V2</title>
+    <title>AI_QUANT_STRUCTURE_FINAL</title>
     <style>
         :root {
-            --deep-bg: #0a0e0c;
-            --panel-bg: #121815;
+            --dark-green: #1a261f;   /* 墨绿色 */
+            --green-border: #2d3e34; /* 边框墨绿 */
+            --stone-grey: #2c322f;  /* 清石灰 */
+            --grid-line: rgba(255,255,255,0.03);
             --red-num: #ff3e3e;
-            --grid-line: #1a221e;
             --gold: #f1c40f;
-            --neon-green: #00ff88;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'PingFang SC', -apple-system, sans-serif; }
-        body { background: var(--deep-bg); color: #fff; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-
-        /* 顶部余额区 */
-        .header {
-            padding: 20px; background: linear-gradient(180deg, #161d18 0%, var(--deep-bg) 100%);
-            border-bottom: 1px solid var(--grid-line); text-align: center;
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; }
+        
+        body { 
+            background: var(--dark-green); 
+            height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
         }
-        .bal-label { font-size: 12px; color: #668877; letter-spacing: 2px; margin-bottom: 5px; }
-        .bal-val { font-size: 48px; color: var(--red-num); font-weight: 800; text-shadow: 0 0 15px rgba(255, 62, 62, 0.3); }
 
-        /* 历史记录槽 */
-        .history-bar {
-            display: flex; gap: 8px; justify-content: center; margin-top: 10px; height: 30px;
+        /* 3mm 墨绿色平行立体外包围 */
+        .outer-frame {
+            width: 100vw;
+            height: 100vh;
+            border: 3px solid var(--green-border);
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+            background: var(--stone-grey);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            /* 网格布局布局覆盖整个内陷背景 */
+            background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 20px 20px;
         }
-        .hist-item { width: 25px; height: 25px; background: #1a221e; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid #333; animation: slideIn 0.3s ease; }
 
-        /* 转盘舞台 */
-        .stage { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; perspective: 1000px; }
+        /* 2mm 墨绿色隔离横条 */
+        .divider {
+            height: 2px;
+            background: var(--green-border);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1);
+            width: 100%;
+        }
+
+        /* 上方八分之一区域 */
+        .top-section {
+            height: 12.5%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 10px;
+            align-items: center;
+        }
+        .inset-panel {
+            background: #1e2421;
+            border: 1px solid #111;
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 10px;
+        }
+        .label { font-size: 10px; color: #668877; }
+        .val { font-size: 18px; color: var(--red-num); font-weight: bold; }
+        .pool { color: var(--gold) !important; }
+
+        /* 中间八分之四区域：转盘 */
+        .mid-section {
+            height: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
         .pointer { 
-            position: absolute; top: 12%; left: 50%; transform: translateX(-50%); z-index: 100;
-            width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; 
-            border-top: 30px solid #ff3e3e; filter: drop-shadow(0 0 8px #ff3e3e);
+            position: absolute; top: 10px; z-index: 10; 
+            width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid #ff0000;
         }
-        
         #wheel { 
-            width: 320px; height: 320px; border-radius: 50%; border: 15px solid #1f2923;
-            background: #151d19; position: relative; transition: transform 4s cubic-bezier(0.15, 0, 0.2, 1.2);
-            box-shadow: 0 0 50px rgba(0,0,0,0.8), inset 0 0 30px rgba(0,0,0,0.5);
+            width: 280px; height: 280px; border-radius: 50%; border: 10px solid var(--dark-green);
+            background: #1a221e; position: relative; transition: transform 4s cubic-bezier(0.15, 0, 0.2, 1.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
+        .slot { position: absolute; width: 100%; height: 100%; text-align: center; padding-top: 25px; font-size: 24px; }
+        .hub { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; background: #0a0e0c; border-radius: 50%; border: 2px solid var(--green-border); z-index: 5; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 14px; font-weight: bold; }
+
+        /* 下方操作区域 */
+        .bottom-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            gap: 15px;
+            background: rgba(0,0,0,0.2);
+        }
+        .main-btn-row {
+            display: grid;
+            grid-template-columns: 60px 1fr 60px;
+            gap: 10px;
+            height: 60px;
+        }
+        .btn-adj { background: var(--dark-green); border: 1px solid var(--green-border); border-radius: 10px; color: #fff; font-size: 24px; display: flex; align-items: center; justify-content: center; }
+        .btn-go { background: linear-gradient(180deg, #c0392b, #8e2121); border: none; border-radius: 30px; color: #fff; font-size: 20px; font-weight: bold; box-shadow: 0 4px 0 #5e1616; }
         
-        /* 模糊滤镜类 */
+        .sub-btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            height: 50px;
+        }
+        .btn-func { background: #1a221e; border: 1px solid var(--green-border); border-radius: 8px; color: #8aa095; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+        .active { border-color: var(--gold); color: #fff; box-shadow: 0 0 10px rgba(241,196,15,0.2); }
+
         .blur { filter: blur(2px); }
-
-        .hub { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            width: 80px; height: 80px; background: #0d120f; border-radius: 50%; 
-            border: 3px solid var(--grid-line); z-index: 10; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; box-shadow: 0 0 20px #000;
-        }
-        .hub-status { font-size: 12px; color: #4a5d52; }
-        .hub-win { font-size: 20px; color: var(--gold); font-weight: bold; }
-
-        /* 图标槽位 */
-        .slot { 
-            position: absolute; width: 100%; height: 100%; text-align: center; 
-            padding-top: 35px; font-size: 28px; filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
-        }
-
-        /* 控制区 */
-        .footer { background: #000; padding: 25px 20px 40px; border-top: 2px solid #1a221e; }
-        .main-ctrl { display: grid; grid-template-columns: 70px 1fr 70px; gap: 15px; margin-bottom: 20px; }
-        .btn-side { 
-            background: #111; border-radius: 15px; border: 1px solid #333; color: #eee; 
-            font-size: 30px; height: 60px; display: flex; align-items: center; justify-content: center;
-        }
-        .btn-side:active { background: #222; }
-        
-        .btn-go { 
-            background: linear-gradient(180deg, #e74c3c, #c0392b); border-radius: 30px; border: none; 
-            color: #fff; font-size: 20px; font-weight: bold; letter-spacing: 2px;
-            box-shadow: 0 6px 0 #7b1d1d, 0 10px 20px rgba(0,0,0,0.5); transition: 0.1s;
-        }
-        .btn-go:active { transform: translateY(4px); box-shadow: 0 2px 0 #7b1d1d; }
-        .btn-go:disabled { filter: grayscale(1); opacity: 0.6; }
-
-        .sub-ctrl { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .btn-opt { 
-            background: #111; border: 1px solid #222; border-radius: 12px; padding: 12px; 
-            color: #777; font-size: 13px; text-align: center; transition: 0.3s;
-        }
-        .btn-opt.active { border-color: var(--gold); color: #fff; box-shadow: 0 0 10px rgba(241, 196, 15, 0.2); }
-        .btn-opt b { color: #fff; margin-left: 4px; }
-
-        @keyframes slideIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
-        .win-flash { animation: flash 0.5s infinite; }
-        @keyframes flash { 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="bal-label">TOTAL ASSETS (USDT)</div>
-        <div class="bal-val" id="ui-bal">146.80</div>
-        <div class="history-bar" id="ui-history"></div>
+<div class="outer-frame">
+    <div class="top-section">
+        <div class="inset-panel">
+            <span class="label">BALANCE (USDT)</span>
+            <span class="val" id="ui-bal">146.80</span>
+        </div>
+        <div class="inset-panel">
+            <span class="label">NETWORK POOL</span>
+            <span class="val pool" id="ui-pool">84,291.50</span>
+        </div>
     </div>
 
-    <div class="stage">
+    <div class="divider"></div>
+
+    <div class="mid-section">
         <div class="pointer"></div>
         <div id="wheel"></div>
-        <div class="hub">
-            <span class="hub-status" id="ui-status">READY</span>
-            <span class="hub-win" id="ui-res">-</span>
-        </div>
+        <div class="hub" id="ui-hub">READY</div>
     </div>
 
-    <div class="footer">
-        <div class="main-ctrl">
-            <div class="btn-side" onclick="App.adjBet(-1)">−</div>
+    <div class="divider"></div>
+
+    <div class="bottom-section">
+        <div class="main-btn-row">
+            <div class="btn-adj" onclick="App.adjBet(-1)">−</div>
             <button class="btn-go" onclick="App.roll()" id="btn-go">EXECUTE</button>
-            <div class="btn-side" onclick="App.adjBet(1)">+</div>
+            <div class="btn-adj" onclick="App.adjBet(1)">+</div>
         </div>
-        <div style="text-align: center; color: var(--gold); font-size: 13px; margin-bottom: 15px; font-weight: bold;">
-            STAKE: <span id="ui-bet">5.5</span> USDT
+        
+        <div style="text-align: center; color: var(--gold); font-size: 12px; font-weight: bold;">
+            STAKE: <span id="ui-bet">5.5</span>
         </div>
-        <div class="sub-ctrl">
-            <div class="btn-opt" onclick="App.toggleAuto()" id="opt-auto">🤖 AUTO: <b>OFF</b></div>
-            <div class="btn-opt" onclick="App.toggleSpeed()" id="opt-speed">⚡ SPEED: <b>1X</b></div>
+
+        <div class="sub-btn-row">
+            <div class="btn-func" onclick="App.toggleAuto()" id="opt-auto">🤖 AUTO: <b>OFF</b></div>
+            <div class="btn-func" onclick="App.toggleSpeed()" id="opt-speed">⚡ SPEED: <b>1X</b></div>
         </div>
     </div>
+</div>
 
 <script>
 const App = {
     bets: [5.5, 10.0, 50.0, 100.0, 500.0],
     icons: ['💎','💊','⚡','🔥','💰','🦁','🏆','🎲'],
-    state: {
-        bal: 146.80, 
-        betIdx: 0, 
-        deg: 0, 
-        isRolling: false, 
-        auto: false, 
-        speed: 1,
-        history: []
-    },
+    state: { bal: 146.80, betIdx: 0, deg: 0, isRolling: false, auto: false, speed: 1 },
 
     init() {
         const wheel = document.getElementById('wheel');
@@ -148,6 +179,10 @@ const App = {
             el.innerText = s;
             wheel.appendChild(el);
         });
+        setInterval(() => { // 联网彩金池跳动
+            const pool = parseFloat(document.getElementById('ui-pool').innerText.replace(',',''));
+            document.getElementById('ui-pool').innerText = (pool + Math.random()).toLocaleString(undefined, {minimumFractionDigits: 2});
+        }, 3000);
         this.updateUI();
     },
 
@@ -158,8 +193,9 @@ const App = {
     },
 
     toggleSpeed() {
-        this.state.speed = this.state.speed === 1 ? 2 : 1;
-        document.getElementById('wheel').style.transitionDuration = this.state.speed === 1 ? '4s' : '1.5s';
+        this.state.speed = (this.state.speed % 3) + 1; // 1X, 2X, 3X
+        const dur = {1: '4s', 2: '2s', 3: '0.8s'}[this.state.speed];
+        document.getElementById('wheel').style.transitionDuration = dur;
         this.updateUI();
     },
 
@@ -169,101 +205,48 @@ const App = {
         this.updateUI();
     },
 
-    // 核心旋转逻辑
     async roll() {
         const cost = this.bets[this.state.betIdx];
         if(this.state.isRolling || this.state.bal < cost) {
-            this.state.auto = false;
-            this.updateUI();
-            return;
+            this.state.auto = false; this.updateUI(); return;
         }
 
-        // 1. 扣费预处理
         this.state.isRolling = true;
         this.state.bal -= cost;
-        document.getElementById('ui-status').innerText = "RUNNING";
-        document.getElementById('ui-res').innerText = "...";
+        document.getElementById('ui-hub').innerText = "ROLLING";
         document.getElementById('wheel').classList.add('blur');
         this.updateUI();
 
-        // 2. 模拟后端逻辑 (RTP返还率控制在 95% 左右)
-        const isWin = Math.random() > 0.65; 
-        const winIdx = Math.floor(Math.random() * 8); // 随机落点
-        
-        // 3. 计算旋转角度 (保证落在图标正中)
-        // 基础圈数 (10圈) + 偏移抵消 + 目标索引位
-        const extraRounds = this.state.speed === 1 ? 8 : 5;
-        const currentModDeg = this.state.deg % 360;
-        const targetDeg = (360 - currentModDeg) + (extraRounds * 360) - (winIdx * 45);
+        const winIdx = Math.floor(Math.random() * 8);
+        const rounds = this.state.speed === 1 ? 8 : (this.state.speed === 2 ? 5 : 3);
+        const targetDeg = (360 - (this.state.deg % 360)) + (rounds * 360) - (winIdx * 45);
         this.state.deg += targetDeg;
         
-        const wheel = document.getElementById('wheel');
-        wheel.style.transform = `rotate(${this.state.deg}deg)`;
+        document.getElementById('wheel').style.transform = `rotate(${this.state.deg}deg)`;
 
-        // 4. 等待动画结束
-        const waitTime = this.state.speed === 1 ? 4000 : 1500;
+        const times = {1: 4000, 2: 2000, 3: 800};
         setTimeout(() => {
-            wheel.classList.remove('blur');
+            document.getElementById('wheel').classList.remove('blur');
             this.state.isRolling = false;
-            
+            const isWin = Math.random() > 0.7;
             if(isWin) {
-                const prize = cost * 2.5;
-                this.animateValue('ui-bal', this.state.bal, this.state.bal + prize, 500);
-                this.state.bal += prize;
-                document.getElementById('ui-res').innerText = "WIN!";
-                document.getElementById('ui-res').classList.add('win-flash');
+                this.state.bal += cost * 2.5;
+                document.getElementById('ui-hub').innerText = "WIN";
             } else {
-                document.getElementById('ui-res').innerText = "LOSE";
-                document.getElementById('ui-res').classList.remove('win-flash');
+                document.getElementById('ui-hub').innerText = "X0";
             }
-
-            // 更新历史记录
-            this.state.history.unshift(this.icons[winIdx]);
-            if(this.state.history.length > 8) this.state.history.pop();
-            
             this.updateUI();
-
-            if(this.state.auto) setTimeout(() => this.roll(), 1000);
-        }, waitTime);
-    },
-
-    // 余额滚动效果
-    animateValue(id, start, end, duration) {
-        const obj = document.getElementById(id);
-        const range = end - start;
-        let startTime = null;
-
-        const step = (timestamp) => {
-            if (!startTime) startTime = timestamp;
-            const progress = Math.min((timestamp - startTime) / duration, 1);
-            obj.innerText = (start + progress * range).toFixed(2);
-            if (progress < 1) window.requestAnimationFrame(step);
-        };
-        window.requestAnimationFrame(step);
+            if(this.state.auto) setTimeout(() => this.roll(), 500);
+        }, times[this.state.speed]);
     },
 
     updateUI() {
-        // 余额同步
-        if(!this.state.isRolling) {
-            document.getElementById('ui-bal').innerText = this.state.bal.toFixed(2);
-        }
+        document.getElementById('ui-bal').innerText = this.state.bal.toFixed(2);
         document.getElementById('ui-bet').innerText = this.bets[this.state.betIdx].toFixed(1);
-        
-        // 按钮状态
-        const btnGo = document.getElementById('btn-go');
-        btnGo.disabled = this.state.isRolling || this.state.bal < this.bets[this.state.betIdx];
-        
-        // 模式同步
-        const optAuto = document.getElementById('opt-auto');
-        optAuto.className = this.state.auto ? "btn-opt active" : "btn-opt";
-        optAuto.querySelector('b').innerText = this.state.auto ? "ON" : "OFF";
-
-        const optSpeed = document.getElementById('opt-speed');
-        optSpeed.querySelector('b').innerText = this.state.speed + "X";
-
-        // 历史记录渲染
-        const histCont = document.getElementById('ui-history');
-        histCont.innerHTML = this.state.history.map(h => `<div class="hist-item">${h}</div>`).join('');
+        document.getElementById('opt-auto').className = this.state.auto ? "btn-func active" : "btn-func";
+        document.getElementById('opt-auto').querySelector('b').innerText = this.state.auto ? "ON" : "OFF";
+        document.getElementById('opt-speed').querySelector('b').innerText = this.state.speed + "X";
+        document.getElementById('btn-go').disabled = this.state.isRolling;
     }
 };
 
