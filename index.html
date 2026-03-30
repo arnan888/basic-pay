@@ -3,383 +3,271 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="祝贺转盘系统 - 核心功能精简版">
-    <title>ULITMATE_CONGRATS_PB</title>
+    <title>AI_QUANT_PRO_V2</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            background: #000; 
-            color: #FFD700; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            height: 100vh; width: 100vw; overflow: hidden; 
-            font-family: "Microsoft Yahei", sans-serif;
-            -webkit-tap-highlight-color: transparent;
+        :root {
+            --deep-bg: #0a0e0c;
+            --panel-bg: #121815;
+            --red-num: #ff3e3e;
+            --grid-line: #1a221e;
+            --gold: #f1c40f;
+            --neon-green: #00ff88;
         }
 
-        /* 后台栏 - 精简样式 */
-        .pb-admin-bar {
-            position: fixed; top: 0; width: 100%; height: 45px;
-            background: #000; border-bottom: 4px solid #FFD700;
-            display: flex; justify-content: space-around; align-items: center;
-            z-index: 1000; font-family: "Consolas", monospace; font-size: 15px;
-        }
-        .pb-admin-bar span { color: #888; margin-right: 3px; }
-        .pb-admin-bar b { color: #0f0; text-shadow: 0 0 5px #0f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'PingFang SC', -apple-system, sans-serif; }
+        body { background: var(--deep-bg); color: #fff; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
-        /* 余额区 - 简洁明了 */
-        .ui-top { margin-top: 40px; text-align: center; }
-        .bal-val { 
-            font-size: clamp(40px, 10vw, 70px); 
-            font-weight: 900; 
-            color: #FFD700; 
-            text-shadow: 0 0 20px #FFD700;
-            /* 新增：余额变化动画 */
-            transition: color 0.3s ease;
+        /* 顶部余额区 */
+        .header {
+            padding: 20px; background: linear-gradient(180deg, #161d18 0%, var(--deep-bg) 100%);
+            border-bottom: 1px solid var(--grid-line); text-align: center;
         }
-        /* 新增：余额增减颜色提示 */
-        .bal-val.gain { color: #0f0; text-shadow: 0 0 20px #0f0; }
-        .bal-val.lose { color: #f00; text-shadow: 0 0 20px #f00; }
+        .bal-label { font-size: 12px; color: #668877; letter-spacing: 2px; margin-bottom: 5px; }
+        .bal-val { font-size: 48px; color: var(--red-num); font-weight: 800; text-shadow: 0 0 15px rgba(255, 62, 62, 0.3); }
 
-        /* ========== 重点：凸显转盘外圈 ========== */
-        .stage {
-            position: relative;
-            margin-top: 20px;
-            /* 外圈主体：双层边框+渐变凸显 */
-            width: clamp(380px, 80vmin, 700px);
-            height: clamp(380px, 80vmin, 700px);
-            border-radius: 50%;
-            background: radial-gradient(circle, #222 0%, #000 85%);
-            /* 外层装饰圈 */
-            box-shadow: 
-                0 0 0 10px #111,
-                0 0 0 18px #FFD700,
-                0 0 0 28px #000,
-                0 0 0 32px #FFD700,
-                0 0 40px 32px rgba(255,215,0,0.3);
-            display: flex; align-items: center; justify-content: center;
+        /* 历史记录槽 */
+        .history-bar {
+            display: flex; gap: 8px; justify-content: center; margin-top: 10px; height: 30px;
         }
-        /* 内圈盘子：与外圈清晰区分 */
-        .wheel-wrap {
-            width: 92%;
-            height: 92%;
-            border-radius: 50%;
-            background: #000;
-            border: 2px solid #FFD700;
-            position: relative;
-            overflow: hidden;
+        .hist-item { width: 25px; height: 25px; background: #1a221e; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid #333; animation: slideIn 0.3s ease; }
+
+        /* 转盘舞台 */
+        .stage { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; perspective: 1000px; }
+        .pointer { 
+            position: absolute; top: 12%; left: 50%; transform: translateX(-50%); z-index: 100;
+            width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; 
+            border-top: 30px solid #ff3e3e; filter: drop-shadow(0 0 8px #ff3e3e);
+        }
+        
+        #wheel { 
+            width: 320px; height: 320px; border-radius: 50%; border: 15px solid #1f2923;
+            background: #151d19; position: relative; transition: transform 4s cubic-bezier(0.15, 0, 0.2, 1.2);
+            box-shadow: 0 0 50px rgba(0,0,0,0.8), inset 0 0 30px rgba(0,0,0,0.5);
+        }
+        
+        /* 模糊滤镜类 */
+        .blur { filter: blur(2px); }
+
+        .hub { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            width: 80px; height: 80px; background: #0d120f; border-radius: 50%; 
+            border: 3px solid var(--grid-line); z-index: 10; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; box-shadow: 0 0 20px #000;
+        }
+        .hub-status { font-size: 12px; color: #4a5d52; }
+        .hub-win { font-size: 20px; color: var(--gold); font-weight: bold; }
+
+        /* 图标槽位 */
+        .slot { 
+            position: absolute; width: 100%; height: 100%; text-align: center; 
+            padding-top: 35px; font-size: 28px; filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
         }
 
-        /* 指针：位置调整，与外圈呼应 */
-        .pointer {
-            position: absolute; 
-            top: -25px; left: 50%; 
-            transform: translateX(-50%);
-            z-index: 100;
-            width: 30px; height: 50px;
-            background: linear-gradient(to bottom, #FFD700 0%, #f00 100%);
-            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-            box-shadow: 0 0 10px #f00;
-            /* 新增：旋转时指针高亮 */
-            transition: box-shadow 0.3s ease;
+        /* 控制区 */
+        .footer { background: #000; padding: 25px 20px 40px; border-top: 2px solid #1a221e; }
+        .main-ctrl { display: grid; grid-template-columns: 70px 1fr 70px; gap: 15px; margin-bottom: 20px; }
+        .btn-side { 
+            background: #111; border-radius: 15px; border: 1px solid #333; color: #eee; 
+            font-size: 30px; height: 60px; display: flex; align-items: center; justify-content: center;
         }
-        .pointer.active { box-shadow: 0 0 20px #FFD700, 0 0 30px #f00; }
-        /* 指针底座：强化与外圈连接 */
-        .pointer::after {
-            content: '';
-            position: absolute;
-            bottom: -8px; left: 50%; transform: translateX(-50%);
-            width: 60px; height: 12px;
-            background: #FFD700;
-            border-radius: 6px;
-            box-shadow: 0 0 5px #FFD700;
+        .btn-side:active { background: #222; }
+        
+        .btn-go { 
+            background: linear-gradient(180deg, #e74c3c, #c0392b); border-radius: 30px; border: none; 
+            color: #fff; font-size: 20px; font-weight: bold; letter-spacing: 2px;
+            box-shadow: 0 6px 0 #7b1d1d, 0 10px 20px rgba(0,0,0,0.5); transition: 0.1s;
         }
+        .btn-go:active { transform: translateY(4px); box-shadow: 0 2px 0 #7b1d1d; }
+        .btn-go:disabled { filter: grayscale(1); opacity: 0.6; }
 
-        /* 转盘本体：分区清晰，不乱不乱！ */
-        .wheel {
-            width: 100%; height: 100%; 
-            position: relative; 
-            border-radius: 50%;
-            transition: transform 5s cubic-bezier(0.1, 0, 0, 1.02);
+        .sub-ctrl { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn-opt { 
+            background: #111; border: 1px solid #222; border-radius: 12px; padding: 12px; 
+            color: #777; font-size: 13px; text-align: center; transition: 0.3s;
         }
-        /* 分区色块：让每个槽位边界明确 */
-        .slot {
-            position: absolute; 
-            width: 100%; height: 100%;
-            clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%);
-            transform-origin: 50% 50%;
-            background: #111;
-        }
-        /* 交替颜色，区分更明显 */
-        .slot:nth-child(odd) { background: #1a1a1a; }
-        /* 每个槽位的内容容器 */
-        .slot-content {
-            position: absolute;
-            top: 15px; left: 50%;
-            transform: translateX(-50%);
-            width: 120px;
-            text-align: center;
-            display: flex; flex-direction: column; align-items: center;
-        }
-        /* 图标容器：统一样式 */
-        .icon-box {
-            width: 60px; height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #FFD700, #f00);
-            display: flex; align-items: center; justify-content: center;
-            margin-bottom: 8px;
-            box-shadow: 0 0 10px rgba(255,215,0,0.6);
-        }
-        .icon-box svg { width: 35px; height: 35px; fill: #000; }
-        /* 文字样式：清晰不拥挤 */
-        .slot-name { 
-            font-size: 14px; color: #fff; 
-            white-space: nowrap;
-            text-shadow: 0 0 5px #000;
-        }
-        .slot-reward { 
-            font-size: 12px; color: #0f0; 
-            background: #000;
-            padding: 1px 8px;
-            border-radius: 10px;
-            border: 1px solid #0f0;
-            margin-top: 3px;
-        }
-        /* 新增：中奖项高亮 */
-        .slot-content.win {
-            transform: translateX(-50%) scale(1.1);
-            transition: transform 0.5s ease;
-        }
-        .slot-content.win .icon-box {
-            box-shadow: 0 0 15px #0f0, 0 0 25px rgba(0,255,0,0.6);
-            border: 2px solid #0f0;
-        }
-        .slot-content.win .slot-name {
-            color: #0f0;
-            text-shadow: 0 0 10px #0f0;
-        }
+        .btn-opt.active { border-color: var(--gold); color: #fff; box-shadow: 0 0 10px rgba(241, 196, 15, 0.2); }
+        .btn-opt b { color: #fff; margin-left: 4px; }
 
-        /* 中心按钮：简洁厚重，不抢外圈风头 */
-        .btn-center {
-            position: absolute; 
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 110px; height: 110px;
-            border-radius: 50%;
-            background: radial-gradient(circle, #f00, #700);
-            border: 4px solid #FFD700;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(255,0,0,0.8);
-            z-index: 200;
-            /* 新增：按钮按下效果优化 */
-            transition: all 0.1s ease;
-        }
-        .btn-center h2 { 
-            font-size: 32px; color: #fff; 
-            text-shadow: 2px 2px 5px #000;
-        }
-        .btn-center.busy {
-            background: radial-gradient(circle, #666, #333);
-            border-color: #999;
-            cursor: not-allowed;
-            box-shadow: 0 0 10px rgba(100,100,100,0.5);
-        }
-        .btn-center.busy h2 { color: #ccc; }
-        /* 新增：按钮正常点击反馈 */
-        .btn-center:not(.busy):active {
-            transform: translate(-50%, -50%) scale(0.95);
-            box-shadow: 0 0 15px rgba(255,0,0,0.8);
-        }
-
-        /* 精简加载动画，只保留必要反馈 */
-        .loading {
-            display: none;
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 35px; height: 35px;
-            border: 3px solid #FFD700;
-            border-top: 3px solid #f00;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            z-index: 201;
-        }
-        .loading.active { display: block; }
-        @keyframes spin {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-
-        /* 新增：操作提示弹窗 */
-        .toast {
-            display: none;
-            position: fixed;
-            bottom: 30px;
-            padding: 10px 20px;
-            background: rgba(0,0,0,0.9);
-            border: 2px solid #FFD700;
-            border-radius: 20px;
-            color: #fff;
-            font-size: 16px;
-            z-index: 1001;
-            animation: toastPop 0.3s ease forwards;
-        }
-        .toast.active { display: block; }
-        @keyframes toastPop {
-            0% { opacity: 0; transform: translateY(20px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-
-        /* 新增：数据重置按钮（可选，便于测试） */
-        .reset-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 6px 12px;
-            background: #111;
-            border: 1px solid #FFD700;
-            border-radius: 10px;
-            color: #FFD700;
-            font-size: 12px;
-            cursor: pointer;
-            z-index: 1000;
-            transition: background 0.2s ease;
-        }
-        .reset-btn:hover { background: #222; }
+        @keyframes slideIn { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+        .win-flash { animation: flash 0.5s infinite; }
+        @keyframes flash { 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
 
-    <div class="pb-admin-bar">
-        <div><span>投入:</span> <b id="op_in">0</b></div>
-        <div><span>产出:</span> <b id="op_out">0</b></div>
-        <div><span>RTP:</span> <b id="op_rtp">0.0%</b></div>
+    <div class="header">
+        <div class="bal-label">TOTAL ASSETS (USDT)</div>
+        <div class="bal-val" id="ui-bal">146.80</div>
+        <div class="history-bar" id="ui-history"></div>
     </div>
 
-    <div class="ui-top">
-        <div class="bal-val" id="ui_bal">89,123.00</div>
-    </div>
-
-    <!-- 转盘主体：外圈重点凸显 -->
     <div class="stage">
-        <div class="pointer" id="pointer"></div>
-        <div class="wheel-wrap">
-            <div class="wheel" id="ui_wheel">
-                <!-- 8个槽位：角度精准，分区清晰 -->
-                <div class="slot" data-angle="0" style="transform: rotate(0deg);">
-                    <div class="slot-content" style="transform: rotate(0deg);">
-                        <div class="icon-box"><svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2z"/></svg></div>
-                        <div class="slot-name">旗开得胜</div>
-                        <div class="slot-reward">+88</div>
-                    </div>
-                </div>
-                <div class="slot" data-angle="45" style="transform: rotate(45deg);">
-                    <div class="slot-content" style="transform: rotate(-45deg);">
-                        <div class="icon-box"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg></div>
-                        <div class="slot-name">无惧浪潮</div>
-                        <div class="slot-reward">+50</div>
-                    </div>
-                </div>
-                <div class="slot" data-angle="90" style="transform: rotate(90deg);">
-                    <div class="slot-content" style="transform: rotate(-90deg);">
-                        <div class="icon-box"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16"/></svg></div>
-                        <div class="slot-name">乘风破浪</div>
-                        <div class="slot-reward">+20</div>
-                    </div>
-                </div>
-                <div class="slot" data-angle="135" style="transform: rotate(135deg);">
-                    <div class="slot-content" style="transform: rotate(-135deg);">
-                        <div class="icon-box"><svg viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></div>
-                        <div class="slot-name">首战告捷</div>
-                        <div class="slot-reward">捷报</div>
-                    </div>
-                </div>
-                <div class="slot" data-angle="180" style="transform: rotate(180deg);">
-                    <div class="slot-content" style="transform: rotate(-180deg);">
-                        <div class="icon-box"><svg viewBox="0 0 24 24"><path d="M12 2c-4.97 0-9 4.03-9 9 0 4.17 2.84 7.67 6.69 8.69L12 22l2.31-2.31C18.16 18.67 21 15.17 21 11c0-4.97-4.03-9-9-9z"/></svg></div>
-                        <div class="slot-name">屹立不倒</div>
-                        <div class="slot-reward">+15</div>
-                    </div>
-                </div>
-                <div class="slot" data-angle="225" style="transform: rotate(225deg);">
-                    <div class="slot-content" style="transform: rotate(-225deg);">
-                        <div class="icon-box"><svg viewBox="0 0 24 24"><path d="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42C17.99 7.86 19 9.81 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.19 1.01-4.14 2.58-5.42L6.17 5.17C4.23 6.82 3 9.26 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.74-1.23-5.18-3.17-6.83z"/></svg></div>
-                        <div class="slot-name">站得稳</div>
-                        <div class="slot-reward">捷报</div>
-                    </div>
-                </div>
-                <div class="slot" data-angle="270" style="transform: rotate(270deg);">
-                    <div class="slot-content" style="transform: rotate(-270deg);">
-                        <div class="icon-box"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
-                        <div class="slot-name">马到成功</div>
-                        <div class="slot-reward">+120</div>
-                    </div>
-                </div>
-                <div class="slot" data-angle="315" style="transform: rotate(315deg);">
-                    <div class="slot-content" style="transform: rotate(-315deg);">
-                        <div class="icon-box"><svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1z"/></svg></div>
-                        <div class="slot-name">万事如意</div>
-                        <div class="slot-reward">大吉</div>
-                    </div>
-                </div>
-            </div>
-            <div class="loading" id="loading"></div>
-            <div class="btn-center" id="mainBtn" onclick="exec()">
-                <h2>祝贺</h2>
-            </div>
+        <div class="pointer"></div>
+        <div id="wheel"></div>
+        <div class="hub">
+            <span class="hub-status" id="ui-status">READY</span>
+            <span class="hub-win" id="ui-res">-</span>
         </div>
     </div>
 
-    <!-- 新增功能元素 -->
-    <div class="toast" id="toast">操作提示</div>
-    <div class="reset-btn" onclick="resetData()">重置数据</div>
+    <div class="footer">
+        <div class="main-ctrl">
+            <div class="btn-side" onclick="App.adjBet(-1)">−</div>
+            <button class="btn-go" onclick="App.roll()" id="btn-go">EXECUTE</button>
+            <div class="btn-side" onclick="App.adjBet(1)">+</div>
+        </div>
+        <div style="text-align: center; color: var(--gold); font-size: 13px; margin-bottom: 15px; font-weight: bold;">
+            STAKE: <span id="ui-bet">5.5</span> USDT
+        </div>
+        <div class="sub-ctrl">
+            <div class="btn-opt" onclick="App.toggleAuto()" id="opt-auto">🤖 AUTO: <b>OFF</b></div>
+            <div class="btn-opt" onclick="App.toggleSpeed()" id="opt-speed">⚡ SPEED: <b>1X</b></div>
+        </div>
+    </div>
 
-    <script>
-        // 核心数据：只保留必要项
-        let balance = 89123.0, 
-            totalIn = 0,       
-            totalOut = 0,      
-            wheelRotation = 0, 
-            isBusy = false;
+<script>
+const App = {
+    bets: [5.5, 10.0, 50.0, 100.0, 500.0],
+    icons: ['💎','💊','⚡','🔥','💰','🦁','🏆','🎲'],
+    state: {
+        bal: 146.80, 
+        betIdx: 0, 
+        deg: 0, 
+        isRolling: false, 
+        auto: false, 
+        speed: 1,
+        history: []
+    },
+
+    init() {
+        const wheel = document.getElementById('wheel');
+        this.icons.forEach((s, i) => {
+            const el = document.createElement('div');
+            el.className = 'slot';
+            el.style.transform = `rotate(${i * 45}deg)`;
+            el.innerText = s;
+            wheel.appendChild(el);
+        });
+        this.updateUI();
+    },
+
+    adjBet(dir) {
+        if(this.state.isRolling) return;
+        this.state.betIdx = Math.max(0, Math.min(this.bets.length-1, this.state.betIdx + dir));
+        this.updateUI();
+    },
+
+    toggleSpeed() {
+        this.state.speed = this.state.speed === 1 ? 2 : 1;
+        document.getElementById('wheel').style.transitionDuration = this.state.speed === 1 ? '4s' : '1.5s';
+        this.updateUI();
+    },
+
+    toggleAuto() {
+        this.state.auto = !this.state.auto;
+        if(this.state.auto && !this.state.isRolling) this.roll();
+        this.updateUI();
+    },
+
+    // 核心旋转逻辑
+    async roll() {
+        const cost = this.bets[this.state.betIdx];
+        if(this.state.isRolling || this.state.bal < cost) {
+            this.state.auto = false;
+            this.updateUI();
+            return;
+        }
+
+        // 1. 扣费预处理
+        this.state.isRolling = true;
+        this.state.bal -= cost;
+        document.getElementById('ui-status').innerText = "RUNNING";
+        document.getElementById('ui-res').innerText = "...";
+        document.getElementById('wheel').classList.add('blur');
+        this.updateUI();
+
+        // 2. 模拟后端逻辑 (RTP返还率控制在 95% 左右)
+        const isWin = Math.random() > 0.65; 
+        const winIdx = Math.floor(Math.random() * 8); // 随机落点
         
-        // 奖励配置：补充名称便于提示
-        const rewardMatrix = [
-            {angle: 0, value: 88, name: '旗开得胜'},
-            {angle: 45, value: 50, name: '无惧浪潮'},
-            {angle: 90, value: 20, name: '乘风破浪'},
-            {angle: 135, value: 0, name: '首战告捷'},
-            {angle: 180, value: 15, name: '屹立不倒'},
-            {angle: 225, value: 0, name: '站得稳'},
-            {angle: 270, value: 120, name: '马到成功'},
-            {angle: 315, value: 0, name: '万事如意'}
-        ];
+        // 3. 计算旋转角度 (保证落在图标正中)
+        // 基础圈数 (10圈) + 偏移抵消 + 目标索引位
+        const extraRounds = this.state.speed === 1 ? 8 : 5;
+        const currentModDeg = this.state.deg % 360;
+        const targetDeg = (360 - currentModDeg) + (extraRounds * 360) - (winIdx * 45);
+        this.state.deg += targetDeg;
         
-        // DOM缓存：补充新增元素
-        const dom = {
-            balance: document.getElementById('ui_bal'),
-            totalIn: document.getElementById('op_in'),
-            totalOut: document.getElementById('op_out'),
-            rtp: document.getElementById('op_rtp'),
-            wheel: document.getElementById('ui_wheel'),
-            btn: document.getElementById('mainBtn'),
-            loading: document.getElementById('loading'),
-            pointer: document.getElementById('pointer'),
-            toast: document.getElementById('toast'),
-            slots: document.querySelectorAll('.slot-content')
+        const wheel = document.getElementById('wheel');
+        wheel.style.transform = `rotate(${this.state.deg}deg)`;
+
+        // 4. 等待动画结束
+        const waitTime = this.state.speed === 1 ? 4000 : 1500;
+        setTimeout(() => {
+            wheel.classList.remove('blur');
+            this.state.isRolling = false;
+            
+            if(isWin) {
+                const prize = cost * 2.5;
+                this.animateValue('ui-bal', this.state.bal, this.state.bal + prize, 500);
+                this.state.bal += prize;
+                document.getElementById('ui-res').innerText = "WIN!";
+                document.getElementById('ui-res').classList.add('win-flash');
+            } else {
+                document.getElementById('ui-res').innerText = "LOSE";
+                document.getElementById('ui-res').classList.remove('win-flash');
+            }
+
+            // 更新历史记录
+            this.state.history.unshift(this.icons[winIdx]);
+            if(this.state.history.length > 8) this.state.history.pop();
+            
+            this.updateUI();
+
+            if(this.state.auto) setTimeout(() => this.roll(), 1000);
+        }, waitTime);
+    },
+
+    // 余额滚动效果
+    animateValue(id, start, end, duration) {
+        const obj = document.getElementById(id);
+        const range = end - start;
+        let startTime = null;
+
+        const step = (timestamp) => {
+            if (!startTime) startTime = timestamp;
+            const progress = Math.min((timestamp - startTime) / duration, 1);
+            obj.innerText = (start + progress * range).toFixed(2);
+            if (progress < 1) window.requestAnimationFrame(step);
         };
+        window.requestAnimationFrame(step);
+    },
 
-        // 数字格式化：核心功能保留
-        function formatNum(num) {
-            if (isNaN(num)) return '0.00';
-            return num.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    updateUI() {
+        // 余额同步
+        if(!this.state.isRolling) {
+            document.getElementById('ui-bal').innerText = this.state.bal.toFixed(2);
         }
+        document.getElementById('ui-bet').innerText = this.bets[this.state.betIdx].toFixed(1);
+        
+        // 按钮状态
+        const btnGo = document.getElementById('btn-go');
+        btnGo.disabled = this.state.isRolling || this.state.bal < this.bets[this.state.betIdx];
+        
+        // 模式同步
+        const optAuto = document.getElementById('opt-auto');
+        optAuto.className = this.state.auto ? "btn-opt active" : "btn-opt";
+        optAuto.querySelector('b').innerText = this.state.auto ? "ON" : "OFF";
 
-        // 新增：显示提示弹窗
-        function showToast(text, duration = 2000) {
-            dom.toast.innerText = text;
-            dom.toast.classList.add('active');
-            setTimeout(() => dom.toast.classList.remove('active'), duration);
-        }
+        const optSpeed = document.getElementById('opt-speed');
+        optSpeed.querySelector('b').innerText = this.state.speed + "X";
 
-        // 新增：余额变化视觉提示
-        function showBalanceChange(isGain) {
+        // 历史记录渲染
+        const histCont = document.getElementById('ui-history');
+        histCont.innerHTML = this.state.history.map(h => `<div class="hist-item">${h}</div>`).join('');
+    }
+};
+
+App.init();
+</script>
+</body>
+</html>
