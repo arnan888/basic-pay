@@ -5,103 +5,95 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>✨ AI 量化终端 ✨</title>
     <style>
-        /* 1. 科技感背景：深灰底 + 黑色细网格 */
+        /* 科技网格背景 */
         body {
-            margin: 0; padding: 0; background-color: #1a1b1e;
+            margin: 0; background-color: #1a1b1e;
             background-image: linear-gradient(rgba(0,0,0,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.8) 1px, transparent 1px);
-            background-size: 25px 25px; color: #fff; font-family: -apple-system, sans-serif;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden;
+            background-size: 30px 30px; color: #fff; font-family: sans-serif;
+            display: flex; flex-direction: column; align-items: center; height: 100vh;
         }
 
-        /* 2. 顶部余额 */
-        #balance-box { font-size: 48px; color: #ff4d4d; font-weight: bold; margin-bottom: 10px; }
-        .sub-text { color: #aaa; font-size: 14px; margin-bottom: 30px; }
+        #balance { font-size: 50px; color: #ff4d4d; margin-top: 50px; font-weight: bold; }
+        
+        /* 转盘容器 */
+        #wheel-container { position: relative; margin: 40px 0; width: 280px; height: 280px; }
+        #wheel { 
+            width: 100%; height: 100%; border-radius: 50%;
+            transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
+            /* 如果你没图片，这里会显示一个绿色的圆盘保底 */
+            background: conic-gradient(#2e7d32 0deg 45deg, #1b5e20 45deg 90deg, #2e7d32 90deg 135deg, #1b5e20 135deg 180deg, #2e7d32 180deg 225deg, #1b5e20 225deg 270deg, #2e7d32 270deg 315deg, #1b5e20 315deg 360deg);
+            border: 8px solid #333;
+        }
+        #pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); color: #ff4d4d; font-size: 30px; z-index: 10; }
 
-        /* 3. 转盘视觉：盘子在这里 */
-        #wheel-container { position: relative; width: 300px; height: 300px; }
-        #wheel { width: 100; transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); }
-        #pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 30px; z-index: 10; }
+        /* 龙虎选框 */
+        .options { display: flex; gap: 20px; margin-bottom: 30px; }
+        .opt { padding: 10px 25px; border: 1px solid #555; border-radius: 8px; cursor: pointer; background: rgba(255,255,255,0.05); }
+        .selected { border-color: #ffde00; background: rgba(255,222,0,0.1); box-shadow: 0 0 10px #ffde00; }
 
-        /* 4. 龙虎灯光：逻辑分离点 */
-        .side-box { display: flex; gap: 50px; margin-top: 30px; }
-        .side { padding: 10px 20px; border: 2px solid #444; border-radius: 10px; opacity: 0.5; transition: 0.3s; }
-        .active { opacity: 1; border-color: #ffde00; box-shadow: 0 0 15px #ffde00; }
-
-        /* 5. 执行按键：强行启动，不压也能走 */
-        #exec-btn { 
-            margin-top: 40px; background: linear-gradient(180deg, #d32f2f, #b71c1c);
-            padding: 18px 60px; border-radius: 40px; font-size: 20px; font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); cursor: pointer;
+        /* 红色大按钮 */
+        #btn { 
+            background: #b71c1c; color: white; padding: 15px 60px; 
+            border-radius: 40px; font-size: 20px; font-weight: bold; cursor: pointer;
+            border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
     </style>
 </head>
 <body>
 
-    <div id="balance-box">146.8</div>
-    <div class="sub-text">🔥 单注额度: 5.5</div>
+    <div id="balance">146.8</div>
+    <div style="color:#888; margin-top:10px;">🔥 单注额度: 5.5</div>
 
     <div id="wheel-container">
         <div id="pointer">▼</div>
-        <img src="wheel.png" id="wheel" alt="转盘">
+        <img src="wheel.png" id="wheel" onerror="this.style.display='block'">
     </div>
 
-    <div class="side-box">
-        <div id="side-DRAGON" class="side" onclick="selectSide('DRAGON')">🐉 龙</div>
-        <div id="side-TIGER" class="side" onclick="selectSide('TIGER')">🐯 虎</div>
+    <div class="options">
+        <div id="opt-DRAGON" class="opt" onclick="sel('DRAGON')">🐉 龙</div>
+        <div id="opt-TIGER" class="opt" onclick="sel('TIGER')">🐯 虎</div>
     </div>
 
-    <div id="exec-btn" onclick="runBattle()">▶ 执行抽取</div>
+    <button id="btn" onclick="start()">▶ 执行抽取</button>
 
     <script>
-        let state = { bal: 146.8, deg: 0, rolling: false, side: null };
+        let s = { bal: 146.8, deg: 0, roll: false, side: null };
 
-        function selectSide(s) {
-            if(state.rolling) return;
-            state.side = s;
-            document.querySelectorAll('.side').forEach(el => el.classList.remove('active'));
-            document.getElementById('side-' + s).classList.add('active');
+        function sel(side) {
+            if(s.roll) return;
+            s.side = side;
+            document.querySelectorAll('.opt').forEach(el => el.classList.remove('selected'));
+            document.getElementById('opt-' + side).classList.add('selected');
         }
 
-        async function runBattle() {
-            // 只要没在转、钱够，就强制点火！不选龙虎也能转
-            if (state.rolling || state.bal < 5.5) return;
+        function start() {
+            if(s.roll || s.bal < 5.5) return;
+            
+            // 强制点火
+            s.roll = true;
+            s.bal -= 5.5;
+            document.getElementById('balance').innerText = s.bal.toFixed(1);
 
-            // --- 视觉启动：盘子先跑 ---
-            state.rolling = true;
-            state.bal -= 5.5;
-            document.getElementById('balance-box').innerText = state.bal.toFixed(1);
+            // 转盘旋转
+            const w = document.getElementById('wheel');
+            const randomStop = Math.floor(Math.random() * 8);
+            s.deg += (360 * 8) - (randomStop * 45); 
+            w.style.transform = `rotate(${s.deg}deg)`;
 
-            const wheel = document.getElementById('wheel');
-            const randomIdx = Math.floor(Math.random() * 8);
-            state.deg += (360 * 8 - randomIdx * 45); // 转8圈再停
-            wheel.style.transform = `rotate(${state.deg}deg)`;
+            // 逻辑处理：直接保底随机（防止你后台没开）
+            let result = Math.random() < 0.5 ? 'DRAGON' : 'TIGER';
 
-            // --- 逻辑请求：悄悄去问后台 ---
-            let finalWinSide = Math.random() < 0.5 ? 'DRAGON' : 'TIGER'; // 默认随机，保证关机也能跑
-            try {
-                // 如果你电脑/手机开了后台，这里会去拿“控制指令”
-                const res = await fetch('http://127.0.0.1:8090/api/getResult').catch(() => null);
-                if (res) {
-                    const data = await res.json();
-                    if(data.side) finalWinSide = data.side;
-                }
-            } catch(e) { console.log("处于单机随机模式"); }
-
-            // --- 落地判奖 ---
             setTimeout(() => {
-                state.rolling = false;
-                
-                // 亮起真正中奖的灯（龙或虎）
-                document.querySelectorAll('.side').forEach(el => el.classList.remove('active'));
-                document.getElementById('side-' + finalWinSide).classList.add('active');
-
-                // 如果压中了，加钱
-                if (state.side === finalWinSide) {
-                    state.bal += 11;
-                    document.getElementById('balance-box').innerText = state.bal.toFixed(1);
-                    alert('恭喜中奖！');
+                s.roll = false;
+                // 结果判定
+                if(s.side === result) {
+                    s.bal += 11;
+                    document.getElementById('balance').innerText = s.bal.toFixed(1);
+                    alert('恭喜命中！结果：' + (result === 'DRAGON' ? '龙' : '虎'));
+                } else {
+                    alert('未命中，结果：' + (result === 'DRAGON' ? '龙' : '虎'));
                 }
-            }, 4000);
+            }, 4100);
         }
     </script>
 </body>
