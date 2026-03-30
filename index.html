@@ -3,222 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI_QUANT_FULL_FUNCTION</title>
+    <title>AI_QUANT_BEAST_PRO</title>
     <style>
         :root {
             --jade: #4a7c64; --jade-l: #6b9a85; --jade-d: #2c4a3b;
-            --stone: #6b737e; --inner: inset 8px 8px 16px rgba(0,0,0,0.5), inset -4px -4px 8px rgba(255,255,255,0.05);
+            --stone: #6b737e; --inner: inset 6px 6px 12px rgba(0,0,0,0.5), inset -3px -3px 6px rgba(255,255,255,0.05);
             --gold: #f1c40f; --red: #ff4d4d; --blue: #3498db; --tiger: #e67e22;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Microsoft YaHei", sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: #111; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
 
-        /* 极宽立体外框 */
         .container {
-            width: 100vw; height: 100vh; max-width: 450px;
+            width: 100vw; height: 100vh; max-width: 480px;
             background: var(--jade); border: 12px solid var(--jade);
             border-image: linear-gradient(135deg, var(--jade-l), var(--jade-d)) 12;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8); display: flex; flex-direction: column;
+            display: flex; flex-direction: column;
         }
 
-        .divider { height: 6px; background: var(--jade-d); border-top: 2px solid var(--jade-l); border-bottom: 1px solid #000; }
-
-        /* 顶部余额区 */
+        /* 顶部余额 */
         .header { height: 10%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
         .box { background: var(--stone); border: 2px solid var(--jade-d); box-shadow: var(--inner); border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .box span:first-child { font-size: 10px; color: #ddd; }
-        .box span:last-child { font-size: 16px; font-weight: bold; }
 
-        /* 转盘区 */
-        .main-stage { height: 38%; display: flex; justify-content: center; align-items: center; background: var(--stone); box-shadow: var(--inner); border: 4px solid var(--jade-d); border-radius: 12px; margin: 0 8px; position: relative; }
-        .ptr { position: absolute; top: 5%; z-index: 10; width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-top: 22px solid var(--red); filter: drop-shadow(0 0 5px red); }
-        #wheel { width: 240px; height: 240px; border-radius: 50%; border: 8px solid var(--jade); background: #222; position: relative; transition: transform 4s cubic-bezier(0.1, 0, 0.2, 1.1); }
-        .icon { position: absolute; width: 100%; height: 100%; text-align: center; padding-top: 18px; font-size: 26px; }
-        .hub { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: var(--jade-d); border-radius: 50%; border: 2px solid var(--jade-l); display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 12px; font-weight: bold; }
+        /* 转盘区：增加上下间隙，显得更专业 */
+        .wheel-area { 
+            height: 42%; display: flex; justify-content: center; align-items: center; 
+            background: var(--stone); box-shadow: var(--inner); border: 4px solid var(--jade-d); 
+            border-radius: 12px; margin: 5px 10px; position: relative;
+            padding: 20px 0; /* 留出间隙 */
+        }
+        .ptr { position: absolute; top: 10px; z-index: 10; width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid var(--red); filter: drop-shadow(0 0 8px red); }
+        #wheel { width: 260px; height: 260px; border-radius: 50%; border: 8px solid var(--jade-d); background: radial-gradient(#333, #111); position: relative; transition: transform 4s cubic-bezier(0.1, 0, 0.2, 1.1); box-shadow: 0 0 30px rgba(0,0,0,0.7); }
+        .beast-slot { position: absolute; width: 100%; height: 100%; text-align: center; padding-top: 15px; font-size: 12px; color: #fff; font-weight: bold; }
+        .beast-img { display: block; font-size: 32px; margin-bottom: 2px; filter: drop-shadow(0 0 5px rgba(255,255,255,0.3)); }
 
-        /* 沉底操作区 */
-        .controls { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; background: var(--stone); box-shadow: var(--inner); border: 4px solid var(--jade-d); border-radius: 12px; margin: 8px 8px 12px 8px; }
+        /* 核心改动：龙虎下注区 */
+        .bet-section {
+            flex: 1; display: flex; flex-direction: column;
+            background: var(--stone); box-shadow: var(--inner); border: 4px solid var(--jade-d); 
+            border-radius: 12px; margin: 5px 10px 10px 10px; padding: 12px;
+        }
 
-        /* 龙虎博弈格 */
-        .bet-grid { display: grid; grid-template-columns: 1fr 0.6fr 1fr; gap: 8px; margin-bottom: 12px; }
-        .btn-bet { height: 80px; background: rgba(0,0,0,0.3); border: 2px solid var(--jade-d); border-radius: 10px; box-shadow: var(--inner); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; transition: 0.2s; cursor: pointer; }
-        .btn-bet.selected { border-color: var(--gold); background: rgba(255,255,255,0.1); box-shadow: inset 0 0 15px rgba(241,196,15,0.3); }
-        .dragon { color: var(--blue); } .tiger { color: var(--tiger); }
-        
-        .mid-stack { display: grid; grid-template-rows: repeat(3, 1fr); gap: 4px; }
-        .item-small { background: rgba(0,0,0,0.4); border: 1px solid var(--jade-d); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--gold); }
+        /* 龙虎大格往上顶满 */
+        .dragon-tiger-row { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 10px; height: 110px; }
+        .main-bet-btn { 
+            background: rgba(0,0,0,0.3); border: 3px solid var(--jade-d); border-radius: 12px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 30px; font-weight: bold; transition: 0.2s; box-shadow: var(--inner);
+        }
+        .main-bet-btn.active { border-color: var(--gold); background: rgba(255,255,255,0.1); }
+        .dragon-text { color: var(--blue); text-shadow: 0 0 10px var(--blue); }
+        .tiger-text { color: var(--tiger); text-shadow: 0 0 10px var(--tiger); }
 
-        /* 获胜动画 */
-        @keyframes win-flash { 0% { filter: brightness(1); } 50% { filter: brightness(2); box-shadow: 0 0 20px #fff; } 100% { filter: brightness(1); } }
-        .win-effect { animation: win-flash 0.4s ease 3; }
+        /* 中间显示下注和中奖金额 */
+        .display-panel { display: flex; flex-direction: column; gap: 5px; }
+        .stat-box { background: rgba(0,0,0,0.5); border: 1px solid var(--jade-d); border-radius: 6px; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .stat-label { font-size: 9px; color: #888; }
+        .stat-val { font-size: 14px; color: var(--gold); font-weight: bold; }
 
-        /* 操作键 */
-        .stake-bar { text-align: center; color: #fff; font-size: 13px; margin-bottom: 8px; font-weight: bold; }
-        .act-row { display: flex; gap: 10px; margin-bottom: 10px; }
-        .s-btn { width: 45px; height: 45px; background: var(--jade); border: 2px solid var(--jade-d); border-radius: 8px; color: #fff; font-size: 20px; font-weight: bold; }
-        .go-btn { flex: 1; height: 55px; background: linear-gradient(180deg, #d32f2f, #b71c1c); border: none; border-radius: 28px; color: #fff; font-size: 18px; font-weight: bold; box-shadow: 0 5px 0 #7f0000; }
-        .go-btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 #7f0000; }
-        .go-btn:disabled { opacity: 0.7; filter: grayscale(1); }
+        /* 底部紧凑按键区 */
+        .bottom-actions { margin-top: auto; }
+        .stake-info { text-align: center; color: #eee; font-size: 12px; margin-bottom: 8px; }
+        .btn-group { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+        .side-btn { width: 45px; height: 45px; background: var(--jade); border: 2px solid var(--jade-d); border-radius: 8px; color: #fff; font-size: 22px; }
+        .exec-btn { flex: 1; height: 55px; background: linear-gradient(180deg, #d32f2f, #b71c1c); border: none; border-radius: 28px; color: #fff; font-size: 20px; font-weight: bold; box-shadow: 0 5px 0 #7f0000; }
+        .small-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .mini-btn { height: 35px; background: rgba(0,0,0,0.4); border: 1.5px solid var(--jade-d); border-radius: 6px; color: #ccc; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+        .mini-btn.active { border-color: var(--gold); color: #fff; background: var(--jade-d); }
 
-        .opt-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .f-btn { background: rgba(0,0,0,0.4); border: 1.5px solid var(--jade-d); height: 36px; border-radius: 6px; color: #ccc; font-size: 11px; display: flex; align-items: center; justify-content: center; }
-        .f-btn.active { border-color: var(--gold); color: #fff; background: var(--jade-d); }
-        
-        .blur { filter: blur(4px); }
+        .blur { filter: blur(5px); }
+        @keyframes pulse { 50% { filter: brightness(1.5); transform: scale(1.02); } }
+        .win-glow { animation: pulse 0.4s ease 3; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <div class="box"><span>BALANCE</span><span id="bal-ui" style="color:var(--red)">146.80</span></div>
-        <div class="box"><span>NETWORK POOL</span><span style="color:var(--gold)">84291.50</span></div>
+        <div class="box"><span style="font-size:10px">MY BALANCE</span><span id="bal" style="color:var(--red)">857.80</span></div>
+        <div class="box"><span style="font-size:10px">JACKPOT POOL</span><span style="color:var(--gold)">84291.50</span></div>
     </div>
-    <div class="divider"></div>
-    <div class="main-stage">
+
+    <div class="wheel-area">
         <div class="ptr"></div>
         <div id="wheel"></div>
-        <div class="hub" id="hub-msg">READY</div>
+        <div class="hub">JACKPOT</div>
     </div>
-    <div class="divider"></div>
-    <div class="controls">
-        <div class="bet-grid">
-            <div id="bet-DRAGON" class="btn-bet dragon" onclick="selectSide('DRAGON')">龙</div>
-            <div class="mid-stack">
-                <div class="item-small">和</div>
-                <div class="item-small">小</div>
-                <div class="item-small">大</div>
+
+    <div class="bet-section">
+        <div class="dragon-tiger-row">
+            <div id="bet-DRAGON" class="main-bet-btn dragon-text" onclick="setSide('DRAGON')">
+                <span style="font-size:12px;color:#aaa">龙位</span>
+                龙
             </div>
-            <div id="bet-TIGER" class="btn-bet tiger" onclick="selectSide('TIGER')">虎</div>
+            
+            <div class="display-panel">
+                <div class="stat-box">
+                    <span class="stat-label">STAKED</span>
+                    <span class="stat-val" id="show-bet">0.00</span>
+                </div>
+                <div class="stat-box" style="border-color: var(--gold);">
+                    <span class="stat-label">WINNING</span>
+                    <span class="stat-val" id="show-win">0.00</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">TIE(和)</span>
+                    <span class="stat-val">1:8</span>
+                </div>
+            </div>
+
+            <div id="bet-TIGER" class="main-bet-btn tiger-text" onclick="setSide('TIGER')">
+                <span style="font-size:12px;color:#aaa">虎位</span>
+                虎
+            </div>
         </div>
-        <div class="stake-bar">STAKE: <span id="stake-ui" style="color:var(--gold)">5.5</span> USDT</div>
-        <div class="act-row">
-            <button class="s-btn" onclick="changeStake(-1)">-</button>
-            <button class="go-btn" id="go-btn" onclick="startSpin()">EXECUTE</button>
-            <button class="s-btn" onclick="changeStake(1)">+</button>
-        </div>
-        <div class="opt-row">
-            <div id="auto-ui" class="f-btn" onclick="toggleAuto()">🤖 AUTO: OFF</div>
-            <div id="speed-ui" class="f-btn" onclick="toggleSpeed()">⚡ SPEED: 1X</div>
+
+        <div class="bottom-actions">
+            <div class="stake-info">SELECT STAKE: <span id="cur-stake" style="color:var(--gold)">100.0</span> USDT</div>
+            <div class="btn-group">
+                <button class="side-btn" onclick="adjStake(-1)">-</button>
+                <button class="exec-btn" id="run-btn" onclick="handlePlay()">EXECUTE</button>
+                <button class="side-btn" onclick="adjStake(1)">+</button>
+            </div>
+            <div class="small-btns">
+                <div id="auto-btn" class="mini-btn" onclick="state.auto=!state.auto; updateUI();">🤖 AUTO MODE</div>
+                <div id="speed-btn" class="mini-btn" onclick="state.speed=state.speed%3+1; updateUI();">⚡ SPEED: 1X</div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-// 核心状态
-let state = {
-    balance: 146.80,
-    stakes: [5.5, 10, 20, 50, 100],
-    stakeIdx: 0,
-    selectedSide: null,
-    isRolling: false,
-    isAuto: false,
-    speed: 1,
-    currentDeg: 0
+const beasts = [
+    {n:'狮子', i:'🦁'}, {n:'猛虎', i:'🐯'}, {n:'恶狼', i:'🐺'}, {n:'犀牛', i:'🦏'},
+    {n:'巨象', i:'🐘'}, {n:'黑熊', i:'🐻'}, {n:'神龙', i:'🐲'}, {n:'雄鹰', i:'🦅'}
+];
+
+let state = { 
+    bal: 857.8, stakes: [10, 50, 100, 500, 1000], sIdx: 2, 
+    side: null, rolling: false, auto: false, speed: 1, deg: 0 
 };
 
-const icons = ['💎','💊','⚡','🔥','💰','🦁','🏆','🎲'];
-
-// 初始化转盘
 function init() {
     const w = document.getElementById('wheel');
-    icons.forEach((icon, i) => {
-        const div = document.createElement('div');
-        div.className = 'icon';
-        div.style.transform = `rotate(${i * 45}deg)`;
-        div.innerText = icon;
-        w.appendChild(div);
+    beasts.forEach((b, i) => {
+        const d = document.createElement('div');
+        d.className = 'beast-slot'; d.style.transform = `rotate(${i*45}deg)`;
+        d.innerHTML = `<span class="beast-img">${b.i}</span>${b.n}`;
+        w.appendChild(d);
     });
     updateUI();
 }
 
-// 恢复：选择龙虎
-function selectSide(side) {
-    if (state.isRolling) return;
-    state.selectedSide = side;
-    document.querySelectorAll('.btn-bet').forEach(el => el.classList.remove('selected'));
-    document.getElementById('bet-' + side).classList.add('selected');
-}
+function setSide(s) { if(!state.rolling){ state.side=s; updateUI(); } }
+function adjStake(d) { if(!state.rolling){ state.sIdx=Math.max(0,Math.min(state.stakes.length-1,state.sIdx+d)); updateUI(); } }
 
-// 恢复：金额增减
-function changeStake(dir) {
-    if (state.isRolling) return;
-    state.stakeIdx = Math.max(0, Math.min(state.stakes.length - 1, state.stakeIdx + dir));
-    updateUI();
-}
-
-// 恢复：倍速切换
-function toggleSpeed() {
-    state.speed = (state.speed % 3) + 1;
-    updateUI();
-}
-
-// 恢复：自动化开关
-function toggleAuto() {
-    state.isAuto = !state.isAuto;
-    if (state.isAuto && !state.isRolling) startSpin();
-    updateUI();
-}
-
-// 恢复：核心旋转逻辑
-async function startSpin() {
-    const cost = state.stakes[state.stakeIdx];
-    if (state.isRolling || state.balance < cost || !state.selectedSide) {
-        if (!state.selectedSide && !state.isRolling) alert("请先选择 龙 或 虎");
-        state.isAuto = false; 
-        updateUI();
-        return;
-    }
-
-    state.isRolling = true;
-    state.balance -= cost;
-    document.getElementById('hub-msg').innerText = "SPINNING";
-    document.getElementById('wheel').classList.add('blur');
-    document.querySelectorAll('.btn-bet').forEach(el => el.classList.remove('win-effect'));
-    updateUI();
-
-    // 联动开奖：0-3龙，4-7虎
-    const winIdx = Math.floor(Math.random() * 8); 
-    const resultSide = winIdx <= 3 ? 'DRAGON' : 'TIGER';
+function handlePlay() {
+    if(state.rolling || !state.side || state.bal < state.stakes[state.sIdx]) return;
     
-    // 计算旋转角度
-    const extraRounds = state.speed === 3 ? 3 : state.speed === 2 ? 5 : 8;
-    const targetDeg = (360 - (state.currentDeg % 360)) + (extraRounds * 360) - (winIdx * 45);
-    state.currentDeg += targetDeg;
+    state.rolling = true;
+    const cost = state.stakes[state.sIdx];
+    state.bal -= cost;
+    document.getElementById('show-bet').innerText = cost.toFixed(2);
+    document.getElementById('show-win').innerText = "0.00";
+    document.getElementById('wheel').classList.add('blur');
+    updateUI();
 
-    const wheelEl = document.getElementById('wheel');
-    const duration = state.speed === 3 ? '0.8s' : state.speed === 2 ? '2s' : '4s';
-    wheelEl.style.transitionDuration = duration;
-    wheelEl.style.transform = `rotate(${state.currentDeg}deg)`;
+    // 转盘抽奖 (独立随机)
+    const winIdx = Math.floor(Math.random()*8);
+    const target = (360 - (state.deg%360)) + (state.speed===3?4:8)*360 - (winIdx*45);
+    state.deg += target;
+    const wheel = document.getElementById('wheel');
+    wheel.style.transitionDuration = state.speed===3?'0.8s':state.speed===2?'2s':'4s';
+    wheel.style.transform = `rotate(${state.currentDeg = state.deg}deg)`;
 
+    // 龙虎逻辑 (系统开奖)
     setTimeout(() => {
-        wheelEl.classList.remove('blur');
-        state.isRolling = false;
-
-        // 判定胜负
-        if (state.selectedSide === resultSide) {
-            state.balance += cost * 2;
-            document.getElementById('hub-msg').innerText = "WIN!";
-            document.getElementById('bet-' + resultSide).classList.add('win-effect');
-        } else {
-            document.getElementById('hub-msg').innerText = "LOSE";
+        wheel.classList.remove('blur');
+        state.rolling = false;
+        
+        const winSide = Math.random() > 0.5 ? 'DRAGON' : 'TIGER';
+        if(state.side === winSide) {
+            const winAmt = cost * 2;
+            state.bal += winAmt;
+            document.getElementById('show-win').innerText = winAmt.toFixed(2);
+            document.getElementById('bet-'+winSide).classList.add('win-glow');
+            setTimeout(()=>document.getElementById('bet-'+winSide).classList.remove('win-glow'), 1500);
         }
-
+        
         updateUI();
-        if (state.isAuto) setTimeout(startSpin, 1000);
-    }, parseFloat(duration) * 1000);
+        if(state.auto) setTimeout(handlePlay, 1000);
+    }, state.speed===3?800:state.speed===2?2000:4000);
 }
 
 function updateUI() {
-    document.getElementById('bal-ui').innerText = state.balance.toFixed(2);
-    document.getElementById('stake-ui').innerText = state.stakes[state.stakeIdx].toFixed(1);
-    document.getElementById('go-btn').disabled = state.isRolling;
-    
-    const autoBtn = document.getElementById('auto-ui');
-    autoBtn.innerText = "🤖 AUTO: " + (state.isAuto ? "ON" : "OFF");
-    autoBtn.className = "f-btn " + (state.isAuto ? "active" : "");
-
-    document.getElementById('speed-ui').innerText = "⚡ SPEED: " + state.speed + "X";
+    document.getElementById('bal').innerText = state.bal.toFixed(2);
+    document.getElementById('cur-stake').innerText = state.stakes[state.sIdx].toFixed(1);
+    document.querySelectorAll('.main-bet-btn').forEach(b => b.classList.remove('active'));
+    if(state.side) document.getElementById('bet-'+state.side).classList.add('active');
+    document.getElementById('auto-btn').className = "mini-btn " + (state.auto?"active":"");
+    document.getElementById('speed-btn').innerText = "⚡ SPEED: " + state.speed + "X";
+    document.getElementById('run-btn').disabled = state.rolling;
 }
 
 init();
