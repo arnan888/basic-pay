@@ -3,208 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI_QUANT_BEAST_PRO</title>
+    <title>AI_QUANT_BEAST_ULTRA</title>
     <style>
         :root {
             --jade: #4a7c64; --jade-l: #6b9a85; --jade-d: #2c4a3b;
-            --stone: #6b737e; --inner: inset 6px 6px 12px rgba(0,0,0,0.5), inset -3px -3px 6px rgba(255,255,255,0.05);
+            --stone: #6b737e; --inner: inset 8px 8px 16px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.05);
             --gold: #f1c40f; --red: #ff4d4d; --blue: #3498db; --tiger: #e67e22;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Microsoft YaHei", sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: #111; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: #0c0c0c; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
 
+        /* 外部大框 */
         .container {
             width: 100vw; height: 100vh; max-width: 480px;
             background: var(--jade); border: 12px solid var(--jade);
             border-image: linear-gradient(135deg, var(--jade-l), var(--jade-d)) 12;
-            display: flex; flex-direction: column;
+            display: flex; flex-direction: column; box-shadow: 0 0 40px rgba(0,0,0,1);
         }
 
-        /* 顶部余额 */
-        .header { height: 10%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
+        /* 状态栏：余额与奖池 */
+        .header { height: 10%; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; }
         .box { background: var(--stone); border: 2px solid var(--jade-d); box-shadow: var(--inner); border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .box span:first-child { font-size: 10px; color: #ccc; letter-spacing: 1px; margin-bottom: 2px; }
+        .box span:last-child { font-size: 18px; font-weight: bold; }
 
-        /* 转盘区：增加上下间隙，显得更专业 */
+        /* 转盘区：留出上下空隙，转动更自由 */
         .wheel-area { 
-            height: 42%; display: flex; justify-content: center; align-items: center; 
+            height: 40%; display: flex; justify-content: center; align-items: center; 
             background: var(--stone); box-shadow: var(--inner); border: 4px solid var(--jade-d); 
-            border-radius: 12px; margin: 5px 10px; position: relative;
-            padding: 20px 0; /* 留出间隙 */
+            border-radius: 12px; margin: 4px 10px; position: relative; padding: 25px 0;
         }
-        .ptr { position: absolute; top: 10px; z-index: 10; width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 25px solid var(--red); filter: drop-shadow(0 0 8px red); }
-        #wheel { width: 260px; height: 260px; border-radius: 50%; border: 8px solid var(--jade-d); background: radial-gradient(#333, #111); position: relative; transition: transform 4s cubic-bezier(0.1, 0, 0.2, 1.1); box-shadow: 0 0 30px rgba(0,0,0,0.7); }
-        .beast-slot { position: absolute; width: 100%; height: 100%; text-align: center; padding-top: 15px; font-size: 12px; color: #fff; font-weight: bold; }
-        .beast-img { display: block; font-size: 32px; margin-bottom: 2px; filter: drop-shadow(0 0 5px rgba(255,255,255,0.3)); }
+        .ptr { position: absolute; top: 12px; z-index: 100; width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-top: 26px solid var(--red); filter: drop-shadow(0 0 10px red); }
+        #wheel { width: 265px; height: 265px; border-radius: 50%; border: 10px solid var(--jade-d); background: radial-gradient(circle, #333 0%, #111 100%); position: relative; transition: transform 4s cubic-bezier(0.1, 0, 0.2, 1.1); box-shadow: 0 0 35px rgba(0,0,0,0.8); }
+        .slot { position: absolute; width: 100%; height: 100%; text-align: center; padding-top: 15px; font-weight: bold; }
+        .beast-ico { display: block; font-size: 34px; margin-bottom: 0px; filter: drop-shadow(0 0 8px rgba(255,255,255,0.4)); }
+        .beast-nm { font-size: 11px; color: #fff; text-shadow: 1px 1px 2px #000; }
 
-        /* 核心改动：龙虎下注区 */
-        .bet-section {
+        /* 核心区：龙虎专业博弈布局 */
+        .play-section {
             flex: 1; display: flex; flex-direction: column;
             background: var(--stone); box-shadow: var(--inner); border: 4px solid var(--jade-d); 
-            border-radius: 12px; margin: 5px 10px 10px 10px; padding: 12px;
+            border-radius: 12px; margin: 6px 10px 10px 10px; padding: 14px;
         }
 
         /* 龙虎大格往上顶满 */
-        .dragon-tiger-row { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 10px; height: 110px; }
-        .main-bet-btn { 
-            background: rgba(0,0,0,0.3); border: 3px solid var(--jade-d); border-radius: 12px; 
+        .battle-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; height: 130px; margin-bottom: 10px; }
+        .side-cell { 
+            background: rgba(0,0,0,0.35); border: 3px solid var(--jade-d); border-radius: 14px; 
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-size: 30px; font-weight: bold; transition: 0.2s; box-shadow: var(--inner);
+            box-shadow: var(--inner); cursor: pointer; transition: 0.1s;
         }
-        .main-bet-btn.active { border-color: var(--gold); background: rgba(255,255,255,0.1); }
-        .dragon-text { color: var(--blue); text-shadow: 0 0 10px var(--blue); }
-        .tiger-text { color: var(--tiger); text-shadow: 0 0 10px var(--tiger); }
+        .side-cell.active { border-color: var(--gold); background: rgba(255,255,255,0.1); transform: scale(0.97); }
+        .side-cell span:first-child { font-size: 13px; color: #999; margin-bottom: 5px; }
+        .side-cell span:last-child { font-size: 40px; font-weight: 900; }
 
-        /* 中间显示下注和中奖金额 */
-        .display-panel { display: flex; flex-direction: column; gap: 5px; }
-        .stat-box { background: rgba(0,0,0,0.5); border: 1px solid var(--jade-d); border-radius: 6px; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .stat-label { font-size: 9px; color: #888; }
-        .stat-val { font-size: 14px; color: var(--gold); font-weight: bold; }
+        /* 数据墙：紧密排布 */
+        .data-stack { display: grid; grid-template-rows: repeat(3, 1fr); gap: 6px; }
+        .data-item { background: rgba(0,0,0,0.6); border: 1px solid var(--jade-d); border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .data-item label { font-size: 9px; color: #777; font-weight: bold; }
+        .data-item value { font-size: 14px; color: var(--gold); font-weight: 900; }
 
-        /* 底部紧凑按键区 */
-        .bottom-actions { margin-top: auto; }
-        .stake-info { text-align: center; color: #eee; font-size: 12px; margin-bottom: 8px; }
-        .btn-group { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
-        .side-btn { width: 45px; height: 45px; background: var(--jade); border: 2px solid var(--jade-d); border-radius: 8px; color: #fff; font-size: 22px; }
-        .exec-btn { flex: 1; height: 55px; background: linear-gradient(180deg, #d32f2f, #b71c1c); border: none; border-radius: 28px; color: #fff; font-size: 20px; font-weight: bold; box-shadow: 0 5px 0 #7f0000; }
-        .small-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .mini-btn { height: 35px; background: rgba(0,0,0,0.4); border: 1.5px solid var(--jade-d); border-radius: 6px; color: #ccc; font-size: 11px; display: flex; align-items: center; justify-content: center; }
-        .mini-btn.active { border-color: var(--gold); color: #fff; background: var(--jade-d); }
+        /* 操作键位区 */
+        .stake-txt { text-align: center; color: #eee; font-size: 13px; font-weight: bold; margin-bottom: 8px; }
+        .exec-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+        .step-btn { width: 48px; height: 48px; background: var(--jade); border: 3px solid var(--jade-d); border-radius: 10px; color: #fff; font-size: 24px; font-weight: bold; }
+        .main-go { flex: 1; height: 58px; background: linear-gradient(180deg, #e53935, #b71c1c); border: none; border-radius: 29px; color: #fff; font-size: 22px; font-weight: 900; box-shadow: 0 6px 0 #7f0000; letter-spacing: 2px; }
+        .main-go:active { transform: translateY(3px); box-shadow: 0 2px 0 #7f0000; }
+        
+        .mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .mode-btn { height: 38px; background: rgba(0,0,0,0.4); border: 2px solid var(--jade-d); border-radius: 8px; color: #aaa; font-size: 11px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .mode-btn.active { border-color: var(--gold); color: #fff; background: var(--jade-d); }
 
         .blur { filter: blur(5px); }
-        @keyframes pulse { 50% { filter: brightness(1.5); transform: scale(1.02); } }
-        .win-glow { animation: pulse 0.4s ease 3; }
+        @keyframes win-pulse { 0%{filter:brightness(1)} 50%{filter:brightness(2);transform:scale(1.05)} 100%{filter:brightness(1)} }
+        .winner { animation: win-pulse 0.4s ease 4; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="header">
-        <div class="box"><span style="font-size:10px">MY BALANCE</span><span id="bal" style="color:var(--red)">857.80</span></div>
-        <div class="box"><span style="font-size:10px">JACKPOT POOL</span><span style="color:var(--gold)">84291.50</span></div>
+        <div class="box"><span>MY BALANCE</span><span id="ui-bal" style="color:var(--red)">857.80</span></div>
+        <div class="box"><span>JACKPOT POOL</span><span style="color:var(--gold)">84291.50</span></div>
     </div>
 
     <div class="wheel-area">
         <div class="ptr"></div>
         <div id="wheel"></div>
-        <div class="hub">JACKPOT</div>
     </div>
 
-    <div class="bet-section">
-        <div class="dragon-tiger-row">
-            <div id="bet-DRAGON" class="main-bet-btn dragon-text" onclick="setSide('DRAGON')">
-                <span style="font-size:12px;color:#aaa">龙位</span>
-                龙
+    <div class="play-section">
+        <div class="battle-row">
+            <div id="cell-DRAGON" class="side-cell" onclick="setPick('DRAGON')">
+                <span>龙位</span>
+                <span style="color:var(--blue); text-shadow: 0 0 12px var(--blue);">龙</span>
             </div>
             
-            <div class="display-panel">
-                <div class="stat-box">
-                    <span class="stat-label">STAKED</span>
-                    <span class="stat-val" id="show-bet">0.00</span>
-                </div>
-                <div class="stat-box" style="border-color: var(--gold);">
-                    <span class="stat-label">WINNING</span>
-                    <span class="stat-val" id="show-win">0.00</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-label">TIE(和)</span>
-                    <span class="stat-val">1:8</span>
-                </div>
+            <div class="data-stack">
+                <div class="data-item"><label>STAKED</label><value id="val-bet">0.00</value></div>
+                <div class="data-item" style="border-color:var(--gold)"><label>WINNING</label><value id="val-win">0.00</value></div>
+                <div class="data-item"><label>TIE(和)</label><value>1:8</value></div>
             </div>
 
-            <div id="bet-TIGER" class="main-bet-btn tiger-text" onclick="setSide('TIGER')">
-                <span style="font-size:12px;color:#aaa">虎位</span>
-                虎
+            <div id="cell-TIGER" class="side-cell" onclick="setPick('TIGER')">
+                <span>虎位</span>
+                <span style="color:var(--tiger); text-shadow: 0 0 12px var(--tiger);">虎</span>
             </div>
         </div>
 
-        <div class="bottom-actions">
-            <div class="stake-info">SELECT STAKE: <span id="cur-stake" style="color:var(--gold)">100.0</span> USDT</div>
-            <div class="btn-group">
-                <button class="side-btn" onclick="adjStake(-1)">-</button>
-                <button class="exec-btn" id="run-btn" onclick="handlePlay()">EXECUTE</button>
-                <button class="side-btn" onclick="adjStake(1)">+</button>
-            </div>
-            <div class="small-btns">
-                <div id="auto-btn" class="mini-btn" onclick="state.auto=!state.auto; updateUI();">🤖 AUTO MODE</div>
-                <div id="speed-btn" class="mini-btn" onclick="state.speed=state.speed%3+1; updateUI();">⚡ SPEED: 1X</div>
-            </div>
+        <div class="stake-txt">SELECT STAKE: <span id="ui-stake" style="color:var(--gold)">100.0</span> USDT</div>
+        
+        <div class="exec-row">
+            <button class="step-btn" onclick="adj(-1)">-</button>
+            <button class="main-go" id="btn-go" onclick="onExecute()">EXECUTE</button>
+            <button class="step-btn" onclick="adj(1)">+</button>
+        </div>
+
+        <div class="mode-row">
+            <div id="btn-auto" class="mode-btn" onclick="state.auto=!state.auto; update();">🤖 AUTO MODE</div>
+            <div id="btn-speed" class="mode-btn" onclick="state.speed=state.speed%3+1; update();">⚡ SPEED: 1X</div>
         </div>
     </div>
 </div>
 
 <script>
-const beasts = [
+const beastList = [
     {n:'狮子', i:'🦁'}, {n:'猛虎', i:'🐯'}, {n:'恶狼', i:'🐺'}, {n:'犀牛', i:'🦏'},
     {n:'巨象', i:'🐘'}, {n:'黑熊', i:'🐻'}, {n:'神龙', i:'🐲'}, {n:'雄鹰', i:'🦅'}
 ];
 
-let state = { 
-    bal: 857.8, stakes: [10, 50, 100, 500, 1000], sIdx: 2, 
-    side: null, rolling: false, auto: false, speed: 1, deg: 0 
-};
+let state = { bal: 857.8, bets: [10, 50, 100, 500, 1000], bIdx: 2, pick: null, rolling: false, auto: false, speed: 1, deg: 0 };
 
 function init() {
     const w = document.getElementById('wheel');
-    beasts.forEach((b, i) => {
+    beastList.forEach((b, i) => {
         const d = document.createElement('div');
-        d.className = 'beast-slot'; d.style.transform = `rotate(${i*45}deg)`;
-        d.innerHTML = `<span class="beast-img">${b.i}</span>${b.n}`;
+        d.className = 'slot'; d.style.transform = `rotate(${i*45}deg)`;
+        d.innerHTML = `<span class="beast-ico">${b.i}</span><span class="beast-nm">${b.n}</span>`;
         w.appendChild(d);
     });
-    updateUI();
+    update();
 }
 
-function setSide(s) { if(!state.rolling){ state.side=s; updateUI(); } }
-function adjStake(d) { if(!state.rolling){ state.sIdx=Math.max(0,Math.min(state.stakes.length-1,state.sIdx+d)); updateUI(); } }
+function setPick(s) { if(!state.rolling){ state.pick=s; update(); } }
+function adj(d) { if(!state.rolling){ state.bIdx=Math.max(0,Math.min(state.bets.length-1,state.bIdx+d)); update(); } }
 
-function handlePlay() {
-    if(state.rolling || !state.side || state.bal < state.stakes[state.sIdx]) return;
+function onExecute() {
+    const cost = state.bets[state.bIdx];
+    if(state.rolling || !state.pick || state.bal < cost) return;
     
-    state.rolling = true;
-    const cost = state.stakes[state.sIdx];
-    state.bal -= cost;
-    document.getElementById('show-bet').innerText = cost.toFixed(2);
-    document.getElementById('show-win').innerText = "0.00";
+    state.rolling = true; state.bal -= cost;
+    document.getElementById('val-bet').innerText = cost.toFixed(2);
+    document.getElementById('val-win').innerText = "0.00";
     document.getElementById('wheel').classList.add('blur');
-    updateUI();
+    update();
 
-    // 转盘抽奖 (独立随机)
     const winIdx = Math.floor(Math.random()*8);
-    const target = (360 - (state.deg%360)) + (state.speed===3?4:8)*360 - (winIdx*45);
+    const rounds = state.speed===3 ? 4 : 8;
+    const target = (360 - (state.deg%360)) + rounds*360 - (winIdx*45);
     state.deg += target;
+    
     const wheel = document.getElementById('wheel');
     wheel.style.transitionDuration = state.speed===3?'0.8s':state.speed===2?'2s':'4s';
-    wheel.style.transform = `rotate(${state.currentDeg = state.deg}deg)`;
+    wheel.style.transform = `rotate(${state.deg}deg)`;
 
-    // 龙虎逻辑 (系统开奖)
     setTimeout(() => {
-        wheel.classList.remove('blur');
-        state.rolling = false;
-        
+        wheel.classList.remove('blur'); state.rolling = false;
         const winSide = Math.random() > 0.5 ? 'DRAGON' : 'TIGER';
-        if(state.side === winSide) {
-            const winAmt = cost * 2;
-            state.bal += winAmt;
-            document.getElementById('show-win').innerText = winAmt.toFixed(2);
-            document.getElementById('bet-'+winSide).classList.add('win-glow');
-            setTimeout(()=>document.getElementById('bet-'+winSide).classList.remove('win-glow'), 1500);
+        if(state.pick === winSide) {
+            const winAmt = cost * 2; state.bal += winAmt;
+            document.getElementById('val-win').innerText = winAmt.toFixed(2);
+            document.getElementById('cell-'+winSide).classList.add('winner');
+            setTimeout(()=>document.getElementById('cell-'+winSide).classList.remove('winner'), 2000);
         }
-        
-        updateUI();
-        if(state.auto) setTimeout(handlePlay, 1000);
-    }, state.speed===3?800:state.speed===2?2000:4000);
+        update();
+        if(state.auto) setTimeout(onExecute, 1200);
+    }, parseFloat(wheel.style.transitionDuration)*1000);
 }
 
-function updateUI() {
-    document.getElementById('bal').innerText = state.bal.toFixed(2);
-    document.getElementById('cur-stake').innerText = state.stakes[state.sIdx].toFixed(1);
-    document.querySelectorAll('.main-bet-btn').forEach(b => b.classList.remove('active'));
-    if(state.side) document.getElementById('bet-'+state.side).classList.add('active');
-    document.getElementById('auto-btn').className = "mini-btn " + (state.auto?"active":"");
-    document.getElementById('speed-btn').innerText = "⚡ SPEED: " + state.speed + "X";
-    document.getElementById('run-btn').disabled = state.rolling;
+function update() {
+    document.getElementById('ui-bal').innerText = state.bal.toFixed(2);
+    document.getElementById('ui-stake').innerText = state.bets[state.bIdx].toFixed(1);
+    document.querySelectorAll('.side-cell').forEach(c => c.classList.remove('active'));
+    if(state.pick) document.getElementById('cell-'+state.pick).classList.add('active');
+    document.getElementById('btn-auto').className = "mode-btn " + (state.auto?"active":"");
+    document.getElementById('btn-speed').innerText = "⚡ SPEED: " + state.speed + "X";
+    document.getElementById('btn-go').disabled = state.rolling;
 }
-
 init();
 </script>
 </body>
