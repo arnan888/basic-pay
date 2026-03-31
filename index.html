@@ -1,173 +1,90 @@
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-<meta charset="UTF-8" />
-<title>Spin Core</title>
-<style>
-html,body{
-    margin:0;
-    padding:0;
-    background:#1a1a1a;
-    color:#fff;
-    font-family:system-ui;
-}
+(function() {
+    // 1. 账本（存死在本地，刷新不丢，这是生意的根）
+    const getB = () => parseInt(localStorage.getItem('_cash') || "14680");
+    const setB = (v) => localStorage.setItem('_cash', v);
 
-/* ===== 灰底 + 黑色网格 ===== */
-.stage{
-    position:relative;
-    width:100vw;
-    height:100vh;
-    background:#777;
-    overflow:hidden;
-}
-.stage::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    background:
-      linear-gradient(rgba(0,0,0,.25) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,0,0,.25) 1px, transparent 1px);
-    background-size:40px 40px;
-    pointer-events:none;
-}
+    let s = { running: false, pick: null, deg: 0 };
 
-/* ===== 大转盘 ===== */
-.wheel-wrap{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-55%);
-}
-#wheel{
-    width:260px;
-    height:260px;
-    border-radius:50%;
-    background:conic-gradient(
-        #c62828 0deg 45deg,
-        #2e7d32 45deg 90deg,
-        #c62828 90deg 135deg,
-        #2e7d32 135deg 180deg,
-        #c62828 180deg 225deg,
-        #2e7d32 225deg 270deg,
-        #c62828 270deg 315deg,
-        #2e7d32 315deg 360deg
-    );
-    box-shadow:0 0 0 8px #111,0 20px 60px rgba(0,0,0,.8);
-}
+    window.onload = () => {
+        draw();
+        // 绑定：龙虎选择
+        ['DRAGON', 'TIGER'].forEach(side => {
+            const el = document.getElementById('opt-' + side) || document.querySelector(`[data-side="${side}"]`);
+            if (el) el.onclick = () => {
+                if (s.running) return;
+                // 逻辑：点一下选中，再点一下取消（变空转）
+                s.pick = (s.pick === side) ? null : side;
+                syncVisual();
+            };
+        });
 
-/* ===== 龙虎押注（完全独立） ===== */
-.bet-panel{
-    position:absolute;
-    bottom:40px;
-    left:50%;
-    transform:translateX(-50%);
-    display:flex;
-    gap:20px;
-}
-.bet{
-    padding:16px 32px;
-    background:#222;
-    border:2px solid #444;
-    cursor:pointer;
-    font-size:18px;
-}
-.bet.active{
-    border-color:#f44336;
-    background:#000;
-}
+        // 绑定：执行（点火）
+        const go = document.getElementById('exec-btn') || document.getElementById('main-btn');
+        if (go) go.onclick = async () => {
+            if (s.running) return;
 
-/* ===== 控制 ===== */
-.ctrl{
-    position:absolute;
-    top:30px;
-    left:50%;
-    transform:translateX(-50%);
-}
-button{
-    padding:12px 30px;
-    font-size:18px;
-    background:#000;
-    color:#fff;
-    border:2px solid #555;
-    cursor:pointer;
-}
-#balance{
-    margin-top:12px;
-    text-align:center;
-}
-</style>
-</head>
+            const isReal = (s.pick !== null);
+            let cash = getB();
 
-<body>
-<div class="stage">
+            // --- 【死规矩：第一步扣费，不扣不准转】 ---
+            if (isReal) {
+                if (cash < 550) {
+                    alert("⚠️ 余额不足，无法开启实战");
+                    return;
+                }
+                cash -= 550;
+                setB(cash);
+                draw();
+            }
 
-    <div class="ctrl">
-        <button id="spinBtn">SPIN</button>
-        <div id="balance">146.8</div>
-    </div>
+            // --- 【第二步：上锁】 ---
+            s.running = true;
 
-    <div class="wheel-wrap">
-        <div id="wheel"></div>
-    </div>
+            // --- 【第三步：定生死】 ---
+            // 认知点：空转让你赢（80%），实战看天意（或杀数）
+            const win = (Math.random() < (isReal ? 0.3 : 0.8)) ? s.pick : (s.pick === 'DRAGON' ? 'TIGER' : 'DRAGON');
+            if (!s.pick) { // 纯空转
+                var finalResult = Math.random() < 0.5 ? 'DRAGON' : 'TIGER';
+            } else {
+                var finalResult = win;
+            }
 
-    <div class="bet-panel">
-        <div class="bet" data-side="DRAGON">🐉 龙</div>
-        <div class="bet" data-side="TIGER">🐯 虎</div>
-    </div>
+            // --- 【第四步：物理执行】 ---
+            const wheel = document.getElementById('wheel') || document.querySelector('.wheel-img');
+            const targetDeg = (finalResult === 'DRAGON' ? 0 : 45);
+            s.deg += (360 * 20) + targetDeg + (Math.random() * 6 - 3);
 
-</div>
+            wheel.style.transition = 'transform 5.5s cubic-bezier(0.1, 0, 0, 1)';
+            wheel.style.transform = `rotate(${s.deg}deg)`;
 
-<script>
-/* ===== 状态 ===== */
-let bal = 14680;
-let side = null;
-let spinning = false;
-let deg = 0;
+            // --- 【第五步：结算】 ---
+            setTimeout(() => {
+                s.running = false;
+                if (isReal) {
+                    if (s.pick === finalResult) {
+                        setB(getB() + 1100);
+                        alert(`🎊 命中：[${finalResult === 'DRAGON' ? '龙' : '虎'}]`);
+                    } else {
+                        alert(`❌ 未命中：[${finalResult === 'DRAGON' ? '龙' : '虎'}]`);
+                    }
+                } else {
+                    alert(`🎡 观摩结果：[${finalResult === 'DRAGON' ? '龙' : '虎'}]`);
+                }
+                draw();
+            }, 5800);
+        };
+    };
 
-/* ===== 龙虎只负责选择 ===== */
-document.querySelectorAll(".bet").forEach(b=>{
-    b.onclick=()=>{
-        if(spinning) return;
-        side = (side===b.dataset.side)?null:b.dataset.side;
-        document.querySelectorAll(".bet").forEach(x=>x.classList.remove("active"));
-        if(side) b.classList.add("active");
-    }
-});
-
-/* ===== 转盘只负责转 ===== */
-document.getElementById("spinBtn").onclick=()=>{
-    if(spinning) return;
-    spinning = true;
-
-    if(side && bal<550){
-        alert("余额不足");
-        spinning=false;
-        return;
+    function draw() {
+        const el = document.getElementById('balance');
+        if (el) el.innerText = (getB() / 100).toFixed(1);
     }
 
-    if(side) bal-=550;
-    updateBal();
-
-    const win = Math.random()<0.5?"DRAGON":"TIGER";
-    const base = win==="DRAGON"?0:45;
-    const jitter = Math.random()*20-10;
-    deg += 360*18 + base + jitter;
-
-    const wheel=document.getElementById("wheel");
-    wheel.style.transition="transform 5.6s cubic-bezier(.2,0,0,1)";
-    wheel.style.transform=`rotate(${deg}deg)`;
-
-    wheel.addEventListener("transitionend",()=>{
-        if(side && side===win) bal+=1100;
-        updateBal();
-        alert(win==="DRAGON"?"🐉 龙":"🐯 虎");
-        spinning=false;
-    },{once:true});
-};
-
-function updateBal(){
-    document.getElementById("balance").innerText=(bal/100).toFixed(1);
-}
-</script>
-</body>
-</html>
+    function syncVisual() {
+        document.querySelectorAll('.opt, [data-side]').forEach(el => {
+            const side = el.id?.split('-')[1] || el.dataset.side;
+            el.style.boxShadow = (s.pick === side) ? "0 0 15px #ff0000 inset" : "none";
+            el.style.borderColor = (s.pick === side) ? "#ff0000" : "#ccc";
+        });
+    }
+})();
