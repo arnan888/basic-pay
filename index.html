@@ -1,88 +1,173 @@
-(function() {
-    // --- 1. 基础账目 (分制，杜绝小数浮点误差) ---
-    let store = {
-        get: () => parseInt(localStorage.getItem('_bal') || "14680"),
-        set: (v) => localStorage.setItem('_bal', v.toString())
-    };
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<title>Spin Core</title>
+<style>
+html,body{
+    margin:0;
+    padding:0;
+    background:#1a1a1a;
+    color:#fff;
+    font-family:system-ui;
+}
 
-    let state = { active: false, side: null, deg: 0 };
+/* ===== 灰底 + 黑色网格 ===== */
+.stage{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    background:#777;
+    overflow:hidden;
+}
+.stage::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+      linear-gradient(rgba(0,0,0,.25) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,0,0,.25) 1px, transparent 1px);
+    background-size:40px 40px;
+    pointer-events:none;
+}
 
-    window.onload = () => {
-        refreshUI();
-        // 绑定选择逻辑
-        ['DRAGON', 'TIGER'].forEach(s => {
-            const el = document.getElementById('opt-' + s) || document.querySelector(`[data-side="${s}"]`);
-            if (el) el.onclick = () => {
-                if (state.active) return;
-                state.side = (state.side === s) ? null : s;
-                // 同步视觉：选中变红，取消变灰
-                document.querySelectorAll('.opt, [data-side]').forEach(b => {
-                    const bSide = b.id?.split('-')[1] || b.dataset.side;
-                    b.style.filter = (state.side === bSide) ? 'brightness(1.2) drop-shadow(0 0 5px red)' : 'none';
-                });
-            };
-        });
+/* ===== 大转盘 ===== */
+.wheel-wrap{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-55%);
+}
+#wheel{
+    width:260px;
+    height:260px;
+    border-radius:50%;
+    background:conic-gradient(
+        #c62828 0deg 45deg,
+        #2e7d32 45deg 90deg,
+        #c62828 90deg 135deg,
+        #2e7d32 135deg 180deg,
+        #c62828 180deg 225deg,
+        #2e7d32 225deg 270deg,
+        #c62828 270deg 315deg,
+        #2e7d32 315deg 360deg
+    );
+    box-shadow:0 0 0 8px #111,0 20px 60px rgba(0,0,0,.8);
+}
 
-        // 绑定执行逻辑
-        const btn = document.getElementById('exec-btn') || document.getElementById('main-btn');
-        if (btn) btn.onclick = start;
-    };
+/* ===== 龙虎押注（完全独立） ===== */
+.bet-panel{
+    position:absolute;
+    bottom:40px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    gap:20px;
+}
+.bet{
+    padding:16px 32px;
+    background:#222;
+    border:2px solid #444;
+    cursor:pointer;
+    font-size:18px;
+}
+.bet.active{
+    border-color:#f44336;
+    background:#000;
+}
 
-    async function start() {
-        if (state.active) return;
+/* ===== 控制 ===== */
+.ctrl{
+    position:absolute;
+    top:30px;
+    left:50%;
+    transform:translateX(-50%);
+}
+button{
+    padding:12px 30px;
+    font-size:18px;
+    background:#000;
+    color:#fff;
+    border:2px solid #555;
+    cursor:pointer;
+}
+#balance{
+    margin-top:12px;
+    text-align:center;
+}
+</style>
+</head>
 
-        const isReal = state.side !== null;
-        let currentBal = store.get();
+<body>
+<div class="stage">
 
-        // 【第一道关卡：硬核验证】
-        if (isReal) {
-            if (currentBal < 550) {
-                alert("❌ 余额不足 (需5.5)");
-                return;
-            }
-            // 验证通过，立即扣费，绝不拖泥带水
-            currentBal -= 550;
-            store.set(currentBal);
-            refreshUI();
-        }
+    <div class="ctrl">
+        <button id="spinBtn">SPIN</button>
+        <div id="balance">146.8</div>
+    </div>
 
-        // 【第二道关卡：锁定引擎】
-        state.active = true;
-        
-        // 预定结果 (0:龙, 1:虎)
-        const winIdx = Math.random() < 0.5 ? 0 : 1;
-        const winSide = winIdx === 0 ? 'DRAGON' : 'TIGER';
+    <div class="wheel-wrap">
+        <div id="wheel"></div>
+    </div>
 
-        // 【第三道关卡：强制动画对齐】
-        await new Promise(resolve => {
-            const wheel = document.getElementById('wheel') || document.querySelector('.wheel-img');
-            const targetDeg = winIdx * 45; // 假设0度是龙，45度是虎
-            state.deg += (360 * 15) + targetDeg + (Math.random() * 4 - 2);
-            
-            wheel.style.transition = 'transform 5s cubic-bezier(0.15, 0, 0, 1)';
-            wheel.style.transform = `rotate(${state.deg}deg)`;
-            
-            setTimeout(resolve, 5200); // 略长于动画时间，确保停稳
-        });
+    <div class="bet-panel">
+        <div class="bet" data-side="DRAGON">🐉 龙</div>
+        <div class="bet" data-side="TIGER">🐯 虎</div>
+    </div>
 
-        // 【第四道关卡：结算逻辑】
-        if (isReal) {
-            if (state.side === winSide) {
-                store.set(store.get() + 1100); // 赢了加 11.0
-                alert(`🎊 命中：${winSide === 'DRAGON' ? '龙' : '虎'}`);
-            } else {
-                alert(`💔 未命中：${winSide === 'DRAGON' ? '龙' : '虎'}`);
-            }
-        } else {
-            alert(`🎡 空转结果：${winSide === 'DRAGON' ? '龙' : '虎'}`);
-        }
+</div>
 
-        state.active = false;
-        refreshUI();
+<script>
+/* ===== 状态 ===== */
+let bal = 14680;
+let side = null;
+let spinning = false;
+let deg = 0;
+
+/* ===== 龙虎只负责选择 ===== */
+document.querySelectorAll(".bet").forEach(b=>{
+    b.onclick=()=>{
+        if(spinning) return;
+        side = (side===b.dataset.side)?null:b.dataset.side;
+        document.querySelectorAll(".bet").forEach(x=>x.classList.remove("active"));
+        if(side) b.classList.add("active");
+    }
+});
+
+/* ===== 转盘只负责转 ===== */
+document.getElementById("spinBtn").onclick=()=>{
+    if(spinning) return;
+    spinning = true;
+
+    if(side && bal<550){
+        alert("余额不足");
+        spinning=false;
+        return;
     }
 
-    function refreshUI() {
-        const el = document.getElementById('balance');
-        if (el) el.innerText = (store.get() / 100).toFixed(1);
-    }
-})();
+    if(side) bal-=550;
+    updateBal();
+
+    const win = Math.random()<0.5?"DRAGON":"TIGER";
+    const base = win==="DRAGON"?0:45;
+    const jitter = Math.random()*20-10;
+    deg += 360*18 + base + jitter;
+
+    const wheel=document.getElementById("wheel");
+    wheel.style.transition="transform 5.6s cubic-bezier(.2,0,0,1)";
+    wheel.style.transform=`rotate(${deg}deg)`;
+
+    wheel.addEventListener("transitionend",()=>{
+        if(side && side===win) bal+=1100;
+        updateBal();
+        alert(win==="DRAGON"?"🐉 龙":"🐯 虎");
+        spinning=false;
+    },{once:true});
+};
+
+function updateBal(){
+    document.getElementById("balance").innerText=(bal/100).toFixed(1);
+}
+</script>
+</body>
+</html>
