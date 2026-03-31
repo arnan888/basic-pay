@@ -5,7 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>龙虎对决15秒视频版</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            /* 给所有元素加“身份证”，方便定位 */
+            position: relative;
+        }
         body { 
             background: #000; 
             min-height: 100vh; 
@@ -15,7 +21,7 @@
             font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
         }
 
-        /* 主游戏容器 */
+        /* 主容器：给个固定大小，锁死！ */
         .game-container {
             width: 100%;
             max-width: 480px;
@@ -25,15 +31,15 @@
             border-radius: 15px;
             padding: 6px;
             border: 3px solid #2c4a3b;
-            box-shadow: 0 0 30px rgba(241, 196, 15, 0.3);
             display: flex;
             flex-direction: column;
+            /* 外层大锁，谁也别想跑 */
+            overflow: hidden;
         }
 
-        /* 顶部状态栏 - 保留内陷效果 */
+        /* 顶部栏：焊死！ */
         .top-bar {
             height: 8%;
-            min-height: 40px;
             display: flex;
             gap: 10px;
             padding: 8px 12px;
@@ -42,9 +48,6 @@
             flex: 1;
             background: #6b737e;
             box-shadow: inset 8px 8px 16px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.05);
-            background-image: linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
-            background-size: 15px 15px;
             border: 2px solid #2c4a3b;
             border-radius: 8px;
             display: flex;
@@ -55,28 +58,30 @@
         .info-card label { font-size: 12px; color: #ccc; }
         .info-card span { font-size: 20px; color: #f1c40f; text-shadow: 0 0 6px #f1c40f; }
 
-        /* 中间对决区 - 视频作为背景+保留内陷 */
-        .battle-area {
+        /* 中间对决区：焊死在这！ */
+        .battle-section {
             height: 38%;
-            min-height: 180px;
             margin: 4px 10px;
             border: 3px solid #2c4a3b;
             border-radius: 12px;
-            box-shadow: inset 10px 10px 20px rgba(0,0,0,0.8), inset -10px -10px 20px rgba(255,255,255,0.05);
-            position: relative;
             overflow: hidden;
+            /* 锁死位置 */
+            position: relative;
+            top: 0;
+            left: 0;
         }
-        /* 视频作为背景 */
-        #battleVideo {
+        /* 视频：钉死在对决区里 */
+        #dragonTigerVideo {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             object-fit: cover;
-            z-index: 1;
+            /* 焊死，动都别想动 */
+            transform: none !important;
         }
-        /* 网格遮罩 - 保留原有风格 */
+        /* 网格遮罩：也钉死 */
         .grid-mask {
             position: absolute;
             top: 0;
@@ -87,38 +92,33 @@
                               linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
             background-size: 15px 15px;
             z-index: 2;
-            pointer-events: none;
         }
-        /* 结果文字 */
+        /* 结果文字：钉在上面 */
         .result-text {
             position: absolute;
             top: 10px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 18px;
-            color: #fff;
+            z-index: 3;
             background: rgba(0,0,0,0.7);
+            color: #fff;
             padding: 2px 15px;
             border-radius: 10px;
-            z-index: 3;
         }
 
-        /* 底部操作区 - 保留所有内陷效果 */
-        .control-area {
+        /* 底部操作区：整体锁死 */
+        .control-section {
             flex: 1;
             margin: 0 10px 8px 10px;
             background: #6b737e;
-            box-shadow: inset 8px 8px 16px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.05);
-            background-image: linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
-            background-size: 15px 15px;
             border: 3px solid #2c4a3b;
             border-radius: 12px;
             padding: 12px;
             display: flex;
             flex-direction: column;
+            box-shadow: inset 8px 8px 16px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.05);
         }
-        /* 选择区 - 内陷效果拉满 */
+        /* 选择区：锁成三列 */
         .choice-group {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -128,12 +128,11 @@
         .choice-btn {
             height: 70px;
             background: #333;
-            box-shadow: inset 5px 5px 10px rgba(0,0,0,0.6), inset -3px -3px 6px rgba(255,255,255,0.1);
             border: 2px solid #2c4a3b;
             border-radius: 10px;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             font-size: 45px;
             font-weight: bold;
             cursor: pointer;
@@ -141,12 +140,9 @@
         .choice-btn.dragon { color: #3498db; text-shadow: 0 0 10px #3498db; }
         .choice-btn.tiger { color: #e67e22; text-shadow: 0 0 10px #e67e22; }
         .choice-btn.tie { color: #9b59b6; text-shadow: 0 0 10px #9b59b6; }
-        .choice-btn.active {
-            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.6), inset -2px -2px 5px rgba(255,255,255,0.1);
-            border-color: #f1c40f;
-            background: #222;
-        }
-        /* 数据区 - 内陷效果 */
+        .choice-btn.active { border-color: #f1c40f; background: #222; }
+
+        /* 数据区：锁成三行 */
         .data-group {
             display: flex;
             flex-direction: column;
@@ -155,27 +151,26 @@
         }
         .data-item {
             background: #333;
-            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(255,255,255,0.05);
             border: 2px solid #2c4a3b;
             border-radius: 8px;
             padding: 0 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            height: 40px;
         }
         .data-item label { font-size: 12px; color: #ccc; }
         .data-item span { font-size: 18px; color: #f1c40f; text-shadow: 0 0 6px #f1c40f; }
 
-        /* 押注文字 */
+        /* 押注文字：居中锁死 */
         .bet-text {
             text-align: center;
             color: #fff;
-            font-size: 16px;
-            margin: 8px 0;
+            margin: 10px 0;
         }
         .bet-text span { color: #f1c40f; text-shadow: 0 0 8px #f1c40f; }
 
-        /* 按键区 - 内陷效果 */
+        /* 按键区：横向锁死 */
         .btn-group {
             display: flex;
             gap: 10px;
@@ -185,7 +180,6 @@
             width: 50px;
             height: 50px;
             background: #4a7c64;
-            box-shadow: inset 3px 3px 6px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(255,255,255,0.05);
             border: 2px solid #2c4a3b;
             border-radius: 8px;
             color: #fff;
@@ -195,38 +189,36 @@
         .main-btn {
             flex: 1;
             background: linear-gradient(#e53935, #b71c1c);
-            box-shadow: 0 5px 0 #7f0000;
+            border: none;
             border-radius: 25px;
             font-size: 20px;
+            box-shadow: 0 5px 0 #7f0000;
         }
         .main-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #7f0000; }
 
-        /* 模式选择区 */
+        /* 模式区：分成两列锁死 */
         .mode-group {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
         }
         .mode-btn {
+            height: 40px;
             background: #333;
-            box-shadow: inset 3px 3px 6px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(255,255,255,0.05);
             border: 2px solid #2c4a3b;
             border-radius: 8px;
-            color: #ccc;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            color: #fff;
             cursor: pointer;
         }
-        .mode-btn.active { border-color: #f1c40f; color: #fff; }
+        .mode-btn.active { border-color: #f1c40f; color: #f1c40f; }
         .speed-btn { display: flex; gap: 5px; }
-        .speed-btn span { flex: 1; display: flex; align-items: center; justify-content: center; border-radius: 6px; }
+        .speed-btn span { flex: 1; display: flex; justify-content: center; align-items: center; }
         .speed-btn span.active { background: #f1c40f; color: #000; }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <!-- 顶部状态栏 -->
+        <!-- 顶部栏：焊死 -->
         <div class="top-bar">
             <div class="info-card">
                 <label>账户余额</label>
@@ -238,21 +230,17 @@
             </div>
         </div>
 
-        <!-- 中间视频对决区 -->
-        <div class="battle-area">
-            <!-- 替换成你的视频 -->
-            <video id="battleVideo" autoplay muted loop playsinline>
+        <!-- 中间对决区：焊死在这 -->
+        <div class="battle-section">
+            <video id="dragonTigerVideo" autoplay muted loop playsinline>
                 <source src="your_dragon_tiger_video.mp4" type="video/mp4">
-                你的浏览器不支持视频播放，请更新浏览器
             </video>
-            <!-- 保留网格遮罩 -->
             <div class="grid-mask"></div>
-            <!-- 结果文字 -->
-            <div class="result-text" id="resultText">龙虎争霸 · 15秒决胜负</div>
+            <div class="result-text">龙虎争霸 · 15秒决胜负</div>
         </div>
 
-        <!-- 底部操作区 -->
-        <div class="control-area">
+        <!-- 底部操作区：焊死 -->
+        <div class="control-section">
             <div class="choice-group">
                 <div class="choice-btn dragon" onclick="setChoice('dragon')">龙</div>
                 <div class="choice-btn tie" onclick="setChoice('tie')">和</div>
@@ -278,7 +266,7 @@
 
             <div class="btn-group">
                 <button class="func-btn" onclick="changeBet(-1)">-</button>
-                <button class="main-btn" onclick="startBattle()">确认投注</button>
+                <button class="func-btn main-btn" onclick="startGame()">确认投注</button>
                 <button class="func-btn" onclick="changeBet(1)">+</button>
             </div>
 
@@ -296,78 +284,68 @@
     <script>
         let balance = 857.8;
         let betLevels = [10,50,100,500,1000];
-        let currentBetIdx = 2;
+        let currentBet = 2;
         let selected = null;
         let isRunning = false;
         let autoMode = false;
         let speed = 1;
 
-        // 选择投注项
         function setChoice(type) {
-            if(isRunning) return;
             selected = type;
-            document.querySelectorAll('.choice-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
             document.querySelector(`.choice-btn.${type}`).classList.add('active');
             document.getElementById('currentChoice').textContent = type==='dragon'?'龙':type==='tiger'?'虎':'和';
-            updateWinAmount();
+            updateWin();
         }
 
-        // 更新奖金
-        function updateWinAmount() {
-            let bet = betLevels[currentBetIdx];
-            let win = bet * (selected === 'tie' ? 8 : 1);
+        function changeBet(dir) {
+            currentBet = Math.max(0, Math.min(4, currentBet + dir));
+            document.getElementById('betAmount').textContent = betLevels[currentBet];
+            document.getElementById('currentBet').textContent = betLevels[currentBet].toFixed(2);
+            updateWin();
+        }
+
+        function updateWin() {
+            let win = betLevels[currentBet] * (selected === 'tie' ? 8 : 1);
             document.getElementById('expectWin').textContent = win.toFixed(2);
         }
 
-        // 调整押注金额
-        function changeBet(dir) {
+        function startGame() {
             if(isRunning) return;
-            currentBetIdx = Math.max(0, Math.min(4, currentBetIdx + dir));
-            document.getElementById('betAmount').textContent = betLevels[currentBetIdx];
-            document.getElementById('currentBet').textContent = betLevels[currentBetIdx].toFixed(2);
-            updateWinAmount();
-        }
-
-        // 开始对决
-        function startBattle() {
-            if(isRunning) { alert('对决进行中，请稍候'); return; }
-            if(!selected) { alert('请先选择投注项'); return; }
+            if(!selected) { alert('请选择投注项'); return; }
             
-            let bet = betLevels[currentBetIdx];
+            let bet = betLevels[currentBet];
             if(balance < bet) { alert('余额不足'); return; }
 
             isRunning = true;
             balance -= bet;
             document.getElementById('balance').textContent = balance.toFixed(2);
             
-            document.getElementById('resultText').textContent = '对决开始 · 风云变幻';
+            document.querySelector('.result-text').textContent = '对决开始 · 风云变幻';
             
             // 15秒后出结果
             setTimeout(() => {
                 let res = ['dragon','tiger','tie'][Math.floor(Math.random()*3)];
-                let resText = res==='dragon'?'龙威盖世':'tiger'?'虎啸山林':'势均力敌';
-                document.getElementById('resultText').textContent = resText;
+                let txt = res==='dragon'?'龙威盖世':'tiger'?'虎啸山林':'势均力敌';
+                document.querySelector('.result-text').textContent = txt;
                 
                 if(res === selected) {
-                    balance += bet * (res==='tie'?8:1);
+                    balance += betLevels[currentBet] * (res==='tie'?8:1);
                     document.getElementById('balance').textContent = balance.toFixed(2);
                 }
                 isRunning = false;
-                
-                if(autoMode) setTimeout(startBattle, speed*1000);
+                if(autoMode) setTimeout(startGame, speed*1000);
             }, 15000);
         }
 
-        // 自动模式
         function toggleAuto() {
             autoMode = !autoMode;
             let btn = document.querySelector('.mode-btn:first-child');
             btn.classList.toggle('active');
             btn.textContent = autoMode?'关闭自动':'自动投注';
-            if(autoMode && !isRunning) startBattle();
+            if(autoMode && !isRunning) startGame();
         }
 
-        // 设置速度
         function setSpeed(s) {
             speed = s;
             document.querySelectorAll('.speed-btn span').forEach(sp => sp.classList.remove('active'));
