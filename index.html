@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>龙虎对决 · 纯动画版</title>
+    <title>篮球对决 · 15秒决胜</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
@@ -23,7 +23,26 @@
             overflow: hidden;
             box-shadow: 0 20px 35px rgba(0,0,0,0.5);
         }
-        /* 视频区 - 纯 Canvas 动画，无外部文件 */
+        .top-bar {
+            display: flex;
+            gap: 12px;
+            padding: 16px 18px;
+            background: #1e3a2f;
+            border-bottom: 2px solid #f1c40f60;
+        }
+        .info-card {
+            flex: 1;
+            background: #0f2c22;
+            border-radius: 28px;
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            border: 1px solid #4d8068;
+        }
+        .info-card label { font-size: 12px; color: #cbd5e0; }
+        .info-card span { font-size: 20px; font-weight: bold; color: #f5b042; font-family: monospace; }
+        
         .battle-stage {
             margin: 12px 16px;
             border-radius: 28px;
@@ -32,11 +51,15 @@
             aspect-ratio: 16 / 9;
             overflow: hidden;
             border: 2px solid #f1c40f;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
         }
-        #battleCanvas {
+        #gameVideo {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            display: block;
+            object-fit: cover;
         }
         .result-floating {
             position: absolute;
@@ -44,6 +67,7 @@
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
             padding: 6px 20px;
             border-radius: 40px;
             color: #ffe6b3;
@@ -55,72 +79,88 @@
             border-right: 3px solid #f1c40f;
             pointer-events: none;
         }
+        
         .control-panel {
             margin: 8px 16px 20px;
             background: #1f4236;
             border-radius: 32px;
             padding: 16px;
         }
-        /* 其他样式保持原有... */
-        .top-bar {
+        .multi-bet-area { margin-bottom: 20px; }
+        .bet-item {
+            background: #0e2a20;
+            border-radius: 60px;
+            margin-bottom: 12px;
+            padding: 8px 12px;
             display: flex;
-            gap: 12px;
-            padding: 16px 18px;
-            background: #1e3a2f;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid #3d6e58;
         }
-        .info-card {
-            flex: 1;
-            background: #0f2c22;
-            border-radius: 28px;
-            padding: 8px 16px;
+        .bet-label {
+            font-size: 28px;
+            font-weight: bold;
+            width: 70px;
+            text-align: center;
+        }
+        .bet-label.red { color: #ff6b6b; }
+        .bet-label.blue { color: #4aa3ff; }
+        .bet-label.tie { color: #c084fc; }
+        .bet-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #1f3a30;
+            padding: 5px 12px;
+            border-radius: 50px;
+        }
+        .bet-controls button {
+            width: 36px;
+            height: 36px;
+            border-radius: 30px;
+            border: none;
+            font-size: 24px;
+            background: #2e4e40;
+            color: white;
+            cursor: pointer;
+        }
+        .bet-amount-input {
+            font-size: 22px;
+            font-weight: bold;
+            min-width: 70px;
+            text-align: center;
+            color: #ffda88;
+        }
+        .total-bet-info {
+            background: #00000066;
+            border-radius: 30px;
+            padding: 8px 15px;
+            margin: 12px 0;
             display: flex;
             justify-content: space-between;
+            font-weight: bold;
+            color: #ffecb3;
         }
-        .info-card span { color: #f5b042; font-size: 20px; font-weight: bold; }
-        .info-card label { color: #cbd5e0; font-size: 12px; }
-        .choice-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+        .total-bet-info span { color: #f5c542; font-size: 22px; }
+        .quick-bet-row {
+            display: flex;
             gap: 12px;
             margin-bottom: 20px;
         }
-        .choice-card {
-            background: #1a2e27;
-            border-radius: 48px;
-            text-align: center;
-            padding: 12px 0;
-            font-size: 36px;
-            cursor: pointer;
-            border: 2px solid #2f6b54;
-        }
-        .choice-card.active { border-color: #ffd966; background: #2f4e42; }
-        .choice-card.dragon { color: #4aa3ff; }
-        .choice-card.tiger { color: #ff8c42; }
-        .choice-card.tie { color: #c084fc; }
-        .stats-box {
-            background: #0e2a20;
-            border-radius: 28px;
-            padding: 6px 12px;
-            margin-bottom: 16px;
-        }
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 10px;
-            border-bottom: 1px solid #3d6e58;
-        }
-        .stat-item span { color: #ffda88; font-size: 20px; }
-        .bet-amount-row { text-align: center; margin: 12px 0; color: #e9f5ef; }
-        .bet-amount-row span { color: #f5c542; font-size: 26px; }
-        .action-buttons { display: flex; gap: 12px; margin-bottom: 20px; }
-        .adjust-btn {
+        .quick-btn {
+            flex: 1;
             background: #2e4e40;
-            width: 58px;
-            border-radius: 30px;
-            font-size: 32px;
             border: none;
-            color: white;
+            border-radius: 40px;
+            padding: 10px 0;
+            font-weight: bold;
+            color: #fff0c0;
             cursor: pointer;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin: 15px 0;
         }
         .confirm-btn {
             flex: 1;
@@ -130,60 +170,115 @@
             font-size: 22px;
             font-weight: bold;
             color: white;
+            padding: 14px 0;
+            cursor: pointer;
+        }
+        .reset-bet-btn {
+            background: #3a2a1f;
+            border: none;
+            border-radius: 60px;
+            padding: 0 20px;
+            font-size: 18px;
+            color: #ffcd94;
             cursor: pointer;
         }
         .mode-bar {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 14px;
+            margin-top: 8px;
         }
-        .mode-btn, .speed-option {
+        .mode-btn {
             background: #1e3a2f;
+            border: 1px solid #5c9279;
             border-radius: 48px;
             padding: 12px 0;
             text-align: center;
+            font-weight: bold;
             cursor: pointer;
             color: #efe3c9;
         }
-        .mode-btn.active, .speed-option.active {
-            background: #f1c40f;
-            color: #1e3a2f;
+        .mode-btn.active { background: #f1c40f; color: #1e3a2f; }
+        .speed-group {
+            display: flex;
+            gap: 4px;
+            background: #1e3a2f;
+            border-radius: 48px;
+            padding: 4px;
         }
-        .speed-group { display: flex; gap: 4px; background: #1e3a2f; border-radius: 48px; padding: 4px; }
-        .speed-option { flex: 1; padding: 8px 0; }
+        .speed-option {
+            flex: 1;
+            text-align: center;
+            padding: 8px 0;
+            border-radius: 40px;
+            cursor: pointer;
+            color: #ddddbb;
+        }
+        .speed-option.active { background: #f1c40f; color: #1e3a2f; }
         .disabled-click { pointer-events: none; opacity: 0.7; }
     </style>
 </head>
 <body>
 <div class="game-container">
     <div class="top-bar">
-        <div class="info-card"><label>账户余额</label><span id="balanceDisplay">1000.00</span></div>
-        <div class="info-card"><label>奖池累积</label><span id="jackpotDisplay">84291.50</span></div>
+        <div class="info-card"><label>🏀 账户余额</label><span id="balanceDisplay">1000.00</span></div>
+        <div class="info-card"><label>🎯 奖池累积</label><span id="jackpotDisplay">84291.50</span></div>
     </div>
 
-    <!-- 纯 Canvas 动画区，无任何视频文件！ -->
+    <!-- 播放您的篮球视频，文件大小已经是 1MB，直接使用 -->
     <div class="battle-stage">
-        <canvas id="battleCanvas" width="800" height="450"></canvas>
-        <div class="result-floating" id="battleResultMsg">⚔️ 龙虎对决 · 15秒决胜 ⚔️</div>
+        <video id="gameVideo" autoplay muted loop playsinline>
+            <source src="basketball.mp4" type="video/mp4">
+        </video>
+        <div class="result-floating" id="battleResultMsg">🏀 篮球对决 · 15秒决胜 🏀</div>
     </div>
 
     <div class="control-panel">
-        <div class="choice-row">
-            <div class="choice-card dragon" data-choice="dragon">🐉 龙</div>
-            <div class="choice-card tie" data-choice="tie">⚖️ 和</div>
-            <div class="choice-card tiger" data-choice="tiger">🐅 虎</div>
+        <div class="multi-bet-area">
+            <div class="bet-item">
+                <div class="bet-label red">🔥 红队</div>
+                <div class="bet-controls">
+                    <button class="dec-red">-</button>
+                    <span class="bet-amount-input" id="betRed">0</span>
+                    <button class="inc-red">+</button>
+                </div>
+            </div>
+            <div class="bet-item">
+                <div class="bet-label blue">💙 蓝队</div>
+                <div class="bet-controls">
+                    <button class="dec-blue">-</button>
+                    <span class="bet-amount-input" id="betBlue">0</span>
+                    <button class="inc-blue">+</button>
+                </div>
+            </div>
+            <div class="bet-item">
+                <div class="bet-label tie">⚖️ 平局</div>
+                <div class="bet-controls">
+                    <button class="dec-tie">-</button>
+                    <span class="bet-amount-input" id="betTie">0</span>
+                    <button class="inc-tie">+</button>
+                </div>
+            </div>
         </div>
-        <div class="stats-box">
-            <div class="stat-item"><label>💰 当前押注</label><span id="currentBetVal">100.00</span></div>
-            <div class="stat-item"><label>🏆 预计奖金</label><span id="expectedWin">100.00</span></div>
-            <div class="stat-item"><label>🎯 当前选择</label><span id="selectedChoiceText">未选择</span></div>
+
+        <div class="total-bet-info">
+            <span>💰 总押注</span>
+            <span id="totalBetAmount">0.00</span>
+            <span>USDT</span>
         </div>
-        <div class="bet-amount-row">🎲 押注金额：<span id="betAmountSpan">100</span> USDT</div>
+
+        <div class="quick-bet-row">
+            <button class="quick-btn" data-quick="10">+10</button>
+            <button class="quick-btn" data-quick="50">+50</button>
+            <button class="quick-btn" data-quick="100">+100</button>
+            <button class="quick-btn" data-quick="clear">清空</button>
+        </div>
+
         <div class="action-buttons">
-            <button class="adjust-btn" id="decreaseBet">−</button>
-            <button class="confirm-btn" id="confirmBetBtn">⚡ 确认投注</button>
-            <button class="adjust-btn" id="increaseBet">+</button>
+            <button class="confirm-btn" id="startBattleBtn">🏀 确认投注 & 开战</button>
+            <button class="reset-bet-btn" id="clearAllBtn">🗑️ 重置</button>
         </div>
+
         <div class="mode-bar">
             <div class="mode-btn" id="autoModeBtn">🔁 自动投注</div>
             <div class="speed-group">
@@ -198,201 +293,180 @@
 <script>
     // ========== 游戏逻辑 ==========
     let balance = 1000.00;
-    const betOptions = [10, 50, 100, 500, 1000];
-    let currentBetIndex = 2;
-    let selectedOption = null;
+    let bets = { red: 0, blue: 0, tie: 0 };
     let isGameInProgress = false;
     let autoMode = false;
     let currentSpeed = 2;
     let autoTimer = null;
     let gameTimeout = null;
-
+    
+    const ODDS = { red: 1, blue: 1, tie: 8 };
+    
     const balanceSpan = document.getElementById('balanceDisplay');
-    const currentBetSpan = document.getElementById('currentBetVal');
-    const expectedWinSpan = document.getElementById('expectedWin');
-    const selectedChoiceSpan = document.getElementById('selectedChoiceText');
-    const betAmountSpan = document.getElementById('betAmountSpan');
+    const totalBetSpan = document.getElementById('totalBetAmount');
+    const betRedSpan = document.getElementById('betRed');
+    const betBlueSpan = document.getElementById('betBlue');
+    const betTieSpan = document.getElementById('betTie');
     const resultMsgDiv = document.getElementById('battleResultMsg');
-
+    const startBtn = document.getElementById('startBattleBtn');
+    const autoModeBtn = document.getElementById('autoModeBtn');
+    const videoEl = document.getElementById('gameVideo');
+    
     function updateUI() {
         balanceSpan.textContent = balance.toFixed(2);
-        const bet = betOptions[currentBetIndex];
-        currentBetSpan.textContent = bet.toFixed(2);
-        betAmountSpan.textContent = bet;
-        let winMulti = (selectedOption === 'tie') ? 8 : 1;
-        expectedWinSpan.textContent = (bet * winMulti).toFixed(2);
-        if(selectedOption === 'dragon') selectedChoiceSpan.textContent = '🐉 龙';
-        else if(selectedOption === 'tiger') selectedChoiceSpan.textContent = '🐅 虎';
-        else if(selectedOption === 'tie') selectedChoiceSpan.textContent = '⚖️ 和';
-        else selectedChoiceSpan.textContent = '未选择';
+        betRedSpan.textContent = bets.red;
+        betBlueSpan.textContent = bets.blue;
+        betTieSpan.textContent = bets.tie;
+        const total = bets.red + bets.blue + bets.tie;
+        totalBetSpan.textContent = total.toFixed(2);
     }
-
-    function setSelected(choice) {
-        if(isGameInProgress) { resultMsgDiv.textContent = '对局中，请稍后再选'; return; }
-        selectedOption = choice;
-        document.querySelectorAll('.choice-card').forEach(c => c.classList.remove('active'));
-        document.querySelector(`.choice-card.${choice}`).classList.add('active');
+    
+    function modifyBet(type, delta) {
+        if (isGameInProgress) {
+            resultMsgDiv.textContent = '⛔ 比赛进行中，无法修改押注';
+            return false;
+        }
+        let current = bets[type];
+        let newVal = current + delta;
+        if (newVal < 0) newVal = 0;
+        bets[type] = newVal;
+        updateUI();
+        resultMsgDiv.textContent = `📝 ${type === 'red' ? '红队' : type === 'blue' ? '蓝队' : '平局'}押注: ${newVal} USDT`;
+        return true;
+    }
+    
+    function quickAdd(amount) {
+        if (isGameInProgress) { resultMsgDiv.textContent = '比赛进行中无法快速加注'; return; }
+        if (amount === 'clear') {
+            bets = { red: 0, blue: 0, tie: 0 };
+            resultMsgDiv.textContent = '已清空所有押注';
+        } else {
+            let addVal = parseFloat(amount);
+            bets.red += addVal;
+            bets.blue += addVal;
+            bets.tie += addVal;
+            resultMsgDiv.textContent = `每个选项增加 ${addVal} USDT`;
+        }
         updateUI();
     }
-
-    function changeBet(delta) {
-        if(isGameInProgress) return;
-        let newIdx = currentBetIndex + delta;
-        if(newIdx >= 0 && newIdx < betOptions.length) {
-            currentBetIndex = newIdx;
-            updateUI();
-        }
+    
+    function resetAllBets() {
+        if (isGameInProgress) { resultMsgDiv.textContent = '比赛进行中无法重置'; return; }
+        bets = { red: 0, blue: 0, tie: 0 };
+        updateUI();
+        resultMsgDiv.textContent = '所有押注已归零';
     }
-
-    function getResult() {
-        const r = Math.random();
-        if(r < 0.45) return 'dragon';
-        if(r < 0.9) return 'tiger';
+    
+    function getTotalBet() { return bets.red + bets.blue + bets.tie; }
+    
+    function getGameResult() {
+        const rand = Math.random();
+        if (rand < 0.45) return 'red';
+        if (rand < 0.9) return 'blue';
         return 'tie';
     }
-
+    
     function startBattle() {
-        if(isGameInProgress) return;
-        if(!selectedOption) { resultMsgDiv.textContent = '请选择押注项'; return; }
-        const bet = betOptions[currentBetIndex];
-        if(balance < bet) { resultMsgDiv.textContent = '余额不足'; return; }
+        if (isGameInProgress) { resultMsgDiv.textContent = '已有比赛进行中'; return; }
+        const totalBet = getTotalBet();
+        if (totalBet === 0) { resultMsgDiv.textContent = '⚠️ 请至少押注一方'; return; }
+        if (totalBet > balance) { resultMsgDiv.textContent = `❌ 余额不足`; return; }
         
-        balance -= bet;
+        balance -= totalBet;
         updateUI();
+        const currentBets = { ...bets };
+        
         isGameInProgress = true;
         document.querySelector('.control-panel').classList.add('disabled-click');
-        resultMsgDiv.textContent = '⚔️ 龙争虎斗 · 15秒揭晓 ⚔️';
+        startBtn.disabled = true;
+        resultMsgDiv.textContent = '🏀 比赛开始 · 15秒后揭晓 🏀';
         
-        if(gameTimeout) clearTimeout(gameTimeout);
+        // 重播视频
+        videoEl.currentTime = 0;
+        videoEl.play();
+        
+        if (gameTimeout) clearTimeout(gameTimeout);
         gameTimeout = setTimeout(() => {
-            const result = getResult();
-            let win = 0;
-            let msg = '';
-            if(result === 'dragon') msg = '🐉 青龙降世，龙威大胜！';
-            else if(result === 'tiger') msg = '🐅 猛虎出山，虎啸震天！';
-            else msg = '⚖️ 势均力敌 · 和局收场 ⚖️';
+            const result = getGameResult();
+            let winAmount = 0;
+            let resultText = '';
             
-            if(result === selectedOption) {
-                const multi = (selectedOption === 'tie') ? 8 : 1;
-                win = bet * multi;
-                balance += win;
-                resultMsgDiv.innerHTML = `✨ 命中！ ${msg} 赢得 ${win.toFixed(2)} USDT ✨`;
+            if (result === 'red') resultText = '🔥 红队获胜！';
+            else if (result === 'blue') resultText = '💙 蓝队获胜！';
+            else resultText = '⚖️ 平局！';
+            
+            if (result === 'red') winAmount = currentBets.red * ODDS.red;
+            else if (result === 'blue') winAmount = currentBets.blue * ODDS.blue;
+            else winAmount = currentBets.tie * ODDS.tie;
+            
+            if (winAmount > 0) {
+                balance += winAmount;
+                resultMsgDiv.innerHTML = `✨ 命中！ ${resultText} 赢得 ${winAmount.toFixed(2)} USDT ✨`;
             } else {
-                resultMsgDiv.innerHTML = `💔 惜败！ ${msg} 再接再厉 💔`;
+                resultMsgDiv.innerHTML = `💔 惜败！ ${resultText} 💔`;
             }
             updateUI();
+            
             isGameInProgress = false;
             document.querySelector('.control-panel').classList.remove('disabled-click');
+            startBtn.disabled = false;
             
-            if(autoMode && !isGameInProgress && balance >= betOptions[currentBetIndex]) {
-                if(autoTimer) clearTimeout(autoTimer);
-                autoTimer = setTimeout(() => startBattle(), currentSpeed * 1000);
+            if (autoMode && !isGameInProgress) {
+                const nextTotal = getTotalBet();
+                if (nextTotal > 0 && balance >= nextTotal) {
+                    if (autoTimer) clearTimeout(autoTimer);
+                    autoTimer = setTimeout(() => startBattle(), currentSpeed * 1000);
+                }
             }
             gameTimeout = null;
         }, 15000);
     }
-
-    function toggleAuto() {
-        if(isGameInProgress) { resultMsgDiv.textContent = '请等待对局结束'; return; }
+    
+    function toggleAutoMode() {
+        if (isGameInProgress) { resultMsgDiv.textContent = '请等待比赛结束'; return; }
         autoMode = !autoMode;
         autoModeBtn.classList.toggle('active');
         autoModeBtn.textContent = autoMode ? '⏸️ 关闭自动' : '🔁 自动投注';
-        if(autoMode && !isGameInProgress && selectedOption && balance >= betOptions[currentBetIndex]) {
-            if(autoTimer) clearTimeout(autoTimer);
+        if (autoMode && !isGameInProgress && getTotalBet() > 0 && balance >= getTotalBet()) {
+            if (autoTimer) clearTimeout(autoTimer);
             autoTimer = setTimeout(() => startBattle(), 200);
         }
     }
-
-    function setSpeed(s) {
-        currentSpeed = s;
+    
+    function setSpeed(level) {
+        currentSpeed = level;
         document.querySelectorAll('.speed-option').forEach(opt => opt.classList.remove('active'));
-        document.querySelector(`.speed-option[data-speed="${s}"]`).classList.add('active');
+        document.querySelector(`.speed-option[data-speed="${level}"]`).classList.add('active');
     }
-
-    document.querySelectorAll('.choice-card').forEach(c => {
-        c.onclick = () => setSelected(c.getAttribute('data-choice'));
+    
+    // 绑定事件
+    document.querySelector('.dec-red').onclick = () => modifyBet('red', -1);
+    document.querySelector('.inc-red').onclick = () => modifyBet('red', 1);
+    document.querySelector('.dec-blue').onclick = () => modifyBet('blue', -1);
+    document.querySelector('.inc-blue').onclick = () => modifyBet('blue', 1);
+    document.querySelector('.dec-tie').onclick = () => modifyBet('tie', -1);
+    document.querySelector('.inc-tie').onclick = () => modifyBet('tie', 1);
+    document.querySelectorAll('.quick-btn').forEach(btn => {
+        btn.onclick = () => {
+            const val = btn.getAttribute('data-quick');
+            if (val === 'clear') quickAdd('clear');
+            else quickAdd(parseFloat(val));
+        };
     });
-    document.getElementById('decreaseBet').onclick = () => changeBet(-1);
-    document.getElementById('increaseBet').onclick = () => changeBet(1);
-    document.getElementById('confirmBetBtn').onclick = () => { if(autoMode) toggleAuto(); startBattle(); };
-    document.getElementById('autoModeBtn').onclick = toggleAuto;
+    document.getElementById('clearAllBtn').onclick = () => resetAllBets();
+    startBtn.onclick = () => { if (autoMode) toggleAutoMode(); startBattle(); };
+    autoModeBtn.onclick = toggleAutoMode;
     document.querySelectorAll('.speed-option').forEach(opt => {
         opt.onclick = () => setSpeed(parseInt(opt.getAttribute('data-speed')));
     });
+    
     updateUI();
-
-    // ========== 纯 Canvas 动画（无视频文件，永远小于 1MB！）==========
-    const canvas = document.getElementById('battleCanvas');
-    let ctx = canvas.getContext('2d');
-    let animFrame;
+    bets = { red: 10, blue: 10, tie: 5 };
+    updateUI();
+    resultMsgDiv.innerHTML = '🏀 可同时押注红队、蓝队、平局，按结果分别结算 🏀';
     
-    function resizeCanvas() {
-        const rect = canvas.parentElement.getBoundingClientRect();
-        canvas.width = rect.width;
-        canvas.height = rect.height;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-    
-    let frame = 0;
-    function drawAnimation() {
-        if (!ctx) return;
-        const w = canvas.width, h = canvas.height;
-        if (w === 0 || h === 0) { animFrame = requestAnimationFrame(drawAnimation); return; }
-        
-        frame++;
-        const t = Date.now() / 1000;
-        const cycle = t % 15;
-        const intensity = 0.5 + 0.5 * Math.sin(cycle * Math.PI * 2);
-        
-        // 背景
-        const grad = ctx.createLinearGradient(0, 0, w, h);
-        grad.addColorStop(0, '#0a1f2a');
-        grad.addColorStop(1, '#1f3b30');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, h);
-        
-        // 网格
-        ctx.strokeStyle = `rgba(210, 180, 70, ${0.2 + intensity * 0.2})`;
-        ctx.lineWidth = 1;
-        for(let i = 0; i <= 18; i++) {
-            ctx.beginPath();
-            ctx.moveTo(i * w/18, 0);
-            ctx.lineTo(i * w/18, h);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(0, i * h/12);
-            ctx.lineTo(w, i * h/12);
-            ctx.stroke();
-        }
-        
-        // 龙虎图腾（动态跳动）
-        ctx.font = `${Math.min(70, w * 0.12)}px "Segoe UI Emoji"`;
-        ctx.fillStyle = `rgba(80, 180, 255, ${0.85 + Math.sin(t*8)*0.15})`;
-        ctx.fillText("🐉", w * 0.2, h * 0.55 + Math.sin(t*10)*5);
-        ctx.fillStyle = `rgba(255, 140, 60, ${0.85 + Math.cos(t*8)*0.15})`;
-        ctx.fillText("🐅", w * 0.72, h * 0.58 + Math.cos(t*9)*5);
-        
-        // 倒计时
-        const remain = (15 - (cycle % 15)).toFixed(1);
-        ctx.font = `bold ${Math.min(22, w*0.045)}px monospace`;
-        ctx.fillStyle = "#ffcc66";
-        ctx.fillText(`⏱️ ${remain}s`, w - 75, 40);
-        
-        // 标题
-        ctx.font = `bold ${Math.min(24, w*0.05)}px "PingFang SC"`;
-        ctx.fillStyle = "#f5cd6d";
-        ctx.fillText("龙虎争霸 · 15秒决胜", w/2 - 115, 38);
-        
-        if (isGameInProgress) {
-            ctx.font = `bold ${Math.min(28, w*0.07)}px monospace`;
-            ctx.fillStyle = "#ff8866";
-            ctx.fillText("⚡ 激战正酣 ⚡", w/2 - 85, h - 28);
-        }
-        
-        animFrame = requestAnimationFrame(drawAnimation);
-    }
-    drawAnimation();
+    // 确保视频可以播放
+    videoEl.play().catch(e => console.log('点击开始后自动播放'));
 </script>
 </body>
 </html>
