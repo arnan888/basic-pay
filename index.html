@@ -8,7 +8,7 @@
         :root {
             --jade: #4a7c64; --jade-l: #6b9a85; --jade-d: #2c4a3b;
             --stone: #6b737e; --inner: inset 8px 8px 16px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.05);
-            --red: #ff4d4d; --blue: #3498db; --tiger: #e67e22; --tie: #9b59b6;
+            --red: #ff4d4d;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: #0c0c0c; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
@@ -52,70 +52,117 @@
         }
         .box span:last-child { font-size: 20px; }
 
-        /* 转盘区 */
-        .wheel-area { 
-            height: 38%; display: flex; flex-direction: column; justify-content: center; align-items: center; 
-            background: var(--stone); box-shadow: var(--inner); border: 3px solid var(--jade-d); 
+        /* 3D龙虎打斗场景区 */
+        .battle-scene { 
+            height: 38%; display: flex; justify-content: center; align-items: center; 
+            background: #000; border: 3px solid var(--red); 
             border-radius: 12px; margin: 4px 10px; padding: 10px 0;
+            position: relative; overflow: hidden;
+            /* 背景特效 */
             background-image: 
-                linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
-            background-size: 15px 15px;
-            position: relative;
+                radial-gradient(circle at center, #222 0%, #000 80%),
+                linear-gradient(rgba(255,77,77,0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,77,77,0.1) 1px, transparent 1px);
+            background-size: 100% 100%, 20px 20px, 20px 20px;
         }
-        /* 转盘旋转按钮 */
-        .wheel-btn {
-            width: 110px; height: 32px;
-            background: linear-gradient(180deg, #e53935, #b71c1c);
-            border: none; border-radius: 16px;
-            color: #fff; font-size: 15px; font-weight: bold;
-            margin-bottom: 8px;
-            box-shadow: 0 3px 0 #7f0000, 0 0 10px var(--red);
-            cursor: pointer;
+        /* 场景装饰光效 */
+        .scene-light {
+            position: absolute; width: 200px; height: 200px;
+            border-radius: 50%; filter: blur(60px);
+            animation: lightPulse 4s ease infinite alternate;
         }
-        .wheel-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #7f0000, 0 0 5px var(--red); }
-        
-        .ptr { position: absolute; top: 10px; z-index: 100; width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 28px solid var(--red); filter: drop-shadow(0 0 10px var(--red)); }
-        
-        /* 转盘外包圈 */
-        .wheel-outer {
-            width: 260px; height: 260px; border-radius: 50%;
-            background: linear-gradient(45deg, #ff0000, #ff9900, #ffff00, #00ff00, #0099ff, #6633ff, #ff00ff);
-            background-size: 800% 800%;
-            animation: wheelNeonFlash 6s linear infinite;
-            padding: 6px;
-            box-shadow: 0 0 40px rgba(255,255,255,0.6), inset 0 0 15px rgba(255,255,255,0.5);
-            border: 2px solid #fff;
+        .light-left { left: -50px; top: 50%; transform: translateY(-50%); background: rgba(52,152,219,0.3); }
+        .light-right { right: -50px; top: 50%; transform: translateY(-50%); background: rgba(230,126,34,0.3); }
+        @keyframes lightPulse {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.8; }
         }
-        @keyframes wheelNeonFlash {
-            0% { background-position: 0% 50%; filter: brightness(1); }
-            50% { background-position: 100% 50%; filter: brightness(1.5); }
-            100% { background-position: 0% 50%; filter: brightness(1); }
+
+        /* 3D龙动画 */
+        .dragon {
+            position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+            width: 120px; height: 120px;
+            animation: dragonMove 8s ease infinite;
+            z-index: 10;
         }
-        
-        #wheel { 
-            width: 100%; height: 100%; border-radius: 50%; 
-            background: var(--stone); position: relative; transition: transform 4s cubic-bezier(0.1, 0, 0.2, 1.1); 
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.8); border: 3px solid var(--jade-d);
-            background-image: 
-                linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
-            background-size: 12px 12px;
+        .dragon-icon { font-size: 80px; color: var(--red); 
+            filter: drop-shadow(0 0 15px var(--red)) drop-shadow(0 0 30px rgba(52,152,219,0.5));
+            animation: dragonAttack 8s ease infinite;
         }
-        .slot { position: absolute; width: 100%; height: 100%; text-align: center; padding-top: 20px; transform-origin: 50% 50%; }
-        .beast-ico { display: block; font-size: 36px; margin-bottom: 3px; filter: drop-shadow(0 0 10px rgba(255,77,77,0.6)); }
-        .beast-nm { font-size: 13px; color: var(--red); font-weight: bold; text-shadow: 0 0 8px var(--red); }
-        
-        /* 转盘结果提示：全红色发光 */
-        .wheel-result {
-            margin-top: 10px; font-size: 16px; font-weight: bold;
+        @keyframes dragonMove {
+            0% { left: 20px; transform: translateY(-50%) scale(1); }
+            25% { left: 100px; transform: translateY(-55%) scale(1.1); }
+            50% { left: 150px; transform: translateY(-50%) scale(1); }
+            75% { left: 100px; transform: translateY(-45%) scale(1.1); }
+            100% { left: 20px; transform: translateY(-50%) scale(1); }
+        }
+        @keyframes dragonAttack {
+            0% { transform: rotate(0deg); }
+            20% { transform: rotate(10deg); }
+            40% { transform: rotate(-10deg); }
+            60% { transform: rotate(20deg); }
+            80% { transform: rotate(-5deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        /* 3D虎动画 */
+        .tiger {
+            position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+            width: 120px; height: 120px;
+            animation: tigerMove 8s ease infinite;
+            z-index: 10;
+        }
+        .tiger-icon { font-size: 80px; color: var(--red); 
+            filter: drop-shadow(0 0 15px var(--red)) drop-shadow(0 0 30px rgba(230,126,34,0.5));
+            animation: tigerAttack 8s ease infinite;
+        }
+        @keyframes tigerMove {
+            0% { right: 20px; transform: translateY(-50%) scale(1); }
+            25% { right: 100px; transform: translateY(-45%) scale(1.1); }
+            50% { right: 150px; transform: translateY(-50%) scale(1); }
+            75% { right: 100px; transform: translateY(-55%) scale(1.1); }
+            100% { right: 20px; transform: translateY(-50%) scale(1); }
+        }
+        @keyframes tigerAttack {
+            0% { transform: rotate(0deg); }
+            20% { transform: rotate(-10deg); }
+            40% { transform: rotate(10deg); }
+            60% { transform: rotate(-20deg); }
+            80% { transform: rotate(5deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        /* 打斗特效 */
+        .fight-effect {
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,0,0.8), rgba(255,0,0,0.8));
+            filter: blur(20px);
+            opacity: 0;
+            animation: fightFlash 8s ease infinite;
+            z-index: 5;
+        }
+        @keyframes fightFlash {
+            0% { opacity: 0; }
+            45% { opacity: 0; }
+            50% { opacity: 1; }
+            55% { opacity: 0; }
+            100% { opacity: 0; }
+        }
+
+        /* 结果提示区 */
+        .battle-result {
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            font-size: 16px; font-weight: bold;
             color: var(--red); text-shadow: 0 0 8px var(--red), 0 0 15px rgba(255,77,77,0.5);
+            z-index: 20;
         }
 
         /* 核心区：龙虎和押注 */
         .play-section {
             flex: 1; display: flex; flex-direction: column;
-            background: var(--stone); box-shadow: var(--inner); border: 3px solid var(--jade-d); 
+            background: var(--stone); box-shadow: var(--inner); border: 3px solid var(--red); 
             border-radius: 12px; margin: 4px 10px 8px 10px; padding: 12px;
             background-image: 
                 linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px),
@@ -126,19 +173,16 @@
         /* 龙虎和布局：只保留大字 */
         .battle-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; height: 80px; margin-bottom: 10px; }
         .side-cell { 
-            background: rgba(0,0,0,0.35); border: 3px solid var(--jade-d); border-radius: 14px; 
+            background: rgba(0,0,0,0.35); border: 3px solid var(--red); border-radius: 14px; 
             display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.1s; box-shadow: var(--inner);
+            cursor: pointer; transition: 0.1s; box-shadow: var(--inner), 0 0 10px var(--red);
         }
-        .side-cell.active { border-color: var(--red); background: rgba(255,77,77,0.1); transform: scale(0.97); box-shadow: 0 0 15px var(--red); }
-        .side-cell span { font-size: 48px; font-weight: 900; }
-        #cell-DRAGON span { color: var(--red); text-shadow: 0 0 15px var(--red); }
-        #cell-TIGER span { color: var(--red); text-shadow: 0 0 15px var(--red); }
-        #cell-TIE span { color: var(--red); text-shadow: 0 0 15px var(--red); }
+        .side-cell.active { background: rgba(255,77,77,0.1); transform: scale(0.97); box-shadow: 0 0 15px var(--red); }
+        .side-cell span { font-size: 48px; font-weight: 900; color: var(--red); text-shadow: 0 0 15px var(--red); }
 
         /* 数据区：全红色发光 */
         .data-stack { display: grid; grid-template-rows: repeat(3, 1fr); gap: 6px; margin: 0 6px; }
-        .data-item { background: rgba(0,0,0,0.6); border: 2px solid var(--jade-d); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; padding: 0 12px; }
+        .data-item { background: rgba(0,0,0,0.6); border: 2px solid var(--red); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; padding: 0 12px; }
         .data-item label, .data-item value { font-size: 12px; color: var(--red); font-weight: bold; 
             text-shadow: 0 0 8px var(--red), 0 0 15px rgba(255,77,77,0.5);
         }
@@ -179,15 +223,27 @@
             <div class="box"><span>奖池</span><span>84291.50</span></div>
         </div>
 
-        <!-- 转盘区 -->
-        <div class="wheel-area">
-            <button class="wheel-btn" onclick="rotateWheel()">转盘旋转</button>
-            <div class="ptr"></div>
-            <div class="wheel-outer">
-                <div id="wheel"></div>
+        <!-- 3D龙虎打斗场景区 -->
+        <div class="battle-scene">
+            <!-- 背景光效 -->
+            <div class="scene-light light-left"></div>
+            <div class="scene-light light-right"></div>
+            
+            <!-- 龙动画 -->
+            <div class="dragon">
+                <div class="dragon-icon">🐉</div>
             </div>
-            <!-- 转盘结果：全红色发光 -->
-            <div class="wheel-result" id="wheel-result">状态：准备就绪</div>
+            
+            <!-- 虎动画 -->
+            <div class="tiger">
+                <div class="tiger-icon">🐯</div>
+            </div>
+            
+            <!-- 打斗特效 -->
+            <div class="fight-effect"></div>
+            
+            <!-- 结果提示 -->
+            <div class="battle-result" id="battle-result">龙虎相争·一触即发</div>
         </div>
 
         <!-- 核心操作区 -->
@@ -230,59 +286,15 @@
 </div>
 
 <script>
-const beasts = [
-    {icon:'🦁', name:'狮子'}, {icon:'🐯', name:'猛虎'}, {icon:'🐺', name:'恶狼'}, {icon:'🦏', name:'犀牛'},
-    {icon:'🐘', name:'巨象'}, {icon:'🐻', name:'黑熊'}, {icon:'🐲', name:'神龙'}, {icon:'🦅', name:'雄鹰'}
-];
-
 let state = {
     balance: 857.8,
     betLevels: [10, 50, 100, 500, 1000],
     currentBetIdx: 2,
     selected: null,
-    wheelRolling: false,
     betRolling: false,
     autoMode: false,
     speed: 1
 };
-
-// 初始化转盘
-function initWheel() {
-    const wheel = document.getElementById('wheel');
-    beasts.forEach((b, i) => {
-        const slot = document.createElement('div');
-        slot.className = 'slot';
-        slot.style.transform = `rotate(${i * 45}deg)`;
-        slot.innerHTML = `<div class="beast-ico">${b.icon}</div><div class="beast-nm">${b.name}</div>`;
-        wheel.appendChild(slot);
-    });
-}
-
-// 转盘独立旋转
-function rotateWheel() {
-    if(state.wheelRolling) { alert('转盘转动中，请稍后'); return; }
-    
-    state.wheelRolling = true;
-    document.querySelector('.wheel-btn').disabled = true;
-    document.getElementById('wheel-result').textContent = '状态：转盘转动中...';
-
-    const winIdx = Math.floor(Math.random()*8);
-    const spinRounds = state.speed === 3 ? 4 : 8;
-    let wheelDeg = 0;
-    const targetDeg = spinRounds * 360 - (winIdx * 45);
-    
-    const wheel = document.getElementById('wheel');
-    wheel.style.transitionDuration = state.speed === 3 ? '0.8s' : state.speed === 2 ? '2s' : '4s';
-    wheel.style.transform = `rotate(0deg)`;
-    setTimeout(() => wheel.style.transform = `rotate(${targetDeg}deg)`, 50);
-
-    setTimeout(() => {
-        state.wheelRolling = false;
-        document.querySelector('.wheel-btn').disabled = false;
-        const winBeast = beasts[winIdx];
-        document.getElementById('wheel-result').textContent = `开出：${winBeast.name} ${winBeast.icon}`;
-    }, parseFloat(wheel.style.transitionDuration)*1000 + 50);
-}
 
 // 设置押注选项
 function setPick(type) {
@@ -300,7 +312,7 @@ function adjustBet(dir) {
     document.getElementById('ui-stake').textContent = state.betLevels[state.currentBetIdx];
 }
 
-// 执行押注
+// 执行押注+打斗动画触发
 function executeBet() {
     if(state.betRolling) { alert('押注处理中，请稍后'); return; }
     if(!state.selected) { alert('请先选择投注项'); return; }
@@ -316,9 +328,36 @@ function executeBet() {
     const winAmt = betAmt * (state.selected === 'TIE' ? 8 : 1);
     document.getElementById('val-win').textContent = winAmt.toFixed(2);
 
+    // 触发打斗高潮动画
+    document.getElementById('battle-result').textContent = '龙虎激战·胜负分晓';
+    const dragon = document.querySelector('.dragon');
+    const tiger = document.querySelector('.tiger');
+    const effect = document.querySelector('.fight-effect');
+    
+    // 加速打斗动画
+    dragon.style.animationDuration = state.speed === 3 ? '2s' : state.speed === 2 ? '4s' : '6s';
+    tiger.style.animationDuration = state.speed === 3 ? '2s' : state.speed === 2 ? '4s' : '6s';
+    effect.style.animationDuration = state.speed === 3 ? '2s' : state.speed === 2 ? '4s' : '6s';
+
+    // 开奖结果判定
     setTimeout(() => {
         state.betRolling = false;
         const winType = ['DRAGON','TIGER','TIE'][Math.floor(Math.random()*3)];
+        let resultText = '';
+        
+        if(winType === 'DRAGON') {
+            resultText = '龙威盖世·大胜而归';
+            document.querySelector('.dragon-icon').style.filter = 'drop-shadow(0 0 20px #ff4d4d) drop-shadow(0 0 40px rgba(52,152,219,0.8))';
+            setTimeout(() => document.querySelector('.dragon-icon').style.filter = 'drop-shadow(0 0 15px #ff4d4d) drop-shadow(0 0 30px rgba(52,152,219,0.5))', 2000);
+        } else if(winType === 'TIGER') {
+            resultText = '虎啸山林·力压群雄';
+            document.querySelector('.tiger-icon').style.filter = 'drop-shadow(0 0 20px #ff4d4d) drop-shadow(0 0 40px rgba(230,126,34,0.8))';
+            setTimeout(() => document.querySelector('.tiger-icon').style.filter = 'drop-shadow(0 0 15px #ff4d4d) drop-shadow(0 0 30px rgba(230,126,34,0.5))', 2000);
+        } else {
+            resultText = '势均力敌·握手言和';
+        }
+        
+        document.getElementById('battle-result').textContent = resultText;
         
         if(winType === state.selected) {
             state.balance += winAmt;
@@ -327,8 +366,8 @@ function executeBet() {
             setTimeout(() => document.getElementById(`cell-${winType}`).classList.remove('winner'), 2000);
         }
         
-        if(state.autoMode) setTimeout(executeBet, 1500);
-    }, 1500);
+        if(state.autoMode) setTimeout(executeBet, state.speed === 3 ? 1500 : state.speed === 2 ? 2500 : 3500);
+    }, state.speed === 3 ? 1000 : state.speed === 2 ? 2000 : 3000);
 }
 
 // 切换自动模式
@@ -344,12 +383,15 @@ function toggleSpeed() {
     state.speed = (state.speed % 3) + 1;
     document.querySelectorAll('.speed-btn span').forEach(s => s.classList.remove('active'));
     document.getElementById(`speed-${state.speed}`).classList.add('active');
+    
+    // 调整基础动画速度
+    const dragon = document.querySelector('.dragon');
+    const tiger = document.querySelector('.tiger');
+    const effect = document.querySelector('.fight-effect');
+    dragon.style.animationDuration = state.speed === 3 ? '2s' : state.speed === 2 ? '4s' : '8s';
+    tiger.style.animationDuration = state.speed === 3 ? '2s' : state.speed === 2 ? '4s' : '8s';
+    effect.style.animationDuration = state.speed === 3 ? '2s' : state.speed === 2 ? '4s' : '8s';
 }
-
-// 初始化
-window.onload = function() {
-    initWheel();
-};
 </script>
 </body>
 </html>
