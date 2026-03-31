@@ -9,7 +9,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            user-select: none; /* 避免移动端长按菜单 */
+            user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -23,7 +23,7 @@
             padding: 12px;
         }
 
-        /* 主游戏卡牌容器 */
+        /* 主游戏容器 */
         .game-container {
             width: 100%;
             max-width: 500px;
@@ -32,7 +32,6 @@
             box-shadow: 0 20px 35px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.1);
             overflow: hidden;
             border: 1px solid #f1c40f80;
-            transition: all 0.2s;
         }
 
         /* 顶部余额区 */
@@ -71,7 +70,7 @@
             font-family: monospace;
         }
 
-        /* 对决视频区 —— 绝对锁死比例 */
+        /* 对决视频区 - 确保画面完美展示 */
         .battle-stage {
             margin: 12px 16px;
             border-radius: 28px;
@@ -90,10 +89,20 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            background: #000;
+            background: #0a1a1a;
         }
 
-        /* 网格纹理 + 动感氛围 */
+        /* 备用Canvas画面层（当视频源无效时显示动态画面） */
+        .video-fallback-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+        }
+
         .grid-overlay {
             position: absolute;
             inset: 0;
@@ -152,7 +161,7 @@
             pointer-events: none;
         }
 
-        /* 底部操作区 稳如磐石 */
+        /* 底部操作区 */
         .control-panel {
             margin: 8px 16px 20px 16px;
             background: #1f4236;
@@ -162,7 +171,7 @@
             border: 1px solid #70b192;
         }
 
-        /* 龙虎和 三巨头 */
+        /* 龙虎和三巨头 */
         .choice-row {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
@@ -224,7 +233,6 @@
             font-family: monospace;
         }
 
-        /* 押注金额行 */
         .bet-amount-row {
             text-align: center;
             background: #00000055;
@@ -242,7 +250,6 @@
             font-weight: 800;
         }
 
-        /* 按键区 */
         .action-buttons {
             display: flex;
             gap: 12px;
@@ -283,7 +290,6 @@
             box-shadow: 0 2px 0 #631008;
         }
 
-        /* 底部模式栏 */
         .mode-bar {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -330,7 +336,6 @@
             box-shadow: inset 0 0 2px #000;
         }
 
-        /* 禁用交互样式 */
         .disabled-click {
             pointer-events: none;
             opacity: 0.7;
@@ -344,23 +349,26 @@
             .choice-card { font-size: 30px; padding: 10px 0; }
             .stat-item span { font-size: 18px; }
             .confirm-btn { font-size: 18px; }
+            .result-floating { font-size: 12px; white-space: nowrap; padding: 4px 12px; }
+            .battle-title { font-size: 10px; white-space: nowrap; }
         }
     </style>
 </head>
 <body>
 <div class="game-container">
-    <!-- 顶部余额/奖池 焊死 -->
+    <!-- 顶部余额/奖池 -->
     <div class="top-bar">
         <div class="info-card"><label>账户余额</label><span id="balanceDisplay">857.80</span></div>
         <div class="info-card"><label>奖池累积</label><span id="jackpotDisplay">84291.50</span></div>
     </div>
 
-    <!-- 视频对决区 完美比例 -->
+    <!-- 视频对决区 - 确保画面完美展示 -->
     <div class="battle-stage">
-        <video id="dragonTigerVideo" autoplay muted loop playsinline preload="auto">
-            <!-- 动态生成示例视频: 为了保证视觉体验，使用内嵌动态Canvas模拟龙虎风格视频素材(无外部mp4也呈现炫酷动态背景) 但完全兼容无资源情况 -->
-            <source src="" type="video/mp4">
+        <video id="dragonTigerVideo" autoplay muted loop playsinline preload="auto" style="width:100%; height:100%; object-fit:cover;">
+            <!-- 内置一个极小空白数据，确保video元素存在但不影响fallback -->
+            <source src="data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAAIZnJlZQAAAADtZGF0YQAAAAA=" type="video/mp4">
         </video>
+        <canvas id="videoCanvas" class="video-fallback-canvas" width="800" height="450" style="display: none;"></canvas>
         <div class="grid-overlay"></div>
         <div class="battle-title">⚔️ 龙虎争霸 · 15秒决胜 ⚔️</div>
         <div class="result-floating" id="battleResultMsg">押注决胜</div>
@@ -377,7 +385,7 @@
         <!-- 数据统计 -->
         <div class="stats-box">
             <div class="stat-item"><label>💰 当前押注</label><span id="currentBetVal">100.00</span></div>
-            <div class="stat-item"><label>🏆 预计奖金</label><span id="expectedWin">800.00</span></div>
+            <div class="stat-item"><label>🏆 预计奖金</label><span id="expectedWin">100.00</span></div>
             <div class="stat-item"><label>🎯 当前选择</label><span id="selectedChoiceText">未选择</span></div>
         </div>
 
@@ -404,16 +412,17 @@
 
 <script>
     // ---------- 核心状态 ----------
-    let balance = 857.80;               // 账户余额
+    let balance = 857.80;
     const betOptions = [10, 50, 100, 500, 1000];
     let currentBetIndex = 2;            // 默认100
     let selectedOption = null;           // 'dragon', 'tiger', 'tie'
-    let isGameInProgress = false;        // 是否对局中
-    let autoBetActive = false;           // 自动模式
-    let currentSpeed = 2;               // 1X = 1秒后下一局? 根据需求: 等待间隔(秒) 1X->1秒,2X->2秒,3X->3秒 (模拟录像间隔)
+    let isGameInProgress = false;
+    let autoBetActive = false;
+    let currentSpeed = 2;               // 间隔秒数 1X=1s,2X=2s,3X=3s
     let autoTimer = null;
+    let currentGameTimeout = null;
     
-    // 奖池累积固定展示 (视觉保留)
+    // 奖池展示固定
     const totalJackpot = 84291.50;
     
     // DOM 元素
@@ -427,129 +436,140 @@
     const autoModeBtn = document.getElementById('autoModeBtn');
     const decreaseBtn = document.getElementById('decreaseBet');
     const increaseBtn = document.getElementById('increaseBet');
-    
-    // 视频元素
     const videoEl = document.getElementById('dragonTigerVideo');
+    const canvasEl = document.getElementById('videoCanvas');
     
-    // ------------- 优雅的视频模拟 (没有外部mp4时动态生成炫酷Canvas流,保证15秒对决体验) -------------
-    // 为了确保视觉上“龙虎对决”氛围且无外部资源报错，创建Canvas动态绘制龙虎元素作为备用视频源
-    (function setupVideo() {
-        // 尝试加载外部视频，但若无有效源，使用canvas动画引擎模拟炫酷15秒循环
-        const videoSrc = videoEl.querySelector('source');
-        let hasValidSource = false;
-        if (videoSrc && videoSrc.src && videoSrc.src.trim() !== "") {
-            // 可能有外部链接，保留原有机制，若加载失败则使用fallback
-            videoEl.addEventListener('error', () => {
-                console.log("外部视频加载失败，启用动态Canvas龙虎战场");
-                initCanvasVideo();
-            });
-            // 如果src为空字符串, 也启用canvas
-            if(videoSrc.src === "" || videoSrc.src.indexOf("your_dragon_tiger_video") !== -1) {
-                initCanvasVideo();
+    // ========== 龙虎动态画面渲染 (保证画面完美展示) ==========
+    // 由于外部mp4可能缺失，我们使用Canvas生成华丽龙虎对决动画，确保视觉上“画面展示”
+    let animationFrameId = null;
+    let canvasCtx = null;
+    let useCanvasFallback = true;  // 优先使用canvas动态动画，效果更炫酷且确保显示
+    
+    function initCanvasVisual() {
+        if (!canvasEl) return;
+        canvasEl.style.display = 'block';
+        videoEl.style.display = 'none';   // 隐藏video，用canvas展示动态龙虎画面
+        canvasCtx = canvasEl.getContext('2d');
+        
+        // 设置canvas尺寸匹配父容器
+        const resizeCanvas = () => {
+            const container = canvasEl.parentElement;
+            const rect = container.getBoundingClientRect();
+            canvasEl.width = rect.width || 800;
+            canvasEl.height = rect.height || 450;
+        };
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        let frame = 0;
+        let startTime = Date.now();
+        
+        function drawDynamicScene() {
+            if (!canvasCtx) return;
+            const w = canvasEl.width;
+            const h = canvasEl.height;
+            if (w === 0 || h === 0) {
+                animationFrameId = requestAnimationFrame(drawDynamicScene);
+                return;
             }
-        } else {
-            initCanvasVideo();
+            frame++;
+            const timeSec = (Date.now() - startTime) / 1000;
+            const cycleTime = timeSec % 15;  // 15秒循环
+            const intensity = 0.5 + 0.5 * Math.sin(cycleTime * Math.PI * 2);
+            
+            // 深邃背景渐变
+            const grad = canvasCtx.createLinearGradient(0, 0, w, h);
+            grad.addColorStop(0, '#0a1f2a');
+            grad.addColorStop(1, '#1f3b30');
+            canvasCtx.fillStyle = grad;
+            canvasCtx.fillRect(0, 0, w, h);
+            
+            // 华丽网格与龙纹
+            canvasCtx.strokeStyle = `rgba(210, 180, 70, ${0.2 + intensity * 0.2})`;
+            canvasCtx.lineWidth = 1.5;
+            const stepX = w / 20;
+            const stepY = h / 15;
+            for(let i = 0; i <= 20; i++) {
+                canvasCtx.beginPath();
+                canvasCtx.moveTo(i * stepX, 0);
+                canvasCtx.lineTo(i * stepX, h);
+                canvasCtx.stroke();
+                canvasCtx.beginPath();
+                canvasCtx.moveTo(0, i * stepY);
+                canvasCtx.lineTo(w, i * stepY);
+                canvasCtx.stroke();
+            }
+            
+            // 动态光效
+            canvasCtx.shadowBlur = 12;
+            canvasCtx.shadowColor = "#ffaa44";
+            
+            // 左侧青龙
+            const dragonScale = 0.08 + Math.sin(frame * 0.02) * 0.02;
+            canvasCtx.font = `${Math.min(80, w * 0.12)}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", system-ui`;
+            canvasCtx.fillStyle = `rgba(80, 180, 255, ${0.85 + Math.sin(cycleTime * 4) * 0.15})`;
+            canvasCtx.fillText("🐉", w * 0.2, h * 0.55);
+            
+            // 右侧猛虎
+            canvasCtx.fillStyle = `rgba(255, 140, 60, ${0.85 + Math.cos(cycleTime * 4.3) * 0.15})`;
+            canvasCtx.fillText("🐅", w * 0.72, h * 0.58);
+            
+            // 中间火焰特效
+            canvasCtx.font = `${Math.min(48, w * 0.08)}px monospace`;
+            canvasCtx.fillStyle = `rgba(255, 200, 80, ${0.6 + Math.sin(cycleTime * 6) * 0.3})`;
+            canvasCtx.fillText("⚔️", w * 0.47, h * 0.45);
+            
+            // 动态粒子 (灵气)
+            for(let i=0;i<18;i++) {
+                const t = Date.now() * 0.003 + i;
+                const x = (w * 0.2 + Math.sin(t) * w * 0.15);
+                const y = (h * 0.3 + Math.cos(t * 1.3) * h * 0.2);
+                canvasCtx.fillStyle = `rgba(255, 215, 100, ${0.5 + Math.sin(t)*0.3})`;
+                canvasCtx.beginPath();
+                canvasCtx.arc(x, y, 3 + Math.sin(t)*2, 0, Math.PI*2);
+                canvasCtx.fill();
+            }
+            
+            // 倒计时视觉
+            const remain = (15 - (cycleTime % 15)).toFixed(1);
+            canvasCtx.font = `bold ${Math.min(22, w*0.045)}px monospace`;
+            canvasCtx.fillStyle = "#ffcc66";
+            canvasCtx.shadowBlur = 4;
+            canvasCtx.fillText(`⏱️ ${remain}s`, w - 80, 45);
+            
+            // 龙虎争霸大字标题
+            canvasCtx.font = `bold ${Math.min(26, w*0.06)}px "PingFang SC"`;
+            canvasCtx.fillStyle = "#f5cd6d";
+            canvasCtx.fillText("龙腾虎啸 · 决胜15秒", w/2 - 130, 38);
+            
+            // 若对局中展示战斗氛围
+            if(isGameInProgress) {
+                canvasCtx.font = `bold ${Math.min(28, w*0.07)}px monospace`;
+                canvasCtx.fillStyle = "#ff7777";
+                canvasCtx.shadowBlur = 10;
+                canvasCtx.fillText("⚡ 激战正酣 ⚡", w/2 - 90, h - 25);
+            }
+            
+            animationFrameId = requestAnimationFrame(drawDynamicScene);
         }
         
-        function initCanvasVideo() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 800;
-            canvas.height = 450;
-            const ctx = canvas.getContext('2d');
-            let frame = 0;
-            let animationId = null;
-            
-            // 龙虎主题绘制函数
-            function drawDragonTigerScene(timestamp) {
-                if (!ctx) return;
-                frame = (frame + 1) % 360;
-                const timeSec = (Date.now() / 1000) % 15;
-                const intensity = 0.5 + 0.5 * Math.sin(timeSec * Math.PI * 2);
-                
-                // 背景 暗红与青黑渐变
-                const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-                grad.addColorStop(0, '#0a1f2a');
-                grad.addColorStop(1, '#1f3b30');
-                ctx.fillStyle = grad;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                // 网格光线
-                ctx.strokeStyle = `rgba(210, 180, 70, ${0.2 + intensity*0.2})`;
-                ctx.lineWidth = 1;
-                for(let i = 0; i < 20; i++) {
-                    ctx.beginPath();
-                    ctx.moveTo(i*45, 0);
-                    ctx.lineTo(i*45, canvas.height);
-                    ctx.stroke();
-                    ctx.beginPath();
-                    ctx.moveTo(0, i*35);
-                    ctx.lineTo(canvas.width, i*35);
-                    ctx.stroke();
-                }
-                
-                // 龙图腾 (左)
-                ctx.font = `bold ${60 + Math.sin(frame*0.1)*8}px "KaiTi", "华文楷书"`;
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = "#2e86c1";
-                ctx.fillStyle = `rgba(70, 160, 255, ${0.7+Math.sin(frame*0.05)*0.3})`;
-                ctx.fillText("🐉", 120, canvas.height/2 + 20);
-                // 虎 (右)
-                ctx.fillStyle = `rgba(255, 120, 50, ${0.7+Math.cos(frame*0.07)*0.3})`;
-                ctx.fillText("🐅", canvas.width - 140, canvas.height/2 + 20);
-                
-                // 雷电特效
-                ctx.font = "28px monospace";
-                ctx.fillStyle = `rgba(255,215,0,${0.5+Math.sin(frame*0.2)*0.3})`;
-                ctx.fillText("⚡", 60 + Math.sin(frame*0.3)*10, 80);
-                ctx.fillText("⚡", canvas.width-80 + Math.cos(frame*0.27)*12, canvas.height-70);
-                
-                // 文字“龙虎斗”
-                ctx.font = "bold 32system-ui";
-                ctx.fillStyle = "#ffd966";
-                ctx.shadowBlur = 8;
-                ctx.fillText("⚔️ 龙虎 · 战魂 ⚔️", canvas.width/2-130, 50);
-                
-                // 显示倒计时风格帧 (基于15秒循环)
-                let remain = (15 - (timeSec % 15)).toFixed(1);
-                if(remain <= 0.1) remain = 15;
-                ctx.font = "bold 24px monospace";
-                ctx.fillStyle = "#ffaa44";
-                ctx.fillText(`决胜倒计时 ${remain}s`, canvas.width-180, 85);
-                
-                // 动态粒子
-                for(let i=0;i<12;i++) {
-                    ctx.fillStyle = `rgba(255, 200, 80, ${0.4+Math.sin(Date.now()*0.003+i)*0.3})`;
-                    ctx.beginPath();
-                    ctx.arc( (frame*7 + i*70) % canvas.width, canvas.height - 30 + Math.sin(frame*0.1+i)*12, 3, 0, Math.PI*2);
-                    ctx.fill();
-                }
-                requestAnimationFrame(drawDragonTigerScene);
-            }
-            
-            // 将canvas流转换为视频媒体流并赋值给video元素
-            const stream = canvas.captureStream(30);
-            videoEl.srcObject = stream;
-            videoEl.muted = true;
-            videoEl.autoplay = true;
-            videoEl.loop = true;
-            videoEl.play().catch(e=>console.log("自动播放策略",e));
-            drawDragonTigerScene();
-        }
-    })();
+        drawDynamicScene();
+    }
     
-    // 确保视频自动播放且循环无碍
-    videoEl.muted = true;
-    videoEl.setAttribute('playsinline', '');
-    videoEl.play().catch(e => console.log("视频自动播放需用户交互, 但无碍"));
+    // 启动画面引擎 (保证画面一定展示)
+    initCanvasVisual();
     
-    // ---------------- 核心函数 ----------------
+    // 确保视频完全不干扰, 静默
+    videoEl.pause();
+    videoEl.style.display = 'none';
+    
+    // ---------- 游戏逻辑 ----------
     function updateUI() {
         balanceSpan.textContent = balance.toFixed(2);
         const currentBetAmount = betOptions[currentBetIndex];
         currentBetSpan.textContent = currentBetAmount.toFixed(2);
         betAmountSpan.textContent = currentBetAmount;
         
-        // 计算预计奖金: 和局赔率8倍，龙/虎1倍
         let winMulti = (selectedOption === 'tie') ? 8 : 1;
         let expected = currentBetAmount * winMulti;
         expectedWinSpan.textContent = expected.toFixed(2);
@@ -585,12 +605,11 @@
         }
     }
     
-    // 核心对决逻辑: 随机结果 龙/虎/和 (模拟概率)
     function getGameResult() {
         const rand = Math.random();
-        if(rand < 0.45) return 'dragon';   // 龙胜 45%
-        else if(rand < 0.9) return 'tiger'; // 虎胜 45%
-        else return 'tie';                  // 和局 10%
+        if(rand < 0.45) return 'dragon';
+        else if(rand < 0.9) return 'tiger';
+        else return 'tie';
     }
     
     function executeBattle() {
@@ -605,17 +624,17 @@
             return;
         }
         
-        // 扣除金额
+        // 扣除投注额
         balance -= betAmount;
         updateUI();
         isGameInProgress = true;
-        // 禁用交互视觉
         document.querySelector('.control-panel').classList.add('disabled-click');
         confirmBtn.disabled = true;
         battleMsgDiv.textContent = '⚔️ 龙争虎斗 · 风云变色 ⚔️';
         
-        // 15秒倒计时结束判定
-        let timeoutId = setTimeout(() => {
+        // 15秒后出结果
+        if(currentGameTimeout) clearTimeout(currentGameTimeout);
+        currentGameTimeout = setTimeout(() => {
             const result = getGameResult();
             let resultText = '';
             let winAmount = 0;
@@ -640,7 +659,7 @@
             confirmBtn.disabled = false;
             document.querySelector('.control-panel').classList.remove('disabled-click');
             
-            // 自动模式递归
+            // 自动投注逻辑
             if(autoBetActive && !isGameInProgress) {
                 if(autoTimer) clearTimeout(autoTimer);
                 autoTimer = setTimeout(() => {
@@ -652,10 +671,8 @@
                     }
                 }, currentSpeed * 1000);
             }
+            currentGameTimeout = null;
         }, 15000);
-        
-        // 存储timeout以备清理(防止自动模式冲突)
-        window._currentGameTimeout = timeoutId;
     }
     
     function toggleAutoMode(forceState = null) {
@@ -669,8 +686,7 @@
         if(autoBetActive) {
             autoModeBtn.textContent = '⏸️ 关闭自动';
             autoModeBtn.classList.add('active');
-            battleMsgDiv.textContent = '🔁 自动投注已开启，每局结束后自动续投';
-            // 如果没有对局且条件满足直接开始首局
+            battleMsgDiv.textContent = '🔁 自动投注已开启';
             if(!isGameInProgress && selectedOption && balance >= betOptions[currentBetIndex]) {
                 if(autoTimer) clearTimeout(autoTimer);
                 autoTimer = setTimeout(() => executeBattle(), 200);
@@ -720,14 +736,14 @@
         });
     });
     
-    // 奖池模拟显示
     document.getElementById('jackpotDisplay').textContent = totalJackpot.toFixed(2);
     updateUI();
     
-    // 清理全局定时器防止残留 (页面关闭无影响)
+    // 清理定时器
     window.addEventListener('beforeunload', ()=>{
-        if(window._currentGameTimeout) clearTimeout(window._currentGameTimeout);
+        if(currentGameTimeout) clearTimeout(currentGameTimeout);
         if(autoTimer) clearTimeout(autoTimer);
+        if(animationFrameId) cancelAnimationFrame(animationFrameId);
     });
 </script>
 </body>
