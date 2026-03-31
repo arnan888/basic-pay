@@ -33,18 +33,31 @@
         .box span:first-child { font-size: 10px; color: #ccc; letter-spacing: 1px; margin-bottom: 2px; }
         .box span:last-child { font-size: 18px; font-weight: bold; }
 
-        /* 转盘区：加上网格线路 */
+        /* 转盘区：加上网格线路，新增转盘独立控制按钮 */
         .wheel-area { 
-            height: 40%; display: flex; justify-content: center; align-items: center; 
+            height: 40%; display: flex; flex-direction: column; justify-content: center; align-items: center; 
             background: var(--stone); box-shadow: var(--inner); border: 4px solid var(--jade-d); 
-            border-radius: 12px; margin: 4px 10px; position: relative; padding: 25px 0;
+            border-radius: 12px; margin: 4px 10px; position: relative; padding: 15px 0;
             /* 黑色网格线路背景 */
             background-image: 
                 linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
             background-size: 15px 15px;
         }
-        .ptr { position: absolute; top: 12px; z-index: 100; width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-top: 26px solid var(--red); filter: drop-shadow(0 0 10px red); }
+        /* 转盘独立旋转按钮 */
+        .wheel-btn {
+            width: 120px; height: 35px;
+            background: linear-gradient(180deg, #3498db, #2980b9);
+            border: none; border-radius: 18px;
+            color: #fff; font-size: 16px; font-weight: bold;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 0 #1a5276;
+            cursor: pointer;
+        }
+        .wheel-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #1a5276; }
+        .wheel-btn:disabled { background: linear-gradient(180deg, #666, #333); box-shadow: 0 4px 0 #222; cursor: not-allowed; }
+        
+        .ptr { position: absolute; top: 55px; z-index: 100; width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-top: 26px solid var(--red); filter: drop-shadow(0 0 10px red); }
         
         /* 转盘外包圈：七彩霓虹闪光样式 */
         .wheel-outer {
@@ -94,8 +107,13 @@
         .slot { position: absolute; width: 100%; height: 100%; text-align: center; padding-top: 20px; font-weight: bold; }
         .beast-ico { display: block; font-size: 34px; margin-bottom: 0px; filter: drop-shadow(0 0 8px rgba(0,0,0,0.6)); }
         .beast-nm { font-size: 11px; color: #fff; text-shadow: 1px 1px 2px #000; }
+        /* 转盘开奖结果提示 */
+        .wheel-result {
+            margin-top: 10px; font-size: 14px; color: var(--gold);
+            font-weight: bold; text-shadow: 0 0 5px var(--gold);
+        }
 
-        /* 核心区：龙虎和分开独立押注，加上网格线路 */
+        /* 核心区：龙虎和独立押注，加上网格线路 */
         .play-section {
             flex: 1; display: flex; flex-direction: column;
             background: var(--stone); box-shadow: var(--inner); border: 4px solid var(--jade-d); 
@@ -154,11 +172,15 @@
     </div>
 
     <div class="wheel-area">
+        <!-- 转盘独立旋转按钮 -->
+        <button class="wheel-btn" id="btn-wheel-start" onclick="rotateWheel()">转盘旋转</button>
         <div class="ptr"></div>
         <!-- 新增转盘外包七彩霓虹圈 -->
         <div class="wheel-outer">
             <div id="wheel"></div>
         </div>
+        <!-- 转盘开奖结果提示 -->
+        <div class="wheel-result" id="wheel-result">准备就绪</div>
     </div>
 
     <div class="play-section">
@@ -194,7 +216,7 @@
         
         <div class="exec-row">
             <button class="step-btn" onclick="adj(-1)">-</button>
-            <button class="main-go" id="btn-go" onclick="onExecute()">EXECUTE</button>
+            <button class="main-go" id="btn-go" onclick="onBetExecute()">确认押注</button>
             <button class="step-btn" onclick="adj(1)">+</button>
         </div>
 
@@ -223,10 +245,11 @@ let state = {
     bets: [10, 50, 100, 500, 1000], 
     bIdx: 2, 
     pick: null, // 单独存储当前选中的押注项
-    rolling: false, 
+    wheelRolling: false, // 转盘独立状态
+    betRolling: false,   // 押注独立状态
     auto: false, 
     speed: 1, 
-    deg: 0 
+    wheelDeg: 0 
 };
 
 function init() {
@@ -240,26 +263,61 @@ function init() {
     update();
 }
 
+// 转盘独立旋转函数
+function rotateWheel() {
+    if(state.wheelRolling) {
+        alert("转盘正在转动，请稍候！");
+        return;
+    }
+    
+    state.wheelRolling = true;
+    document.getElementById('btn-wheel-start').disabled = true;
+    document.getElementById('wheel').classList.add('blur');
+    document.getElementById('wheel-result').innerText = "转盘转动中...";
+
+    const winIdx = Math.floor(Math.random()*8);
+    const rounds = state.speed===3 ? 4 : 8;
+    const target = (360 - (state.wheelDeg%360)) + rounds*360 - (winIdx*45);
+    state.wheelDeg += target;
+    
+    const wheel = document.getElementById('wheel');
+    wheel.style.transitionDuration = state.speed===3?'0.8s':state.speed===2?'2s':'4s';
+    // 强制触发重绘确保转动
+    wheel.style.transform = `rotate(0deg)`;
+    setTimeout(() => {
+        wheel.style.transform = `rotate(${state.wheelDeg}deg)`;
+    }, 50);
+
+    // 转盘停止后显示结果
+    setTimeout(() => {
+        wheel.classList.remove('blur'); 
+        state.wheelRolling = false;
+        document.getElementById('btn-wheel-start').disabled = false;
+        const winBeast = beastList[winIdx];
+        document.getElementById('wheel-result').innerText = `开出：${winBeast.n} ${winBeast.i}`;
+    }, parseFloat(wheel.style.transitionDuration)*1000 + 50);
+}
+
 // 设置押注项：每次只能选一个，单独控制
 function setPick(s) { 
-    if(!state.rolling){ 
+    if(!state.betRolling){ 
         state.pick = s; 
         update(); 
     } 
 }
 
 function adj(d) { 
-    if(!state.rolling){ 
+    if(!state.betRolling){ 
         state.bIdx = Math.max(0, Math.min(state.bets.length-1, state.bIdx + d)); 
         update(); 
     } 
 }
 
-function onExecute() {
+// 龙虎押注独立执行函数
+function onBetExecute() {
     const cost = state.bets[state.bIdx];
-    // 修复：增加提示，明确不能点击的原因
-    if(state.rolling) {
-        alert("转盘正在转动，请稍候！");
+    if(state.betRolling) {
+        alert("押注处理中，请稍候！");
         return;
     }
     if(!state.pick) {
@@ -271,31 +329,17 @@ function onExecute() {
         return;
     }
     
-    state.rolling = true; 
+    state.betRolling = true; 
     state.bal -= cost;
     // 计算预计奖金
     const winAmt = cost * oddsConfig[state.pick];
     document.getElementById('val-bet').innerText = cost.toFixed(2);
     document.getElementById('val-win').innerText = winAmt.toFixed(2);
-    document.getElementById('wheel').classList.add('blur');
     update();
 
-    const winIdx = Math.floor(Math.random()*8);
-    const rounds = state.speed===3 ? 4 : 8;
-    const target = (360 - (state.deg%360)) + rounds*360 - (winIdx*45);
-    state.deg += target;
-    
-    const wheel = document.getElementById('wheel');
-    wheel.style.transitionDuration = state.speed===3?'0.8s':state.speed===2?'2s':'4s';
-    // 修复：强制触发重绘，确保转盘转动
-    wheel.style.transform = `rotate(0deg)`;
+    // 模拟开奖延迟
     setTimeout(() => {
-        wheel.style.transform = `rotate(${state.deg}deg)`;
-    }, 50);
-
-    setTimeout(() => {
-        wheel.classList.remove('blur'); 
-        state.rolling = false;
+        state.betRolling = false;
         // 随机生成开奖结果：龙/虎/和
         const resultList = ['DRAGON', 'TIGER', 'TIE'];
         const winResult = resultList[Math.floor(Math.random()*3)];
@@ -307,8 +351,8 @@ function onExecute() {
             setTimeout(()=>document.getElementById('cell-'+winResult).classList.remove('winner'), 2000);
         }
         update();
-        if(state.auto) setTimeout(onExecute, 1200);
-    }, parseFloat(wheel.style.transitionDuration)*1000 + 50);
+        if(state.auto) setTimeout(onBetExecute, 1200);
+    }, 1500);
 }
 
 function update() {
@@ -322,10 +366,10 @@ function update() {
     // 更新模式按钮状态
     document.getElementById('btn-auto').className = "mode-btn " + (state.auto?"active":"");
     document.getElementById('btn-speed').innerText = "⚡ SPEED: " + state.speed + "X";
-    document.getElementById('btn-go').disabled = state.rolling;
+    document.getElementById('btn-go').disabled = state.betRolling;
 }
 
-// 初始化转盘
+// 初始化
 init();
 </script>
 </body>
