@@ -5,143 +5,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>龙虎对决15秒视频版</title>
     <style>
-        /* 保持截图中的大局布局 */
+        /* 严格锁定截图布局，禁止任何偏移 */
         * { margin: 0; padding: 0; box-sizing: border-box; position: relative; }
-        body { 
-            background: #000; 
-            min-height: 100vh; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            font-family: sans-serif;
-        }
-
+        body { background: #000; height: 100vh; display: flex; justify-content: center; align-items: center; font-family: sans-serif; overflow: hidden; }
+        
         .game-container {
-            width: 100%;
-            max-width: 480px;
-            height: 100vh;
-            background: #4a7c64; /* 延续截图的深绿色背景 */
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            width: 100%; max-width: 480px; height: 100vh;
+            background: #4a7c64; padding: 10px;
+            display: flex; flex-direction: column;
         }
 
-        /* 顶部栏 */
-        .top-bar {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .info-card {
-            flex: 1;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid #2c4a3b;
-            border-radius: 8px;
-            padding: 10px;
-        }
-        .info-card label { display: block; font-size: 12px; color: #ccc; margin-bottom: 4px; }
+        /* 顶部状态 - 1:1 复刻截图 */
+        .top-bar { display: flex; gap: 10px; margin-bottom: 10px; height: 80px; }
+        .info-card { flex: 1; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 10px; border: 1px solid #2c4a3b; }
+        .info-card label { display: block; font-size: 12px; color: #aaa; margin-bottom: 4px; }
         .info-card span { font-size: 20px; color: #f1c40f; font-weight: bold; }
 
-        /* 视频对决区 - 核心融合点 */
+        /* 视频对决区 - 解决黑屏的关键 */
         .battle-section {
-            height: 38%;
-            background: #000;
-            border: 2px solid #2c4a3b;
-            border-radius: 12px;
-            overflow: hidden;
-            margin-bottom: 15px;
+            height: 38%; background: #000; border-radius: 12px;
+            overflow: hidden; margin-bottom: 15px; border: 2px solid #2c4a3b;
         }
-        #dragonTigerVideo {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+        #dragonTigerVideo { width: 100%; height: 100%; object-fit: cover; background: #000; }
         .status-tag {
-            position: absolute;
-            top: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.7);
-            color: #fff;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-            border: 1px solid #f1c40f;
-            z-index: 10;
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.8); color: #fff; padding: 5px 15px;
+            border-radius: 20px; font-size: 13px; border: 1px solid #f1c40f; z-index: 10;
         }
 
-        /* 操作区 */
+        /* 底部操作区 */
         .control-section {
-            flex: 1;
-            background: rgba(0,0,0,0.2);
-            border-radius: 15px;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            flex: 1; background: rgba(0,0,0,0.2); border-radius: 15px;
+            padding: 15px; display: flex; flex-direction: column; justify-content: space-around;
         }
-
-        .choice-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 10px;
-        }
+        .choice-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
         .choice-btn {
-            height: 80px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 35px;
-            font-weight: bold;
-            cursor: pointer;
-            border: 3px solid transparent;
-            transition: 0.1s;
+            height: 80px; border-radius: 12px; display: flex; justify-content: center;
+            align-items: center; font-size: 32px; font-weight: bold; cursor: pointer;
+            border: 4px solid transparent; color: #fff;
         }
-        .dragon { background: #3498db; color: #fff; }
-        .tie { background: #9b59b6; color: #fff; }
-        .tiger { background: #e67e22; color: #fff; }
-        .choice-btn.active { border-color: #fff; transform: scale(0.98); }
+        .dragon { background: #3498db; }
+        .tie { background: #9b59b6; }
+        .tiger { background: #e67e22; }
+        .choice-btn.active { border-color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.5); }
 
-        .data-display {
-            margin: 15px 0;
-            color: #eee;
-        }
-        .data-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 15px; }
+        .data-row { display: flex; justify-content: space-between; color: #eee; padding: 4px 0; font-size: 15px; }
         .data-row b { color: #f1c40f; }
 
-        .main-action-btn {
-            height: 60px;
-            background: #e74c3c;
-            color: #fff;
-            border: none;
-            border-radius: 30px;
-            font-size: 22px;
-            font-weight: bold;
-            box-shadow: 0 5px 0 #c0392b;
-            cursor: pointer;
+        .confirm-btn {
+            height: 60px; background: #e74c3c; color: #fff; border: none;
+            border-radius: 30px; font-size: 22px; font-weight: bold;
+            box-shadow: 0 5px 0 #c0392b; cursor: pointer; margin-top: 10px;
         }
-        .main-action-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #c0392b; }
+        .confirm-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #c0392b; }
     </style>
 </head>
 <body>
 
 <div class="game-container">
     <div class="top-bar">
-        <div class="info-card">
-            <label>账户余额 (USDT)</label>
-            <span id="balance">857.80</span>
-        </div>
-        <div class="info-card">
-            <label>奖池累积</label>
-            <span>84291.50</span>
-        </div>
+        <div class="info-card"><label>账户余额 (USDT)</label><span id="balance">857.80</span></div>
+        <div class="info-card"><label>奖池累积</label><span>84291.50</span></div>
     </div>
 
     <div class="battle-section">
         <div class="status-tag" id="statusInfo">龙虎争霸 · 15秒决胜负</div>
-        <video id="dragonTigerVideo" muted playsinline preload="auto">
+        <video id="dragonTigerVideo" muted playsinline webkit-playsinline preload="auto">
             <source src="1.mp4" type="video/mp4">
         </video>
     </div>
@@ -153,59 +82,67 @@
             <div class="choice-btn tiger" onclick="setChoice('虎', this)">虎</div>
         </div>
 
-        <div class="data-display">
+        <div style="margin: 15px 0;">
             <div class="data-row">当前选择：<b id="curChoice">未选择</b></div>
             <div class="data-row">下注金额：<b>100.00</b></div>
             <div class="data-row">预计奖金：<b id="preWin">0.00</b></div>
         </div>
 
-        <button class="main-action-btn" onclick="startBattle()">确认投注</button>
+        <button class="confirm-btn" id="startBtn" onclick="startBattle()">确认投注</button>
     </div>
 </div>
 
 <script>
-    let balance = 857.80;
-    let selected = null;
-    let isRunning = false;
-    const video = document.getElementById('dragonTigerVideo');
+    let bal = 857.80;
+    let sel = null;
+    let lock = false;
+    const v = document.getElementById('dragonTigerVideo');
 
-    function setChoice(type, el) {
-        if(isRunning) return;
-        selected = type;
+    // 预加载处理
+    window.onload = () => { v.load(); };
+
+    function setChoice(t, el) {
+        if(lock) return;
+        sel = t;
         document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
         el.classList.add('active');
-        document.getElementById('curChoice').textContent = type;
-        document.getElementById('preWin').textContent = (type === '和' ? 800 : 200).toFixed(2);
+        document.getElementById('curChoice').textContent = t;
+        document.getElementById('preWin').textContent = (t === '和' ? 800 : 200).toFixed(2);
     }
 
     function startBattle() {
-        if(isRunning) return;
-        if(!selected) return alert('请先选择投注项');
+        if(lock) return;
+        if(!sel) return alert('请选择投注目标');
         
-        isRunning = true;
-        balance -= 100;
-        document.getElementById('balance').textContent = balance.toFixed(2);
-        document.getElementById('statusInfo').textContent = "对决开始...";
+        lock = true;
+        bal -= 100;
+        document.getElementById('balance').textContent = bal.toFixed(2);
+        document.getElementById('statusInfo').textContent = "正在对决...";
 
-        // 融合15秒视频逻辑
-        video.currentTime = 0;
-        video.play().catch(e => console.warn("需手动触发播放"));
+        // 兼容性播放
+        v.currentTime = 0;
+        let p = v.play();
+        if (p !== undefined) {
+            p.catch(() => {
+                // 如果自动播放被拦截，强制静音并再次尝试
+                v.muted = true;
+                v.play();
+            });
+        }
 
-        // 15秒后准时结算
         setTimeout(() => {
-            const pool = ['龙', '虎', '和'];
-            const result = pool[Math.floor(Math.random() * 3)];
-            document.getElementById('statusInfo').textContent = `结果：${result}`;
+            const res = ['龙', '虎', '和'][Math.floor(Math.random() * 3)];
+            document.getElementById('statusInfo').textContent = `本局结果：${res}`;
             
-            if(selected === result) {
-                let win = (result === '和' ? 800 : 200);
-                balance += win;
-                document.getElementById('balance').textContent = balance.toFixed(2);
-                alert(`恭喜赢取 ${win} USDT！`);
+            if(sel === res) {
+                let w = (res === '和' ? 800 : 200);
+                bal += w;
+                document.getElementById('balance').textContent = bal.toFixed(2);
+                alert(`恭喜！${res} 胜出！奖金已入账`);
             }
             
-            isRunning = false;
-            video.pause();
+            lock = false;
+            v.pause();
         }, 15000);
     }
 </script>
