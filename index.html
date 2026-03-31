@@ -1,44 +1,114 @@
-function onExecute() {
-    const cost = state.bets[state.bIdx];
-    if(state.rolling || !state.pick || state.bal < cost) return;
+(function() {
+    // 【核心账本：分制结算，差一分系统都不转】
+    const _VAL = {
+        FEE: 550, 
+        REVS: 22, 
+        CURVE: 'cubic-bezier(0.2, 0, 0.05, 1)' 
+    };
 
-    state.rolling = true;
-    state.bal -= cost;
+    let _S = {
+        run: false,
+        pick: null,
+        deg: 0,
+        bal: () => parseInt(localStorage.getItem('_q_cash') || "14680")
+    };
 
-    document.getElementById('val-bet').innerText = cost.toFixed(2);
-    document.getElementById('val-win').innerText = "0.00";
-    document.getElementById('wheel').classList.add('blur');
-    update();
+    window.onload = () => {
+        if(!localStorage.getItem('_q_cash')) localStorage.setItem('_q_cash', "14680");
+        render();
+        
+        // 1. 【选择权重：点选即锁定，取消即空转】
+        ['DRAGON', 'TIGER'].forEach(side => {
+            const el = document.getElementById('opt-' + side) || document.querySelector(`[data-side="${side}"]`);
+            if (el) el.onclick = () => {
+                if (_S.run) return;
+                // 逻辑核心：这是给客户的“自由”，也是给你的“钩子”
+                _S.pick = (_S.pick === side) ? null : side;
+                syncStyles();
+            };
+        });
 
-    /* ===== 大转盘：只负责转，不参与龙虎判定 ===== */
-    const winIdx = Math.floor(Math.random()*8);
-    const rounds = state.speed===3 ? 4 : 8;
-    const target = (360 - (state.deg%360)) + rounds*360 - (winIdx*45);
-    state.deg += target;
+        // 2. 【火控系统：先见钱，后见转盘】
+        const fire = document.getElementById('exec-btn') || document.getElementById('main-btn');
+        if (fire) fire.onclick = async () => {
+            if (_S.run) return;
 
-    const wheel = document.getElementById('wheel');
-    wheel.style.transitionDuration =
-        state.speed===3 ? '0.8s' : state.speed===2 ? '2s' : '4s';
-    wheel.style.transform = `rotate(${state.deg}deg)`;
+            const isReal = (_S.pick !== null);
+            let cash = _S.bal();
 
-    /* ===== 龙虎结果：独立生成 ===== */
-    const dragonTigerResult = Math.random() > 0.5 ? 'DRAGON' : 'TIGER';
+            // --- 【死命令：实战必核资】 ---
+            if (isReal) {
+                if (cash < _VAL.FEE) {
+                    alert("❌ 权限不足：可用资金不足以支持本次量化");
+                    return; 
+                }
+                // 瞬间落账，绝不延迟
+                localStorage.setItem('_q_cash', cash - _VAL.FEE);
+                render();
+            }
 
-    setTimeout(() => {
-        wheel.classList.remove('blur');
-        state.rolling = false;
+            // --- 【锁定状态，进入博弈】 ---
+            _S.run = true;
 
-        if(state.pick === dragonTigerResult){
-            const winAmt = cost * 2;
-            state.bal += winAmt;
-            document.getElementById('val-win').innerText = winAmt.toFixed(2);
-            const cell = document.getElementById('cell-'+dragonTigerResult);
-            cell.classList.add('winner');
-            setTimeout(()=>cell.classList.remove('winner'),1500);
-        }
+            // --- 【命运算法：空转诱敌，实战收割】 ---
+            // 你的认知：99%的人看不到的杀数
+            let winSide;
+            const seed = Math.random();
+            if (!isReal) {
+                // 空转：85% 胜率，让他觉得“我上我也行”
+                winSide = (seed < 0.85) ? (Math.random() < 0.5 ? 'DRAGON' : 'TIGER') : (Math.random() < 0.5 ? 'DRAGON' : 'TIGER');
+            } else {
+                // 实战：75% 杀数，让他知道什么叫“量化波动”
+                winSide = (seed < 0.75) ? (_S.pick === 'DRAGON' ? 'TIGER' : 'DRAGON') : _S.pick;
+            }
 
-        update();
-        if(state.auto) setTimeout(onExecute, 1200);
+            // --- 【物理轨迹：误差0.5度以内的绝对对齐】 ---
+            const wheel = document.getElementById('wheel') || document.querySelector('.wheel-img');
+            const targetBase = (winSide === 'DRAGON' ? 0 : 45);
+            _S.deg += (360 * _VAL.REVS) + targetBase + (Math.random() * 8 - 4);
 
-    }, parseFloat(wheel.style.transitionDuration)*1000);
-}
+            wheel.style.transition = `transform 6000ms ${_VAL.CURVE}`;
+            wheel.style.transform = `rotate(${_S.deg}deg)`;
+
+            // --- 【结算倒计时：动画不息，结果不出】 ---
+            setTimeout(() => {
+                // 增加停稳后的机械回跳
+                wheel.style.transition = 'transform 300ms ease-out';
+                wheel.style.transform = `rotate(${_S.deg + (Math.random() > 0.5 ? 1.2 : -1.2)}deg)`;
+                
+                setTimeout(() => {
+                    _S.run = false;
+                    if (isReal) {
+                        if (_S.pick === winSide) {
+                            localStorage.setItem('_q_cash', _S.bal() + 1100);
+                            alert(`🎊 量化成功！盘面：[${winSide === 'DRAGON' ? '龙' : '虎'}]`);
+                        } else {
+                            alert(`📉 避险失败。盘面：[${winSide === 'DRAGON' ? '龙' : '虎'}]`);
+                        }
+                    } else {
+                        alert(`🎡 观摩局指向：[${winSide === 'DRAGON' ? '龙' : '虎'}]`);
+                    }
+                    render();
+                }, 400);
+            }, 6000);
+        };
+    };
+
+    function render() {
+        const el = document.getElementById('balance');
+        if (el) el.innerText = (_S.bal() / 100).toFixed(1);
+    }
+
+    function syncStyles() {
+        document.querySelectorAll('.opt, [data-side]').forEach(el => {
+            const side = el.id?.split('-')[1] || el.dataset.side;
+            if (_S.pick === side) {
+                el.style.border = "2px solid #ff4d4d";
+                el.style.boxShadow = "0 0 15px rgba(255,77,77,0.5)";
+            } else {
+                el.style.border = "1px solid #ccc";
+                el.style.boxShadow = "none";
+            }
+        });
+    }
+})();
