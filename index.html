@@ -6,56 +6,66 @@
     <title>龙虎争霸</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #000; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        body { background: #000; height: 100vh; display: flex; justify-content: center; align-items: center; font-family: sans-serif; }
 
         /* 主容器 */
         .game-box {
             width: 100%; max-width: 480px; height: 100vh;
             background: #4a7c64; border-radius: 15px;
             display: flex; flex-direction: column;
-            padding: 6px;
+            padding: 6px; overflow: hidden;
         }
 
         /* 顶部状态栏 */
         .status-bar {
-            height: 8%; display: flex; gap: 10px; padding: 0 10px;
+            height: 8%; display: flex; gap: 10px; padding: 0 10px; margin-bottom: 5px;
         }
         .status-card {
             flex: 1; background: #6b737e; border: 2px solid #2c4a3b; border-radius: 8px;
             display: flex; justify-content: space-between; align-items: center; padding: 0 10px;
         }
         .status-card label { font-size: 12px; color: #ccc; }
-        .status-card span { font-size: 20px; color: #f1c40f; font-weight: bold; }
+        .status-card span { font-size: 18px; color: #f1c40f; font-weight: bold; }
 
         /* ================== 龙虎对决区 ================== */
         .battle-box {
             height: 38%; margin: 5px 10px;
             background: url("https://picsum.photos/id/1015/800/400") center/cover no-repeat;
             border: 3px solid #2c4a3b; border-radius: 12px;
-            position: relative;
+            position: relative; overflow: hidden;
         }
         .dragon {
             position: absolute; left: 30px; top: 50%; transform: translateY(-50%);
             font-size: 80px; color: #3498db;
-            text-shadow: 0 0 10px #3498db;
+            text-shadow: 0 0 10px #3498db; transition: all 0.3s;
         }
         .tiger {
             position: absolute; right: 30px; top: 50%; transform: translateY(-50%);
             font-size: 80px; color: #e67e22;
-            text-shadow: 0 0 10px #e67e22;
+            text-shadow: 0 0 10px #e67e22; transition: all 0.3s;
         }
         .result-txt {
             position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
             font-size: 18px; color: #fff; font-weight: bold;
-            background: rgba(0,0,0,0.7); padding: 2px 10px; border-radius: 8px;
+            background: rgba(0,0,0,0.7); padding: 4px 15px; border-radius: 8px;
+            z-index: 10; white-space: nowrap;
         }
+
+        /* 动画效果 */
+        @keyframes shake {
+            0% { transform: translateY(-50%) scale(1); }
+            50% { transform: translateY(-55%) scale(1.1); }
+            100% { transform: translateY(-50%) scale(1); }
+        }
+        .active-anim { animation: shake 0.5s infinite; }
+
         /* ================================================= */
 
         /* 操作区 */
         .control-box {
             flex: 1; margin: 0 10px 5px 10px;
             background: #6b737e; border: 3px solid #2c4a3b; border-radius: 12px;
-            padding: 10px;
+            padding: 10px; display: flex; flex-direction: column; justify-content: space-around;
         }
         /* 龙虎和选择 */
         .choice-row {
@@ -64,12 +74,12 @@
         .choice-btn {
             flex: 1; height: 70px; background: #333; border: 3px solid #2c4a3b; border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 40px; font-weight: bold; cursor: pointer;
+            font-size: 40px; font-weight: bold; cursor: pointer; transition: 0.2s;
         }
         .choice-btn.dragon { color: #3498db; }
         .choice-btn.tiger { color: #e67e22; }
         .choice-btn.tie { color: #9b59b6; }
-        .choice-btn.active { border-color: #f1c40f; background: #222; }
+        .choice-btn.active { border-color: #f1c40f; background: #222; transform: scale(0.95); }
 
         /* 数据显示 */
         .data-row {
@@ -77,7 +87,7 @@
         }
         .data-item {
             background: #333; border: 2px solid #2c4a3b; border-radius: 8px;
-            padding: 0 10px; display: flex; justify-content: space-between; align-items: center;
+            padding: 5px 10px; display: flex; justify-content: space-between; align-items: center;
         }
         .data-item label { font-size: 12px; color: #ccc; }
         .data-item span { font-size: 18px; color: #f1c40f; font-weight: bold; }
@@ -96,10 +106,12 @@
             width: 50px; height: 50px; background: #4a7c64; border: 2px solid #2c4a3b; border-radius: 8px;
             color: #fff; font-size: 24px; cursor: pointer;
         }
+        .btn:active { transform: scale(0.9); }
         .go-btn {
             flex: 1; background: #e53935; border: none; border-radius: 25px;
-            font-size: 20px; font-weight: bold;
+            font-size: 20px; font-weight: bold; color: white;
         }
+        .go-btn:disabled { background: #888; cursor: not-allowed; }
 
         /* 模式选择 */
         .mode-row {
@@ -107,17 +119,17 @@
         }
         .mode-btn {
             flex: 1; height: 40px; background: #333; border: 2px solid #2c4a3b; border-radius: 8px;
-            color: #fff; font-size: 16px; cursor: pointer;
+            color: #fff; font-size: 14px; cursor: pointer;
         }
-        .mode-btn.active { border-color: #f1c40f; }
+        .mode-btn.active { border-color: #f1c40f; background: #444; color: #f1c40f; }
         .speed-btn {
-            display: flex; gap: 5px;
+            display: flex; gap: 5px; padding: 2px;
         }
         .speed-btn span {
             flex: 1; display: flex; align-items: center; justify-content: center;
-            border-radius: 6px;
+            border-radius: 6px; font-size: 12px; transition: 0.3s;
         }
-        .speed-btn span.active { background: #f1c40f; color: #000; }
+        .speed-btn span.active { background: #f1c40f; color: #000; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -136,17 +148,17 @@
 
     <!-- 龙虎对决区 -->
     <div class="battle-box">
-        <div class="dragon">🐉</div>
-        <div class="tiger">🐯</div>
-        <div class="result-txt" id="result">龙虎争霸</div>
+        <div class="dragon" id="dragon-icon">🐉</div>
+        <div class="tiger" id="tiger-icon">🐯</div>
+        <div class="result-txt" id="result">准备就绪</div>
     </div>
 
     <!-- 操作区 -->
     <div class="control-box">
         <div class="choice-row">
-            <div class="choice-btn dragon" onclick="setChoice('dragon')">龙</div>
-            <div class="choice-btn tie" onclick="setChoice('tie')">和</div>
-            <div class="choice-btn tiger" onclick="setChoice('tiger')">虎</div>
+            <div class="choice-btn dragon" id="btn-dragon" onclick="setChoice('dragon')">龙</div>
+            <div class="choice-btn tie" id="btn-tie" onclick="setChoice('tie')">和</div>
+            <div class="choice-btn tiger" id="btn-tiger" onclick="setChoice('tiger')">虎</div>
         </div>
 
         <div class="data-row">
@@ -160,7 +172,7 @@
             </div>
             <div class="data-item">
                 <label>已选</label>
-                <span id="choice">未选择</span>
+                <span id="choice-show">未选择</span>
             </div>
         </div>
 
@@ -168,7 +180,7 @@
 
         <div class="btn-row">
             <button class="btn" onclick="changeBet(-1)">-</button>
-            <button class="btn go-btn" onclick="startGame()">确认投注</button>
+            <button class="btn go-btn" id="start-btn" onclick="startGame()">确认投注</button>
             <button class="btn" onclick="changeBet(1)">+</button>
         </div>
 
@@ -185,60 +197,111 @@
 
 <script>
 let balance = 857.8;
-let betLevels = [10,50,100,500,1000];
-let currentBet = 2;
+let betLevels = [10, 50, 100, 500, 1000];
+let currentBetIdx = 2;
 let selected = null;
 let isRunning = false;
 let autoMode = false;
 let speed = 1;
+
+// 初始化显示
+function init() {
+    updateUI();
+}
+
+function updateUI() {
+    document.getElementById('balance').textContent = balance.toFixed(2);
+    document.getElementById('bet-val').textContent = betLevels[currentBetIdx];
+}
 
 // 选择投注项
 function setChoice(type) {
     if(isRunning) return;
     selected = type;
     document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector(`.choice-btn.${type}`).classList.add('active');
-    document.getElementById('choice').textContent = type === 'dragon'?'龙':type==='tiger'?'虎':'和';
+    document.getElementById(`btn-${type}`).classList.add('active');
+    
+    const names = {'dragon':'龙', 'tiger':'虎', 'tie':'和'};
+    document.getElementById('choice-show').textContent = names[type];
+    
+    // 实时计算预计奖金
+    let bet = betLevels[currentBetIdx];
+    let winMult = (type === 'tie' ? 8 : 2); // 龙虎通常是1赔1（返还2倍），和通常1赔8
+    document.getElementById('win').textContent = (bet * winMult).toFixed(2);
 }
 
 // 调整押注金额
 function changeBet(dir) {
     if(isRunning) return;
-    currentBet = Math.max(0, Math.min(4, currentBet + dir));
-    document.getElementById('bet-val').textContent = betLevels[currentBet];
+    currentBetIdx = Math.max(0, Math.min(betLevels.length - 1, currentBetIdx + dir));
+    updateUI();
+    if(selected) setChoice(selected); // 重新计算奖金显示
 }
 
 // 开始游戏
 function startGame() {
-    if(isRunning) { alert('游戏进行中'); return; }
-    if(!selected) { alert('请选择投注项'); return; }
+    if(isRunning) return;
+    if(!selected) { alert('请先选择龙、虎或和！'); return; }
     
-    let bet = betLevels[currentBet];
-    if(balance < bet) { alert('余额不足'); return; }
+    let bet = betLevels[currentBetIdx];
+    if(balance < bet) { 
+        alert('余额不足！'); 
+        autoMode = false;
+        document.getElementById('auto-btn').classList.remove('active');
+        return; 
+    }
 
+    // 状态锁定
     isRunning = true;
+    document.getElementById('start-btn').disabled = true;
+    
+    // 扣费
     balance -= bet;
     document.getElementById('balance').textContent = balance.toFixed(2);
     document.getElementById('bet').textContent = bet.toFixed(2);
     
-    let win = bet * (selected === 'tie' ? 8 : 1);
-    document.getElementById('win').textContent = win.toFixed(2);
-    document.getElementById('result').textContent = '对决中...';
+    // 动画反馈
+    document.getElementById('result').textContent = '正在开奖...';
+    document.getElementById('dragon-icon').classList.add('active-anim');
+    document.getElementById('tiger-icon').classList.add('active-anim');
 
-    // 15秒后出结果
+    // 动态速度计算 (原代码15秒太久，根据speed调整缩短，更符合游戏节奏)
+    let waitTime = (15000 / (speed * 2)); 
+    
     setTimeout(() => {
-        let res = ['dragon','tiger','tie'][Math.floor(Math.random()*3)];
-        let resTxt = res==='dragon'?'龙赢':res==='tiger'?'虎赢':'平局';
-        
+        // 随机逻辑
+        let rand = Math.random() * 100;
+        let res;
+        if(rand < 45) res = 'dragon';
+        else if(rand < 90) res = 'tiger';
+        else res = 'tie';
+
+        let resTxt = res === 'dragon' ? '【龙】赢' : res === 'tiger' ? '【虎】赢' : '【和】局';
         document.getElementById('result').textContent = resTxt;
+        
+        // 移除动画
+        document.getElementById('dragon-icon').classList.remove('active-anim');
+        document.getElementById('tiger-icon').classList.remove('active-anim');
+
+        // 结算
         if(res === selected) {
-            balance += win;
-            document.getElementById('balance').textContent = balance.toFixed(2);
+            let winMult = (res === 'tie' ? 9 : 2); // 含本金返还
+            let winAmount = bet * winMult;
+            balance += winAmount;
+            document.getElementById('result').textContent += ` +${winAmount.toFixed(1)}`;
         }
         
+        // 刷新UI
+        updateUI();
         isRunning = false;
-        if(autoMode) setTimeout(startGame, speed===3?1500:speed===2?2500:3500);
-    }, 15000);
+        document.getElementById('start-btn').disabled = false;
+
+        // 自动逻辑
+        if(autoMode) {
+            let nextDelay = speed === 3 ? 1000 : speed === 2 ? 2000 : 3000;
+            setTimeout(startGame, nextDelay);
+        }
+    }, waitTime);
 }
 
 // 自动模式
@@ -246,15 +309,18 @@ function toggleAuto() {
     autoMode = !autoMode;
     let btn = document.getElementById('auto-btn');
     btn.classList.toggle('active');
-    btn.textContent = autoMode?'关闭自动':'自动投注';
+    btn.textContent = autoMode ? '停止自动' : '自动投注';
+    if(autoMode && !isRunning) startGame();
 }
 
 // 切换速度
 function toggleSpeed() {
-    speed = (speed%3)+1;
+    speed = (speed % 3) + 1;
     document.querySelectorAll('.speed-btn span').forEach(s => s.classList.remove('active'));
     document.getElementById(`s${speed}`).classList.add('active');
 }
+
+init();
 </script>
 </body>
 </html>
