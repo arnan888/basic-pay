@@ -5,93 +5,509 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>龙虎对决15秒视频版</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #000; min-height: 100vh; display: flex; justify-content: center; align-items: center; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; padding: 10px; }
-        .game-container { width: 100%; max-width: 480px; background: #4a7c64; border-radius: 15px; padding: 6px; border: 3px solid #2c4a3b; display: flex; flex-direction: column; overflow: hidden; }
-        .top-bar { display: flex; gap: 10px; padding: 8px 12px; }
-        .info-card { flex: 1; background: #6b737e; box-shadow: inset 8px 8px 16px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.05); border: 2px solid #2c4a3b; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
-        .info-card label { font-size: 12px; color: #ccc; }
-        .info-card span { font-size: 20px; color: #f1c40f; text-shadow: 0 0 6px #f1c40f; }
-        .battle-section { height: 38%; margin: 4px 10px; border: 3px solid #2c4a3b; border-radius: 12px; overflow: hidden; position: relative; background: #1a2a1f; }
-        #dragonTigerVideo { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; background: #1a2a1f; }
-        .video-fallback { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; background: #1a2a1f; color: #f1c40f; font-size: 14px; z-index: 0; }
-        .grid-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px); background-size: 15px 15px; pointer-events: none; z-index: 1; }
-        .result-text { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 2; background: rgba(0,0,0,0.7); color: #fff; padding: 2px 15px; border-radius: 10px; font-size: 12px; white-space: nowrap; pointer-events: none; }
-        .control-section { flex: 1; margin: 0 10px 8px 10px; background: #6b737e; border: 3px solid #2c4a3b; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; box-shadow: inset 8px 8px 16px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.05); }
-        .choice-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-        .choice-btn { height: 70px; background: #333; border: 2px solid #2c4a3b; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 45px; font-weight: bold; cursor: pointer; transition: all 0.1s; }
-        .choice-btn.dragon { color: #3498db; text-shadow: 0 0 10px #3498db; }
-        .choice-btn.tiger { color: #e67e22; text-shadow: 0 0 10px #e67e22; }
-        .choice-btn.tie { color: #9b59b6; text-shadow: 0 0 10px #9b59b6; }
-        .choice-btn.active { border-color: #f1c40f; background: #222; transform: scale(0.98); }
-        .data-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
-        .data-item { background: #333; border: 2px solid #2c4a3b; border-radius: 8px; padding: 0 10px; display: flex; justify-content: space-between; align-items: center; height: 40px; }
-        .data-item label { font-size: 12px; color: #ccc; }
-        .data-item span { font-size: 18px; color: #f1c40f; text-shadow: 0 0 6px #f1c40f; }
-        .bet-text { text-align: center; color: #fff; margin: 10px 0; }
-        .bet-text span { color: #f1c40f; text-shadow: 0 0 8px #f1c40f; font-size: 20px; }
-        .btn-group { display: flex; gap: 10px; margin-bottom: 10px; }
-        .func-btn { width: 50px; height: 50px; background: #4a7c64; border: 2px solid #2c4a3b; border-radius: 8px; color: #fff; font-size: 24px; cursor: pointer; }
-        .main-btn { flex: 1; background: linear-gradient(#e53935, #b71c1c); border: none; border-radius: 25px; font-size: 20px; font-weight: bold; color: white; box-shadow: 0 5px 0 #7f0000; cursor: pointer; }
-        .main-btn:active { transform: translateY(2px); }
-        .mode-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .mode-btn { height: 40px; background: #333; border: 2px solid #2c4a3b; border-radius: 8px; color: #fff; cursor: pointer; }
-        .mode-btn.active { border-color: #f1c40f; color: #f1c40f; background: #222; }
-        .speed-btn { display: flex; gap: 5px; padding: 0; overflow: hidden; }
-        .speed-btn span { flex: 1; display: flex; justify-content: center; align-items: center; cursor: pointer; background: #333; }
-        .speed-btn span.active { background: #f1c40f; color: #000; }
-        .disabled-click { pointer-events: none; opacity: 0.7; }
-        @media (max-width: 450px) { .choice-btn { font-size: 35px; height: 60px; } }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #000;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+            padding: 10px;
+        }
+        .game-container {
+            width: 100%;
+            max-width: 480px;
+            background: #4a7c64;
+            border-radius: 15px;
+            padding: 6px;
+            border: 3px solid #2c4a3b;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .top-bar {
+            display: flex;
+            gap: 10px;
+            padding: 8px 12px;
+        }
+        .info-card {
+            flex: 1;
+            background: #6b737e;
+            box-shadow: inset 8px 8px 16px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.05);
+            border: 2px solid #2c4a3b;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+        }
+        .info-card label {
+            font-size: 12px;
+            color: #ccc;
+        }
+        .info-card span {
+            font-size: 20px;
+            color: #f1c40f;
+            text-shadow: 0 0 6px #f1c40f;
+        }
+        .battle-section {
+            height: 38%;
+            margin: 4px 10px;
+            border: 3px solid #2c4a3b;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            background: #000;
+        }
+        #dragonTigerVideo {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .grid-mask {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
+            background-size: 15px 15px;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .result-text {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            padding: 2px 15px;
+            border-radius: 10px;
+            font-size: 12px;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        .control-section {
+            flex: 1;
+            margin: 0 10px 8px 10px;
+            background: #6b737e;
+            border: 3px solid #2c4a3b;
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: inset 8px 8px 16px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.05);
+        }
+        .choice-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .choice-btn {
+            height: 70px;
+            background: #333;
+            border: 2px solid #2c4a3b;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 45px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        .choice-btn.dragon {
+            color: #3498db;
+            text-shadow: 0 0 10px #3498db;
+        }
+        .choice-btn.tiger {
+            color: #e67e22;
+            text-shadow: 0 0 10px #e67e22;
+        }
+        .choice-btn.tie {
+            color: #9b59b6;
+            text-shadow: 0 0 10px #9b59b6;
+        }
+        .choice-btn.active {
+            border-color: #f1c40f;
+            background: #222;
+            transform: scale(0.98);
+        }
+        .data-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .data-item {
+            background: #333;
+            border: 2px solid #2c4a3b;
+            border-radius: 8px;
+            padding: 0 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 40px;
+        }
+        .data-item label {
+            font-size: 12px;
+            color: #ccc;
+        }
+        .data-item span {
+            font-size: 18px;
+            color: #f1c40f;
+            text-shadow: 0 0 6px #f1c40f;
+        }
+        .bet-text {
+            text-align: center;
+            color: #fff;
+            margin: 10px 0;
+        }
+        .bet-text span {
+            color: #f1c40f;
+            text-shadow: 0 0 8px #f1c40f;
+            font-size: 20px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .func-btn {
+            width: 50px;
+            height: 50px;
+            background: #4a7c64;
+            border: 2px solid #2c4a3b;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            transition: 0.05s linear;
+        }
+        .func-btn:active {
+            transform: scale(0.95);
+        }
+        .main-btn {
+            flex: 1;
+            background: linear-gradient(#e53935, #b71c1c);
+            border: none;
+            border-radius: 25px;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 5px 0 #7f0000;
+            cursor: pointer;
+        }
+        .main-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #7f0000;
+        }
+        .mode-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .mode-btn {
+            height: 40px;
+            background: #333;
+            border: 2px solid #2c4a3b;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: 0.05s;
+        }
+        .mode-btn.active {
+            border-color: #f1c40f;
+            color: #f1c40f;
+            background: #222;
+        }
+        .speed-btn {
+            display: flex;
+            gap: 5px;
+            padding: 0;
+            overflow: hidden;
+        }
+        .speed-btn span {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            background: #333;
+            transition: 0.05s;
+        }
+        .speed-btn span.active {
+            background: #f1c40f;
+            color: #000;
+        }
+        .disabled-click {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        @media (max-width: 450px) {
+            .choice-btn {
+                font-size: 35px;
+                height: 60px;
+            }
+            .data-item span {
+                font-size: 16px;
+            }
+            .result-text {
+                font-size: 10px;
+                white-space: nowrap;
+            }
+        }
     </style>
 </head>
 <body>
-<div class="game-container">
-    <div class="top-bar"><div class="info-card"><label>账户余额</label><span id="balance">857.80</span></div><div class="info-card"><label>奖池累积</label><span id="jackpot">84291.50</span></div></div>
-    <div class="battle-section">
-        <video id="dragonTigerVideo" autoplay muted loop playsinline>
-            <source src="1774948790006.mp4" type="video/mp4">
-            <source src="1774948805457.mp4" type="video/mp4">
-        </video>
-        <div class="video-fallback" id="videoFallback">🎬 加载视频中...</div>
-        <div class="grid-mask"></div>
-        <div class="result-text">龙虎争霸 · 15秒决胜负</div>
-    </div>
-    <div class="control-section">
-        <div class="choice-group"><div class="choice-btn dragon" onclick="setChoice('dragon')">龙</div><div class="choice-btn tie" onclick="setChoice('tie')">和</div><div class="choice-btn tiger" onclick="setChoice('tiger')">虎</div></div>
-        <div class="data-group"><div class="data-item"><label>当前押注</label><span id="currentBet">100.00</span></div><div class="data-item"><label>预计奖金</label><span id="expectWin">800.00</span></div><div class="data-item"><label>当前选择</label><span id="currentChoice">未选择</span></div></div>
-        <div class="bet-text">押注金额：<span id="betAmount">100</span> USDT</div>
-        <div class="btn-group"><button class="func-btn" onclick="changeBet(-1)">-</button><button class="func-btn main-btn" id="confirmBtn" onclick="startGame()">确认投注</button><button class="func-btn" onclick="changeBet(1)">+</button></div>
-        <div class="mode-group"><button class="mode-btn" id="autoBtn" onclick="toggleAuto()">自动投注</button><div class="mode-btn speed-btn"><span class="active" onclick="setSpeed(1)">1X</span><span onclick="setSpeed(2)">2X</span><span onclick="setSpeed(3)">3X</span></div></div>
-    </div>
-</div>
-<script>
-let balance=857.8,betLevels=[10,50,100,500,1000],currentBet=2,selected=null,isRunning=!1,autoMode=!1,speed=2,autoTimer=null,gameTimer=null;
-let video=document.getElementById('dragonTigerVideo');
-let fallback=document.getElementById('videoFallback');
+    <div class="game-container">
+        <div class="top-bar">
+            <div class="info-card">
+                <label>账户余额</label>
+                <span id="balance">857.80</span>
+            </div>
+            <div class="info-card">
+                <label>奖池累积</label>
+                <span id="jackpot">84291.50</span>
+            </div>
+        </div>
 
-// 检测视频是否加载成功
-video.addEventListener('canplay', function() {
-    fallback.style.display = 'none';
-});
-video.addEventListener('error', function() {
-    fallback.innerHTML = '⚠️ 视频加载失败<br>请检查文件: 1774948790006.mp4';
-    fallback.style.display = 'flex';
-});
-setTimeout(function() {
-    if(video.readyState === 0) {
-        fallback.innerHTML = '⚠️ 视频文件未找到<br>请将视频放在同一目录';
-        fallback.style.display = 'flex';
-    }
-}, 2000);
+        <div class="battle-section">
+            <video id="dragonTigerVideo" autoplay muted loop playsinline>
+                <source src="1774948790006.mp4" type="video/mp4">
+            </video>
+            <div class="grid-mask"></div>
+            <div class="result-text">龙虎争霸 · 15秒决胜负</div>
+        </div>
 
-function updateUI(){let e=betLevels[currentBet];document.getElementById('balance').textContent=balance.toFixed(2),document.getElementById('currentBet').textContent=e.toFixed(2),document.getElementById('betAmount').textContent=e;let t=selected==='tie'?8:1;document.getElementById('expectWin').textContent=(e*t).toFixed(2),selected==='dragon'?document.getElementById('currentChoice').textContent='龙':selected==='tiger'?document.getElementById('currentChoice').textContent='虎':selected==='tie'?document.getElementById('currentChoice').textContent='和':document.getElementById('currentChoice').textContent='未选择';}
-function setChoice(e){if(isRunning){document.querySelector('.result-text').textContent='对局中，请稍后';return}selected=e,document.querySelectorAll('.choice-btn').forEach(t=>t.classList.remove('active')),document.querySelector(`.choice-btn.${e}`).classList.add('active'),updateUI();}
-function changeBet(e){if(isRunning){document.querySelector('.result-text').textContent='对局中，无法调整';return}let t=currentBet+e;t>=0&&t<betLevels.length&&(currentBet=t,updateUI());}
-function getResult(){let e=Math.random();return e<.45?'dragon':e<.9?'tiger':'tie';}
-function startGame(){if(isRunning)return;if(!selected){document.querySelector('.result-text').textContent='请先选择龙/虎/和';return}let e=betLevels[currentBet];if(balance<e){document.querySelector('.result-text').textContent='余额不足！';return}balance-=e,updateUI(),isRunning=!0,document.querySelector('.control-section').classList.add('disabled-click'),document.getElementById('confirmBtn').disabled=!0,document.querySelector('.result-text').textContent='⚔️ 对决开始 · 15秒后揭晓 ⚔️',video.currentTime=0,video.play().catch(()=>{});let t=selected,n=e;gameTimer&&clearTimeout(gameTimer),gameTimer=setTimeout(()=>{let e=getResult(),a='',o=0;e==='dragon'?a='🐉 青龙降世，龙威大胜！':e==='tiger'?a='🐅 猛虎出山，虎啸震天！':a='⚖️ 势均力敌，和局收场！',e===t?(o=t==='tie'?n*8:n,balance+=o,document.querySelector('.result-text').innerHTML=`✨ 命中！ ${a} 赢得 ${o.toFixed(2)} USDT ✨`):document.querySelector('.result-text').innerHTML=`💔 惜败！ ${a} 再接再厉 💔`,updateUI(),isRunning=!1,document.querySelector('.control-section').classList.remove('disabled-click'),document.getElementById('confirmBtn').disabled=!1,autoMode&&!isRunning&&selected&&balance>=betLevels[currentBet]&&(autoTimer&&clearTimeout(autoTimer),autoTimer=setTimeout(()=>startGame(),speed*1e3)),gameTimer=null},15e3);}
-function toggleAuto(e){if(isRunning){document.querySelector('.result-text').textContent='请等待对局结束';return}e!==undefined?autoMode=e:autoMode=!autoMode;let t=document.getElementById('autoBtn');autoMode?(t.textContent='关闭自动',t.classList.add('active'),document.querySelector('.result-text').textContent='🔁 自动投注已开启',selected&&balance>=betLevels[currentBet]&&!isRunning&&(autoTimer&&clearTimeout(autoTimer),autoTimer=setTimeout(()=>startGame(),200))):(t.textContent='自动投注',t.classList.remove('active'),autoTimer&&clearTimeout(autoTimer),document.querySelector('.result-text').textContent='自动模式已关闭');}
-function setSpeed(e){speed=e,document.querySelectorAll('.speed-btn span').forEach(t=>t.classList.remove('active')),document.querySelector(`.speed-btn span:nth-child(${e===1?1:e===2?2:3})`).classList.add('active'),document.querySelector('.result-text').textContent=`投注间隔设为 ${e}X (${e}秒)`;}
-video.addEventListener('ended',()=>{video.currentTime=0,video.play().catch(()=>{})}),updateUI();
-</script>
+        <div class="control-section">
+            <div class="choice-group">
+                <div class="choice-btn dragon" onclick="setChoice('dragon')">龙</div>
+                <div class="choice-btn tie" onclick="setChoice('tie')">和</div>
+                <div class="choice-btn tiger" onclick="setChoice('tiger')">虎</div>
+            </div>
+
+            <div class="data-group">
+                <div class="data-item">
+                    <label>当前押注</label>
+                    <span id="currentBet">100.00</span>
+                </div>
+                <div class="data-item">
+                    <label>预计奖金</label>
+                    <span id="expectWin">800.00</span>
+                </div>
+                <div class="data-item">
+                    <label>当前选择</label>
+                    <span id="currentChoice">未选择</span>
+                </div>
+            </div>
+
+            <div class="bet-text">押注金额：<span id="betAmount">100</span> USDT</div>
+
+            <div class="btn-group">
+                <button class="func-btn" onclick="changeBet(-1)">-</button>
+                <button class="func-btn main-btn" id="confirmBtn" onclick="startGame()">确认投注</button>
+                <button class="func-btn" onclick="changeBet(1)">+</button>
+            </div>
+
+            <div class="mode-group">
+                <button class="mode-btn" id="autoBtn" onclick="toggleAuto()">自动投注</button>
+                <div class="mode-btn speed-btn">
+                    <span class="active" onclick="setSpeed(1)">1X</span>
+                    <span onclick="setSpeed(2)">2X</span>
+                    <span onclick="setSpeed(3)">3X</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== 游戏状态 ==========
+        let balance = 857.8;
+        let betLevels = [10, 50, 100, 500, 1000];
+        let currentBet = 2;
+        let selected = null;
+        let isRunning = false;
+        let autoMode = false;
+        let speed = 2;
+        let autoTimer = null;
+        let gameTimer = null;
+        
+        const video = document.getElementById('dragonTigerVideo');
+        
+        // ========== UI 更新 ==========
+        function updateUI() {
+            document.getElementById('balance').textContent = balance.toFixed(2);
+            const betVal = betLevels[currentBet];
+            document.getElementById('currentBet').textContent = betVal.toFixed(2);
+            document.getElementById('betAmount').textContent = betVal;
+            
+            let multiplier = (selected === 'tie') ? 8 : 1;
+            document.getElementById('expectWin').textContent = (betVal * multiplier).toFixed(2);
+            
+            if (selected === 'dragon') document.getElementById('currentChoice').textContent = '龙';
+            else if (selected === 'tiger') document.getElementById('currentChoice').textContent = '虎';
+            else if (selected === 'tie') document.getElementById('currentChoice').textContent = '和';
+            else document.getElementById('currentChoice').textContent = '未选择';
+        }
+        
+        // ========== 选择押注项 ==========
+        function setChoice(type) {
+            if (isRunning) {
+                document.querySelector('.result-text').textContent = '对局中，请稍后';
+                return;
+            }
+            selected = type;
+            document.querySelectorAll('.choice-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.choice-btn.${type}`).classList.add('active');
+            updateUI();
+        }
+        
+        // ========== 调整押注金额 ==========
+        function changeBet(dir) {
+            if (isRunning) {
+                document.querySelector('.result-text').textContent = '对局中，无法调整';
+                return;
+            }
+            let newIndex = currentBet + dir;
+            if (newIndex >= 0 && newIndex < betLevels.length) {
+                currentBet = newIndex;
+                updateUI();
+            }
+        }
+        
+        // ========== 获取随机结果 ==========
+        function getResult() {
+            const rand = Math.random();
+            if (rand < 0.45) return 'dragon';
+            if (rand < 0.9) return 'tiger';
+            return 'tie';
+        }
+        
+        // ========== 开始游戏 ==========
+        function startGame() {
+            if (isRunning) return;
+            if (!selected) {
+                document.querySelector('.result-text').textContent = '请先选择龙/虎/和';
+                return;
+            }
+            
+            let betAmount = betLevels[currentBet];
+            if (balance < betAmount) {
+                document.querySelector('.result-text').textContent = '余额不足！';
+                return;
+            }
+            
+            // 扣款
+            balance -= betAmount;
+            updateUI();
+            isRunning = true;
+            document.querySelector('.control-section').classList.add('disabled-click');
+            document.getElementById('confirmBtn').disabled = true;
+            document.querySelector('.result-text').textContent = '⚔️ 对决开始 · 15秒后揭晓 ⚔️';
+            
+            // 重播视频
+            video.currentTime = 0;
+            video.play().catch(e => console.log('视频播放', e));
+            
+            // 保存本次押注
+            const currentSelected = selected;
+            const currentBetAmount = betAmount;
+            
+            if (gameTimer) clearTimeout(gameTimer);
+            gameTimer = setTimeout(() => {
+                const result = getResult();
+                let resultText = '';
+                let winAmount = 0;
+                
+                if (result === 'dragon') resultText = '🐉 青龙降世，龙威大胜！';
+                else if (result === 'tiger') resultText = '🐅 猛虎出山，虎啸震天！';
+                else resultText = '⚖️ 势均力敌，和局收场！';
+                
+                if (result === currentSelected) {
+                    const multiplier = (currentSelected === 'tie') ? 8 : 1;
+                    winAmount = currentBetAmount * multiplier;
+                    balance += winAmount;
+                    document.querySelector('.result-text').innerHTML = `✨ 命中！ ${resultText} 赢得 ${winAmount.toFixed(2)} USDT ✨`;
+                } else {
+                    document.querySelector('.result-text').innerHTML = `💔 惜败！ ${resultText} 再接再厉 💔`;
+                }
+                
+                updateUI();
+                isRunning = false;
+                document.querySelector('.control-section').classList.remove('disabled-click');
+                document.getElementById('confirmBtn').disabled = false;
+                
+                // 自动模式
+                if (autoMode && !isRunning) {
+                    const nextBet = betLevels[currentBet];
+                    if (selected && balance >= nextBet) {
+                        if (autoTimer) clearTimeout(autoTimer);
+                        autoTimer = setTimeout(() => startGame(), speed * 1000);
+                    } else {
+                        document.querySelector('.result-text').innerHTML += '<br>⚠️ 自动投注暂停';
+                        toggleAuto(false);
+                    }
+                }
+                gameTimer = null;
+            }, 15000);
+        }
+        
+        // ========== 自动投注切换 ==========
+        function toggleAuto(forceState) {
+            if (isRunning) {
+                document.querySelector('.result-text').textContent = '请等待对局结束';
+                return;
+            }
+            if (forceState !== undefined) autoMode = forceState;
+            else autoMode = !autoMode;
+            
+            const autoBtn = document.getElementById('autoBtn');
+            if (autoMode) {
+                autoBtn.textContent = '关闭自动';
+                autoBtn.classList.add('active');
+                document.querySelector('.result-text').textContent = '🔁 自动投注已开启';
+                if (selected && balance >= betLevels[currentBet] && !isRunning) {
+                    if (autoTimer) clearTimeout(autoTimer);
+                    autoTimer = setTimeout(() => startGame(), 200);
+                }
+            } else {
+                autoBtn.textContent = '自动投注';
+                autoBtn.classList.remove('active');
+                if (autoTimer) clearTimeout(autoTimer);
+                document.querySelector('.result-text').textContent = '自动模式已关闭';
+            }
+        }
+        
+        // ========== 设置速度 ==========
+        function setSpeed(s) {
+            speed = s;
+            document.querySelectorAll('.speed-btn span').forEach(sp => sp.classList.remove('active'));
+            document.querySelector(`.speed-btn span:nth-child(${s === 1 ? 1 : s === 2 ? 2 : 3})`).classList.add('active');
+            document.querySelector('.result-text').textContent = `投注间隔设为 ${s}X (${s}秒)`;
+        }
+        
+        // ========== 视频循环处理 ==========
+        video.addEventListener('ended', () => {
+            video.currentTime = 0;
+            video.play().catch(e => console.log('循环播放', e));
+        });
+        
+        // 初始化
+        updateUI();
+    </script>
 </body>
 </html>
