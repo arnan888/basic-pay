@@ -1,161 +1,234 @@
-/**
- * 🛰️ SYSTEM PROTOTYPE: QUANTUM TERMINAL V4.0
- * --------------------------------------------------
- * 遵照“绝不偷工减料”原则，全逻辑满血封装。
- * 包含：空转逻辑、物理缓动、异步结算、多ID自适应。
- */
-
 (function() {
-    // 1. 系统核心配置
-    const SYS_CONFIG = {
-        BASE_BET: 5.5,          // 准入门槛
-        WIN_RATE: 2.0,          // 赔率
-        ANIM_DURATION: 5000,    // 物理动画时长 (5s)
-        MIN_SPIN: 12,           // 最小旋转圈数
-        EASING: 'cubic-bezier(0.15, 0, 0.1, 1)' // 工业级物理缓动曲线
+    // ===============================
+    // 顶级配置：对齐 99.9% 的细节
+    // ===============================
+    const CORE = {
+        U_UNIT: 100,
+        ENTRY_FEE: 550,          // 5.5
+        WHEEL_REVS: 22,
+        T_CONST: 5600,
+        SECTOR_ANGLE: 45,
+        BOUNCE_DEG: 1.5,
+        SPIN_FALLBACK: 300       // transition 兜底
     };
 
-    // 2. 状态机 (State Engine)
-    let terminalState = {
-        wallet: 146.8,          // 账户余额
-        isLocked: false,        // 运行锁
-        targetSide: null,       // 预设侧 (龙/虎)
-        rotationStack: 0,       // 角度累加
-        sessionMode: 'IDLE'     // 状态：IDLE(闲置), REAL(实战), VOID(空转)
+    let session = {
+        active: false,
+        side: null,
+        totalDeg: 0,
+        settled: false,
+        isPending: localStorage.getItem('_q_pending') === 'true'
     };
 
-    // 3. 启动初始化
+    // ===============================
+    // 启动
+    // ===============================
     window.onload = () => {
-        console.log("%c ⚡ 计划书级别代码已加载 | 逻辑摘除完成 ", "background:#000;color:#f00;padding:5px;");
-        refreshUI();
-        autoBindControls();
+        console.log(
+            "%c 🛰️ 艺术品级内核加载 | 实战硬核对齐 ",
+            "color:#ed1c24;font-weight:bold;"
+        );
+
+        initStorage();
+        if (session.isPending) recoverSession();
+        initCore();
+        bindVisibilityGuard();
     };
 
-    // 4. 自动化控制绑定 (适配所有老代码 ID)
-    function autoBindControls() {
-        // 扫描执行按钮
-        const fire = document.getElementById('exec-btn') || 
-                     document.getElementById('main-btn') || 
-                     document.querySelector('.play-btn');
-        if (fire) fire.addEventListener('click', handleFireAction);
+    // ===============================
+    // 选择逻辑
+    // ===============================
+    function handleSelect(s) {
+        if (session.active) return;
+        const prev = session.side;
+        session.side = (session.side === s) ? null : s;
+        if (prev !== session.side) {
+            vibrate(25);
+            syncStyles();
+        }
+    }
 
-        // 扫描交互侧按钮
-        ['DRAGON', 'TIGER'].forEach(side => {
-            const el = document.getElementById('opt-' + side) || 
-                       document.getElementById('b-' + side);
-            if (el) el.onclick = () => toggleSelection(side);
+    // ===============================
+    // 执行引擎
+    // ===============================
+    async function startTrade() {
+        if (session.active) return;
+
+        const isReal = session.side !== null;
+        let bal = getBal();
+
+        if (isReal && bal < CORE.ENTRY_FEE) {
+            toast("⚠️ 指令拒绝：资金池核验未通过");
+            return;
+        }
+
+        session.active = true;
+        session.settled = false;
+        localStorage.setItem('_q_pending', 'true');
+
+        try {
+            const data = await secureHandshake(isReal);
+
+            if (isReal) {
+                bal -= CORE.ENTRY_FEE;
+                setBal(bal);
+            }
+
+            applyPhysics(data.win, isReal);
+        } catch (e) {
+            console.error(e);
+            unlock();
+            toast("📡 通讯链路异常");
+        }
+    }
+
+    // ===============================
+    // 物理惯性 + 回弹
+    // ===============================
+    function applyPhysics(target, real) {
+        const wheel = document.querySelector('.wheel-img') || document.getElementById('wheel');
+        if (!wheel) { unlock(); return; }
+
+        const base = (target === 'DRAGON') ? 0 : CORE.SECTOR_ANGLE;
+        const offset = (Math.random() * 30) - 15;
+
+        session.totalDeg += (360 * CORE.WHEEL_REVS) + base + offset;
+
+        wheel.style.transition = `transform ${CORE.T_CONST}ms cubic-bezier(0.2,0,0,1)`;
+        wheel.style.transform = `rotate(${session.totalDeg}deg)`;
+
+        let ended = false;
+
+        const finish = () => {
+            if (ended) return;
+            ended = true;
+
+            // 回弹
+            const bounce =
+                (Math.random() > 0.5 ? 1 : -1) * CORE.BOUNCE_DEG;
+
+            wheel.style.transition = `transform 280ms ease-out`;
+            wheel.style.transform = `rotate(${session.totalDeg + bounce}deg)`;
+
+            setTimeout(() => finalize(target, real), 320);
+        };
+
+        wheel.addEventListener('transitionend', finish, { once: true });
+        setTimeout(finish, CORE.T_CONST + CORE.SPIN_FALLBACK);
+    }
+
+    // ===============================
+    // 结算（幂等）
+    // ===============================
+    function finalize(win, real) {
+        if (session.settled) return;
+        session.settled = true;
+
+        unlock();
+
+        const isWin = (session.side === win);
+        if (real && isWin) {
+            setBal(getBal() + CORE.ENTRY_FEE * 2);
+        }
+
+        const label = win === 'DRAGON' ? '🐉 龙' : '🐯 虎';
+        if (real) {
+            isWin
+                ? alert(`🎊 量化成功: [${label}]`)
+                : alert(`📉 量化波动: [${label}]`);
+        } else {
+            alert(`🎡 观摩结束: [${label}]`);
+        }
+
+        refreshDisplay();
+    }
+
+    // ===============================
+    // 恢复未完成订单（刷新跑单）
+    // ===============================
+    function recoverSession() {
+        console.warn("⚠️ 检测到未完成订单，已安全回收");
+        localStorage.setItem('_q_pending', 'false');
+        session.active = false;
+        session.settled = false;
+    }
+
+    // ===============================
+    // 样式同步
+    // ===============================
+    function syncStyles() {
+        document.querySelectorAll('[data-side], .opt').forEach(el => {
+            const side = el.dataset.side || el.id?.split('-')[1];
+            el.classList.toggle('active', session.side === side);
+            el.classList.toggle('selected', session.side === side);
         });
     }
 
-    // 5. 交互逻辑：选择、切换与取消
-    function toggleSelection(side) {
-        if (terminalState.isLocked) return;
-
-        // 核心：点击已选则变为“空转模式”
-        if (terminalState.targetSide === side) {
-            terminalState.targetSide = null;
-        } else {
-            terminalState.targetSide = side;
-        }
-
-        updateButtonVisuals();
-        // 触感同步
-        if (window.navigator.vibrate) window.navigator.vibrate(30);
-    }
-
-    // 6. 核心引擎：执行抽取 (含空转逻辑判定)
-    async function handleFireAction() {
-        if (terminalState.isLocked) return;
-
-        // 判定当前模式
-        const isRealPlay = (terminalState.targetSide !== null);
-
-        // 准入逻辑
-        if (isRealPlay) {
-            if (terminalState.wallet < SYS_CONFIG.BASE_BET) {
-                pushAlert("⚠️ 系统提示：可用余额不足以支持当前量化。");
-                return;
-            }
-            // 实战扣费逻辑
-            terminalState.wallet -= SYS_CONFIG.BASE_BET;
-            terminalState.sessionMode = 'REAL';
-        } else {
-            terminalState.sessionMode = 'VOID';
-            console.log("🌀 执行空转流程...");
-        }
-
-        // 视觉响应：先转起来，不等待后端
-        terminalState.isLocked = true;
-        refreshUI();
-        runWheelAnimation();
-
-        // 结果生成 (异步保底)
-        const roundResult = await fetchOutcome();
-
-        // 结算同步
-        setTimeout(() => {
-            processFinalResult(roundResult, isRealPlay);
-        }, SYS_CONFIG.ANIM_DURATION);
-    }
-
-    // 7. 物理动画引擎
-    function runWheelAnimation() {
-        const wheel = document.getElementById('wheel') || document.querySelector('.wheel-img');
-        if (!wheel) return;
-
-        const randomOffset = Math.floor(Math.random() * 360);
-        terminalState.rotationStack += (360 * SYS_CONFIG.MIN_SPIN) + randomOffset;
-
-        wheel.style.transition = `transform ${SYS_CONFIG.ANIM_DURATION}ms ${SYS_CONFIG.EASING}`;
-        wheel.style.transform = `rotate(${terminalState.rotationStack}deg)`;
-    }
-
-    // 8. 结算中心
-    function processFinalResult(winSide, wasReal) {
-        terminalState.isLocked = false;
-        const sideCN = (winSide === 'DRAGON' ? '龙' : '虎');
-
-        if (wasReal) {
-            // 实战模式结算
-            if (terminalState.targetSide === winSide) {
-                const bonus = SYS_CONFIG.BASE_BET * SYS_CONFIG.WIN_RATE;
-                terminalState.wallet += bonus;
-                pushAlert(`🎉 预测命中！\n开出结果：[${sideCN}]\n资金已返还。`, "success");
-            } else {
-                pushAlert(`❌ 预测未命中。\n开出结果：[${sideCN}]\n量化波动损耗。`, "fail");
-            }
-        } else {
-            // 空转模式结算
-            pushAlert(`🎡 观摩局结束。\n盘面指向：[${sideCN}]\n(空转未参与博弈)`, "info");
-        }
-
-        refreshUI();
-    }
-
-    // 9. 辅助工具逻辑
-    function fetchOutcome() {
+    // ===============================
+    // 通讯模拟
+    // ===============================
+    function secureHandshake(real) {
         return new Promise(res => {
-            setTimeout(() => res(Math.random() < 0.5 ? 'DRAGON' : 'TIGER'), 600);
+            setTimeout(() => {
+                res({ win: Math.random() < 0.5 ? 'DRAGON' : 'TIGER' });
+            }, 700);
         });
     }
 
-    function refreshUI() {
-        const b = document.getElementById('balance');
-        if (b) b.innerText = terminalState.wallet.toFixed(1);
+    // ===============================
+    // UI / 工具
+    // ===============================
+    function toast(msg) {
+        console.log(msg);
+        alert(msg);
     }
 
-    function updateButtonVisuals() {
-        document.querySelectorAll('.opt, .bet-btn').forEach(btn => {
-            btn.classList.remove('selected', 'active');
-            if (terminalState.targetSide && btn.id.includes(terminalState.targetSide)) {
-                btn.classList.add('selected', 'active');
+    function vibrate(ms) {
+        if (navigator.vibrate) navigator.vibrate(ms);
+    }
+
+    function unlock() {
+        session.active = false;
+        localStorage.setItem('_q_pending', 'false');
+    }
+
+    function refreshDisplay() {
+        const el = document.getElementById('balance');
+        if (el) el.innerText = (getBal() / CORE.U_UNIT).toFixed(1);
+    }
+
+    function getBal() {
+        return parseInt(localStorage.getItem('_q_bal'), 10);
+    }
+
+    function setBal(v) {
+        localStorage.setItem('_q_bal', String(v));
+    }
+
+    function initStorage() {
+        if (!localStorage.getItem('_q_bal')) {
+            localStorage.setItem('_q_bal', '14680');
+        }
+    }
+
+    function initCore() {
+        const fire = document.getElementById('exec-btn') || document.getElementById('main-btn');
+        if (fire) fire.onclick = startTrade;
+
+        ['DRAGON','TIGER'].forEach(s => {
+            const el = document.querySelector(`[data-side="${s}"]`) || document.getElementById('opt-' + s);
+            if (el) el.onclick = () => handleSelect(s);
+        });
+
+        refreshDisplay();
+    }
+
+    function bindVisibilityGuard() {
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && session.active) {
+                console.warn("⚠️ 页面切后台，强制解锁");
+                unlock();
             }
         });
     }
-
-    function pushAlert(m, t) {
-        if (window.customMsg) window.customMsg(m, t);
-        else alert(m);
-    }
-
 })();
