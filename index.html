@@ -1,90 +1,44 @@
-(function() {
-    // 1. 账本（存死在本地，刷新不丢，这是生意的根）
-    const getB = () => parseInt(localStorage.getItem('_cash') || "14680");
-    const setB = (v) => localStorage.setItem('_cash', v);
+function onExecute() {
+    const cost = state.bets[state.bIdx];
+    if(state.rolling || !state.pick || state.bal < cost) return;
 
-    let s = { running: false, pick: null, deg: 0 };
+    state.rolling = true;
+    state.bal -= cost;
 
-    window.onload = () => {
-        draw();
-        // 绑定：龙虎选择
-        ['DRAGON', 'TIGER'].forEach(side => {
-            const el = document.getElementById('opt-' + side) || document.querySelector(`[data-side="${side}"]`);
-            if (el) el.onclick = () => {
-                if (s.running) return;
-                // 逻辑：点一下选中，再点一下取消（变空转）
-                s.pick = (s.pick === side) ? null : side;
-                syncVisual();
-            };
-        });
+    document.getElementById('val-bet').innerText = cost.toFixed(2);
+    document.getElementById('val-win').innerText = "0.00";
+    document.getElementById('wheel').classList.add('blur');
+    update();
 
-        // 绑定：执行（点火）
-        const go = document.getElementById('exec-btn') || document.getElementById('main-btn');
-        if (go) go.onclick = async () => {
-            if (s.running) return;
+    /* ===== 大转盘：只负责转，不参与龙虎判定 ===== */
+    const winIdx = Math.floor(Math.random()*8);
+    const rounds = state.speed===3 ? 4 : 8;
+    const target = (360 - (state.deg%360)) + rounds*360 - (winIdx*45);
+    state.deg += target;
 
-            const isReal = (s.pick !== null);
-            let cash = getB();
+    const wheel = document.getElementById('wheel');
+    wheel.style.transitionDuration =
+        state.speed===3 ? '0.8s' : state.speed===2 ? '2s' : '4s';
+    wheel.style.transform = `rotate(${state.deg}deg)`;
 
-            // --- 【死规矩：第一步扣费，不扣不准转】 ---
-            if (isReal) {
-                if (cash < 550) {
-                    alert("⚠️ 余额不足，无法开启实战");
-                    return;
-                }
-                cash -= 550;
-                setB(cash);
-                draw();
-            }
+    /* ===== 龙虎结果：独立生成 ===== */
+    const dragonTigerResult = Math.random() > 0.5 ? 'DRAGON' : 'TIGER';
 
-            // --- 【第二步：上锁】 ---
-            s.running = true;
+    setTimeout(() => {
+        wheel.classList.remove('blur');
+        state.rolling = false;
 
-            // --- 【第三步：定生死】 ---
-            // 认知点：空转让你赢（80%），实战看天意（或杀数）
-            const win = (Math.random() < (isReal ? 0.3 : 0.8)) ? s.pick : (s.pick === 'DRAGON' ? 'TIGER' : 'DRAGON');
-            if (!s.pick) { // 纯空转
-                var finalResult = Math.random() < 0.5 ? 'DRAGON' : 'TIGER';
-            } else {
-                var finalResult = win;
-            }
+        if(state.pick === dragonTigerResult){
+            const winAmt = cost * 2;
+            state.bal += winAmt;
+            document.getElementById('val-win').innerText = winAmt.toFixed(2);
+            const cell = document.getElementById('cell-'+dragonTigerResult);
+            cell.classList.add('winner');
+            setTimeout(()=>cell.classList.remove('winner'),1500);
+        }
 
-            // --- 【第四步：物理执行】 ---
-            const wheel = document.getElementById('wheel') || document.querySelector('.wheel-img');
-            const targetDeg = (finalResult === 'DRAGON' ? 0 : 45);
-            s.deg += (360 * 20) + targetDeg + (Math.random() * 6 - 3);
+        update();
+        if(state.auto) setTimeout(onExecute, 1200);
 
-            wheel.style.transition = 'transform 5.5s cubic-bezier(0.1, 0, 0, 1)';
-            wheel.style.transform = `rotate(${s.deg}deg)`;
-
-            // --- 【第五步：结算】 ---
-            setTimeout(() => {
-                s.running = false;
-                if (isReal) {
-                    if (s.pick === finalResult) {
-                        setB(getB() + 1100);
-                        alert(`🎊 命中：[${finalResult === 'DRAGON' ? '龙' : '虎'}]`);
-                    } else {
-                        alert(`❌ 未命中：[${finalResult === 'DRAGON' ? '龙' : '虎'}]`);
-                    }
-                } else {
-                    alert(`🎡 观摩结果：[${finalResult === 'DRAGON' ? '龙' : '虎'}]`);
-                }
-                draw();
-            }, 5800);
-        };
-    };
-
-    function draw() {
-        const el = document.getElementById('balance');
-        if (el) el.innerText = (getB() / 100).toFixed(1);
-    }
-
-    function syncVisual() {
-        document.querySelectorAll('.opt, [data-side]').forEach(el => {
-            const side = el.id?.split('-')[1] || el.dataset.side;
-            el.style.boxShadow = (s.pick === side) ? "0 0 15px #ff0000 inset" : "none";
-            el.style.borderColor = (s.pick === side) ? "#ff0000" : "#ccc";
-        });
-    }
-})();
+    }, parseFloat(wheel.style.transitionDuration)*1000);
+}
