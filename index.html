@@ -1,234 +1,88 @@
 (function() {
-    // ===============================
-    // 顶级配置：对齐 99.9% 的细节
-    // ===============================
-    const CORE = {
-        U_UNIT: 100,
-        ENTRY_FEE: 550,          // 5.5
-        WHEEL_REVS: 22,
-        T_CONST: 5600,
-        SECTOR_ANGLE: 45,
-        BOUNCE_DEG: 1.5,
-        SPIN_FALLBACK: 300       // transition 兜底
+    // --- 1. 基础账目 (分制，杜绝小数浮点误差) ---
+    let store = {
+        get: () => parseInt(localStorage.getItem('_bal') || "14680"),
+        set: (v) => localStorage.setItem('_bal', v.toString())
     };
 
-    let session = {
-        active: false,
-        side: null,
-        totalDeg: 0,
-        settled: false,
-        isPending: localStorage.getItem('_q_pending') === 'true'
-    };
+    let state = { active: false, side: null, deg: 0 };
 
-    // ===============================
-    // 启动
-    // ===============================
     window.onload = () => {
-        console.log(
-            "%c 🛰️ 艺术品级内核加载 | 实战硬核对齐 ",
-            "color:#ed1c24;font-weight:bold;"
-        );
+        refreshUI();
+        // 绑定选择逻辑
+        ['DRAGON', 'TIGER'].forEach(s => {
+            const el = document.getElementById('opt-' + s) || document.querySelector(`[data-side="${s}"]`);
+            if (el) el.onclick = () => {
+                if (state.active) return;
+                state.side = (state.side === s) ? null : s;
+                // 同步视觉：选中变红，取消变灰
+                document.querySelectorAll('.opt, [data-side]').forEach(b => {
+                    const bSide = b.id?.split('-')[1] || b.dataset.side;
+                    b.style.filter = (state.side === bSide) ? 'brightness(1.2) drop-shadow(0 0 5px red)' : 'none';
+                });
+            };
+        });
 
-        initStorage();
-        if (session.isPending) recoverSession();
-        initCore();
-        bindVisibilityGuard();
+        // 绑定执行逻辑
+        const btn = document.getElementById('exec-btn') || document.getElementById('main-btn');
+        if (btn) btn.onclick = start;
     };
 
-    // ===============================
-    // 选择逻辑
-    // ===============================
-    function handleSelect(s) {
-        if (session.active) return;
-        const prev = session.side;
-        session.side = (session.side === s) ? null : s;
-        if (prev !== session.side) {
-            vibrate(25);
-            syncStyles();
-        }
-    }
+    async function start() {
+        if (state.active) return;
 
-    // ===============================
-    // 执行引擎
-    // ===============================
-    async function startTrade() {
-        if (session.active) return;
+        const isReal = state.side !== null;
+        let currentBal = store.get();
 
-        const isReal = session.side !== null;
-        let bal = getBal();
-
-        if (isReal && bal < CORE.ENTRY_FEE) {
-            toast("⚠️ 指令拒绝：资金池核验未通过");
-            return;
-        }
-
-        session.active = true;
-        session.settled = false;
-        localStorage.setItem('_q_pending', 'true');
-
-        try {
-            const data = await secureHandshake(isReal);
-
-            if (isReal) {
-                bal -= CORE.ENTRY_FEE;
-                setBal(bal);
+        // 【第一道关卡：硬核验证】
+        if (isReal) {
+            if (currentBal < 550) {
+                alert("❌ 余额不足 (需5.5)");
+                return;
             }
-
-            applyPhysics(data.win, isReal);
-        } catch (e) {
-            console.error(e);
-            unlock();
-            toast("📡 通讯链路异常");
-        }
-    }
-
-    // ===============================
-    // 物理惯性 + 回弹
-    // ===============================
-    function applyPhysics(target, real) {
-        const wheel = document.querySelector('.wheel-img') || document.getElementById('wheel');
-        if (!wheel) { unlock(); return; }
-
-        const base = (target === 'DRAGON') ? 0 : CORE.SECTOR_ANGLE;
-        const offset = (Math.random() * 30) - 15;
-
-        session.totalDeg += (360 * CORE.WHEEL_REVS) + base + offset;
-
-        wheel.style.transition = `transform ${CORE.T_CONST}ms cubic-bezier(0.2,0,0,1)`;
-        wheel.style.transform = `rotate(${session.totalDeg}deg)`;
-
-        let ended = false;
-
-        const finish = () => {
-            if (ended) return;
-            ended = true;
-
-            // 回弹
-            const bounce =
-                (Math.random() > 0.5 ? 1 : -1) * CORE.BOUNCE_DEG;
-
-            wheel.style.transition = `transform 280ms ease-out`;
-            wheel.style.transform = `rotate(${session.totalDeg + bounce}deg)`;
-
-            setTimeout(() => finalize(target, real), 320);
-        };
-
-        wheel.addEventListener('transitionend', finish, { once: true });
-        setTimeout(finish, CORE.T_CONST + CORE.SPIN_FALLBACK);
-    }
-
-    // ===============================
-    // 结算（幂等）
-    // ===============================
-    function finalize(win, real) {
-        if (session.settled) return;
-        session.settled = true;
-
-        unlock();
-
-        const isWin = (session.side === win);
-        if (real && isWin) {
-            setBal(getBal() + CORE.ENTRY_FEE * 2);
+            // 验证通过，立即扣费，绝不拖泥带水
+            currentBal -= 550;
+            store.set(currentBal);
+            refreshUI();
         }
 
-        const label = win === 'DRAGON' ? '🐉 龙' : '🐯 虎';
-        if (real) {
-            isWin
-                ? alert(`🎊 量化成功: [${label}]`)
-                : alert(`📉 量化波动: [${label}]`);
+        // 【第二道关卡：锁定引擎】
+        state.active = true;
+        
+        // 预定结果 (0:龙, 1:虎)
+        const winIdx = Math.random() < 0.5 ? 0 : 1;
+        const winSide = winIdx === 0 ? 'DRAGON' : 'TIGER';
+
+        // 【第三道关卡：强制动画对齐】
+        await new Promise(resolve => {
+            const wheel = document.getElementById('wheel') || document.querySelector('.wheel-img');
+            const targetDeg = winIdx * 45; // 假设0度是龙，45度是虎
+            state.deg += (360 * 15) + targetDeg + (Math.random() * 4 - 2);
+            
+            wheel.style.transition = 'transform 5s cubic-bezier(0.15, 0, 0, 1)';
+            wheel.style.transform = `rotate(${state.deg}deg)`;
+            
+            setTimeout(resolve, 5200); // 略长于动画时间，确保停稳
+        });
+
+        // 【第四道关卡：结算逻辑】
+        if (isReal) {
+            if (state.side === winSide) {
+                store.set(store.get() + 1100); // 赢了加 11.0
+                alert(`🎊 命中：${winSide === 'DRAGON' ? '龙' : '虎'}`);
+            } else {
+                alert(`💔 未命中：${winSide === 'DRAGON' ? '龙' : '虎'}`);
+            }
         } else {
-            alert(`🎡 观摩结束: [${label}]`);
+            alert(`🎡 空转结果：${winSide === 'DRAGON' ? '龙' : '虎'}`);
         }
 
-        refreshDisplay();
+        state.active = false;
+        refreshUI();
     }
 
-    // ===============================
-    // 恢复未完成订单（刷新跑单）
-    // ===============================
-    function recoverSession() {
-        console.warn("⚠️ 检测到未完成订单，已安全回收");
-        localStorage.setItem('_q_pending', 'false');
-        session.active = false;
-        session.settled = false;
-    }
-
-    // ===============================
-    // 样式同步
-    // ===============================
-    function syncStyles() {
-        document.querySelectorAll('[data-side], .opt').forEach(el => {
-            const side = el.dataset.side || el.id?.split('-')[1];
-            el.classList.toggle('active', session.side === side);
-            el.classList.toggle('selected', session.side === side);
-        });
-    }
-
-    // ===============================
-    // 通讯模拟
-    // ===============================
-    function secureHandshake(real) {
-        return new Promise(res => {
-            setTimeout(() => {
-                res({ win: Math.random() < 0.5 ? 'DRAGON' : 'TIGER' });
-            }, 700);
-        });
-    }
-
-    // ===============================
-    // UI / 工具
-    // ===============================
-    function toast(msg) {
-        console.log(msg);
-        alert(msg);
-    }
-
-    function vibrate(ms) {
-        if (navigator.vibrate) navigator.vibrate(ms);
-    }
-
-    function unlock() {
-        session.active = false;
-        localStorage.setItem('_q_pending', 'false');
-    }
-
-    function refreshDisplay() {
+    function refreshUI() {
         const el = document.getElementById('balance');
-        if (el) el.innerText = (getBal() / CORE.U_UNIT).toFixed(1);
-    }
-
-    function getBal() {
-        return parseInt(localStorage.getItem('_q_bal'), 10);
-    }
-
-    function setBal(v) {
-        localStorage.setItem('_q_bal', String(v));
-    }
-
-    function initStorage() {
-        if (!localStorage.getItem('_q_bal')) {
-            localStorage.setItem('_q_bal', '14680');
-        }
-    }
-
-    function initCore() {
-        const fire = document.getElementById('exec-btn') || document.getElementById('main-btn');
-        if (fire) fire.onclick = startTrade;
-
-        ['DRAGON','TIGER'].forEach(s => {
-            const el = document.querySelector(`[data-side="${s}"]`) || document.getElementById('opt-' + s);
-            if (el) el.onclick = () => handleSelect(s);
-        });
-
-        refreshDisplay();
-    }
-
-    function bindVisibilityGuard() {
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden && session.active) {
-                console.warn("⚠️ 页面切后台，强制解锁");
-                unlock();
-            }
-        });
+        if (el) el.innerText = (store.get() / 100).toFixed(1);
     }
 })();
