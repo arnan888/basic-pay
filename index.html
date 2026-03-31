@@ -2,301 +2,87 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>3D龙虎斗·多选押注版</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            background: #0a0a0a;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif;
-            padding: 16px;
-        }
-
-        /* 主容器 */
-        .game-container {
-            max-width: 500px;
-            width: 100%;
-            background: linear-gradient(145deg, #1e3a2f, #0f2a1f);
-            border-radius: 56px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1);
-            overflow: hidden;
-            padding: 16px;
-            border: 1px solid rgba(255,215,0,0.3);
-        }
-
-        /* 状态栏 */
-        .status-bar {
-            display: flex;
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-        .status-card {
-            flex: 1;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(4px);
-            border-radius: 32px;
-            padding: 10px 0;
-            text-align: center;
-            border: 1px solid #d4af37;
-            box-shadow: inset 0 0 8px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.3);
-        }
-        .status-label {
-            font-size: 12px;
-            color: #ccc;
-            letter-spacing: 2px;
-        }
-        .status-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #ffd966;
-            text-shadow: 0 0 6px #ffaa00;
-        }
-
-        /* 3D战场 */
-        .arena {
-            background: #0a0f0c;
-            border-radius: 48px;
-            margin-bottom: 20px;
-            position: relative;
-            aspect-ratio: 16 / 9;
-            overflow: hidden;
-            box-shadow: inset 0 0 40px rgba(0,0,0,0.8), 0 8px 20px black;
-            border: 2px solid #b87c2e;
-        }
-
-        .canvas-3d {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-
-        .fight-text {
-            position: absolute;
-            bottom: 12px;
-            left: 0;
-            right: 0;
-            text-align: center;
-            color: #ffd966;
-            font-weight: bold;
-            text-shadow: 0 0 10px #ff6600;
-            background: rgba(0,0,0,0.6);
-            width: fit-content;
-            margin: 0 auto;
-            padding: 4px 16px;
-            border-radius: 40px;
-            font-size: 14px;
-            backdrop-filter: blur(4px);
-            pointer-events: none;
-            z-index: 10;
-            left: 50%;
-            transform: translateX(-50%);
-            white-space: nowrap;
-        }
-
-        /* 多选押注区 */
-        .multi-bet-area {
-            background: rgba(0,0,0,0.5);
-            border-radius: 40px;
-            padding: 16px;
-            margin-bottom: 20px;
-            backdrop-filter: blur(8px);
-        }
-
-        .bet-options {
-            display: flex;
-            gap: 12px;
-            justify-content: space-between;
-            margin-bottom: 16px;
-        }
-
-        .bet-card {
-            flex: 1;
-            background: #1e2a24;
-            border-radius: 32px;
-            padding: 12px 4px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.1s ease;
-            border: 2px solid #4a6b5a;
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.3);
-        }
-
-        .bet-card.selected {
-            border-color: #ffcc44;
-            background: #2a3a32;
-            box-shadow: 0 0 12px rgba(255,200,0,0.6);
-        }
-
-        .bet-name {
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 6px;
-        }
-        .bet-name.dragon { color: #3b82f6; text-shadow: 0 0 6px #3b82f6; }
-        .bet-name.tiger { color: #f97316; text-shadow: 0 0 6px #f97316; }
-        .bet-name.tie { color: #a855f7; text-shadow: 0 0 6px #a855f7; }
-
-        .bet-amount-input {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 8px;
-        }
-        .bet-amount-input button {
-            background: #2c3e2b;
-            border: none;
-            width: 28px;
-            height: 28px;
-            border-radius: 20px;
-            color: #ffdd99;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: inset 0 1px 1px rgba(0,0,0,0.5), 0 1px 2px rgba(255,255,255,0.1);
-        }
-        .bet-amount-input span {
-            background: #00000066;
-            padding: 4px 12px;
-            border-radius: 24px;
-            color: #ffd966;
-            font-weight: bold;
-            min-width: 70px;
-        }
-
-        /* 总计 & 操作 */
-        .total-bar {
-            display: flex;
-            justify-content: space-between;
-            background: #00000077;
-            border-radius: 40px;
-            padding: 12px 20px;
-            margin-bottom: 16px;
-            font-weight: bold;
-        }
-        .total-label {
-            color: #ccc;
-        }
-        .total-amount {
-            color: #ffcc44;
-            font-size: 20px;
-        }
-
-        .action-btn {
-            width: 100%;
-            background: linear-gradient(180deg, #e67e22, #b84306);
-            border: none;
-            padding: 14px;
-            border-radius: 60px;
-            font-size: 22px;
-            font-weight: bold;
-            color: white;
-            text-shadow: 0 1px 2px black;
-            margin-bottom: 12px;
-            cursor: pointer;
-            box-shadow: 0 6px 0 #6b2e00;
-            transition: 0.05s linear;
-        }
-        .action-btn:active {
-            transform: translateY(2px);
-            box-shadow: 0 2px 0 #6b2e00;
-        }
-
-        .auto-speed-row {
-            display: flex;
-            gap: 12px;
-        }
-        .auto-btn, .speed-group {
-            flex: 1;
-            background: #2c3e2b;
-            text-align: center;
-            padding: 10px;
-            border-radius: 40px;
-            font-weight: bold;
-            color: #bbaa77;
-            cursor: pointer;
-            border: 1px solid #5a6e4a;
-        }
-        .auto-btn.active {
-            background: #f39c12;
-            color: #1e2a1a;
-            border-color: gold;
-        }
-        .speed-group {
-            display: flex;
-            justify-content: space-around;
-        }
-        .speed-item {
-            padding: 4px 12px;
-            border-radius: 30px;
-        }
-        .speed-item.active {
-            background: #ffaa33;
-            color: #1e2a1a;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body { background: #0a0a0a; min-height: 100vh; display: flex; justify-content: center; align-items: center; font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif; padding: 12px; }
+        .game-container { max-width: 500px; width: 100%; background: linear-gradient(145deg, #1e3a2f, #0f2a1f); border-radius: 48px; box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.1); overflow: hidden; padding: 16px; border: 1px solid rgba(255,215,0,0.3); }
+        .status-bar { display: flex; gap: 12px; margin-bottom: 16px; }
+        .status-card { flex: 1; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); border-radius: 28px; padding: 8px 0; text-align: center; border: 1px solid #d4af37; }
+        .status-label { font-size: 11px; color: #ccc; letter-spacing: 1px; }
+        .status-value { font-size: 22px; font-weight: bold; color: #ffd966; text-shadow: 0 0 6px #ffaa00; }
+        .arena { background: linear-gradient(180deg, #1a2a1a, #0a1508); border-radius: 40px; margin-bottom: 16px; position: relative; aspect-ratio: 16 / 9; overflow: hidden; box-shadow: inset 0 0 40px rgba(0,0,0,0.8), 0 8px 20px black; border: 2px solid #b87c2e; }
+        .battle-bg { position: absolute; width: 100%; height: 100%; background: radial-gradient(circle at 50% 50%, #2a3a2a, #0a1a0a); z-index: 1; }
+        .fighter { position: absolute; bottom: 20%; width: 35%; text-align: center; transition: all 0.05s linear; z-index: 10; filter: drop-shadow(0 0 15px rgba(0,0,0,0.5)); }
+        .dragon-fighter { left: 5%; }
+        .tiger-fighter { right: 5%; }
+        .fighter-emoji { font-size: clamp(50px, 25vw, 100px); transition: all 0.1s ease; }
+        .dragon-fighter .fighter-emoji { text-shadow: 0 0 20px #3b82f6; color: #6bcbff; }
+        .tiger-fighter .fighter-emoji { text-shadow: 0 0 20px #f97316; color: #ffa559; }
+        .dragon-fighter.charging { animation: dragonCharge 0.25s ease-out forwards; }
+        .tiger-fighter.charging { animation: tigerCharge 0.25s ease-out forwards; }
+        @keyframes dragonCharge { 0% { left: 5%; transform: scale(1); } 50% { left: 35%; transform: scale(1.3); filter: drop-shadow(0 0 30px #ff6600); } 100% { left: 5%; transform: scale(1); } }
+        @keyframes tigerCharge { 0% { right: 5%; transform: scale(1); } 50% { right: 35%; transform: scale(1.3); filter: drop-shadow(0 0 30px #ff6600); } 100% { right: 5%; transform: scale(1); } }
+        .dragon-fighter.win .fighter-emoji, .tiger-fighter.win .fighter-emoji { animation: winGlow 0.8s ease-in-out 3; color: #ffdd88; text-shadow: 0 0 40px #ffaa33; }
+        @keyframes winGlow { 0% { transform: scale(1); } 50% { transform: scale(1.2); filter: drop-shadow(0 0 40px orange); } 100% { transform: scale(1); } }
+        .shockwave { position: absolute; left: 50%; top: 50%; width: 0; height: 0; border-radius: 50%; background: radial-gradient(circle, rgba(255,200,100,0.9), rgba(255,80,0,0)); transform: translate(-50%, -50%); z-index: 20; pointer-events: none; }
+        .shockwave.active { animation: shockExpand 0.5s ease-out forwards; }
+        @keyframes shockExpand { 0% { width: 0; height: 0; opacity: 0.8; } 100% { width: 200px; height: 200px; opacity: 0; } }
+        .spark { position: absolute; width: 6px; height: 6px; background: #ff8800; border-radius: 50%; pointer-events: none; z-index: 25; filter: blur(2px); }
+        .fight-status { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); padding: 6px 16px; border-radius: 40px; color: #ffcc66; font-weight: bold; font-size: 13px; white-space: nowrap; z-index: 30; border: 1px solid #ffaa33; pointer-events: none; }
+        .multi-bet-area { background: rgba(0,0,0,0.5); border-radius: 32px; padding: 14px; backdrop-filter: blur(8px); }
+        .bet-options { display: flex; gap: 10px; justify-content: space-between; margin-bottom: 14px; }
+        .bet-card { flex: 1; background: #1e2a24; border-radius: 28px; padding: 10px 4px; text-align: center; border: 2px solid #4a6b5a; }
+        .bet-card.selected { border-color: #ffcc44; background: #2a3a32; box-shadow: 0 0 10px rgba(255,200,0,0.5); }
+        .bet-name { font-size: 24px; font-weight: bold; margin-bottom: 6px; }
+        .bet-name.dragon { color: #3b82f6; }
+        .bet-name.tiger { color: #f97316; }
+        .bet-name.tie { color: #a855f7; }
+        .bet-amount-input { display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .bet-amount-input button { background: #2c3e2b; border: none; width: 26px; height: 26px; border-radius: 20px; color: #ffdd99; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .bet-amount-input span { background: #00000066; padding: 4px 10px; border-radius: 20px; color: #ffd966; font-weight: bold; min-width: 55px; font-size: 14px; }
+        .total-bar { display: flex; justify-content: space-between; background: #00000077; border-radius: 32px; padding: 10px 16px; margin-bottom: 14px; font-weight: bold; }
+        .total-amount { color: #ffcc44; font-size: 20px; }
+        .action-btn { width: 100%; background: linear-gradient(180deg, #e67e22, #b84306); border: none; padding: 14px; border-radius: 50px; font-size: 20px; font-weight: bold; color: white; margin-bottom: 10px; cursor: pointer; box-shadow: 0 4px 0 #6b2e00; }
+        .action-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #6b2e00; }
+        .auto-speed-row { display: flex; gap: 10px; }
+        .auto-btn, .speed-group { flex: 1; background: #2c3e2b; text-align: center; padding: 10px; border-radius: 36px; font-weight: bold; color: #bbaa77; cursor: pointer; }
+        .auto-btn.active { background: #f39c12; color: #1e2a1a; }
+        .speed-group { display: flex; justify-content: space-around; padding: 5px; }
+        .speed-item { padding: 4px 12px; border-radius: 28px; cursor: pointer; }
+        .speed-item.active { background: #ffaa33; color: #1e2a1a; }
     </style>
 </head>
 <body>
 <div class="game-container">
-    <!-- 状态栏 -->
     <div class="status-bar">
         <div class="status-card"><div class="status-label">💰 余额</div><div class="status-value" id="balanceDisplay">857.80</div></div>
         <div class="status-card"><div class="status-label">🏆 奖池</div><div class="status-value" id="poolDisplay">84291.50</div></div>
     </div>
-
-    <!-- 3D 战场 Canvas -->
-    <div class="arena">
-        <canvas id="gameCanvas" class="canvas-3d" width="500" height="300" style="width:100%; height:100%; object-fit: cover;"></canvas>
-        <div class="fight-text" id="fightStatus">⚔️ 龙虎争霸 ⚔️</div>
+    <div class="arena" id="arena">
+        <div class="battle-bg"></div>
+        <div class="fighter dragon-fighter" id="dragonFighter"><div class="fighter-emoji">🐉</div></div>
+        <div class="fighter tiger-fighter" id="tigerFighter"><div class="fighter-emoji">🐯</div></div>
+        <div class="fight-status" id="fightStatus">⚔️ 龙虎争霸 ⚔️</div>
     </div>
-
-    <!-- 多选押注区 -->
     <div class="multi-bet-area">
         <div class="bet-options">
             <div class="bet-card" data-type="DRAGON" id="cardDragon">
                 <div class="bet-name dragon">🐉 龙</div>
-                <div class="bet-amount-input">
-                    <button class="dec" data-type="DRAGON">-</button>
-                    <span id="betDragonAmount">0</span>
-                    <button class="inc" data-type="DRAGON">+</button>
-                </div>
+                <div class="bet-amount-input"><button class="dec" data-type="DRAGON">-</button><span id="betDragonAmount">0</span><button class="inc" data-type="DRAGON">+</button></div>
             </div>
             <div class="bet-card" data-type="TIE" id="cardTie">
                 <div class="bet-name tie">⚖️ 和</div>
-                <div class="bet-amount-input">
-                    <button class="dec" data-type="TIE">-</button>
-                    <span id="betTieAmount">0</span>
-                    <button class="inc" data-type="TIE">+</button>
-                </div>
+                <div class="bet-amount-input"><button class="dec" data-type="TIE">-</button><span id="betTieAmount">0</span><button class="inc" data-type="TIE">+</button></div>
             </div>
             <div class="bet-card" data-type="TIGER" id="cardTiger">
                 <div class="bet-name tiger">🐯 虎</div>
-                <div class="bet-amount-input">
-                    <button class="dec" data-type="TIGER">-</button>
-                    <span id="betTigerAmount">0</span>
-                    <button class="inc" data-type="TIGER">+</button>
-                </div>
+                <div class="bet-amount-input"><button class="dec" data-type="TIGER">-</button><span id="betTigerAmount">0</span><button class="inc" data-type="TIGER">+</button></div>
             </div>
         </div>
-
-        <div class="total-bar">
-            <span class="total-label">💰 总押注</span>
-            <span class="total-amount" id="totalBetAmount">0.00</span>
-        </div>
-
+        <div class="total-bar"><span>💰 总押注</span><span class="total-amount" id="totalBetAmount">0.00</span></div>
         <button class="action-btn" id="fightBtn">⚡ 龙虎碰撞 ⚡</button>
-
         <div class="auto-speed-row">
             <div class="auto-btn" id="autoBtn">🤖 自动模式</div>
             <div class="speed-group" id="speedGroup">
@@ -307,318 +93,126 @@
         </div>
     </div>
 </div>
-
 <script>
-    (function(){
-        // ---------- 游戏数据 ----------
-        let balance = 857.80;
-        let pool = 84291.50;
-        let bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
-        let isFighting = false;
-        let autoMode = false;
-        let speedLevel = 1;    // 1=正常 2=快速 3=极速
-        let autoTimer = null;
-        
-        // 赔率
-        const ODDS = { DRAGON: 2, TIGER: 2, TIE: 8 };
-        
-        // DOM 元素
-        const balanceSpan = document.getElementById('balanceDisplay');
-        const poolSpan = document.getElementById('poolDisplay');
-        const totalSpan = document.getElementById('totalBetAmount');
-        const fightStatusDiv = document.getElementById('fightStatus');
-        
-        // 显示各个押注金额
-        const betDragonSpan = document.getElementById('betDragonAmount');
-        const betTigerSpan = document.getElementById('betTigerAmount');
-        const betTieSpan = document.getElementById('betTieAmount');
-        
-        // Canvas 3D 相关
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        // 设置canvas实际分辨率
-        function resizeCanvas() {
-            const rect = canvas.parentElement.getBoundingClientRect();
-            const w = rect.width;
-            const h = rect.height;
-            canvas.width = w;
-            canvas.height = h;
-            drawScene(0, false);
+(function(){
+    let balance = 857.80, pool = 84291.50;
+    let bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
+    let isFighting = false, autoMode = false, speedLevel = 1, autoTimer = null;
+    const ODDS = { DRAGON: 2, TIGER: 2, TIE: 8 };
+    const balanceSpan = document.getElementById('balanceDisplay');
+    const poolSpan = document.getElementById('poolDisplay');
+    const totalSpan = document.getElementById('totalBetAmount');
+    const fightStatusSpan = document.getElementById('fightStatus');
+    const dragonFighter = document.getElementById('dragonFighter');
+    const tigerFighter = document.getElementById('tigerFighter');
+    const arena = document.getElementById('arena');
+    function updateUI() {
+        balanceSpan.innerText = balance.toFixed(2);
+        poolSpan.innerText = pool.toFixed(2);
+        document.getElementById('betDragonAmount').innerText = bets.DRAGON;
+        document.getElementById('betTigerAmount').innerText = bets.TIGER;
+        document.getElementById('betTieAmount').innerText = bets.TIE;
+        totalSpan.innerText = (bets.DRAGON + bets.TIGER + bets.TIE).toFixed(2);
+    }
+    function adjustBet(type, delta) {
+        if(isFighting) return;
+        let newVal = bets[type] + delta;
+        if(newVal < 0) newVal = 0;
+        bets[type] = newVal;
+        updateUI();
+        const card = document.getElementById(type === 'DRAGON' ? 'cardDragon' : (type === 'TIGER' ? 'cardTiger' : 'cardTie'));
+        if(bets[type] > 0) card.classList.add('selected');
+        else card.classList.remove('selected');
+    }
+    function createSparks() {
+        for(let i=0;i<30;i++) {
+            const spark = document.createElement('div');
+            spark.className = 'spark';
+            const rect = arena.getBoundingClientRect();
+            const x = rect.width/2 + (Math.random() - 0.5) * 80;
+            const y = rect.height/2 + (Math.random() - 0.5) * 60;
+            spark.style.left = x + 'px';
+            spark.style.top = y + 'px';
+            arena.appendChild(spark);
+            setTimeout(() => spark.remove(), 500);
         }
-        window.addEventListener('resize', () => resizeCanvas());
-        
-        // 3D 龙虎坐标（动态冲击偏移）
-        let dragonX = 0.25;   // 相对位置 0~1
-        let tigerX = 0.75;
-        let impactIntensity = 0;   // 冲击强度 0~1
-        let lastWinner = null;
-        
-        // 绘制超酷3D风格
-        function drawScene(impact, winnerAnim) {
-            if(!ctx) return;
-            const w = canvas.width, h = canvas.height;
-            if(w === 0 || h === 0) return;
-            
-            // 背景: 古风擂台
-            const grad = ctx.createLinearGradient(0, 0, 0, h);
-            grad.addColorStop(0, '#1d2b1a');
-            grad.addColorStop(1, '#0a1308');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, w, h);
-            
-            // 地面纹理
-            ctx.fillStyle = '#4a3728';
-            for(let i=0;i<60;i++) {
-                ctx.beginPath();
-                ctx.arc( (i*47)%w, h-20 + Math.sin(i)*8, 6, 0, Math.PI*2);
-                ctx.fillStyle = '#6b4c3b';
-                ctx.fill();
-            }
-            
-            // 冲击波特效
-            if(impact > 0) {
-                ctx.save();
-                ctx.shadowBlur = 20;
-                ctx.shadowColor = '#ffaa33';
-                for(let i=0;i<3;i++) {
-                    ctx.beginPath();
-                    ctx.arc(w/2, h/2, 30 + impact*60 * i, 0, Math.PI*2);
-                    ctx.fillStyle = `rgba(255, 100, 0, ${0.5 - impact*0.3})`;
-                    ctx.fill();
-                }
-                ctx.restore();
-            }
-            
-            // 龙 (带有冲击偏移)
-            let dragonOffsetX = 0;
-            let tigerOffsetX = 0;
-            if(impact > 0) {
-                dragonOffsetX = -15 * impact;
-                tigerOffsetX = 15 * impact;
-            }
-            const dragonXpos = w * dragonX + dragonOffsetX;
-            const tigerXpos = w * tigerX + tigerOffsetX;
-            const centerY = h * 0.55;
-            
-            // 画龙
-            ctx.save();
-            ctx.shadowBlur = 12;
-            ctx.shadowColor = '#3b82f6';
-            ctx.font = `bold ${Math.floor(h * 0.28)}px "Segoe UI Emoji"`;
-            ctx.textAlign = 'center';
-            ctx.fillStyle = '#6bcbff';
-            ctx.fillText('🐉', dragonXpos, centerY);
-            // 龙鳞特效
-            if(winnerAnim === 'DRAGON') {
-                ctx.font = `bold ${Math.floor(h * 0.35)}px "Segoe UI Emoji"`;
-                ctx.fillStyle = '#ffd966';
-                ctx.shadowBlur = 20;
-                ctx.fillText('🐉', dragonXpos, centerY-5);
-            }
-            ctx.restore();
-            
-            // 画虎
-            ctx.save();
-            ctx.shadowBlur = 12;
-            ctx.shadowColor = '#f97316';
-            ctx.font = `bold ${Math.floor(h * 0.28)}px "Segoe UI Emoji"`;
-            ctx.textAlign = 'center';
-            ctx.fillStyle = '#ffa559';
-            ctx.fillText('🐯', tigerXpos, centerY);
-            if(winnerAnim === 'TIGER') {
-                ctx.font = `bold ${Math.floor(h * 0.35)}px "Segoe UI Emoji"`;
-                ctx.fillStyle = '#ffaa33';
-                ctx.fillText('🐯', tigerXpos, centerY-5);
-            }
-            ctx.restore();
-            
-            // 碰撞火花
-            if(impact > 0.5) {
-                for(let i=0;i<12;i++) {
-                    ctx.fillStyle = `rgba(255, 80, 20, ${Math.random() * 0.8})`;
-                    ctx.beginPath();
-                    ctx.arc(w/2 + (Math.random()-0.5)*70, centerY-20 + (Math.random()-0.5)*60, 4, 0, Math.PI*2);
-                    ctx.fill();
-                }
-            }
-        }
-        
-        // 更新UI
-        function updateUI() {
-            balanceSpan.innerText = balance.toFixed(2);
-            poolSpan.innerText = pool.toFixed(2);
-            betDragonSpan.innerText = bets.DRAGON;
-            betTigerSpan.innerText = bets.TIGER;
-            betTieSpan.innerText = bets.TIE;
-            const total = bets.DRAGON + bets.TIGER + bets.TIE;
-            totalSpan.innerText = total.toFixed(2);
-        }
-        
-        // 修改押注金额 (type, delta)
-        function adjustBet(type, delta) {
-            if(isFighting) return;
-            let newVal = bets[type] + delta;
-            if(newVal < 0) newVal = 0;
-            // 不能超过余额（暂时不做强制，提交时校验）
-            bets[type] = newVal;
-            updateUI();
-            // 高亮选中卡片（押注>0即高亮）
-            const card = document.getElementById(`card${type.charAt(0)+type.slice(1).toLowerCase()}`);
-            if(bets[type] > 0) card.classList.add('selected');
-            else card.classList.remove('selected');
-        }
-        
-        // 碰撞动画 + 开奖
-        async function fightAction() {
-            if(isFighting) return;
-            const totalBet = bets.DRAGON + bets.TIGER + bets.TIE;
-            if(totalBet <= 0) {
-                fightStatusDiv.innerText = '⚠️ 请至少押注一个选项 ⚠️';
-                return;
-            }
-            if(totalBet > balance) {
-                fightStatusDiv.innerText = '💰 余额不足，请减少押注 💰';
-                return;
-            }
-            
-            isFighting = true;
-            // 扣款
-            balance -= totalBet;
-            updateUI();
-            
-            // 随机开奖: 龙/虎/和
-            const rand = Math.random();
-            let result = '';
-            if(rand < 0.45) result = 'DRAGON';
-            else if(rand < 0.9) result = 'TIGER';
-            else result = 'TIE';
-            
-            // 冲击特效参数
-            let impactAnim = 1.0;
-            let winnerAnim = result;
-            // 动画步数
-            let frames = 0;
-            const maxFrames = 10;
-            const interval = setInterval(() => {
-                frames++;
-                let impactVal = Math.sin(Math.PI * frames / maxFrames) * 1.2;
-                if(impactVal < 0) impactVal = 0;
-                drawScene(impactVal, frames < maxFrames/2 ? winnerAnim : null);
-                if(frames >= maxFrames) {
-                    clearInterval(interval);
-                    // 最终结算
-                    let winAmount = 0;
-                    if(bets[result] > 0) {
-                        winAmount = bets[result] * ODDS[result];
-                        balance += winAmount;
-                        fightStatusDiv.innerText = `🔥 ${result==='DRAGON'?'🐉龙威震天':result==='TIGER'?'🐯虎啸山林':'⚖️和局至尊'} 赢得 ${winAmount.toFixed(2)} 🔥`;
-                        // 特效最后显示胜利闪烁
-                        drawScene(0.3, winnerAnim);
-                        setTimeout(()=>drawScene(0, null), 400);
-                    } else {
-                        fightStatusDiv.innerText = `💔 ${result==='DRAGON'?'🐉龙':result==='TIGER'?'🐯虎':'⚖️和'} 获胜，可惜未押注 💔`;
-                        drawScene(0, null);
-                    }
-                    updateUI();
-                    
-                    // 重置押注区域（可选，如果想保留押注意见可不清零，但游戏习惯通常保留，为了体验不清零）
-                    // 不清零 玩家可继续调整
-                    isFighting = false;
-                    
-                    // 自动模式递归
-                    if(autoMode && !isFighting) {
-                        if(autoTimer) clearTimeout(autoTimer);
-                        let delay = speedLevel === 1 ? 2000 : (speedLevel === 2 ? 1200 : 600);
-                        autoTimer = setTimeout(() => {
-                            if(autoMode && !isFighting) fightAction();
-                        }, delay);
-                    }
-                }
-            }, 35);
-        }
-        
-        // 自动模式切换
-        function toggleAuto() {
-            if(autoMode) {
-                autoMode = false;
-                if(autoTimer) clearTimeout(autoTimer);
-                document.getElementById('autoBtn').classList.remove('active');
-                fightStatusDiv.innerText = '⚔️ 手动模式 ⚔️';
+    }
+    function addShockwave() {
+        const shock = document.createElement('div');
+        shock.className = 'shockwave';
+        arena.appendChild(shock);
+        setTimeout(() => shock.classList.add('active'), 10);
+        setTimeout(() => shock.remove(), 600);
+    }
+    function clearWin() {
+        dragonFighter.classList.remove('win');
+        tigerFighter.classList.remove('win');
+    }
+    function fightAction() {
+        if(isFighting) return;
+        const total = bets.DRAGON + bets.TIGER + bets.TIE;
+        if(total <= 0) { fightStatusSpan.innerText = '⚠️ 请至少押注一个选项 ⚠️'; return; }
+        if(total > balance) { fightStatusSpan.innerText = '💰 余额不足 💰'; return; }
+        isFighting = true;
+        balance -= total;
+        updateUI();
+        clearWin();
+        fightStatusSpan.innerText = '💥 碰撞！ 💥';
+        addShockwave();
+        createSparks();
+        dragonFighter.classList.add('charging');
+        tigerFighter.classList.add('charging');
+        const rand = Math.random();
+        let result = rand < 0.45 ? 'DRAGON' : (rand < 0.9 ? 'TIGER' : 'TIE');
+        setTimeout(() => {
+            dragonFighter.classList.remove('charging');
+            tigerFighter.classList.remove('charging');
+            let winAmount = 0;
+            if(bets[result] > 0) {
+                winAmount = bets[result] * ODDS[result];
+                balance += winAmount;
+                updateUI();
+                if(result === 'DRAGON') { dragonFighter.classList.add('win'); fightStatusSpan.innerText = `🐉 龙威震天！ +${winAmount.toFixed(2)}`; }
+                else if(result === 'TIGER') { tigerFighter.classList.add('win'); fightStatusSpan.innerText = `🐯 虎啸山林！ +${winAmount.toFixed(2)}`; }
+                else { dragonFighter.classList.add('win'); tigerFighter.classList.add('win'); fightStatusSpan.innerText = `⚖️ 和局至尊！ +${winAmount.toFixed(2)}`; setTimeout(()=>{dragonFighter.classList.remove('win');tigerFighter.classList.remove('win');},800); }
             } else {
-                autoMode = true;
-                document.getElementById('autoBtn').classList.add('active');
-                fightStatusDiv.innerText = '🤖 自动战斗模式激活 🤖';
-                if(!isFighting) {
-                    if(autoTimer) clearTimeout(autoTimer);
-                    let delay = speedLevel === 1 ? 2000 : (speedLevel === 2 ? 1200 : 600);
-                    autoTimer = setTimeout(() => {
-                        if(autoMode && !isFighting) fightAction();
-                    }, 500);
-                }
+                fightStatusSpan.innerText = result === 'DRAGON' ? '🐉 龙胜，未押注' : (result === 'TIGER' ? '🐯 虎胜，未押注' : '⚖️ 和局，未押注');
             }
-        }
-        
-        // 速度切换
-        function setSpeed(level) {
-            speedLevel = level;
-            document.querySelectorAll('.speed-item').forEach((el,idx)=>{
-                if(parseInt(el.dataset.speed) === level) el.classList.add('active');
-                else el.classList.remove('active');
-            });
-            if(autoMode) {
-                // 重置计时器
+            setTimeout(() => { if(!autoMode) fightStatusSpan.innerText = '⚔️ 龙虎争霸 ⚔️'; }, 1800);
+            isFighting = false;
+            if(autoMode && !isFighting) {
                 if(autoTimer) clearTimeout(autoTimer);
-                if(!isFighting){
-                    let delay = speedLevel === 1 ? 2000 : (speedLevel === 2 ? 1200 : 600);
-                    autoTimer = setTimeout(() => {
-                        if(autoMode && !isFighting) fightAction();
-                    }, delay);
-                }
+                let delay = speedLevel === 1 ? 2200 : (speedLevel === 2 ? 1300 : 700);
+                autoTimer = setTimeout(() => { if(autoMode && !isFighting) fightAction(); }, delay);
             }
+        }, 280);
+    }
+    function toggleAuto() {
+        if(autoMode) {
+            autoMode = false;
+            if(autoTimer) clearTimeout(autoTimer);
+            document.getElementById('autoBtn').classList.remove('active');
+            if(!isFighting) fightStatusSpan.innerText = '⚔️ 龙虎争霸 ⚔️';
+        } else {
+            autoMode = true;
+            document.getElementById('autoBtn').classList.add('active');
+            fightStatusSpan.innerText = '🤖 自动模式 🤖';
+            if(!isFighting && !autoTimer) autoTimer = setTimeout(() => { if(autoMode && !isFighting) fightAction(); }, 500);
         }
-        
-        // 绑定事件
-        function bindEvents() {
-            document.querySelectorAll('.dec').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const type = btn.dataset.type;
-                    adjustBet(type, - (type === 'TIE' ? 10 : 10));
-                });
-            });
-            document.querySelectorAll('.inc').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const type = btn.dataset.type;
-                    adjustBet(type, +(type === 'TIE' ? 10 : 10));
-                });
-            });
-            document.getElementById('fightBtn').addEventListener('click', () => fightAction());
-            document.getElementById('autoBtn').addEventListener('click', toggleAuto);
-            document.querySelectorAll('.speed-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const sp = parseInt(item.dataset.speed);
-                    setSpeed(sp);
-                });
-            });
-        }
-        
-        // 初始化
-        function init() {
-            resizeCanvas();
-            setSpeed(1);
-            updateUI();
-            bindEvents();
-            drawScene(0, null);
-            // 定期重绘背景
-            setInterval(() => {
-                if(!isFighting) drawScene(0, null);
-            }, 100);
-        }
-        
-        init();
-    })();
+    }
+    function setSpeed(level) {
+        speedLevel = level;
+        document.querySelectorAll('.speed-item').forEach(el => { if(parseInt(el.dataset.speed)===level) el.classList.add('active'); else el.classList.remove('active'); });
+        if(autoMode && autoTimer) { clearTimeout(autoTimer); autoTimer = setTimeout(() => { if(autoMode && !isFighting) fightAction(); }, speedLevel===1?2200:(speedLevel===2?1300:700)); }
+    }
+    document.querySelectorAll('.dec').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); adjustBet(btn.dataset.type, -(btn.dataset.type==='TIE'?10:10)); }));
+    document.querySelectorAll('.inc').forEach(btn => btn.addEventListener('click', (e) => { e.stopPropagation(); adjustBet(btn.dataset.type, +(btn.dataset.type==='TIE'?10:10)); }));
+    document.getElementById('fightBtn').addEventListener('click', fightAction);
+    document.getElementById('autoBtn').addEventListener('click', toggleAuto);
+    document.querySelectorAll('.speed-item').forEach(item => item.addEventListener('click', () => setSpeed(parseInt(item.dataset.speed))));
+    setSpeed(1);
+    updateUI();
+})();
 </script>
 </body>
 </html>
