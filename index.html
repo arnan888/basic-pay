@@ -13,12 +13,32 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: #0c0c0c; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
 
-        /* 外部大框 */
+        /* 整体大外框：七彩霓虹灯围绕转动样式 */
+        .container-outer {
+            width: 100vw; height: 100vh; max-width: 500px;
+            display: flex; justify-content: center; align-items: center;
+            /* 七彩霓虹外框 */
+            background: linear-gradient(45deg, #ff0000, #ff9900, #ffff00, #00ff00, #0099ff, #6633ff, #ff00ff);
+            background-size: 600% 600%;
+            animation: outerNeonRotate 15s linear infinite;
+            padding: 8px;
+            border-radius: 20px;
+            box-shadow: 0 0 60px rgba(255,255,255,0.6);
+        }
+        /* 大外框霓虹转动动画 */
+        @keyframes outerNeonRotate {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 内部容器：保持原有布局 */
         .container {
-            width: 100vw; height: 100vh; max-width: 480px;
-            background: var(--jade); border: 12px solid var(--jade);
-            border-image: linear-gradient(135deg, var(--jade-l), var(--jade-d)) 12;
-            display: flex; flex-direction: column; box-shadow: 0 0 40px rgba(0,0,0,1);
+            width: 100%; height: 100%;
+            background: var(--jade);
+            border-radius: 15px;
+            display: flex; flex-direction: column;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
         }
 
         /* 状态栏：余额与奖池 */
@@ -57,24 +77,28 @@
         .wheel-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #1a5276; }
         .wheel-btn:disabled { background: linear-gradient(180deg, #666, #333); box-shadow: 0 4px 0 #222; cursor: not-allowed; }
         
-        .ptr { position: absolute; top: 55px; z-index: 100; width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-top: 26px solid var(--red); filter: drop-shadow(0 0 10px red); }
+        .ptr { position: absolute; top: 55px; z-index: 100; width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-top: 26px solid var(--red); filter: drop-shadow(0 0 15px red); }
         
-        /* 转盘外包圈：七彩霓虹闪光样式 */
+        /* 转盘外包圈：亮度更高，强化视觉焦点 */
         .wheel-outer {
             width: 285px; height: 285px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            /* 七彩霓虹闪光动画 */
+            /* 高亮度七彩霓虹 */
             background: linear-gradient(45deg, #ff0000, #ff9900, #ffff00, #00ff00, #0099ff, #6633ff, #ff00ff);
-            background-size: 400% 400%;
-            animation: neonFlash 8s linear infinite;
-            padding: 5px;
-            box-shadow: 0 0 40px rgba(255,255,255,0.5);
+            background-size: 800% 800%;
+            animation: wheelNeonFlash 6s linear infinite;
+            padding: 8px;
+            /* 更强的发光效果 */
+            box-shadow: 0 0 80px rgba(255,255,255,0.8), inset 0 0 20px rgba(255,255,255,0.5);
+            border: 2px solid #fff;
         }
-        /* 七彩闪光动画 */
-        @keyframes neonFlash {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        /* 转盘外圈高亮度闪光动画 */
+        @keyframes wheelNeonFlash {
+            0% { background-position: 0% 50%; filter: brightness(1); }
+            25% { background-position: 50% 100%; filter: brightness(1.5); }
+            50% { background-position: 100% 50%; filter: brightness(1); }
+            75% { background-position: 50% 0%; filter: brightness(1.5); }
+            100% { background-position: 0% 50%; filter: brightness(1); }
         }
         
         /* 转盘主体改为灰色黑线网格 */
@@ -105,12 +129,12 @@
         }
         
         .slot { position: absolute; width: 100%; height: 100%; text-align: center; padding-top: 20px; font-weight: bold; }
-        .beast-ico { display: block; font-size: 34px; margin-bottom: 0px; filter: drop-shadow(0 0 8px rgba(0,0,0,0.6)); }
+        .beast-ico { display: block; font-size: 34px; margin-bottom: 0px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
         .beast-nm { font-size: 11px; color: #fff; text-shadow: 1px 1px 2px #000; }
         /* 转盘开奖结果提示 */
         .wheel-result {
             margin-top: 10px; font-size: 14px; color: var(--gold);
-            font-weight: bold; text-shadow: 0 0 5px var(--gold);
+            font-weight: bold; text-shadow: 0 0 8px var(--gold);
         }
 
         /* 核心区：龙虎和独立押注，加上网格线路 */
@@ -165,64 +189,67 @@
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <div class="box"><span>MY BALANCE</span><span id="ui-bal" style="color:var(--red)">857.80</span></div>
-        <div class="box"><span>JACKPOT POOL</span><span style="color:var(--gold)">84291.50</span></div>
-    </div>
-
-    <div class="wheel-area">
-        <!-- 转盘独立旋转按钮 -->
-        <button class="wheel-btn" id="btn-wheel-start" onclick="rotateWheel()">转盘旋转</button>
-        <div class="ptr"></div>
-        <!-- 新增转盘外包七彩霓虹圈 -->
-        <div class="wheel-outer">
-            <div id="wheel"></div>
+<!-- 新增大外框容器 -->
+<div class="container-outer">
+    <div class="container">
+        <div class="header">
+            <div class="box"><span>MY BALANCE</span><span id="ui-bal" style="color:var(--red)">857.80</span></div>
+            <div class="box"><span>JACKPOT POOL</span><span style="color:var(--gold)">84291.50</span></div>
         </div>
-        <!-- 转盘开奖结果提示 -->
-        <div class="wheel-result" id="wheel-result">准备就绪</div>
-    </div>
 
-    <div class="play-section">
-        <!-- 龙虎和独立押注区 -->
-        <div class="battle-row">
-            <div id="cell-DRAGON" class="side-cell" onclick="setPick('DRAGON')">
-                <span>龙位</span>
-                <span style="color:var(--blue); text-shadow: 0 0 12px var(--blue);">龙</span>
-                <div class="odds-item">赔率 1:1</div>
+        <div class="wheel-area">
+            <!-- 转盘独立旋转按钮 -->
+            <button class="wheel-btn" id="btn-wheel-start" onclick="rotateWheel()">转盘旋转</button>
+            <div class="ptr"></div>
+            <!-- 转盘外包七彩霓虹圈 -->
+            <div class="wheel-outer">
+                <div id="wheel"></div>
             </div>
+            <!-- 转盘开奖结果提示 -->
+            <div class="wheel-result" id="wheel-result">准备就绪</div>
+        </div>
+
+        <div class="play-section">
+            <!-- 龙虎和独立押注区 -->
+            <div class="battle-row">
+                <div id="cell-DRAGON" class="side-cell" onclick="setPick('DRAGON')">
+                    <span>龙位</span>
+                    <span style="color:var(--blue); text-shadow: 0 0 12px var(--blue);">龙</span>
+                    <div class="odds-item">赔率 1:1</div>
+                </div>
+                
+                <div id="cell-TIE" class="side-cell" onclick="setPick('TIE')">
+                    <span>和局</span>
+                    <span>和</span>
+                    <div class="odds-item">赔率 1:8</div>
+                </div>
+
+                <div id="cell-TIGER" class="side-cell" onclick="setPick('TIGER')">
+                    <span>虎位</span>
+                    <span style="color:var(--tiger); text-shadow: 0 0 12px var(--tiger);">虎</span>
+                    <div class="odds-item">赔率 1:1</div>
+                </div>
+            </div>
+
+            <!-- 数据区调整 -->
+            <div class="data-stack">
+                <div class="data-item"><label>当前押注</label><value id="val-bet">0.00</value></div>
+                <div class="data-item" style="border-color:var(--gold)"><label>预计奖金</label><value id="val-win">0.00</value></div>
+                <div class="data-item"><label>已选选项</label><value id="val-pick">未选择</value></div>
+            </div>
+
+            <div class="stake-txt">SELECT STAKE: <span id="ui-stake" style="color:var(--gold)">100.0</span> USDT</div>
             
-            <div id="cell-TIE" class="side-cell" onclick="setPick('TIE')">
-                <span>和局</span>
-                <span>和</span>
-                <div class="odds-item">赔率 1:8</div>
+            <div class="exec-row">
+                <button class="step-btn" onclick="adj(-1)">-</button>
+                <button class="main-go" id="btn-go" onclick="onBetExecute()">确认押注</button>
+                <button class="step-btn" onclick="adj(1)">+</button>
             </div>
 
-            <div id="cell-TIGER" class="side-cell" onclick="setPick('TIGER')">
-                <span>虎位</span>
-                <span style="color:var(--tiger); text-shadow: 0 0 12px var(--tiger);">虎</span>
-                <div class="odds-item">赔率 1:1</div>
+            <div class="mode-row">
+                <div id="btn-auto" class="mode-btn" onclick="state.auto=!state.auto; update();">🤖 AUTO MODE</div>
+                <div id="btn-speed" class="mode-btn" onclick="state.speed=state.speed%3+1; update();">⚡ SPEED: 1X</div>
             </div>
-        </div>
-
-        <!-- 数据区调整 -->
-        <div class="data-stack">
-            <div class="data-item"><label>当前押注</label><value id="val-bet">0.00</value></div>
-            <div class="data-item" style="border-color:var(--gold)"><label>预计奖金</label><value id="val-win">0.00</value></div>
-            <div class="data-item"><label>已选选项</label><value id="val-pick">未选择</value></div>
-        </div>
-
-        <div class="stake-txt">SELECT STAKE: <span id="ui-stake" style="color:var(--gold)">100.0</span> USDT</div>
-        
-        <div class="exec-row">
-            <button class="step-btn" onclick="adj(-1)">-</button>
-            <button class="main-go" id="btn-go" onclick="onBetExecute()">确认押注</button>
-            <button class="step-btn" onclick="adj(1)">+</button>
-        </div>
-
-        <div class="mode-row">
-            <div id="btn-auto" class="mode-btn" onclick="state.auto=!state.auto; update();">🤖 AUTO MODE</div>
-            <div id="btn-speed" class="mode-btn" onclick="state.speed=state.speed%3+1; update();">⚡ SPEED: 1X</div>
         </div>
     </div>
 </div>
