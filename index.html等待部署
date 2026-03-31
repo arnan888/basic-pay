@@ -342,3 +342,302 @@ window.onload = function() {
 </script>
 </body>
 </html>
+
+
+网格版
+
+
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI_QUANT_BEAST_ULTRA</title>
+    <style>
+        :root {
+            --jade: #4a7c64; --jade-l: #6b9a85; --jade-d: #2c4a3b;
+            --stone: #6b737e; --inner: inset 8px 8px 16px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.05);
+            --gold: #f1c40f; --red: #ff4d4d; --blue: #3498db; --tiger: #e67e22; --tie: #9b59b6;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: #0c0c0c; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+
+        /* 外部大框 */
+        .container {
+            width: 100vw; height: 100vh; max-width: 480px;
+            background: var(--jade); border: 12px solid var(--jade);
+            border-image: linear-gradient(135deg, var(--jade-l), var(--jade-d)) 12;
+            display: flex; flex-direction: column; box-shadow: 0 0 40px rgba(0,0,0,1);
+        }
+
+        /* 状态栏：余额与奖池 */
+        .header { height: 10%; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; }
+        .box { background: var(--stone); border: 2px solid var(--jade-d); box-shadow: var(--inner); border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            /* 黑色网格线路背景 */
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
+            background-size: 15px 15px;
+        }
+        .box span:first-child { font-size: 10px; color: #ccc; letter-spacing: 1px; margin-bottom: 2px; }
+        .box span:last-child { font-size: 18px; font-weight: bold; }
+
+        /* 转盘区：加上网格线路 */
+        .wheel-area { 
+            height: 40%; display: flex; justify-content: center; align-items: center; 
+            background: var(--stone); box-shadow: var(--inner); border: 4px solid var(--jade-d); 
+            border-radius: 12px; margin: 4px 10px; position: relative; padding: 25px 0;
+            /* 黑色网格线路背景 */
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
+            background-size: 15px 15px;
+        }
+        .ptr { position: absolute; top: 12px; z-index: 100; width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-top: 26px solid var(--red); filter: drop-shadow(0 0 10px red); }
+        
+        /* 转盘主体改为灰色黑线网格 */
+        #wheel { 
+            width: 265px; height: 265px; border-radius: 50%; 
+            border: 10px solid var(--jade-d); 
+            /* 灰色网格背景 */
+            background: var(--stone);
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
+            background-size: 12px 12px;
+            position: relative; transition: transform 4s cubic-bezier(0.1, 0, 0.2, 1.1); 
+            box-shadow: 0 0 35px rgba(0,0,0,0.8); 
+            /* 增加内部分割线，强化网格感 */
+            overflow: hidden;
+        }
+        /* 转盘内部分割线：和网格呼应 */
+        #wheel::before {
+            content: '';
+            position: absolute;
+            width: 100%; height: 100%;
+            background: linear-gradient(to right, transparent 50%, rgba(0,0,0,0.4) 50%, transparent 50%),
+                        linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.4) 50%, transparent 50%),
+                        linear-gradient(45deg, transparent 50%, rgba(0,0,0,0.2) 50%, transparent 50%),
+                        linear-gradient(-45deg, transparent 50%, rgba(0,0,0,0.2) 50%, transparent 50%);
+        }
+        
+        .slot { position: absolute; width: 100%; height: 100%; text-align: center; padding-top: 15px; font-weight: bold; }
+        .beast-ico { display: block; font-size: 34px; margin-bottom: 0px; filter: drop-shadow(0 0 8px rgba(0,0,0,0.6)); }
+        .beast-nm { font-size: 11px; color: #fff; text-shadow: 1px 1px 2px #000; }
+
+        /* 核心区：龙虎和分开独立押注，加上网格线路 */
+        .play-section {
+            flex: 1; display: flex; flex-direction: column;
+            background: var(--stone); box-shadow: var(--inner); border: 4px solid var(--jade-d); 
+            border-radius: 12px; margin: 6px 10px 10px 10px; padding: 14px;
+            /* 黑色网格线路背景 */
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
+            background-size: 15px 15px;
+        }
+
+        /* 龙虎和独立布局 */
+        .battle-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; height: 110px; margin-bottom: 12px; }
+        .side-cell { 
+            background: rgba(0,0,0,0.35); border: 3px solid var(--jade-d); border-radius: 14px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: var(--inner); cursor: pointer; transition: 0.1s;
+        }
+        .side-cell.active { border-color: var(--gold); background: rgba(255,255,255,0.1); transform: scale(0.97); }
+        .side-cell span:first-child { font-size: 13px; color: #999; margin-bottom: 5px; }
+        .side-cell span:last-child { font-size: 36px; font-weight: 900; }
+        /* 新增"和"位样式 */
+        #cell-TIE span:last-child { color: var(--tie); text-shadow: 0 0 12px var(--tie); }
+
+        /* 数据墙：调整布局更紧凑 */
+        .data-stack { display: grid; grid-template-rows: repeat(3, 1fr); gap: 6px; margin: 0 8px; }
+        .data-item { background: rgba(0,0,0,0.6); border: 1px solid var(--jade-d); border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .data-item label { font-size: 9px; color: #777; font-weight: bold; }
+        .data-item value { font-size: 14px; color: var(--gold); font-weight: 900; }
+        /* 新增各押注项赔率显示 */
+        .odds-item { font-size: 10px; color: #ccc; margin-top: 3px; }
+
+        /* 操作键位区 */
+        .stake-txt { text-align: center; color: #eee; font-size: 13px; font-weight: bold; margin-bottom: 8px; }
+        .exec-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+        .step-btn { width: 48px; height: 48px; background: var(--jade); border: 3px solid var(--jade-d); border-radius: 10px; color: #fff; font-size: 24px; font-weight: bold; }
+        .main-go { flex: 1; height: 58px; background: linear-gradient(180deg, #e53935, #b71c1c); border: none; border-radius: 29px; color: #fff; font-size: 22px; font-weight: 900; box-shadow: 0 6px 0 #7f0000; letter-spacing: 2px; }
+        .main-go:active { transform: translateY(3px); box-shadow: 0 2px 0 #7f0000; }
+        
+        .mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .mode-btn { height: 38px; background: rgba(0,0,0,0.4); border: 2px solid var(--jade-d); border-radius: 8px; color: #aaa; font-size: 11px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .mode-btn.active { border-color: var(--gold); color: #fff; background: var(--jade-d); }
+
+        .blur { filter: blur(5px); }
+        @keyframes win-pulse { 0%{filter:brightness(1)} 50%{filter:brightness(2);transform:scale(1.05)} 100%{filter:brightness(1)} }
+        .winner { animation: win-pulse 0.4s ease 4; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="box"><span>MY BALANCE</span><span id="ui-bal" style="color:var(--red)">857.80</span></div>
+        <div class="box"><span>JACKPOT POOL</span><span style="color:var(--gold)">84291.50</span></div>
+    </div>
+
+    <div class="wheel-area">
+        <div class="ptr"></div>
+        <div id="wheel"></div>
+    </div>
+
+    <div class="play-section">
+        <!-- 龙虎和独立押注区 -->
+        <div class="battle-row">
+            <div id="cell-DRAGON" class="side-cell" onclick="setPick('DRAGON')">
+                <span>龙位</span>
+                <span style="color:var(--blue); text-shadow: 0 0 12px var(--blue);">龙</span>
+                <div class="odds-item">赔率 1:1</div>
+            </div>
+            
+            <div id="cell-TIE" class="side-cell" onclick="setPick('TIE')">
+                <span>和局</span>
+                <span>和</span>
+                <div class="odds-item">赔率 1:8</div>
+            </div>
+
+            <div id="cell-TIGER" class="side-cell" onclick="setPick('TIGER')">
+                <span>虎位</span>
+                <span style="color:var(--tiger); text-shadow: 0 0 12px var(--tiger);">虎</span>
+                <div class="odds-item">赔率 1:1</div>
+            </div>
+        </div>
+
+        <!-- 数据区调整 -->
+        <div class="data-stack">
+            <div class="data-item"><label>当前押注</label><value id="val-bet">0.00</value></div>
+            <div class="data-item" style="border-color:var(--gold)"><label>预计奖金</label><value id="val-win">0.00</value></div>
+            <div class="data-item"><label>已选选项</label><value id="val-pick">未选择</value></div>
+        </div>
+
+        <div class="stake-txt">SELECT STAKE: <span id="ui-stake" style="color:var(--gold)">100.0</span> USDT</div>
+        
+        <div class="exec-row">
+            <button class="step-btn" onclick="adj(-1)">-</button>
+            <button class="main-go" id="btn-go" onclick="onExecute()">EXECUTE</button>
+            <button class="step-btn" onclick="adj(1)">+</button>
+        </div>
+
+        <div class="mode-row">
+            <div id="btn-auto" class="mode-btn" onclick="state.auto=!state.auto; update();">🤖 AUTO MODE</div>
+            <div id="btn-speed" class="mode-btn" onclick="state.speed=state.speed%3+1; update();">⚡ SPEED: 1X</div>
+        </div>
+    </div>
+</div>
+
+<script>
+const beastList = [
+    {n:'狮子', i:'🦁'}, {n:'猛虎', i:'🐯'}, {n:'恶狼', i:'🐺'}, {n:'犀牛', i:'🦏'},
+    {n:'巨象', i:'🐘'}, {n:'黑熊', i:'🐻'}, {n:'神龙', i:'🐲'}, {n:'雄鹰', i:'🦅'}
+];
+
+// 新增赔率配置
+const oddsConfig = {
+    DRAGON: 1,
+    TIGER: 1,
+    TIE: 8
+};
+
+let state = { 
+    bal: 857.8, 
+    bets: [10, 50, 100, 500, 1000], 
+    bIdx: 2, 
+    pick: null, // 单独存储当前选中的押注项
+    rolling: false, 
+    auto: false, 
+    speed: 1, 
+    deg: 0 
+};
+
+function init() {
+    const w = document.getElementById('wheel');
+    beastList.forEach((b, i) => {
+        const d = document.createElement('div');
+        d.className = 'slot'; d.style.transform = `rotate(${i*45}deg)`;
+        d.innerHTML = `<span class="beast-ico">${b.i}</span><span class="beast-nm">${b.n}</span>`;
+        w.appendChild(d);
+    });
+    update();
+}
+
+// 设置押注项：每次只能选一个，单独控制
+function setPick(s) { 
+    if(!state.rolling){ 
+        state.pick = s; 
+        update(); 
+    } 
+}
+
+function adj(d) { 
+    if(!state.rolling){ 
+        state.bIdx = Math.max(0, Math.min(state.bets.length-1, state.bIdx + d)); 
+        update(); 
+    } 
+}
+
+function onExecute() {
+    const cost = state.bets[state.bIdx];
+    // 检查：必须选择押注项且余额足够
+    if(state.rolling || !state.pick || state.bal < cost) return;
+    
+    state.rolling = true; 
+    state.bal -= cost;
+    // 计算预计奖金
+    const winAmt = cost * oddsConfig[state.pick];
+    document.getElementById('val-bet').innerText = cost.toFixed(2);
+    document.getElementById('val-win').innerText = winAmt.toFixed(2);
+    document.getElementById('wheel').classList.add('blur');
+    update();
+
+    const winIdx = Math.floor(Math.random()*8);
+    const rounds = state.speed===3 ? 4 : 8;
+    const target = (360 - (state.deg%360)) + rounds*360 - (winIdx*45);
+    state.deg += target;
+    
+    const wheel = document.getElementById('wheel');
+    wheel.style.transitionDuration = state.speed===3?'0.8s':state.speed===2?'2s':'4s';
+    wheel.style.transform = `rotate(${state.deg}deg)`;
+
+    setTimeout(() => {
+        wheel.classList.remove('blur'); 
+        state.rolling = false;
+        // 随机生成开奖结果：龙/虎/和
+        const resultList = ['DRAGON', 'TIGER', 'TIE'];
+        const winResult = resultList[Math.floor(Math.random()*3)];
+        
+        // 中奖判断
+        if(state.pick === winResult) {
+            state.bal += winAmt;
+            document.getElementById('cell-'+winResult).classList.add('winner');
+            setTimeout(()=>document.getElementById('cell-'+winResult).classList.remove('winner'), 2000);
+        }
+        update();
+        if(state.auto) setTimeout(onExecute, 1200);
+    }, parseFloat(wheel.style.transitionDuration)*1000);
+}
+
+function update() {
+    document.getElementById('ui-bal').innerText = state.bal.toFixed(2);
+    document.getElementById('ui-stake').innerText = state.bets[state.bIdx].toFixed(1);
+    // 单独控制每个押注项的选中状态
+    document.querySelectorAll('.side-cell').forEach(c => c.classList.remove('active'));
+    if(state.pick) document.getElementById('cell-'+state.pick).classList.add('active');
+    // 显示已选押注项
+    document.getElementById('val-pick').innerText = state.pick || '未选择';
+    // 更新模式按钮状态
+    document.getElementById('btn-auto').className = "mode-btn " + (state.auto?"active":"");
+    document.getElementById('btn-speed').innerText = "⚡ SPEED: " + state.speed + "X";
+    document.getElementById('btn-go').disabled = state.rolling;
+}
+
+init();
+</script>
+</body>
+</html>
