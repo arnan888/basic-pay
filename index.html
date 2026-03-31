@@ -53,7 +53,7 @@
         .box span:first-child { font-size: 10px; color: #ccc; letter-spacing: 1px; margin-bottom: 2px; }
         .box span:last-child { font-size: 18px; font-weight: bold; }
 
-        /* 转盘区：加上网格线路，新增转盘独立控制按钮 */
+        /* 转盘区：加上网格线路 */
         .wheel-area { 
             height: 40%; display: flex; flex-direction: column; justify-content: center; align-items: center; 
             background: var(--stone); box-shadow: var(--inner); border: 4px solid var(--jade-d); 
@@ -64,9 +64,9 @@
                 linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
             background-size: 15px 15px;
         }
-        /* 转盘独立旋转按钮 */
+        /* 转盘控制按钮：合并为一个，可切换模式 */
         .wheel-btn {
-            width: 120px; height: 35px;
+            width: 160px; height: 35px;
             background: linear-gradient(180deg, #3498db, #2980b9);
             border: none; border-radius: 18px;
             color: #fff; font-size: 16px; font-weight: bold;
@@ -74,7 +74,9 @@
             box-shadow: 0 4px 0 #1a5276;
             cursor: pointer;
         }
+        .wheel-btn.bet-mode { background: linear-gradient(180deg, #e53935, #b71c1c); box-shadow: 0 4px 0 #7f0000; }
         .wheel-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #1a5276; }
+        .wheel-btn.bet-mode:active { box-shadow: 0 1px 0 #7f0000; }
         .wheel-btn:disabled { background: linear-gradient(180deg, #666, #333); box-shadow: 0 4px 0 #222; cursor: not-allowed; }
         
         .ptr { position: absolute; top: 55px; z-index: 100; width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-top: 26px solid var(--red); filter: drop-shadow(0 0 15px red); }
@@ -131,11 +133,36 @@
         .slot { position: absolute; width: 100%; height: 100%; text-align: center; padding-top: 20px; font-weight: bold; }
         .beast-ico { display: block; font-size: 34px; margin-bottom: 0px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); }
         .beast-nm { font-size: 11px; color: #fff; text-shadow: 1px 1px 2px #000; }
-        /* 转盘开奖结果提示 */
+        /* 神兽分类标记 */
+        .beast-tag {
+            font-size: 9px; color: #fff;
+            background: rgba(0,0,0,0.7);
+            padding: 1px 6px; border-radius: 8px;
+            margin-top: 3px;
+        }
+        .tag-dragon { background: rgba(52,152,219,0.7); }
+        .tag-tiger { background: rgba(230,126,34,0.7); }
+        .tag-tie { background: rgba(155,89,182,0.7); }
+
+        /* 开奖结果提示区：强化龙虎显示 */
+        .result-area {
+            display: flex; justify-content: center; align-items: center;
+            gap: 20px; margin-top: 10px;
+        }
         .wheel-result {
-            margin-top: 10px; font-size: 14px; color: var(--gold);
+            font-size: 14px; color: var(--gold);
             font-weight: bold; text-shadow: 0 0 8px var(--gold);
         }
+        .battle-result {
+            font-size: 16px; font-weight: bold;
+            padding: 4px 15px; border-radius: 15px;
+            color: #fff; text-shadow: 0 0 5px #000;
+            display: none;
+        }
+        .battle-result.show { display: block; }
+        .result-dragon { background: var(--blue); box-shadow: 0 0 15px var(--blue); }
+        .result-tiger { background: var(--tiger); box-shadow: 0 0 15px var(--tiger); }
+        .result-tie { background: var(--tie); box-shadow: 0 0 15px var(--tie); }
 
         /* 核心区：龙虎和独立押注，加上网格线路 */
         .play-section {
@@ -174,9 +201,14 @@
         .stake-txt { text-align: center; color: #eee; font-size: 13px; font-weight: bold; margin-bottom: 8px; }
         .exec-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
         .step-btn { width: 48px; height: 48px; background: var(--jade); border: 3px solid var(--jade-d); border-radius: 10px; color: #fff; font-size: 24px; font-weight: bold; }
-        .main-go { flex: 1; height: 58px; background: linear-gradient(180deg, #e53935, #b71c1c); border: none; border-radius: 29px; color: #fff; font-size: 22px; font-weight: 900; box-shadow: 0 6px 0 #7f0000; letter-spacing: 2px; }
-        .main-go:active { transform: translateY(3px); box-shadow: 0 2px 0 #7f0000; }
-        .main-go:disabled { background: linear-gradient(180deg, #666, #333); box-shadow: 0 6px 0 #222; cursor: not-allowed; }
+        /* 押注金额调整按钮改为切换模式 */
+        .mode-toggle {
+            flex: 1; height: 48px;
+            background: linear-gradient(180deg, var(--jade-l), var(--jade-d));
+            border: none; border-radius: 24px;
+            color: #fff; font-size: 14px; font-weight: bold;
+            cursor: pointer;
+        }
         
         .mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .mode-btn { height: 38px; background: rgba(0,0,0,0.4); border: 2px solid var(--jade-d); border-radius: 8px; color: #aaa; font-size: 11px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
@@ -185,6 +217,13 @@
         .blur { filter: blur(5px); }
         @keyframes win-pulse { 0%{filter:brightness(1)} 50%{filter:brightness(2);transform:scale(1.05)} 100%{filter:brightness(1)} }
         .winner { animation: win-pulse 0.4s ease 4; }
+        /* 开奖结果放大动画 */
+        @keyframes result-pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .battle-result.show { animation: result-pop 0.6s ease forwards; }
     </style>
 </head>
 <body>
@@ -198,15 +237,18 @@
         </div>
 
         <div class="wheel-area">
-            <!-- 转盘独立旋转按钮 -->
-            <button class="wheel-btn" id="btn-wheel-start" onclick="rotateWheel()">转盘旋转</button>
+            <!-- 合并控制按钮：可切换"单独旋转"和"押注开奖" -->
+            <button class="wheel-btn" id="btn-wheel-control" onclick="controlAction()">单独旋转</button>
             <div class="ptr"></div>
             <!-- 转盘外包七彩霓虹圈 -->
             <div class="wheel-outer">
                 <div id="wheel"></div>
             </div>
-            <!-- 转盘开奖结果提示 -->
-            <div class="wheel-result" id="wheel-result">准备就绪</div>
+            <!-- 开奖结果提示区：同时显示神兽和龙虎结果 -->
+            <div class="result-area">
+                <div class="wheel-result" id="wheel-result">准备就绪</div>
+                <div class="battle-result" id="battle-result">龙</div>
+            </div>
         </div>
 
         <div class="play-section">
@@ -242,7 +284,7 @@
             
             <div class="exec-row">
                 <button class="step-btn" onclick="adj(-1)">-</button>
-                <button class="main-go" id="btn-go" onclick="onBetExecute()">确认押注</button>
+                <button class="mode-toggle" onclick="toggleMode()">切换操作模式</button>
                 <button class="step-btn" onclick="adj(1)">+</button>
             </div>
 
@@ -255,9 +297,16 @@
 </div>
 
 <script>
+// 神兽分类：关联龙/虎/和
 const beastList = [
-    {n:'狮子', i:'🦁'}, {n:'猛虎', i:'🐯'}, {n:'恶狼', i:'🐺'}, {n:'犀牛', i:'🦏'},
-    {n:'巨象', i:'🐘'}, {n:'黑熊', i:'🐻'}, {n:'神龙', i:'🐲'}, {n:'雄鹰', i:'🦅'}
+    {n:'狮子', i:'🦁', type:'TIGER'},
+    {n:'猛虎', i:'🐯', type:'TIGER'},
+    {n:'恶狼', i:'🐺', type:'TIGER'},
+    {n:'犀牛', i:'🦏', type:'DRAGON'},
+    {n:'巨象', i:'🐘', type:'DRAGON'},
+    {n:'黑熊', i:'🐻', type:'DRAGON'},
+    {n:'神龙', i:'🐲', type:'TIE'},
+    {n:'雄鹰', i:'🦅', type:'TIE'}
 ];
 
 // 新增赔率配置
@@ -271,9 +320,9 @@ let state = {
     bal: 857.8, 
     bets: [10, 50, 100, 500, 1000], 
     bIdx: 2, 
-    pick: null, // 单独存储当前选中的押注项
-    wheelRolling: false, // 转盘独立状态
-    betRolling: false,   // 押注独立状态
+    pick: null, 
+    wheelRolling: false, 
+    currentMode: 'single', // single-单独旋转；bet-押注开奖
     auto: false, 
     speed: 1, 
     wheelDeg: 0 
@@ -284,23 +333,57 @@ function init() {
     beastList.forEach((b, i) => {
         const d = document.createElement('div');
         d.className = 'slot'; d.style.transform = `rotate(${i*45}deg)`;
-        d.innerHTML = `<span class="beast-ico">${b.i}</span><span class="beast-nm">${b.n}</span>`;
+        // 增加分类标签
+        let tagClass = '';
+        if(b.type === 'DRAGON') tagClass = 'tag-dragon';
+        else if(b.type === 'TIGER') tagClass = 'tag-tiger';
+        else tagClass = 'tag-tie';
+        
+        d.innerHTML = `<span class="beast-ico">${b.i}</span>
+                       <span class="beast-nm">${b.n}</span>
+                       <span class="beast-tag ${tagClass}">${b.type==='DRAGON'?'龙':'虎'||'和'}</span>`;
         w.appendChild(d);
     });
     update();
 }
 
-// 转盘独立旋转函数
-function rotateWheel() {
+// 切换操作模式
+function toggleMode() {
+    state.currentMode = state.currentMode === 'single' ? 'bet' : 'single';
+    const btn = document.getElementById('btn-wheel-control');
+    if(state.currentMode === 'single') {
+        btn.innerText = '单独旋转';
+        btn.classList.remove('bet-mode');
+    } else {
+        btn.innerText = '押注开奖';
+        btn.classList.add('bet-mode');
+    }
+    update();
+}
+
+// 统一控制操作：根据模式执行不同逻辑
+function controlAction() {
     if(state.wheelRolling) {
         alert("转盘正在转动，请稍候！");
         return;
     }
-    
+
+    if(state.currentMode === 'single') {
+        // 单独旋转模式
+        rotateWheel();
+    } else {
+        // 押注开奖模式
+        betAndRoll();
+    }
+}
+
+// 单独旋转转盘
+function rotateWheel() {
     state.wheelRolling = true;
-    document.getElementById('btn-wheel-start').disabled = true;
+    document.getElementById('btn-wheel-control').disabled = true;
     document.getElementById('wheel').classList.add('blur');
     document.getElementById('wheel-result').innerText = "转盘转动中...";
+    document.getElementById('battle-result').classList.remove('show');
 
     const winIdx = Math.floor(Math.random()*8);
     const rounds = state.speed===3 ? 4 : 8;
@@ -309,44 +392,28 @@ function rotateWheel() {
     
     const wheel = document.getElementById('wheel');
     wheel.style.transitionDuration = state.speed===3?'0.8s':state.speed===2?'2s':'4s';
-    // 强制触发重绘确保转动
     wheel.style.transform = `rotate(0deg)`;
     setTimeout(() => {
         wheel.style.transform = `rotate(${state.wheelDeg}deg)`;
     }, 50);
 
-    // 转盘停止后显示结果
+    // 显示结果
     setTimeout(() => {
         wheel.classList.remove('blur'); 
         state.wheelRolling = false;
-        document.getElementById('btn-wheel-start').disabled = false;
+        document.getElementById('btn-wheel-control').disabled = false;
         const winBeast = beastList[winIdx];
+        // 显示神兽结果和对应龙虎类别
         document.getElementById('wheel-result').innerText = `开出：${winBeast.n} ${winBeast.i}`;
+        const battleResult = document.getElementById('battle-result');
+        battleResult.innerText = winBeast.type === 'DRAGON' ? '龙' : winBeast.type === 'TIGER' ? '虎' : '和';
+        battleResult.className = `battle-result result-${winBeast.type.toLowerCase()} show`;
     }, parseFloat(wheel.style.transitionDuration)*1000 + 50);
 }
 
-// 设置押注项：每次只能选一个，单独控制
-function setPick(s) { 
-    if(!state.betRolling){ 
-        state.pick = s; 
-        update(); 
-    } 
-}
-
-function adj(d) { 
-    if(!state.betRolling){ 
-        state.bIdx = Math.max(0, Math.min(state.bets.length-1, state.bIdx + d)); 
-        update(); 
-    } 
-}
-
-// 龙虎押注独立执行函数
-function onBetExecute() {
+// 押注并开奖（转盘作为开奖依据）
+function betAndRoll() {
     const cost = state.bets[state.bIdx];
-    if(state.betRolling) {
-        alert("押注处理中，请稍候！");
-        return;
-    }
     if(!state.pick) {
         alert("请先选择押注项（龙/虎/和）！");
         return;
@@ -355,45 +422,74 @@ function onBetExecute() {
         alert("余额不足，请调整押注金额！");
         return;
     }
-    
-    state.betRolling = true; 
+
+    state.wheelRolling = true;
     state.bal -= cost;
-    // 计算预计奖金
     const winAmt = cost * oddsConfig[state.pick];
     document.getElementById('val-bet').innerText = cost.toFixed(2);
     document.getElementById('val-win').innerText = winAmt.toFixed(2);
+    document.getElementById('btn-wheel-control').disabled = true;
+    document.getElementById('wheel').classList.add('blur');
+    document.getElementById('wheel-result').innerText = "开奖中...";
+    document.getElementById('battle-result').classList.remove('show');
     update();
 
-    // 模拟开奖延迟
+    const winIdx = Math.floor(Math.random()*8);
+    const rounds = state.speed===3 ? 4 : 8;
+    const target = (360 - (state.wheelDeg%360)) + rounds*360 - (winIdx*45);
+    state.wheelDeg += target;
+    
+    const wheel = document.getElementById('wheel');
+    wheel.style.transitionDuration = state.speed===3?'0.8s':state.speed===2?'2s':'4s';
+    wheel.style.transform = `rotate(0deg)`;
     setTimeout(() => {
-        state.betRolling = false;
-        // 随机生成开奖结果：龙/虎/和
-        const resultList = ['DRAGON', 'TIGER', 'TIE'];
-        const winResult = resultList[Math.floor(Math.random()*3)];
+        wheel.style.transform = `rotate(${state.wheelDeg}deg)`;
+    }, 50);
+
+    // 开奖结果判定
+    setTimeout(() => {
+        wheel.classList.remove('blur'); 
+        state.wheelRolling = false;
+        document.getElementById('btn-wheel-control').disabled = false;
+        const winBeast = beastList[winIdx];
+        const winResult = winBeast.type;
         
-        // 中奖判断
+        // 显示结果
+        document.getElementById('wheel-result').innerText = `开出：${winBeast.n} ${winBeast.i}`;
+        const battleResult = document.getElementById('battle-result');
+        battleResult.innerText = winResult === 'DRAGON' ? '龙' : winResult === 'TIGER' ? '虎' : '和';
+        battleResult.className = `battle-result result-${winResult.toLowerCase()} show`;
+
+        // 中奖判定
         if(state.pick === winResult) {
             state.bal += winAmt;
             document.getElementById('cell-'+winResult).classList.add('winner');
             setTimeout(()=>document.getElementById('cell-'+winResult).classList.remove('winner'), 2000);
         }
         update();
-        if(state.auto) setTimeout(onBetExecute, 1200);
-    }, 1500);
+        if(state.auto) setTimeout(controlAction, 1200);
+    }, parseFloat(wheel.style.transitionDuration)*1000 + 50);
+}
+
+// 设置押注项
+function setPick(s) { 
+    state.pick = s; 
+    update(); 
+}
+
+function adj(d) { 
+    state.bIdx = Math.max(0, Math.min(state.bets.length-1, state.bIdx + d)); 
+    update(); 
 }
 
 function update() {
     document.getElementById('ui-bal').innerText = state.bal.toFixed(2);
     document.getElementById('ui-stake').innerText = state.bets[state.bIdx].toFixed(1);
-    // 单独控制每个押注项的选中状态
     document.querySelectorAll('.side-cell').forEach(c => c.classList.remove('active'));
     if(state.pick) document.getElementById('cell-'+state.pick).classList.add('active');
-    // 显示已选押注项
     document.getElementById('val-pick').innerText = state.pick || '未选择';
-    // 更新模式按钮状态
     document.getElementById('btn-auto').className = "mode-btn " + (state.auto?"active":"");
     document.getElementById('btn-speed').innerText = "⚡ SPEED: " + state.speed + "X";
-    document.getElementById('btn-go').disabled = state.betRolling;
 }
 
 // 初始化
