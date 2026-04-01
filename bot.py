@@ -1,709 +1,395 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>龙虎斗 - 链上终端</title>
-    <style>
-        /* 样式与之前相同，略去重复内容，确保功能正常 */
-        :root {
-            --jade: #4a7c64; --jade-l: #6b9a85; --jade-d: #2c4a3b;
-            --stone: #6b737e; --inner: inset 8px 8px 16px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.05);
-            --gold: #f1c40f; --red: #ff4d4d; --blue: #3498db; --tiger: #e67e22; --tie: #9b59b6;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: #0c0c0c; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-        .container-outer {
-            width: 100vw; height: 100vh; max-width: 480px;
-            display: flex; justify-content: center; align-items: center;
-            background: linear-gradient(45deg, #ff0000, #ff9900, #ffff00, #00ff00, #0099ff, #6633ff, #ff00ff);
-            background-size: 600% 600%;
-            animation: outerNeonRotate 15s linear infinite;
-            padding: 6px;
-            border-radius: 18px;
-            box-shadow: 0 0 50px rgba(255,255,255,0.6);
-        }
-        @keyframes outerNeonRotate {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        .container {
-            width: 100%; height: 100%;
-            background: var(--jade);
-            border-radius: 15px;
-            display: flex; flex-direction: column;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
-        }
-        .header { height: 8%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 8px 12px; }
-        .box { background: var(--stone); border: 2px solid var(--jade-d); box-shadow: var(--inner); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; padding: 0 12px;
-            background-image: linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
-            background-size: 15px 15px;
-        }
-        .box span:first-child { font-size: 12px; color: #ccc; letter-spacing: 1px; font-weight: bold; }
-        .box span:last-child { font-size: 20px; font-weight: bold; color: var(--gold); text-shadow: 0 0 6px var(--gold); }
-        .battle-scene { 
-            height: 38%; display: flex; justify-content: center; align-items: center; 
-            background: #0a0a0a; border: 3px solid var(--jade-d); 
-            border-radius: 12px; margin: 4px 10px;
-            position: relative; overflow: visible;
-        }
-        .scene-bg {
-            position: absolute; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
-            z-index: 1;
-        }
-        .scene-light {
-            position: absolute; width: 150px; height: 150px;
-            border-radius: 50%; filter: blur(50px);
-            animation: lightPulse 3s ease infinite alternate;
-            z-index: 2;
-        }
-        .light-left { left: 30px; top: 50%; transform: translateY(-50%); background: rgba(52,152,219,0.4); }
-        .light-right { right: 30px; top: 50%; transform: translateY(-50%); background: rgba(230,126,34,0.4); }
-        @keyframes lightPulse {
-            0% { opacity: 0.3; transform: translateY(-50%) scale(1); }
-            100% { opacity: 0.8; transform: translateY(-50%) scale(1.2); }
-        }
-        .dragon {
-            position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
-            width: 100px; height: 100px;
-            z-index: 10;
-            animation: dragonIdle 4s ease infinite;
-        }
-        .dragon-icon { font-size: 70px; color: var(--blue); filter: drop-shadow(0 0 10px var(--blue)); }
-        @keyframes dragonIdle {
-            0% { left: 20px; transform: translateY(-50%) rotate(0deg); }
-            25% { transform: translateY(-55%) rotate(5deg); }
-            50% { transform: translateY(-50%) rotate(0deg); }
-            75% { transform: translateY(-45%) rotate(-5deg); }
-            100% { left: 20px; transform: translateY(-50%) rotate(0deg); }
-        }
-        .dragon.attack { animation: dragonAttack 0.4s ease forwards; }
-        @keyframes dragonAttack {
-            0% { left: 20px; transform: translateY(-50%) scale(1); }
-            40% { left: 45%; transform: translateY(-50%) scale(1.3) rotate(10deg); filter: drop-shadow(0 0 20px #ff6600); }
-            100% { left: 20px; transform: translateY(-50%) scale(1); }
-        }
-        .tiger {
-            position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
-            width: 100px; height: 100px;
-            z-index: 10;
-            animation: tigerIdle 4s ease infinite;
-        }
-        .tiger-icon { font-size: 70px; color: var(--tiger); filter: drop-shadow(0 0 10px var(--tiger)); }
-        @keyframes tigerIdle {
-            0% { right: 20px; transform: translateY(-50%) rotate(0deg); }
-            25% { transform: translateY(-45%) rotate(-5deg); }
-            50% { transform: translateY(-50%) rotate(0deg); }
-            75% { transform: translateY(-55%) rotate(5deg); }
-            100% { right: 20px; transform: translateY(-50%) rotate(0deg); }
-        }
-        .tiger.attack { animation: tigerAttack 0.4s ease forwards; }
-        @keyframes tigerAttack {
-            0% { right: 20px; transform: translateY(-50%) scale(1); }
-            40% { right: 45%; transform: translateY(-50%) scale(1.3) rotate(-10deg); filter: drop-shadow(0 0 20px #ff6600); }
-            100% { right: 20px; transform: translateY(-50%) scale(1); }
-        }
-        .fight-effect {
-            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-            width: 80px; height: 80px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(255,100,0,0.9), rgba(255,0,0,0.9));
-            filter: blur(15px);
-            opacity: 0;
-            z-index: 5;
-        }
-        .fight-effect.flash { animation: shockBlast 0.5s ease-out forwards; }
-        @keyframes shockBlast {
-            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-            30% { opacity: 1; transform: translate(-50%, -50%) scale(1.5); }
-            100% { opacity: 0; transform: translate(-50%, -50%) scale(2); }
-        }
-        .battle-result {
-            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-            font-size: 16px; font-weight: bold;
-            color: #fff; text-shadow: 0 0 8px var(--gold);
-            z-index: 20;
-            padding: 2px 10px;
-            background: rgba(0,0,0,0.5);
-            border-radius: 10px;
-        }
-        .play-section {
-            flex: 1; display: flex; flex-direction: column;
-            background: var(--stone); box-shadow: var(--inner); border: 3px solid var(--jade-d); 
-            border-radius: 12px; margin: 4px 10px 8px 10px; padding: 12px;
-            background-image: linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
-            background-size: 15px 15px;
-        }
-        .multi-bet-row {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-            justify-content: space-between;
-        }
-        .multi-bet-item {
-            flex: 1;
-            background: rgba(0,0,0,0.45);
-            border: 2px solid var(--jade-d);
-            border-radius: 12px;
-            padding: 8px 4px;
-            text-align: center;
-            cursor: pointer;
-        }
-        .multi-bet-item.selected {
-            border-color: var(--gold);
-            background: rgba(255,255,255,0.15);
-            box-shadow: 0 0 8px rgba(241,196,15,0.5);
-        }
-        .multi-bet-name {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 4px;
-        }
-        .multi-bet-name.dragon { color: var(--blue); text-shadow: 0 0 8px var(--blue); }
-        .multi-bet-name.tiger { color: var(--tiger); text-shadow: 0 0 8px var(--tiger); }
-        .multi-bet-name.tie { color: var(--tie); text-shadow: 0 0 8px var(--tie); }
-        .multi-bet-amount {
-            font-size: 16px;
-            color: var(--gold);
-            font-weight: bold;
-        }
-        .multi-bet-control {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            margin-top: 6px;
-        }
-        .multi-bet-control button {
-            background: rgba(0,0,0,0.6);
-            border: 1px solid var(--gold);
-            border-radius: 20px;
-            width: 28px;
-            height: 28px;
-            color: var(--gold);
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .data-stack { display: grid; grid-template-rows: repeat(3, 1fr); gap: 6px; margin: 0 6px; }
-        .data-item { background: rgba(0,0,0,0.6); border: 2px solid var(--jade-d); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; padding: 0 12px; }
-        .data-item label { font-size: 12px; color: #ccc; font-weight: bold; }
-        .data-item value { font-size: 18px; color: var(--gold); font-weight: 900; }
-        .stake-txt { text-align: center; color: #eee; font-size: 16px; font-weight: bold; margin: 8px 0; }
-        .stake-txt span { color: var(--gold); }
-        .exec-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
-        .step-btn { width: 52px; height: 52px; background: var(--jade); border: 3px solid var(--jade-d); border-radius: 10px; color: #fff; font-size: 28px; font-weight: bold; cursor: pointer; }
-        .refresh-btn { background: #3498db; font-size: 24px; }
-        .main-go { flex: 1; height: 52px; background: linear-gradient(180deg, #e53935, #b71c1c); border: none; border-radius: 30px; color: #fff; font-size: 22px; font-weight: 900; cursor: pointer; box-shadow: 0 5px 0 #7f0000; }
-        .main-go:active { transform: translateY(2px); }
-        .mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .mode-btn { height: 42px; background: rgba(0,0,0,0.4); border: 2px solid var(--jade-d); border-radius: 8px; color: #aaa; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .mode-btn.active { border-color: var(--gold); color: #fff; background: var(--jade-d); }
-        .speed-btn { display: flex; gap: 8px; }
-        .speed-btn span { width: 33%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 6px; cursor: pointer; }
-        .speed-btn span.active { background: var(--gold); color: #000; font-weight: bold; }
-        .admin-panel {
-            background: #2c3e50;
-            margin-top: 12px;
-            padding: 12px;
-            border-radius: 12px;
-            color: #fff;
-            display: none;
-        }
-        .admin-panel h4 { margin-bottom: 8px; font-size: 16px; }
-        .admin-panel input, .admin-panel button {
-            margin: 5px;
-            padding: 8px;
-            border-radius: 8px;
-            border: none;
-        }
-        .admin-panel button {
-            background: #f39c12;
-            color: #000;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .admin-toggle {
-            background: #e67e22;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 12px;
-            margin-top: 10px;
-            cursor: pointer;
-        }
-        #adminResult {
-            margin-top: 10px;
-            font-size: 12px;
-            background: #1a2632;
-            padding: 8px;
-            border-radius: 8px;
-            word-break: break-all;
-        }
-        .admin-hint {
-            font-size: 10px;
-            color: #aaa;
-            text-align: center;
-            margin-top: 8px;
-        }
-    </style>
-</head>
-<body>
-<div class="container-outer">
-    <div class="container">
-        <div class="header">
-            <div class="box"><span>余额</span><span id="balanceDisplay">0.00</span></div>
-            <div class="box"><span>奖池</span><span id="poolDisplay">84291.50</span></div>
-        </div>
+import logging
+import json
+import os
+import random
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
-        <div class="battle-scene">
-            <div class="scene-bg"></div>
-            <div class="scene-light light-left"></div>
-            <div class="scene-light light-right"></div>
-            <div class="fight-effect" id="fight-effect"></div>
-            <div class="dragon" id="dragon"><div class="dragon-icon">🐉</div></div>
-            <div class="tiger" id="tiger"><div class="tiger-icon">🐯</div></div>
-            <div class="battle-result" id="battle-result">龙虎相争·一触即发</div>
-        </div>
+# ==================== 配置 ====================
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.WARNING)
+TOKEN = "8783041803:AAFbNwqYPfAzQjTQMEIObY00d1x8HL0dSqc"  # 请替换为你的 Bot Token
+DATA_FILE = "users.json"
+# 游戏网页地址（龙虎斗按钮链接）
+GAME_URL = "https://arnan888.github.io/basic-pay/index.html?user_id=6685731895"
+# 音乐链接（保留）
+MUSIC_URL = "https://open.spotify.com"
 
-        <div class="play-section">
-            <div class="multi-bet-row">
-                <div class="multi-bet-item" data-type="DRAGON">
-                    <div class="multi-bet-name dragon">🐉 龙</div>
-                    <div class="multi-bet-amount" id="betDragonAmount">0</div>
-                    <div class="multi-bet-control">
-                        <button class="bet-dec" data-type="DRAGON">-</button>
-                        <button class="bet-inc" data-type="DRAGON">+</button>
-                    </div>
-                </div>
-                <div class="multi-bet-item" data-type="TIE">
-                    <div class="multi-bet-name tie">⚖️ 和</div>
-                    <div class="multi-bet-amount" id="betTieAmount">0</div>
-                    <div class="multi-bet-control">
-                        <button class="bet-dec" data-type="TIE">-</button>
-                        <button class="bet-inc" data-type="TIE">+</button>
-                    </div>
-                </div>
-                <div class="multi-bet-item" data-type="TIGER">
-                    <div class="multi-bet-name tiger">🐯 虎</div>
-                    <div class="multi-bet-amount" id="betTigerAmount">0</div>
-                    <div class="multi-bet-control">
-                        <button class="bet-dec" data-type="TIGER">-</button>
-                        <button class="bet-inc" data-type="TIGER">+</button>
-                    </div>
-                </div>
-            </div>
+ADMIN_ID = None
 
-            <div class="data-stack">
-                <div class="data-item"><label>总押注</label><value id="totalBetAmount">0.00</value></div>
-                <div class="data-item"><label>预计奖金</label><value id="val-win">0.00</value></div>
-                <div class="data-item"><label>模式</label><value>多选押注</value></div>
-            </div>
+# ==================== 数据库操作 ====================
+def load_db():
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
 
-            <div class="stake-txt">单注步长：<span id="stepValue">10</span> USDT</div>
+def save_db(db):
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(db, f, indent=2, ensure_ascii=False)
 
-            <div class="exec-row">
-                <button class="step-btn refresh-btn" id="refreshBtn">🔄</button>
-                <button class="step-btn" id="stepMinus">-</button>
-                <button class="main-go" id="fightBtn">确认投注</button>
-                <button class="step-btn" id="stepPlus">+</button>
-            </div>
+def is_admin(uid):
+    global ADMIN_ID
+    if ADMIN_ID is None:
+        return False
+    return str(uid) == str(ADMIN_ID)
 
-            <div class="mode-row">
-                <div id="btn-auto" class="mode-btn">自动投注</div>
-                <div class="mode-btn speed-btn" id="speedSelector">
-                    <span id="speed-1" class="active">1X</span>
-                    <span id="speed-2">2X</span>
-                    <span id="speed-3">3X</span>
-                </div>
-            </div>
+# ==================== 主菜单 ====================
+async def start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    global ADMIN_ID
+    user = update.effective_user
+    db = load_db()
+    uid = str(user.id)
 
-            <button class="admin-toggle" id="adminToggleBtn">🔧 管理面板</button>
-            <div id="adminPanel" class="admin-panel">
-                <h4>管理面板</h4>
-                <input type="password" id="adminKey" placeholder="管理员密码" value="dola_admin_2024">
-                <hr>
-                <input type="text" id="targetUserId" placeholder="用户ID">
-                <button id="addBalanceBtn">上分 +</button>
-                <button id="subBalanceBtn">下分 -</button>
-                <button id="checkBalanceBtn">查余额</button>
-                <button id="listUsersBtn">用户列表</button>
-                <div id="adminResult"></div>
-            </div>
-            <div class="admin-hint">* 管理面板仅管理员可见</div>
-        </div>
-    </div>
-</div>
+    # 设置管理员（第一个启动的用户）
+    if ADMIN_ID is None:
+        ADMIN_ID = uid
+        with open("admin_config.json", "w") as f:
+            json.dump({"admin_id": uid}, f)
+        print(f"✅ 管理员已设置: {uid}")
 
-<script>
-// ==================== 配置 ====================
-const USER_ID = "6685731895";
-const API_URL = "http://127.0.0.1:8080";
-const ADMIN_KEY = "dola_admin_2024";
+    # 初始化用户
+    if uid not in db:
+        db[uid] = {"name": user.first_name, "money": 0}
+        save_db(db)
+    elif "money" not in db[uid]:
+        db[uid]["money"] = 0
+        save_db(db)
 
-let state = {
-    balance: 0,
-    betStep: 10,
-    bets: { DRAGON: 0, TIGER: 0, TIE: 0 },
-    betRolling: false,
-    autoMode: false,
-    speed: 1,
-    pool: 84291.5
-};
+    # 构建键盘：龙虎斗（链接）、刷新资产、签到、领TRX、边玩边听、技术支持
+    kb = [
+        [InlineKeyboardButton("🐉 龙虎斗", url=GAME_URL),
+         InlineKeyboardButton("📊 刷新资产", callback_data="refresh")],
+        [InlineKeyboardButton("🧧 领取签到", callback_data="sign"),
+         InlineKeyboardButton("🎁 领TRX", callback_data="claim_trx")],
+        [InlineKeyboardButton("🎵 边玩边听", url=MUSIC_URL),
+         InlineKeyboardButton("🛠️ 技术支持", callback_data="support")],
+    ]
+    # 管理员额外添加管理后台按钮
+    if is_admin(uid):
+        kb.append([InlineKeyboardButton("🔧 管理后台", callback_data="admin_panel")])
 
-// ==================== 辅助函数 ====================
-function log(msg, type = 'info') {
-    console.log(`[${type.toUpperCase()}] ${msg}`);
-}
+    text = (f"<b>『 💠 DOLA 链上终端 』</b>\n\n"
+            f"👤 交易员: {db[uid]['name']}\n"
+            f"💰 账户余额: <code>{db[uid]['money']:.2f}</code> TRX\n"
+            f"🔗 网页同步: <b>已就绪</b>")
 
-// 获取自动投注延迟时间（毫秒），根据速度选择
-function getAutoDelay() {
-    if (state.speed === 1) return 3000;   // 1X 约3秒
-    if (state.speed === 2) return 2200;   // 2X 约2.2秒
-    return 1500;                          // 3X 约1.5秒
-}
+    await update.message.reply_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(kb))
 
-// ==================== 游戏相关函数 ====================
-async function syncBalance() {
-    log('正在同步余额...');
-    try {
-        const res = await fetch(`${API_URL}/balance?user_id=${USER_ID}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        state.balance = data.balance;
-        updateUI();
-        document.getElementById('battle-result').innerText = '💰 余额已刷新';
-        setTimeout(() => {
-            if (!state.betRolling && document.getElementById('battle-result').innerText === '💰 余额已刷新') {
-                document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-            }
-        }, 2000);
-        log(`余额同步成功: ${state.balance}`);
-    } catch(e) {
-        console.error("同步余额失败", e);
-        document.getElementById('battle-result').innerText = '❌ 同步失败，请检查网络';
-        log(`同步余额失败: ${e.message}`, 'error');
-    }
-}
+# 刷新主菜单（编辑消息时使用）
+async def refresh_main_menu(query, uid, db):
+    kb = [
+        [InlineKeyboardButton("🐉 龙虎斗", url=GAME_URL),
+         InlineKeyboardButton("📊 刷新资产", callback_data="refresh")],
+        [InlineKeyboardButton("🧧 领取签到", callback_data="sign"),
+         InlineKeyboardButton("🎁 领TRX", callback_data="claim_trx")],
+        [InlineKeyboardButton("🎵 边玩边听", url=MUSIC_URL),
+         InlineKeyboardButton("🛠️ 技术支持", callback_data="support")],
+    ]
+    if is_admin(uid):
+        kb.append([InlineKeyboardButton("🔧 管理后台", callback_data="admin_panel")])
 
-async function placeBet(type, amount) {
-    if (state.betRolling) {
-        document.getElementById('battle-result').innerText = '⏳ 押注处理中，请稍后';
-        return false;
-    }
-    if (amount <= 0) {
-        document.getElementById('battle-result').innerText = '⚠️ 押注金额必须大于0';
-        setTimeout(() => {
-            if (!state.betRolling && document.getElementById('battle-result').innerText === '⚠️ 押注金额必须大于0') {
-                document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-            }
-        }, 2000);
-        return false;
-    }
-    if (amount > state.balance) {
-        document.getElementById('battle-result').innerText = '⚠️ 余额不足';
-        setTimeout(() => {
-            if (!state.betRolling && document.getElementById('battle-result').innerText === '⚠️ 余额不足') {
-                document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-            }
-        }, 2000);
-        return false;
-    }
+    text = (f"<b>『 💠 DOLA 链上终端 』</b>\n\n"
+            f"👤 交易员: {db[uid]['name']}\n"
+            f"💰 账户余额: <code>{db[uid]['money']:.2f}</code> TRX\n"
+            f"🔗 网页同步: <b>已就绪</b>")
 
-    state.betRolling = true;
-    document.getElementById('battle-result').innerText = '💥 押注中... 💥';
-    log(`押注: ${type} ${amount}`);
+    await query.edit_message_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(kb))
 
-    try {
-        const res = await fetch(`${API_URL}/bet`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: USER_ID,
-                type: type,
-                amount: amount
-            })
-        });
-        const data = await res.json();
+# ==================== 简单功能 ====================
+async def handle_refresh(query, uid, db):
+    await query.edit_message_text(f"🔄 当前余额: {db[uid]['money']:.2f} TRX", reply_markup=query.message.reply_markup)
 
-        if (data.error) {
-            document.getElementById('battle-result').innerText = `❌ ${data.error}`;
-            setTimeout(() => {
-                if (!state.betRolling && document.getElementById('battle-result').innerText === `❌ ${data.error}`) {
-                    document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-                }
-            }, 2000);
-            state.betRolling = false;
-            log(`押注失败: ${data.error}`, 'error');
-            return false;
-        }
+async def handle_sign(query, uid, db):
+    db[uid]["money"] = db[uid].get("money", 0) + 10
+    save_db(db)
+    await query.answer("签到成功 +10 TRX", show_alert=True)
+    await refresh_main_menu(query, uid, db)
 
-        state.balance = data.balance;
-        updateUI();
-        triggerFightAnimation();
+async def handle_claim_trx(query, uid, db):
+    db[uid]["money"] = db[uid].get("money", 0) + 5
+    save_db(db)
+    await query.answer("领取成功 +5 TRX", show_alert=True)
+    await refresh_main_menu(query, uid, db)
 
-        // 显示结果，停留10秒
-        const resultMsg = data.win > 0 
-            ? `🎲 开奖: ${data.result}  ✅ 中奖 +${data.win} TRX`
-            : `🎲 开奖: ${data.result}  ❌ 未中奖`;
-        document.getElementById('battle-result').innerText = resultMsg;
-        setTimeout(() => {
-            if (!state.betRolling && document.getElementById('battle-result').innerText === resultMsg) {
-                document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-            }
-        }, 10000); // 10秒后恢复默认文字
+async def handle_support(query):
+    kb = [[InlineKeyboardButton("🔙 返回", callback_data="back_to_main")]]
+    await query.edit_message_text("🛠️ 技术支持\n联系管理员", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(kb))
 
-        // 自动投注：使用速度控制延迟
-        if (state.autoMode) {
-            const delay = getAutoDelay();
-            log(`自动投注延迟 ${delay}ms`);
-            setTimeout(() => {
-                if (state.autoMode && !state.betRolling) executeBet();
-            }, delay);
-        }
+# ==================== 管理后台 ====================
+async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    uid = str(query.from_user.id)
+    if not is_admin(uid):
+        await query.answer("无权限", show_alert=True)
+        return
+    await query.answer()
+    kb = [
+        [InlineKeyboardButton("📋 用户列表", callback_data="admin_list")],
+        [InlineKeyboardButton("➕ 上分", callback_data="admin_add_menu")],
+        [InlineKeyboardButton("➖ 下分", callback_data="admin_sub_menu")],
+        [InlineKeyboardButton("🔍 查余额", callback_data="admin_balance_menu")],
+        [InlineKeyboardButton("🔙 返回主页", callback_data="back_to_main")]
+    ]
+    await query.edit_message_text("🔧 管理后台\n请选择操作:", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(kb))
 
-        state.betRolling = false;
-        log(`押注成功，结果: ${data.result}, 赢额: ${data.win}, 新余额: ${data.balance}`);
-        return true;
-    } catch(e) {
-        console.error("押注请求失败", e);
-        document.getElementById('battle-result').innerText = '❌ 网络错误，请检查API';
-        setTimeout(() => {
-            if (!state.betRolling && document.getElementById('battle-result').innerText === '❌ 网络错误，请检查API') {
-                document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-            }
-        }, 2000);
-        state.betRolling = false;
-        log(`押注请求异常: ${e.message}`, 'error');
-        return false;
-    }
-}
+async def admin_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    uid = str(query.from_user.id)
+    if not is_admin(uid):
+        return
+    await query.answer()
+    db_full = load_db()
+    if not db_full:
+        await query.edit_message_text("暂无用户数据", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 返回", callback_data="admin_panel")]]))
+        return
+    msg = "📋 用户列表\n\n"
+    for i, (uid_str, data) in enumerate(list(db_full.items())[:20]):
+        msg += f"{i+1}. ID: {uid_str} | {data.get('name', '未知')} | 余额: {data.get('money', 0)} TRX\n"
+    kb = [[InlineKeyboardButton("🔙 返回", callback_data="admin_panel")]]
+    await query.edit_message_text(msg, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(kb))
 
-function triggerFightAnimation() {
-    const dragon = document.getElementById('dragon');
-    const tiger = document.getElementById('tiger');
-    const fightEffect = document.getElementById('fight-effect');
+def amount_keyboard(target_uid, action):
+    amounts = [10, 50, 100, 200, 500]
+    kb = []
+    row = []
+    for amt in amounts:
+        row.append(InlineKeyboardButton(f"{amt}", callback_data=f"{action}_amt_{target_uid}_{amt}"))
+        if len(row) == 3:
+            kb.append(row)
+            row = []
+    if row:
+        kb.append(row)
+    kb.append([InlineKeyboardButton("🔢 自定义金额", callback_data=f"{action}_custom_{target_uid}")])
+    kb.append([InlineKeyboardButton("🔙 返回", callback_data="admin_panel")])
+    return kb
 
-    dragon.classList.remove('attack', 'win');
-    tiger.classList.remove('attack', 'win');
-    fightEffect.classList.remove('flash');
+async def admin_add_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    uid = str(query.from_user.id)
+    if not is_admin(uid):
+        return
+    await query.answer()
+    db = load_db()
+    if not db:
+        await query.edit_message_text("暂无用户", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 返回", callback_data="admin_panel")]]))
+        return
+    kb = []
+    for i, (uid_str, data) in enumerate(list(db.items())[:20]):
+        name = data.get("name", "未知")
+        kb.append([InlineKeyboardButton(f"{i+1}. {name} ({uid_str})", callback_data=f"add_user_{uid_str}")])
+    kb.append([InlineKeyboardButton("🔙 返回", callback_data="admin_panel")])
+    context.user_data["admin_action_type"] = "add"
+    await query.edit_message_text("➕ 上分 - 选择用户", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(kb))
 
-    setTimeout(() => {
-        dragon.classList.add('attack');
-        tiger.classList.add('attack');
-        fightEffect.classList.add('flash');
-    }, 100);
-}
+async def admin_sub_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    uid = str(query.from_user.id)
+    if not is_admin(uid):
+        return
+    await query.answer()
+    db = load_db()
+    if not db:
+        await query.edit_message_text("暂无用户", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 返回", callback_data="admin_panel")]]))
+        return
+    kb = []
+    for i, (uid_str, data) in enumerate(list(db.items())[:20]):
+        name = data.get("name", "未知")
+        kb.append([InlineKeyboardButton(f"{i+1}. {name} ({uid_str})", callback_data=f"sub_user_{uid_str}")])
+    kb.append([InlineKeyboardButton("🔙 返回", callback_data="admin_panel")])
+    context.user_data["admin_action_type"] = "sub"
+    await query.edit_message_text("➖ 下分 - 选择用户", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(kb))
 
-function updateUI() {
-    document.getElementById('balanceDisplay').innerText = state.balance.toFixed(2);
-    document.getElementById('poolDisplay').innerText = state.pool.toFixed(2);
-    document.getElementById('betDragonAmount').innerText = state.bets.DRAGON;
-    document.getElementById('betTigerAmount').innerText = state.bets.TIGER;
-    document.getElementById('betTieAmount').innerText = state.bets.TIE;
+async def admin_balance_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    uid = str(query.from_user.id)
+    if not is_admin(uid):
+        return
+    await query.answer()
+    db = load_db()
+    if not db:
+        await query.edit_message_text("暂无用户", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 返回", callback_data="admin_panel")]]))
+        return
+    kb = []
+    for i, (uid_str, data) in enumerate(list(db.items())[:20]):
+        name = data.get("name", "未知")
+        bal = data.get("money", 0)
+        kb.append([InlineKeyboardButton(f"{i+1}. {name} ({uid_str}) - {bal} TRX", callback_data=f"balance_user_{uid_str}")])
+    kb.append([InlineKeyboardButton("🔙 返回", callback_data="admin_panel")])
+    await query.edit_message_text("🔍 查余额 - 选择用户", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(kb))
 
-    const totalBet = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
-    document.getElementById('totalBetAmount').innerText = totalBet.toFixed(2);
+async def handle_admin_user_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    admin_uid = str(query.from_user.id)
+    if not is_admin(admin_uid):
+        await query.answer("无权限", show_alert=True)
+        return
+    await query.answer()
+    data = query.data
+    parts = data.split("_")
+    action = parts[0]
+    target_uid = parts[2]
+    if action == "add":
+        kb = amount_keyboard(target_uid, "add")
+        await query.edit_message_text(f"➕ 上分 - 用户 {target_uid}\n选择金额:", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(kb))
+    elif action == "sub":
+        kb = amount_keyboard(target_uid, "sub")
+        await query.edit_message_text(f"➖ 下分 - 用户 {target_uid}\n选择金额:", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(kb))
+    elif action == "balance":
+        db = load_db()
+        bal = db.get(target_uid, {}).get("money", 0)
+        await query.edit_message_text(f"💰 用户 {target_uid}\n余额: {bal} TRX", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 返回", callback_data="admin_panel")]]))
 
-    let maxWin = 0;
-    if (state.bets.DRAGON > 0) maxWin = Math.max(maxWin, state.bets.DRAGON * 2);
-    if (state.bets.TIGER > 0) maxWin = Math.max(maxWin, state.bets.TIGER * 2);
-    if (state.bets.TIE > 0) maxWin = Math.max(maxWin, state.bets.TIE * 8);
-    document.getElementById('val-win').innerText = maxWin.toFixed(2);
+async def handle_amount_select(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    admin_uid = str(query.from_user.id)
+    if not is_admin(admin_uid):
+        await query.answer("无权限", show_alert=True)
+        return
+    await query.answer()
+    data = query.data
+    parts = data.split("_")
+    action = parts[0]
+    target_uid = parts[2]
+    amount = int(parts[3])
+    db = load_db()
+    if action == "add":
+        if target_uid not in db:
+            db[target_uid] = {"name": "用户", "money": 0}
+        db[target_uid]["money"] = db[target_uid].get("money", 0) + amount
+        save_db(db)
+        new_bal = db[target_uid]["money"]
+        await query.edit_message_text(f"✅ 上分成功\n用户: {target_uid}\n增加: {amount} TRX\n新余额: {new_bal} TRX", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 返回后台", callback_data="admin_panel")]]))
+    elif action == "sub":
+        if target_uid not in db:
+            await query.edit_message_text("用户不存在", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 返回", callback_data="admin_panel")]]))
+            return
+        current = db[target_uid].get("money", 0)
+        if amount > current:
+            await query.edit_message_text(f"❌ 余额不足\n当前余额: {current} TRX", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 返回", callback_data="admin_panel")]]))
+            return
+        db[target_uid]["money"] = current - amount
+        save_db(db)
+        new_bal = db[target_uid]["money"]
+        await query.edit_message_text(f"✅ 下分成功\n用户: {target_uid}\n扣除: {amount} TRX\n新余额: {new_bal} TRX", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 返回后台", callback_data="admin_panel")]]))
 
-    document.querySelectorAll('.multi-bet-item').forEach(el => {
-        const type = el.dataset.type;
-        el.classList.toggle('selected', state.bets[type] > 0);
-    });
-}
+async def custom_amount_prompt(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    admin_uid = str(query.from_user.id)
+    if not is_admin(admin_uid):
+        await query.answer("无权限", show_alert=True)
+        return
+    await query.answer()
+    data = query.data
+    parts = data.split("_")
+    action = parts[0]
+    target_uid = parts[2]
+    context.user_data["custom_action"] = action
+    context.user_data["custom_target"] = target_uid
+    await query.edit_message_text(f"请输入金额（数字）:\n用户: {target_uid}", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 取消", callback_data="admin_panel")]]))
 
-function adjustBet(type, delta) {
-    if (state.betRolling) return;
-    let newVal = state.bets[type] + delta;
-    if (newVal < 0) newVal = 0;
-    state.bets[type] = newVal;
-    updateUI();
-    log(`调整押注: ${type} ${delta>=0?'+'+delta:delta} -> ${state.bets[type]}`);
-}
+async def handle_custom_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    admin_uid = str(update.effective_user.id)
+    if not is_admin(admin_uid):
+        await update.message.reply_text("无权限")
+        return
+    action = context.user_data.get("custom_action")
+    target_uid = context.user_data.get("custom_target")
+    if not action or not target_uid:
+        return
+    try:
+        amount = int(update.message.text.strip())
+        if amount <= 0:
+            await update.message.reply_text("金额必须大于0")
+            return
+        db = load_db()
+        if action == "add":
+            if target_uid not in db:
+                db[target_uid] = {"name": "用户", "money": 0}
+            db[target_uid]["money"] = db[target_uid].get("money", 0) + amount
+            save_db(db)
+            await update.message.reply_text(f"✅ 上分成功\n用户: {target_uid}\n增加: {amount}\n新余额: {db[target_uid]['money']:.2f}")
+        elif action == "sub":
+            if target_uid not in db:
+                await update.message.reply_text("用户不存在")
+                return
+            current = db[target_uid].get("money", 0)
+            if amount > current:
+                await update.message.reply_text(f"余额不足，当前: {current:.2f}")
+                return
+            db[target_uid]["money"] = current - amount
+            save_db(db)
+            await update.message.reply_text(f"✅ 下分成功\n用户: {target_uid}\n扣除: {amount}\n新余额: {db[target_uid]['money']:.2f}")
+        context.user_data["custom_action"] = None
+        context.user_data["custom_target"] = None
+    except:
+        await update.message.reply_text("请输入数字金额")
 
-function adjustStep(dir) {
-    let newStep = state.betStep + dir * 10;
-    if (newStep < 10) newStep = 10;
-    if (newStep > 500) newStep = 500;
-    state.betStep = newStep;
-    document.getElementById('stepValue').innerText = state.betStep;
-    log(`步长调整为: ${state.betStep}`);
-}
+# ==================== 回调处理 ====================
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    uid = str(query.from_user.id)
+    db = load_db()
+    await query.answer()
+    data = query.data
 
-function executeBet() {
-    if (state.betRolling) {
-        document.getElementById('battle-result').innerText = '⏳ 押注处理中，请稍后';
-        return;
-    }
+    if data == "refresh":
+        await handle_refresh(query, uid, db)
+    elif data == "sign":
+        await handle_sign(query, uid, db)
+    elif data == "claim_trx":
+        await handle_claim_trx(query, uid, db)
+    elif data == "support":
+        await handle_support(query)
+    elif data == "back_to_main":
+        await refresh_main_menu(query, uid, db)
+    elif data == "admin_panel":
+        await admin_panel(update, context)
+    elif data == "admin_list":
+        await admin_list(update, context)
+    elif data == "admin_add_menu":
+        await admin_add_menu(update, context)
+    elif data == "admin_sub_menu":
+        await admin_sub_menu(update, context)
+    elif data == "admin_balance_menu":
+        await admin_balance_menu(update, context)
+    elif data.startswith("add_user_") or data.startswith("sub_user_") or data.startswith("balance_user_"):
+        await handle_admin_user_select(update, context)
+    elif data.startswith("add_amt_") or data.startswith("sub_amt_"):
+        await handle_amount_select(update, context)
+    elif data.startswith("add_custom_") or data.startswith("sub_custom_"):
+        await custom_amount_prompt(update, context)
+    # 注意：已删除龙虎斗游戏内部回调，因为按钮已改为链接
 
-    const totalBet = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
-    if (totalBet <= 0) {
-        document.getElementById('battle-result').innerText = '⚠️ 请至少押注一个选项';
-        setTimeout(() => {
-            if (!state.betRolling && document.getElementById('battle-result').innerText === '⚠️ 请至少押注一个选项') {
-                document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-            }
-        }, 2000);
-        return;
-    }
+# ==================== 文本输入处理（用于自定义金额） ====================
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if context.user_data.get("custom_action"):
+        await handle_custom_amount(update, context)
+        return
 
-    let selectedType = null;
-    let selectedAmount = 0;
-    if (state.bets.DRAGON > 0) { selectedType = "DRAGON"; selectedAmount = state.bets.DRAGON; }
-    if (state.bets.TIGER > selectedAmount) { selectedType = "TIGER"; selectedAmount = state.bets.TIGER; }
-    if (state.bets.TIE > selectedAmount) { selectedType = "TIE"; selectedAmount = state.bets.TIE; }
+# ==================== 加载管理员ID ====================
+def load_admin_id():
+    global ADMIN_ID
+    try:
+        with open("admin_config.json", "r") as f:
+            config = json.load(f)
+            ADMIN_ID = config.get("admin_id")
+            if ADMIN_ID:
+                print(f"✅ 已加载管理员ID: {ADMIN_ID}")
+    except:
+        pass
 
-    if (!selectedType) {
-        document.getElementById('battle-result').innerText = '⚠️ 请设置至少一个选项的押注金额';
-        setTimeout(() => {
-            if (!state.betRolling && document.getElementById('battle-result').innerText === '⚠️ 请设置至少一个选项的押注金额') {
-                document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-            }
-        }, 2000);
-        return;
-    }
+# ==================== 主函数 ====================
+def main():
+    load_admin_id()
+    app = Application.builder().token(TOKEN).build()
+    app.add_handler(CommandHandler("start", start_cmd))
+    app.add_handler(CallbackQueryHandler(handle_callback))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+    print("🚀 DOLA Bot 已启动（无大转盘，龙虎斗按钮为网页链接）")
+    app.run_polling(drop_pending_updates=True)
 
-    const typeMap = { "DRAGON": "龙", "TIGER": "虎", "TIE": "和" };
-    const betType = typeMap[selectedType];
-    const betAmount = selectedAmount;
-
-    placeBet(betType, betAmount).then(success => {
-        if (success) {
-            state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
-            updateUI();
-            log('押注后清空所有选项');
-        }
-    });
-}
-
-function toggleAuto() {
-    state.autoMode = !state.autoMode;
-    const btn = document.getElementById('btn-auto');
-    btn.classList.toggle('active');
-    btn.innerText = state.autoMode ? '关闭自动' : '自动投注';
-    log(`自动投注: ${state.autoMode ? '开启' : '关闭'}`);
-    // 如果开启自动投注且当前没有押注中，不立即投注，等待用户手动确认
-}
-
-function setSpeed(speed) {
-    state.speed = speed;
-    document.querySelectorAll('.speed-btn span').forEach(s => s.classList.remove('active'));
-    document.getElementById(`speed-${speed}`).classList.add('active');
-    log(`速度设为: ${speed}X`);
-}
-
-function toggleSpeed() {
-    let newSpeed = state.speed % 3 + 1;
-    setSpeed(newSpeed);
-}
-
-// ==================== 管理面板 ====================
-async function adminFetch(endpoint, options = {}) {
-    const key = document.getElementById('adminKey').value;
-    const headers = {
-        ...options.headers,
-        'X-Admin-Key': key
-    };
-    const res = await fetch(`${API_URL}${endpoint}`, {
-        ...options,
-        headers
-    });
-    return await res.json();
-}
-
-function bindAdminEvents() {
-    document.getElementById('adminToggleBtn').onclick = () => {
-        const panel = document.getElementById('adminPanel');
-        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-    };
-
-    document.getElementById('addBalanceBtn').onclick = async () => {
-        const uid = document.getElementById('targetUserId').value;
-        if (!uid) { alert('请输入用户ID'); return; }
-        const amt = prompt('增加金额 (数字)');
-        if (!amt) return;
-        const res = await adminFetch('/admin/add', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: uid, amount: parseInt(amt) })
-        });
-        document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
-        if (uid === USER_ID) await syncBalance();
-        log(`管理操作: 给 ${uid} 上分 ${amt}`, 'admin');
-    };
-
-    document.getElementById('subBalanceBtn').onclick = async () => {
-        const uid = document.getElementById('targetUserId').value;
-        if (!uid) { alert('请输入用户ID'); return; }
-        const amt = prompt('扣除金额 (数字)');
-        if (!amt) return;
-        const res = await adminFetch('/admin/sub', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: uid, amount: parseInt(amt) })
-        });
-        document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
-        if (uid === USER_ID) await syncBalance();
-        log(`管理操作: 给 ${uid} 下分 ${amt}`, 'admin');
-    };
-
-    document.getElementById('checkBalanceBtn').onclick = async () => {
-        const uid = document.getElementById('targetUserId').value;
-        if (!uid) { alert('请输入用户ID'); return; }
-        const res = await adminFetch(`/admin/balance?user_id=${uid}`, { method: 'GET' });
-        document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
-        log(`查询余额: ${uid} -> ${res.balance}`, 'admin');
-    };
-
-    document.getElementById('listUsersBtn').onclick = async () => {
-        const res = await adminFetch('/admin/list', { method: 'GET' });
-        if (res.users) {
-            let html = '<ul>';
-            res.users.forEach(u => {
-                html += `<li>${u.user_id} - ${u.name} - ${u.balance} TRX</li>`;
-            });
-            html += '</ul>';
-            document.getElementById('adminResult').innerHTML = html;
-        } else {
-            document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
-        }
-        log('获取用户列表', 'admin');
-    };
-}
-
-// ==================== 绑定游戏事件 ====================
-function bindGameEvents() {
-    const refreshBtn = document.getElementById('refreshBtn');
-    const stepMinus = document.getElementById('stepMinus');
-    const stepPlus = document.getElementById('stepPlus');
-    const fightBtn = document.getElementById('fightBtn');
-    const autoBtn = document.getElementById('btn-auto');
-    const speedSelector = document.getElementById('speedSelector');
-
-    if (refreshBtn) refreshBtn.onclick = syncBalance;
-    if (stepMinus) stepMinus.onclick = () => adjustStep(-1);
-    if (stepPlus) stepPlus.onclick = () => adjustStep(1);
-    if (fightBtn) fightBtn.onclick = executeBet;
-    if (autoBtn) autoBtn.onclick = toggleAuto;
-    if (speedSelector) speedSelector.onclick = toggleSpeed;
-
-    const decButtons = document.querySelectorAll('.bet-dec');
-    const incButtons = document.querySelectorAll('.bet-inc');
-
-    log(`找到 ${decButtons.length} 个减注按钮, ${incButtons.length} 个加注按钮`);
-
-    decButtons.forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const type = btn.dataset.type;
-            if (!type) {
-                console.error('按钮缺少 data-type 属性', btn);
-                return;
-            }
-            log(`点击
+if __name__ == "__main__":
+    main()
