@@ -48,7 +48,7 @@
         .box span:first-child { font-size: 12px; color: #ccc; letter-spacing: 1px; font-weight: bold; }
         .box span:last-child { font-size: 20px; font-weight: bold; color: var(--gold); text-shadow: 0 0 6px var(--gold); }
 
-        /* 战场区域（无龙虎图像，保留光效） */
+        /* 战场区域（增加动态装饰） */
         .battle-scene { 
             height: 38%; display: flex; justify-content: center; align-items: center; 
             background: #0a0a0a; border: 3px solid var(--jade-d); 
@@ -74,7 +74,80 @@
             100% { opacity: 0.8; transform: translateY(-50%) scale(1.2); }
         }
 
-        /* 光效 */
+        /* 动态文字装饰（龙、虎） */
+        .deco-dragon, .deco-tiger {
+            position: absolute;
+            font-size: 80px;
+            font-weight: bold;
+            opacity: 0.15;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 3;
+            animation: floatText 20s infinite linear;
+        }
+        .deco-dragon {
+            color: var(--blue);
+            left: -50px;
+            top: 20%;
+            transform: rotate(-15deg);
+        }
+        .deco-tiger {
+            color: var(--tiger);
+            right: -50px;
+            bottom: 20%;
+            transform: rotate(15deg);
+        }
+        @keyframes floatText {
+            0% { transform: translate(0, 0) rotate(-15deg); }
+            50% { transform: translate(20px, 20px) rotate(-10deg); }
+            100% { transform: translate(0, 0) rotate(-15deg); }
+        }
+        .deco-tiger {
+            animation: floatTextReverse 20s infinite linear;
+        }
+        @keyframes floatTextReverse {
+            0% { transform: translate(0, 0) rotate(15deg); }
+            50% { transform: translate(-20px, -20px) rotate(10deg); }
+            100% { transform: translate(0, 0) rotate(15deg); }
+        }
+
+        /* 粒子效果 */
+        .particle {
+            position: absolute;
+            background: rgba(255,215,0,0.6);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 4;
+            animation: floatParticle 8s infinite ease-in-out;
+        }
+        @keyframes floatParticle {
+            0% { transform: translateY(0) scale(1); opacity: 0; }
+            20% { opacity: 0.6; }
+            80% { opacity: 0.6; }
+            100% { transform: translateY(-100px) scale(0.5); opacity: 0; }
+        }
+
+        /* 流光边框 */
+        .battle-scene::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(90deg, #ff0000, #ff9900, #ffff00, #00ff00, #0099ff, #6633ff, #ff00ff);
+            border-radius: 12px;
+            z-index: 0;
+            opacity: 0.3;
+            animation: borderFlow 3s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes borderFlow {
+            0% { opacity: 0.3; filter: blur(2px); }
+            50% { opacity: 0.6; filter: blur(4px); }
+            100% { opacity: 0.3; filter: blur(2px); }
+        }
+
         .fight-effect {
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
             width: 80px; height: 80px;
@@ -235,17 +308,19 @@
             <div class="box"><span>奖池</span><span id="poolDisplay">84291.50</span></div>
         </div>
 
-        <!-- 战场区域：无龙虎图标，只有光效和文字 -->
         <div class="battle-scene">
             <div class="scene-bg"></div>
             <div class="scene-light light-left"></div>
             <div class="scene-light light-right"></div>
+            <!-- 动态文字装饰 -->
+            <div class="deco-dragon">🐉 龙</div>
+            <div class="deco-tiger">🐯 虎</div>
+            <!-- 粒子由 JS 动态生成，保持简单 -->
             <div class="fight-effect" id="fight-effect"></div>
             <div class="battle-result" id="battle-result">龙虎相争·一触即发</div>
         </div>
 
         <div class="play-section">
-            <!-- 龙、和、虎押注区块 -->
             <div class="multi-bet-row">
                 <div class="multi-bet-item" data-type="DRAGON">
                     <div class="multi-bet-name dragon">🐉 龙</div>
@@ -317,9 +392,7 @@
 <script>
 // ==================== 配置 ====================
 const USER_ID = "6685731895";
-// ⚠️ 重要：根据访问方式修改 API_URL
-// - 手机本地访问：http://127.0.0.1:8080
-// - 跨设备访问（如电脑访问手机）：http://手机局域网IP:8080
+// ⚠️ 根据访问方式修改 API_URL
 const API_URL = "http://127.0.0.1:8080";
 const ADMIN_KEY = "dola_admin_2024";
 
@@ -333,8 +406,6 @@ let state = {
     pool: 84291.5
 };
 
-const ODDS = { DRAGON: 2, TIGER: 2, TIE: 8 };
-
 function log(msg) { console.log(msg); }
 
 function getAutoDelay() {
@@ -347,9 +418,7 @@ function getAutoDelay() {
 function triggerFightEffect() {
     const fightEffect = document.getElementById('fight-effect');
     fightEffect.classList.remove('flash');
-    setTimeout(() => {
-        fightEffect.classList.add('flash');
-    }, 10);
+    setTimeout(() => fightEffect.classList.add('flash'), 10);
 }
 
 // 同步余额
@@ -580,7 +649,6 @@ function bindAdminEvents() {
         });
         document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
         if (uid === USER_ID) await syncBalance();
-        log(`管理操作: 给 ${uid} 上分 ${amt}`, 'admin');
     };
     document.getElementById('subBalanceBtn').onclick = async () => {
         const uid = document.getElementById('targetUserId').value;
@@ -594,14 +662,12 @@ function bindAdminEvents() {
         });
         document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
         if (uid === USER_ID) await syncBalance();
-        log(`管理操作: 给 ${uid} 下分 ${amt}`, 'admin');
     };
     document.getElementById('checkBalanceBtn').onclick = async () => {
         const uid = document.getElementById('targetUserId').value;
         if (!uid) { alert('请输入用户ID'); return; }
         const res = await adminFetch(`/admin/balance?user_id=${uid}`, { method: 'GET' });
         document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
-        log(`查询余额: ${uid} -> ${res.balance}`, 'admin');
     };
     document.getElementById('listUsersBtn').onclick = async () => {
         const res = await adminFetch('/admin/list', { method: 'GET' });
@@ -613,7 +679,6 @@ function bindAdminEvents() {
         } else {
             document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
         }
-        log('获取用户列表', 'admin');
     };
 }
 
@@ -629,44 +694,48 @@ function bindGameEvents() {
     const decButtons = document.querySelectorAll('.bet-dec');
     const incButtons = document.querySelectorAll('.bet-inc');
 
-    log(`找到 ${decButtons.length} 个减注按钮, ${incButtons.length} 个加注按钮`);
-
     decButtons.forEach(btn => {
         btn.onclick = (e) => {
             e.stopPropagation();
             const type = btn.dataset.type;
-            if (!type) {
-                console.error('按钮缺少 data-type 属性', btn);
-                return;
-            }
-            log(`点击减注: ${type}`);
             adjustBet(type, -state.betStep);
         };
     });
-
     incButtons.forEach(btn => {
         btn.onclick = (e) => {
             e.stopPropagation();
             const type = btn.dataset.type;
-            if (!type) {
-                console.error('按钮缺少 data-type 属性', btn);
-                return;
-            }
-            log(`点击加注: ${type}`);
             adjustBet(type, state.betStep);
         };
     });
 }
 
-// ========== 初始化 ==========
+// 生成粒子（仅视觉效果）
+function createParticles() {
+    const scene = document.querySelector('.battle-scene');
+    if (!scene) return;
+    for (let i = 0; i < 30; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        const size = Math.random() * 4 + 2;
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        particle.style.left = `${Math.random() * 100}%`;
+        particle.style.top = `${Math.random() * 100}%`;
+        particle.style.animationDelay = `${Math.random() * 8}s`;
+        particle.style.animationDuration = `${Math.random() * 6 + 4}s`;
+        scene.appendChild(particle);
+    }
+}
+
+// 初始化
 async function init() {
-    log('页面初始化开始');
     bindGameEvents();
     bindAdminEvents();
     await syncBalance();
     setSpeed(1);
     updateUI();
-    log('页面初始化完成');
+    createParticles(); // 添加粒子装饰
 }
 
 window.onload = init;
