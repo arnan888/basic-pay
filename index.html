@@ -74,7 +74,7 @@
             100% { opacity: 0.8; transform: translateY(-50%) scale(1.2); }
         }
 
-        /* 光效（无龙虎图像） */
+        /* 光效 */
         .fight-effect {
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
             width: 80px; height: 80px;
@@ -245,6 +245,7 @@
         </div>
 
         <div class="play-section">
+            <!-- 龙、和、虎押注区块 -->
             <div class="multi-bet-row">
                 <div class="multi-bet-item" data-type="DRAGON">
                     <div class="multi-bet-name dragon">🐉 龙</div>
@@ -342,7 +343,7 @@ function getAutoDelay() {
     return 1500;
 }
 
-// 触发光效（无龙虎动画）
+// 触发光效
 function triggerFightEffect() {
     const fightEffect = document.getElementById('fight-effect');
     fightEffect.classList.remove('flash');
@@ -481,6 +482,7 @@ function adjustBet(type, delta) {
     if (newVal < 0) newVal = 0;
     state.bets[type] = newVal;
     updateUI();
+    log(`调整押注: ${type} ${delta>=0?'+'+delta:delta} -> ${state.bets[type]}`);
 }
 
 function adjustStep(dir) {
@@ -489,6 +491,7 @@ function adjustStep(dir) {
     if (newStep > 500) newStep = 500;
     state.betStep = newStep;
     document.getElementById('stepValue').innerText = state.betStep;
+    log(`步长调整为: ${state.betStep}`);
 }
 
 function executeBet() {
@@ -537,12 +540,14 @@ function toggleAuto() {
     const btn = document.getElementById('btn-auto');
     btn.classList.toggle('active');
     btn.innerText = state.autoMode ? '关闭自动' : '自动投注';
+    log(`自动投注: ${state.autoMode ? '开启' : '关闭'}`);
 }
 
 function setSpeed(speed) {
     state.speed = speed;
     document.querySelectorAll('.speed-btn span').forEach(s => s.classList.remove('active'));
     document.getElementById(`speed-${speed}`).classList.add('active');
+    log(`速度设为: ${speed}X`);
 }
 
 function toggleSpeed() {
@@ -575,6 +580,7 @@ function bindAdminEvents() {
         });
         document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
         if (uid === USER_ID) await syncBalance();
+        log(`管理操作: 给 ${uid} 上分 ${amt}`, 'admin');
     };
     document.getElementById('subBalanceBtn').onclick = async () => {
         const uid = document.getElementById('targetUserId').value;
@@ -588,12 +594,14 @@ function bindAdminEvents() {
         });
         document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
         if (uid === USER_ID) await syncBalance();
+        log(`管理操作: 给 ${uid} 下分 ${amt}`, 'admin');
     };
     document.getElementById('checkBalanceBtn').onclick = async () => {
         const uid = document.getElementById('targetUserId').value;
         if (!uid) { alert('请输入用户ID'); return; }
         const res = await adminFetch(`/admin/balance?user_id=${uid}`, { method: 'GET' });
         document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
+        log(`查询余额: ${uid} -> ${res.balance}`, 'admin');
     };
     document.getElementById('listUsersBtn').onclick = async () => {
         const res = await adminFetch('/admin/list', { method: 'GET' });
@@ -605,6 +613,7 @@ function bindAdminEvents() {
         } else {
             document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
         }
+        log('获取用户列表', 'admin');
     };
 }
 
@@ -617,28 +626,47 @@ function bindGameEvents() {
     document.getElementById('btn-auto').onclick = toggleAuto;
     document.getElementById('speedSelector').onclick = toggleSpeed;
 
-    document.querySelectorAll('.bet-dec').forEach(btn => {
+    const decButtons = document.querySelectorAll('.bet-dec');
+    const incButtons = document.querySelectorAll('.bet-inc');
+
+    log(`找到 ${decButtons.length} 个减注按钮, ${incButtons.length} 个加注按钮`);
+
+    decButtons.forEach(btn => {
         btn.onclick = (e) => {
             e.stopPropagation();
             const type = btn.dataset.type;
+            if (!type) {
+                console.error('按钮缺少 data-type 属性', btn);
+                return;
+            }
+            log(`点击减注: ${type}`);
             adjustBet(type, -state.betStep);
         };
     });
-    document.querySelectorAll('.bet-inc').forEach(btn => {
+
+    incButtons.forEach(btn => {
         btn.onclick = (e) => {
             e.stopPropagation();
             const type = btn.dataset.type;
+            if (!type) {
+                console.error('按钮缺少 data-type 属性', btn);
+                return;
+            }
+            log(`点击加注: ${type}`);
             adjustBet(type, state.betStep);
         };
     });
 }
 
+// ========== 初始化 ==========
 async function init() {
+    log('页面初始化开始');
     bindGameEvents();
     bindAdminEvents();
     await syncBalance();
     setSpeed(1);
     updateUI();
+    log('页面初始化完成');
 }
 
 window.onload = init;
