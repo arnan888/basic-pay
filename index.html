@@ -216,6 +216,49 @@
         .speed-btn { display: flex; gap: 8px; }
         .speed-btn span { width: 33%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 6px; }
         .speed-btn span.active { background: var(--gold); color: #000; font-weight: bold; }
+
+        /* 管理面板样式 */
+        .admin-panel {
+            background: #2c3e50;
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 12px;
+            color: #fff;
+            display: none;
+        }
+        .admin-panel h4 {
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        .admin-panel input, .admin-panel button {
+            margin: 5px;
+            padding: 8px;
+            border-radius: 8px;
+            border: none;
+        }
+        .admin-panel button {
+            background: #f39c12;
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .admin-toggle {
+            background: #e67e22;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        #adminResult {
+            margin-top: 10px;
+            font-size: 12px;
+            background: #1a2632;
+            padding: 8px;
+            border-radius: 8px;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
@@ -238,7 +281,7 @@
 
         <div class="play-section">
             <div class="multi-bet-row">
-                <div class="multi-bet-item" id="multiDragon" data-type="DRAGON">
+                <div class="multi-bet-item" data-type="DRAGON">
                     <div class="multi-bet-name dragon">🐉 龙</div>
                     <div class="multi-bet-amount" id="betDragonAmount">0</div>
                     <div class="multi-bet-control">
@@ -246,7 +289,7 @@
                         <button class="bet-inc" data-type="DRAGON">+</button>
                     </div>
                 </div>
-                <div class="multi-bet-item" id="multiTie" data-type="TIE">
+                <div class="multi-bet-item" data-type="TIE">
                     <div class="multi-bet-name tie">⚖️ 和</div>
                     <div class="multi-bet-amount" id="betTieAmount">0</div>
                     <div class="multi-bet-control">
@@ -254,7 +297,7 @@
                         <button class="bet-inc" data-type="TIE">+</button>
                     </div>
                 </div>
-                <div class="multi-bet-item" id="multiTiger" data-type="TIGER">
+                <div class="multi-bet-item" data-type="TIGER">
                     <div class="multi-bet-name tiger">🐯 虎</div>
                     <div class="multi-bet-amount" id="betTigerAmount">0</div>
                     <div class="multi-bet-control">
@@ -287,16 +330,28 @@
                     <span id="speed-3">3X</span>
                 </div>
             </div>
+
+            <button class="admin-toggle" id="adminToggleBtn">🔧 管理面板</button>
+            <div id="adminPanel" class="admin-panel">
+                <h4>管理面板</h4>
+                <input type="password" id="adminKey" placeholder="管理员密码" value="dola_admin_2024">
+                <hr>
+                <input type="text" id="targetUserId" placeholder="用户ID">
+                <button id="addBalanceBtn">上分 +</button>
+                <button id="subBalanceBtn">下分 -</button>
+                <button id="checkBalanceBtn">查余额</button>
+                <button id="listUsersBtn">用户列表</button>
+                <div id="adminResult"></div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
 // ==================== 配置 ====================
-const USER_ID = "7860431411";
-// 如果前端和API不在同一设备，请将下面的地址改为你的服务器IP:8080
-// 例如：const API_URL = "http://192.168.1.100:8080";
+const USER_ID = "6685731895";
 const API_URL = "http://127.0.0.1:8080";
+const ADMIN_KEY = "dola_admin_2024";
 
 let state = {
     balance: 0,
@@ -308,6 +363,7 @@ let state = {
     pool: 84291.5
 };
 
+// ==================== 游戏相关函数 ====================
 async function syncBalance() {
     try {
         const res = await fetch(`${API_URL}/balance?user_id=${USER_ID}`);
@@ -382,7 +438,7 @@ async function placeBet(type, amount) {
         return true;
     } catch(e) {
         console.error("押注请求失败", e);
-        alert("网络错误，请确保 bot 已启动且 API 正常运行");
+        alert("网络错误，请确保 API 已启动");
         state.betRolling = false;
         document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
         return false;
@@ -421,9 +477,10 @@ function updateUI() {
     if (state.bets.TIE > 0) maxWin = Math.max(maxWin, state.bets.TIE * 8);
     document.getElementById('val-win').innerText = maxWin.toFixed(2);
 
-    document.getElementById('multiDragon').classList.toggle('selected', state.bets.DRAGON > 0);
-    document.getElementById('multiTiger').classList.toggle('selected', state.bets.TIGER > 0);
-    document.getElementById('multiTie').classList.toggle('selected', state.bets.TIE > 0);
+    document.querySelectorAll('.multi-bet-item').forEach(el => {
+        const type = el.dataset.type;
+        el.classList.toggle('selected', state.bets[type] > 0);
+    });
 }
 
 function adjustBet(type, delta) {
@@ -495,7 +552,78 @@ function toggleSpeed() {
     setSpeed(newSpeed);
 }
 
-function bindEvents() {
+// ==================== 管理面板 ====================
+async function adminFetch(endpoint, options = {}) {
+    const key = document.getElementById('adminKey').value;
+    const headers = {
+        ...options.headers,
+        'X-Admin-Key': key
+    };
+    const res = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        headers
+    });
+    return await res.json();
+}
+
+function bindAdminEvents() {
+    document.getElementById('adminToggleBtn').onclick = () => {
+        const panel = document.getElementById('adminPanel');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    };
+
+    document.getElementById('addBalanceBtn').onclick = async () => {
+        const uid = document.getElementById('targetUserId').value;
+        if (!uid) { alert('请输入用户ID'); return; }
+        const amt = prompt('增加金额 (数字)');
+        if (!amt) return;
+        const res = await adminFetch('/admin/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: uid, amount: parseInt(amt) })
+        });
+        document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
+        if (uid === USER_ID) await syncBalance(); // 如果给自己上分，刷新余额
+    };
+
+    document.getElementById('subBalanceBtn').onclick = async () => {
+        const uid = document.getElementById('targetUserId').value;
+        if (!uid) { alert('请输入用户ID'); return; }
+        const amt = prompt('扣除金额 (数字)');
+        if (!amt) return;
+        const res = await adminFetch('/admin/sub', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: uid, amount: parseInt(amt) })
+        });
+        document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
+        if (uid === USER_ID) await syncBalance();
+    };
+
+    document.getElementById('checkBalanceBtn').onclick = async () => {
+        const uid = document.getElementById('targetUserId').value;
+        if (!uid) { alert('请输入用户ID'); return; }
+        const res = await adminFetch(`/admin/balance?user_id=${uid}`, { method: 'GET' });
+        document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
+    };
+
+    document.getElementById('listUsersBtn').onclick = async () => {
+        const res = await adminFetch('/admin/list', { method: 'GET' });
+        if (res.users) {
+            let html = '<ul>';
+            res.users.forEach(u => {
+                html += `<li>${u.user_id} - ${u.name} - ${u.balance} TRX</li>`;
+            });
+            html += '</ul>';
+            document.getElementById('adminResult').innerHTML = html;
+        } else {
+            document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
+        }
+    };
+}
+
+// ==================== 绑定游戏事件 ====================
+function bindGameEvents() {
     document.getElementById('refreshBtn').onclick = syncBalance;
     document.getElementById('stepMinus').onclick = () => adjustStep(-1);
     document.getElementById('stepPlus').onclick = () => adjustStep(1);
@@ -519,8 +647,10 @@ function bindEvents() {
     });
 }
 
+// ==================== 初始化 ====================
 async function init() {
-    bindEvents();
+    bindGameEvents();
+    bindAdminEvents();
     await syncBalance();
     setSpeed(1);
     updateUI();
