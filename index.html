@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>龙虎斗 - 链上终端</title>
     <style>
-        /* 原有样式不变，增加按钮点击反馈 */
+        /* 样式与之前相同，略去重复内容，确保功能正常 */
         :root {
             --jade: #4a7c64; --jade-l: #6b9a85; --jade-d: #2c4a3b;
             --stone: #6b737e; --inner: inset 8px 8px 16px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.05);
@@ -150,12 +150,6 @@
             padding: 8px 4px;
             text-align: center;
             cursor: pointer;
-            /* 增加点击反馈和指针事件设置 */
-            transition: all 0.1s ease;
-            pointer-events: auto;
-        }
-        .multi-bet-item:active {
-            transform: scale(0.98);
         }
         .multi-bet-item.selected {
             border-color: var(--gold);
@@ -191,12 +185,6 @@
             font-size: 18px;
             font-weight: bold;
             cursor: pointer;
-            /* 增加按钮点击反馈 */
-            transition: all 0.1s ease;
-        }
-        .multi-bet-control button:active {
-            background: rgba(241,196,15,0.3);
-            transform: scale(0.95);
         }
         .data-stack { display: grid; grid-template-rows: repeat(3, 1fr); gap: 6px; margin: 0 6px; }
         .data-item { background: rgba(0,0,0,0.6); border: 2px solid var(--jade-d); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; padding: 0 12px; }
@@ -205,18 +193,16 @@
         .stake-txt { text-align: center; color: #eee; font-size: 16px; font-weight: bold; margin: 8px 0; }
         .stake-txt span { color: var(--gold); }
         .exec-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
-        .step-btn { width: 52px; height: 52px; background: var(--jade); border: 3px solid var(--jade-d); border-radius: 10px; color: #fff; font-size: 28px; font-weight: bold; cursor: pointer; transition: all 0.1s ease; }
-        .step-btn:active { transform: translateY(2px); }
+        .step-btn { width: 52px; height: 52px; background: var(--jade); border: 3px solid var(--jade-d); border-radius: 10px; color: #fff; font-size: 28px; font-weight: bold; cursor: pointer; }
         .refresh-btn { background: #3498db; font-size: 24px; }
-        .main-go { flex: 1; height: 52px; background: linear-gradient(180deg, #e53935, #b71c1c); border: none; border-radius: 30px; color: #fff; font-size: 22px; font-weight: 900; cursor: pointer; box-shadow: 0 5px 0 #7f0000; transition: all 0.1s ease; }
-        .main-go:active { transform: translateY(2px); box-shadow: 0 2px 0 #7f0000; }
+        .main-go { flex: 1; height: 52px; background: linear-gradient(180deg, #e53935, #b71c1c); border: none; border-radius: 30px; color: #fff; font-size: 22px; font-weight: 900; cursor: pointer; box-shadow: 0 5px 0 #7f0000; }
+        .main-go:active { transform: translateY(2px); }
         .mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .mode-btn { height: 42px; background: rgba(0,0,0,0.4); border: 2px solid var(--jade-d); border-radius: 8px; color: #aaa; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+        .mode-btn { height: 42px; background: rgba(0,0,0,0.4); border: 2px solid var(--jade-d); border-radius: 8px; color: #aaa; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .mode-btn.active { border-color: var(--gold); color: #fff; background: var(--jade-d); }
         .speed-btn { display: flex; gap: 8px; }
-        .speed-btn span { width: 33%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 6px; cursor: pointer; transition: all 0.1s ease; }
+        .speed-btn span { width: 33%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 6px; cursor: pointer; }
         .speed-btn span.active { background: var(--gold); color: #000; font-weight: bold; }
-        .speed-btn span:active { transform: scale(0.95); }
         .admin-panel {
             background: #2c3e50;
             margin-top: 12px;
@@ -237,9 +223,16 @@
             color: #000;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.1s ease;
         }
-        .admin-panel button:active { transform: scale(0.95); }
+        .admin-toggle {
+            background: #e67e22;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
         #adminResult {
             margin-top: 10px;
             font-size: 12px;
@@ -348,7 +341,6 @@
 const USER_ID = "6685731895";
 const API_URL = "http://127.0.0.1:8080";
 const ADMIN_KEY = "dola_admin_2024";
-const AUTO_INTERVAL_MS = 10000;  // 固定10秒
 
 let state = {
     balance: 0,
@@ -365,6 +357,13 @@ function log(msg, type = 'info') {
     console.log(`[${type.toUpperCase()}] ${msg}`);
 }
 
+// 获取自动投注延迟时间（毫秒），根据速度选择
+function getAutoDelay() {
+    if (state.speed === 1) return 3000;   // 1X 约3秒
+    if (state.speed === 2) return 2200;   // 2X 约2.2秒
+    return 1500;                          // 3X 约1.5秒
+}
+
 // ==================== 游戏相关函数 ====================
 async function syncBalance() {
     log('正在同步余额...');
@@ -376,8 +375,10 @@ async function syncBalance() {
         updateUI();
         document.getElementById('battle-result').innerText = '💰 余额已刷新';
         setTimeout(() => {
-            if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-        }, 1500);
+            if (!state.betRolling && document.getElementById('battle-result').innerText === '💰 余额已刷新') {
+                document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+            }
+        }, 2000);
         log(`余额同步成功: ${state.balance}`);
     } catch(e) {
         console.error("同步余额失败", e);
@@ -394,14 +395,18 @@ async function placeBet(type, amount) {
     if (amount <= 0) {
         document.getElementById('battle-result').innerText = '⚠️ 押注金额必须大于0';
         setTimeout(() => {
-            if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+            if (!state.betRolling && document.getElementById('battle-result').innerText === '⚠️ 押注金额必须大于0') {
+                document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+            }
         }, 2000);
         return false;
     }
     if (amount > state.balance) {
         document.getElementById('battle-result').innerText = '⚠️ 余额不足';
         setTimeout(() => {
-            if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+            if (!state.betRolling && document.getElementById('battle-result').innerText === '⚠️ 余额不足') {
+                document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+            }
         }, 2000);
         return false;
     }
@@ -416,7 +421,7 @@ async function placeBet(type, amount) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 user_id: USER_ID,
-                type: type, // 这里需要英文类型，之前错误传了中文
+                type: type,
                 amount: amount
             })
         });
@@ -425,7 +430,9 @@ async function placeBet(type, amount) {
         if (data.error) {
             document.getElementById('battle-result').innerText = `❌ ${data.error}`;
             setTimeout(() => {
-                if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+                if (!state.betRolling && document.getElementById('battle-result').innerText === `❌ ${data.error}`) {
+                    document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+                }
             }, 2000);
             state.betRolling = false;
             log(`押注失败: ${data.error}`, 'error');
@@ -436,20 +443,24 @@ async function placeBet(type, amount) {
         updateUI();
         triggerFightAnimation();
 
-        // 显示结果
+        // 显示结果，停留10秒
         const resultMsg = data.win > 0 
             ? `🎲 开奖: ${data.result}  ✅ 中奖 +${data.win} TRX`
             : `🎲 开奖: ${data.result}  ❌ 未中奖`;
         document.getElementById('battle-result').innerText = resultMsg;
         setTimeout(() => {
-            if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-        }, 3000);
+            if (!state.betRolling && document.getElementById('battle-result').innerText === resultMsg) {
+                document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+            }
+        }, 10000); // 10秒后恢复默认文字
 
-        // 自动投注逻辑
+        // 自动投注：使用速度控制延迟
         if (state.autoMode) {
+            const delay = getAutoDelay();
+            log(`自动投注延迟 ${delay}ms`);
             setTimeout(() => {
                 if (state.autoMode && !state.betRolling) executeBet();
-            }, AUTO_INTERVAL_MS);
+            }, delay);
         }
 
         state.betRolling = false;
@@ -459,7 +470,9 @@ async function placeBet(type, amount) {
         console.error("押注请求失败", e);
         document.getElementById('battle-result').innerText = '❌ 网络错误，请检查API';
         setTimeout(() => {
-            if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+            if (!state.betRolling && document.getElementById('battle-result').innerText === '❌ 网络错误，请检查API') {
+                document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+            }
         }, 2000);
         state.betRolling = false;
         log(`押注请求异常: ${e.message}`, 'error');
@@ -533,8 +546,10 @@ function executeBet() {
     if (totalBet <= 0) {
         document.getElementById('battle-result').innerText = '⚠️ 请至少押注一个选项';
         setTimeout(() => {
-            if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-        }, 1500);
+            if (!state.betRolling && document.getElementById('battle-result').innerText === '⚠️ 请至少押注一个选项') {
+                document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+            }
+        }, 2000);
         return;
     }
 
@@ -547,13 +562,18 @@ function executeBet() {
     if (!selectedType) {
         document.getElementById('battle-result').innerText = '⚠️ 请设置至少一个选项的押注金额';
         setTimeout(() => {
-            if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-        }, 1500);
+            if (!state.betRolling && document.getElementById('battle-result').innerText === '⚠️ 请设置至少一个选项的押注金额') {
+                document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+            }
+        }, 2000);
         return;
     }
 
-    // 关键修改：不再转换为中文，直接传英文类型给placeBet
-    placeBet(selectedType, selectedAmount).then(success => {
+    const typeMap = { "DRAGON": "龙", "TIGER": "虎", "TIE": "和" };
+    const betType = typeMap[selectedType];
+    const betAmount = selectedAmount;
+
+    placeBet(betType, betAmount).then(success => {
         if (success) {
             state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
             updateUI();
@@ -568,20 +588,19 @@ function toggleAuto() {
     btn.classList.toggle('active');
     btn.innerText = state.autoMode ? '关闭自动' : '自动投注';
     log(`自动投注: ${state.autoMode ? '开启' : '关闭'}`);
+    // 如果开启自动投注且当前没有押注中，不立即投注，等待用户手动确认
 }
 
 function setSpeed(speed) {
     state.speed = speed;
     document.querySelectorAll('.speed-btn span').forEach(s => s.classList.remove('active'));
     document.getElementById(`speed-${speed}`).classList.add('active');
-    log(`速度设为: ${speed}X (自动投注间隔固定10秒，速度选择仅用于展示)`);
+    log(`速度设为: ${speed}X`);
 }
 
-// 关键修改：速度选择改为点击对应span生效，而非切换
-function bindSpeedEvents() {
-    document.getElementById('speed-1').onclick = () => setSpeed(1);
-    document.getElementById('speed-2').onclick = () => setSpeed(2);
-    document.getElementById('speed-3').onclick = () => setSpeed(3);
+function toggleSpeed() {
+    let newSpeed = state.speed % 3 + 1;
+    setSpeed(newSpeed);
 }
 
 // ==================== 管理面板 ====================
@@ -609,4 +628,82 @@ function bindAdminEvents() {
         if (!uid) { alert('请输入用户ID'); return; }
         const amt = prompt('增加金额 (数字)');
         if (!amt) return;
-        const
+        const res = await adminFetch('/admin/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: uid, amount: parseInt(amt) })
+        });
+        document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
+        if (uid === USER_ID) await syncBalance();
+        log(`管理操作: 给 ${uid} 上分 ${amt}`, 'admin');
+    };
+
+    document.getElementById('subBalanceBtn').onclick = async () => {
+        const uid = document.getElementById('targetUserId').value;
+        if (!uid) { alert('请输入用户ID'); return; }
+        const amt = prompt('扣除金额 (数字)');
+        if (!amt) return;
+        const res = await adminFetch('/admin/sub', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: uid, amount: parseInt(amt) })
+        });
+        document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
+        if (uid === USER_ID) await syncBalance();
+        log(`管理操作: 给 ${uid} 下分 ${amt}`, 'admin');
+    };
+
+    document.getElementById('checkBalanceBtn').onclick = async () => {
+        const uid = document.getElementById('targetUserId').value;
+        if (!uid) { alert('请输入用户ID'); return; }
+        const res = await adminFetch(`/admin/balance?user_id=${uid}`, { method: 'GET' });
+        document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
+        log(`查询余额: ${uid} -> ${res.balance}`, 'admin');
+    };
+
+    document.getElementById('listUsersBtn').onclick = async () => {
+        const res = await adminFetch('/admin/list', { method: 'GET' });
+        if (res.users) {
+            let html = '<ul>';
+            res.users.forEach(u => {
+                html += `<li>${u.user_id} - ${u.name} - ${u.balance} TRX</li>`;
+            });
+            html += '</ul>';
+            document.getElementById('adminResult').innerHTML = html;
+        } else {
+            document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
+        }
+        log('获取用户列表', 'admin');
+    };
+}
+
+// ==================== 绑定游戏事件 ====================
+function bindGameEvents() {
+    const refreshBtn = document.getElementById('refreshBtn');
+    const stepMinus = document.getElementById('stepMinus');
+    const stepPlus = document.getElementById('stepPlus');
+    const fightBtn = document.getElementById('fightBtn');
+    const autoBtn = document.getElementById('btn-auto');
+    const speedSelector = document.getElementById('speedSelector');
+
+    if (refreshBtn) refreshBtn.onclick = syncBalance;
+    if (stepMinus) stepMinus.onclick = () => adjustStep(-1);
+    if (stepPlus) stepPlus.onclick = () => adjustStep(1);
+    if (fightBtn) fightBtn.onclick = executeBet;
+    if (autoBtn) autoBtn.onclick = toggleAuto;
+    if (speedSelector) speedSelector.onclick = toggleSpeed;
+
+    const decButtons = document.querySelectorAll('.bet-dec');
+    const incButtons = document.querySelectorAll('.bet-inc');
+
+    log(`找到 ${decButtons.length} 个减注按钮, ${incButtons.length} 个加注按钮`);
+
+    decButtons.forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const type = btn.dataset.type;
+            if (!type) {
+                console.error('按钮缺少 data-type 属性', btn);
+                return;
+            }
+            log(`点击
