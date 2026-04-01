@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI_QUANT_BEAST_ULTRA</title>
+    <title>龙虎斗 - 链上终端</title>
     <style>
         :root {
             --jade: #4a7c64; --jade-l: #6b9a85; --jade-d: #2c4a3b;
@@ -89,12 +89,6 @@
             40% { left: 45%; transform: translateY(-50%) scale(1.3) rotate(10deg); filter: drop-shadow(0 0 20px #ff6600); }
             100% { left: 20px; transform: translateY(-50%) scale(1); }
         }
-        .dragon.win { animation: dragonWin 1.5s ease infinite; }
-        @keyframes dragonWin {
-            0% { transform: translateY(-50%) scale(1); }
-            50% { transform: translateY(-60%) scale(1.2); filter: drop-shadow(0 0 20px gold); }
-            100% { transform: translateY(-50%) scale(1); }
-        }
 
         .tiger {
             position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
@@ -116,12 +110,6 @@
             40% { right: 45%; transform: translateY(-50%) scale(1.3) rotate(-10deg); filter: drop-shadow(0 0 20px #ff6600); }
             100% { right: 20px; transform: translateY(-50%) scale(1); }
         }
-        .tiger.win { animation: tigerWin 1.5s ease infinite; }
-        @keyframes tigerWin {
-            0% { transform: translateY(-50%) scale(1); }
-            50% { transform: translateY(-40%) scale(1.2); filter: drop-shadow(0 0 20px gold); }
-            100% { transform: translateY(-50%) scale(1); }
-        }
 
         .fight-effect {
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
@@ -138,23 +126,6 @@
             30% { opacity: 1; transform: translate(-50%, -50%) scale(1.5); }
             100% { opacity: 0; transform: translate(-50%, -50%) scale(2); }
         }
-
-        .win-effect {
-            position: absolute; width: 150px; height: 150px;
-            border-radius: 50%;
-            filter: blur(30px);
-            opacity: 0;
-            z-index: 5;
-        }
-        .win-effect.show { animation: winShine 1.5s ease infinite; }
-        @keyframes winShine {
-            0% { opacity: 0.5; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.5); }
-            100% { opacity: 0.5; transform: scale(1); }
-        }
-        .win-effect.dragon { background: rgba(52,152,219,0.8); left: 20px; top: 50%; transform: translateY(-50%); }
-        .win-effect.tiger { background: rgba(230,126,34,0.8); right: 20px; top: 50%; transform: translateY(-50%); }
-        .win-effect.tie { background: rgba(155,89,182,0.8); left: 50%; top: 50%; transform: translate(-50%, -50%); }
 
         .battle-result {
             position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
@@ -259,9 +230,6 @@
             <div class="scene-bg"></div>
             <div class="scene-light light-left"></div>
             <div class="scene-light light-right"></div>
-            <div class="win-effect dragon" id="win-dragon"></div>
-            <div class="win-effect tiger" id="win-tiger"></div>
-            <div class="win-effect tie" id="win-tie"></div>
             <div class="fight-effect" id="fight-effect"></div>
             <div class="dragon" id="dragon"><div class="dragon-icon">🐉</div></div>
             <div class="tiger" id="tiger"><div class="tiger-icon">🐯</div></div>
@@ -325,11 +293,11 @@
 
 <script>
 // ==================== 配置 ====================
-// 你的 Telegram ID（必填，否则无法同步）
-const USER_ID = "7860431411";  // 替换成你的真实ID
-const API_URL = "http://localhost:8080";  // bot API 地址
+const USER_ID = "7860431411";
+// 如果前端和API不在同一设备，请将下面的地址改为你的服务器IP:8080
+// 例如：const API_URL = "http://192.168.1.100:8080";
+const API_URL = "http://127.0.0.1:8080";
 
-// ==================== 全局状态 ====================
 let state = {
     balance: 0,
     betStep: 10,
@@ -340,17 +308,12 @@ let state = {
     pool: 84291.5
 };
 
-const ODDS = { DRAGON: 2, TIGER: 2, TIE: 8 };
-
-// ==================== API 交互 ====================
-// 从 bot 获取余额并更新页面
 async function syncBalance() {
     try {
         const res = await fetch(`${API_URL}/balance?user_id=${USER_ID}`);
         const data = await res.json();
         state.balance = data.balance;
         updateUI();
-        // 可选：显示刷新提示
         document.getElementById('battle-result').innerText = '💰 余额已刷新';
         setTimeout(() => {
             if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
@@ -361,27 +324,21 @@ async function syncBalance() {
     }
 }
 
-// 押注函数（调用 bot API）
 async function placeBet(type, amount) {
     if (state.betRolling) {
         alert("押注处理中，请稍后");
         return false;
     }
-
-    // 检查押注金额是否大于0
     if (amount <= 0) {
         alert("押注金额必须大于0");
         return false;
     }
-
-    // 检查余额（本地预检，避免无效请求）
     if (amount > state.balance) {
         alert("余额不足");
         return false;
     }
 
     state.betRolling = true;
-    // 临时显示加载状态
     document.getElementById('battle-result').innerText = '💥 押注中... 💥';
 
     try {
@@ -403,30 +360,21 @@ async function placeBet(type, amount) {
             return false;
         }
 
-        // 更新本地余额
         state.balance = data.balance;
         updateUI();
-
-        // 播放碰撞动画
         triggerFightAnimation();
 
-        // 显示开奖结果
         const resultText = data.win > 0 
             ? `🎲 开奖: ${data.result}\n✅ 中奖 +${data.win} TRX`
             : `🎲 开奖: ${data.result}\n❌ 未中奖`;
         alert(resultText + `\n💰 新余额: ${data.balance.toFixed(2)}`);
 
-        // 更新战场文字
         document.getElementById('battle-result').innerText = 
             data.win > 0 ? `${data.result} 获胜！ +${data.win}` : `${data.result} 获胜，未中奖`;
 
-        // 自动模式处理
         if (state.autoMode) {
             setTimeout(() => {
-                if (state.autoMode && !state.betRolling) {
-                    // 自动模式需要重新获取当前押注（这里简化：使用当前的押注配置）
-                    executeBet();
-                }
+                if (state.autoMode && !state.betRolling) executeBet();
             }, state.speed === 3 ? 1500 : state.speed === 2 ? 2200 : 3000);
         }
 
@@ -441,35 +389,25 @@ async function placeBet(type, amount) {
     }
 }
 
-// ==================== 动画效果 ====================
 function triggerFightAnimation() {
     const dragon = document.getElementById('dragon');
     const tiger = document.getElementById('tiger');
     const fightEffect = document.getElementById('fight-effect');
 
-    // 重置动画
     dragon.classList.remove('attack', 'win');
     tiger.classList.remove('attack', 'win');
     fightEffect.classList.remove('flash');
 
-    // 触发攻击动画
     setTimeout(() => {
         dragon.classList.add('attack');
         tiger.classList.add('attack');
         fightEffect.classList.add('flash');
     }, 100);
-
-    // 胜利特效由 API 返回后手动添加（简化：不自动添加胜利光效，因为结果已在alert中显示）
 }
 
-// ==================== UI 更新 ====================
 function updateUI() {
-    // 更新余额显示
     document.getElementById('balanceDisplay').innerText = state.balance.toFixed(2);
-    // 奖池暂时固定
     document.getElementById('poolDisplay').innerText = state.pool.toFixed(2);
-
-    // 更新各选项押注金额
     document.getElementById('betDragonAmount').innerText = state.bets.DRAGON;
     document.getElementById('betTigerAmount').innerText = state.bets.TIGER;
     document.getElementById('betTieAmount').innerText = state.bets.TIE;
@@ -477,25 +415,21 @@ function updateUI() {
     const totalBet = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
     document.getElementById('totalBetAmount').innerText = totalBet.toFixed(2);
 
-    // 计算最高可能赢额
     let maxWin = 0;
     if (state.bets.DRAGON > 0) maxWin = Math.max(maxWin, state.bets.DRAGON * 2);
     if (state.bets.TIGER > 0) maxWin = Math.max(maxWin, state.bets.TIGER * 2);
     if (state.bets.TIE > 0) maxWin = Math.max(maxWin, state.bets.TIE * 8);
     document.getElementById('val-win').innerText = maxWin.toFixed(2);
 
-    // 高亮已押注的选项（可选）
     document.getElementById('multiDragon').classList.toggle('selected', state.bets.DRAGON > 0);
     document.getElementById('multiTiger').classList.toggle('selected', state.bets.TIGER > 0);
     document.getElementById('multiTie').classList.toggle('selected', state.bets.TIE > 0);
 }
 
-// ==================== 押注金额调整 ====================
 function adjustBet(type, delta) {
     if (state.betRolling) return;
     let newVal = state.bets[type] + delta;
     if (newVal < 0) newVal = 0;
-    // 可以加个上限，比如不能超过余额（可选）
     state.bets[type] = newVal;
     updateUI();
 }
@@ -508,7 +442,6 @@ function adjustStep(dir) {
     document.getElementById('stepValue').innerText = state.betStep;
 }
 
-// ==================== 投注主逻辑 ====================
 function executeBet() {
     if (state.betRolling) {
         alert('押注处理中，请稍后');
@@ -521,19 +454,6 @@ function executeBet() {
         return;
     }
 
-    // 需要知道当前选了哪个选项（多选模式下，每个选项独立押注，但开奖时根据结果结算）
-    // 但这里我们简化：同时押了龙、虎、和，开奖时只结算对应的那项
-    // 因为 API 支持一次只押一个选项，所以我们需要分别调用三次？不，根据原网页逻辑，用户是独立设置每个选项的押注金额，
-    // 然后一次确认，开奖时只结算中奖的那一项。所以我们调用一次 placeBet，但需要传递多个选项？API 目前只支持单选项。
-    // 为了保持简单，我们先实现：将用户押注的选项分别调用 API 吗？不行，因为这样会多次扣款。
-    // 正确的做法：修改 API，让它接收多个押注的数组。但为了快速同步，我们可以修改网页逻辑，让用户一次只押一个选项（单选），
-    // 或者保留多选但调用 API 时，我们分别处理每个选项，但注意总金额不能超。
-    // 鉴于时间，我们采用简化：用户可以选择一个主押注选项（单选），通过点击龙/虎/和按钮来设置，然后押注。
-    // 这样就能匹配 API 的单选项押注。
-    // 但原网页已经设计为多选，为了保持体验，我们临时增加一个逻辑：将押注最多的那个选项作为主押注。
-    // 实际上，用户需要选择要押的选项并设置金额，然后确认。我们可以在 UI 上增加一个单选按钮？但那样改动较大。
-    // 先采用最简单的：提示用户只押一个选项，并自动选择押注金额最大的那个选项。
-
     let selectedType = null;
     let selectedAmount = 0;
     if (state.bets.DRAGON > 0) { selectedType = "DRAGON"; selectedAmount = state.bets.DRAGON; }
@@ -545,22 +465,18 @@ function executeBet() {
         return;
     }
 
-    // 映射类型名称
     const typeMap = { "DRAGON": "龙", "TIGER": "虎", "TIE": "和" };
     const betType = typeMap[selectedType];
     const betAmount = selectedAmount;
 
-    // 调用 API 押注
     placeBet(betType, betAmount).then(success => {
         if (success) {
-            // 押注成功后清空当前押注（可选）
             state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
             updateUI();
         }
     });
 }
 
-// ==================== 辅助功能 ====================
 function toggleAuto() {
     state.autoMode = !state.autoMode;
     const btn = document.getElementById('btn-auto');
@@ -579,21 +495,14 @@ function toggleSpeed() {
     setSpeed(newSpeed);
 }
 
-// ==================== 事件绑定 ====================
 function bindEvents() {
-    // 刷新余额按钮
     document.getElementById('refreshBtn').onclick = syncBalance;
-    // 步长调整
     document.getElementById('stepMinus').onclick = () => adjustStep(-1);
     document.getElementById('stepPlus').onclick = () => adjustStep(1);
-    // 确认投注
     document.getElementById('fightBtn').onclick = executeBet;
-    // 自动模式
     document.getElementById('btn-auto').onclick = toggleAuto;
-    // 速度切换
     document.getElementById('speedSelector').onclick = toggleSpeed;
 
-    // 押注金额加减
     document.querySelectorAll('.bet-dec').forEach(btn => {
         btn.onclick = (e) => {
             e.stopPropagation();
@@ -610,15 +519,13 @@ function bindEvents() {
     });
 }
 
-// ==================== 初始化 ====================
 async function init() {
     bindEvents();
-    await syncBalance();  // 先同步余额
+    await syncBalance();
     setSpeed(1);
     updateUI();
 }
 
-// 页面加载
 window.onload = init;
 </script>
 </body>
