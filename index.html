@@ -235,6 +235,7 @@
 
         .exec-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
         .step-btn { width: 52px; height: 52px; background: var(--jade); border: 3px solid var(--jade-d); border-radius: 10px; color: #fff; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .refresh-btn { background: #3498db; font-size: 24px; }
         .main-go { flex: 1; height: 52px; background: linear-gradient(180deg, #e53935, #b71c1c); border: none; border-radius: 30px; color: #fff; font-size: 22px; font-weight: 900; cursor: pointer; box-shadow: 0 5px 0 #7f0000; }
         .main-go:active { transform: translateY(2px); }
 
@@ -304,6 +305,7 @@
             <div class="stake-txt">单注步长：<span id="stepValue">10</span> USDT</div>
 
             <div class="exec-row">
+                <button class="step-btn refresh-btn" id="refreshBtn">🔄</button>
                 <button class="step-btn" id="stepMinus">-</button>
                 <button class="main-go" id="fightBtn">确认投注</button>
                 <button class="step-btn" id="stepPlus">+</button>
@@ -348,9 +350,14 @@ async function syncBalance() {
         const data = await res.json();
         state.balance = data.balance;
         updateUI();
+        // 可选：显示刷新提示
+        document.getElementById('battle-result').innerText = '💰 余额已刷新';
+        setTimeout(() => {
+            if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+        }, 1500);
     } catch(e) {
         console.error("同步余额失败", e);
-        // 如果API未启动，可保留旧余额，或者显示提示
+        document.getElementById('battle-result').innerText = '❌ 同步失败，请检查网络';
     }
 }
 
@@ -526,7 +533,7 @@ function executeBet() {
     // 但原网页已经设计为多选，为了保持体验，我们临时增加一个逻辑：将押注最多的那个选项作为主押注。
     // 实际上，用户需要选择要押的选项并设置金额，然后确认。我们可以在 UI 上增加一个单选按钮？但那样改动较大。
     // 先采用最简单的：提示用户只押一个选项，并自动选择押注金额最大的那个选项。
-    
+
     let selectedType = null;
     let selectedAmount = 0;
     if (state.bets.DRAGON > 0) { selectedType = "DRAGON"; selectedAmount = state.bets.DRAGON; }
@@ -574,6 +581,8 @@ function toggleSpeed() {
 
 // ==================== 事件绑定 ====================
 function bindEvents() {
+    // 刷新余额按钮
+    document.getElementById('refreshBtn').onclick = syncBalance;
     // 步长调整
     document.getElementById('stepMinus').onclick = () => adjustStep(-1);
     document.getElementById('stepPlus').onclick = () => adjustStep(1);
@@ -614,4 +623,3 @@ window.onload = init;
 </script>
 </body>
 </html>
-EOF
