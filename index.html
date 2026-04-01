@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>龙虎斗 - 链上终端</title>
     <style>
-        /* 样式与之前相同，略去重复内容，确保功能正常 */
+        /* 样式与之前相同，略去重复部分，确保功能正常 */
         :root {
             --jade: #4a7c64; --jade-l: #6b9a85; --jade-d: #2c4a3b;
             --stone: #6b737e; --inner: inset 8px 8px 16px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.05);
@@ -339,6 +339,8 @@
 <script>
 // ==================== 配置 ====================
 const USER_ID = "6685731895";
+// 如果前端和 API 在同一设备，保持 http://127.0.0.1:8080
+// 如果前端在 GitHub Pages 上，需要改为手机的实际局域网 IP，例如 http://192.168.x.x:8080
 const API_URL = "http://127.0.0.1:8080";
 const ADMIN_KEY = "dola_admin_2024";
 
@@ -357,11 +359,10 @@ function log(msg, type = 'info') {
     console.log(`[${type.toUpperCase()}] ${msg}`);
 }
 
-// 获取自动投注延迟时间（毫秒），根据速度选择
 function getAutoDelay() {
-    if (state.speed === 1) return 3000;   // 1X 约3秒
-    if (state.speed === 2) return 2200;   // 2X 约2.2秒
-    return 1500;                          // 3X 约1.5秒
+    if (state.speed === 1) return 3000;
+    if (state.speed === 2) return 2200;
+    return 1500;
 }
 
 // ==================== 游戏相关函数 ====================
@@ -443,7 +444,6 @@ async function placeBet(type, amount) {
         updateUI();
         triggerFightAnimation();
 
-        // 显示结果，停留10秒
         const resultMsg = data.win > 0 
             ? `🎲 开奖: ${data.result}  ✅ 中奖 +${data.win} TRX`
             : `🎲 开奖: ${data.result}  ❌ 未中奖`;
@@ -452,9 +452,8 @@ async function placeBet(type, amount) {
             if (!state.betRolling && document.getElementById('battle-result').innerText === resultMsg) {
                 document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
             }
-        }, 10000); // 10秒后恢复默认文字
+        }, 10000);
 
-        // 自动投注：使用速度控制延迟
         if (state.autoMode) {
             const delay = getAutoDelay();
             log(`自动投注延迟 ${delay}ms`);
@@ -588,7 +587,6 @@ function toggleAuto() {
     btn.classList.toggle('active');
     btn.innerText = state.autoMode ? '关闭自动' : '自动投注';
     log(`自动投注: ${state.autoMode ? '开启' : '关闭'}`);
-    // 如果开启自动投注且当前没有押注中，不立即投注，等待用户手动确认
 }
 
 function setSpeed(speed) {
@@ -706,4 +704,7 @@ function bindGameEvents() {
                 console.error('按钮缺少 data-type 属性', btn);
                 return;
             }
-            log(`点击
+            log(`点击减注: ${type}`);
+            adjustBet(type, -state.betStep);
+        };
+    })
