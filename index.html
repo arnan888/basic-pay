@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>龙虎斗 - 链上终端</title>
+    <title>龙虎斗 - 手机本地自动开奖版（增强特效）</title>
     <style>
         /* ==================== 外凸内陷布局 ==================== */
         :root {
@@ -14,7 +14,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: #0c0c0c; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
 
-        /* 外凸外框（渐变边框） */
         .container-outer {
             width: 100vw; height: 100vh; max-width: 480px;
             display: flex; justify-content: center; align-items: center;
@@ -31,7 +30,6 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* 内凹容器（内部阴影） */
         .container {
             width: 100%; height: 100%;
             background: var(--jade);
@@ -48,7 +46,7 @@
         .box span:first-child { font-size: 12px; color: #ccc; letter-spacing: 1px; font-weight: bold; }
         .box span:last-child { font-size: 20px; font-weight: bold; color: var(--gold); text-shadow: 0 0 6px var(--gold); }
 
-        /* 战场区域（增加动态装饰） */
+        /* 战场区域 */
         .battle-scene { 
             height: 38%; display: flex; justify-content: center; align-items: center; 
             background: #0a0a0a; border: 3px solid var(--jade-d); 
@@ -74,80 +72,7 @@
             100% { opacity: 0.8; transform: translateY(-50%) scale(1.2); }
         }
 
-        /* 动态文字装饰（龙、虎） */
-        .deco-dragon, .deco-tiger {
-            position: absolute;
-            font-size: 80px;
-            font-weight: bold;
-            opacity: 0.15;
-            white-space: nowrap;
-            pointer-events: none;
-            z-index: 3;
-            animation: floatText 20s infinite linear;
-        }
-        .deco-dragon {
-            color: var(--blue);
-            left: -50px;
-            top: 20%;
-            transform: rotate(-15deg);
-        }
-        .deco-tiger {
-            color: var(--tiger);
-            right: -50px;
-            bottom: 20%;
-            transform: rotate(15deg);
-        }
-        @keyframes floatText {
-            0% { transform: translate(0, 0) rotate(-15deg); }
-            50% { transform: translate(20px, 20px) rotate(-10deg); }
-            100% { transform: translate(0, 0) rotate(-15deg); }
-        }
-        .deco-tiger {
-            animation: floatTextReverse 20s infinite linear;
-        }
-        @keyframes floatTextReverse {
-            0% { transform: translate(0, 0) rotate(15deg); }
-            50% { transform: translate(-20px, -20px) rotate(10deg); }
-            100% { transform: translate(0, 0) rotate(15deg); }
-        }
-
-        /* 粒子效果 */
-        .particle {
-            position: absolute;
-            background: rgba(255,215,0,0.6);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 4;
-            animation: floatParticle 8s infinite ease-in-out;
-        }
-        @keyframes floatParticle {
-            0% { transform: translateY(0) scale(1); opacity: 0; }
-            20% { opacity: 0.6; }
-            80% { opacity: 0.6; }
-            100% { transform: translateY(-100px) scale(0.5); opacity: 0; }
-        }
-
-        /* 流光边框 */
-        .battle-scene::after {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(90deg, #ff0000, #ff9900, #ffff00, #00ff00, #0099ff, #6633ff, #ff00ff);
-            border-radius: 12px;
-            z-index: 0;
-            opacity: 0.3;
-            animation: borderFlow 3s linear infinite;
-            pointer-events: none;
-        }
-        @keyframes borderFlow {
-            0% { opacity: 0.3; filter: blur(2px); }
-            50% { opacity: 0.6; filter: blur(4px); }
-            100% { opacity: 0.3; filter: blur(2px); }
-        }
-
+        /* 原有的战斗光效 */
         .fight-effect {
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
             width: 80px; height: 80px;
@@ -162,6 +87,56 @@
             0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
             30% { opacity: 1; transform: translate(-50%, -50%) scale(1.5); }
             100% { opacity: 0; transform: translate(-50%, -50%) scale(2); }
+        }
+
+        /* 开奖结果大文字特效 */
+        .result-big {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--gold);
+            text-shadow: 0 0 20px gold, 0 0 30px orange;
+            z-index: 15;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: none;
+        }
+        .result-big.animate {
+            animation: bigResult 0.8s ease-out forwards;
+        }
+        @keyframes bigResult {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            30% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            70% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+        }
+
+        /* 粒子效果容器 */
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: radial-gradient(circle, gold, orange);
+            border-radius: 50%;
+            opacity: 0;
+            animation: particleFly 1s ease-out forwards;
+        }
+        @keyframes particleFly {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
         }
 
         .battle-result {
@@ -244,59 +219,11 @@
         .exec-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
         .step-btn { width: 52px; height: 52px; background: var(--jade); border: 3px solid var(--jade-d); border-radius: 10px; color: #fff; font-size: 28px; font-weight: bold; cursor: pointer; }
         .refresh-btn { background: #3498db; font-size: 24px; }
-        .main-go { flex: 1; height: 52px; background: linear-gradient(180deg, #e53935, #b71c1c); border: none; border-radius: 30px; color: #fff; font-size: 22px; font-weight: 900; cursor: pointer; box-shadow: 0 5px 0 #7f0000; }
-        .main-go:active { transform: translateY(2px); }
-
-        .mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .mode-btn { height: 42px; background: rgba(0,0,0,0.4); border: 2px solid var(--jade-d); border-radius: 8px; color: #aaa; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .mode-btn.active { border-color: var(--gold); color: #fff; background: var(--jade-d); }
-        .speed-btn { display: flex; gap: 8px; }
-        .speed-btn span { width: 33%; height: 100%; display: flex; align-items: center; justify-content: center; border-radius: 6px; cursor: pointer; }
-        .speed-btn span.active { background: var(--gold); color: #000; font-weight: bold; }
-
-        .admin-panel {
-            background: #2c3e50;
-            margin-top: 12px;
-            padding: 12px;
-            border-radius: 12px;
-            color: #fff;
-            display: none;
-        }
-        .admin-panel h4 { margin-bottom: 8px; font-size: 16px; }
-        .admin-panel input, .admin-panel button {
-            margin: 5px;
-            padding: 8px;
-            border-radius: 8px;
-            border: none;
-        }
-        .admin-panel button {
-            background: #f39c12;
-            color: #000;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .admin-toggle {
-            background: #e67e22;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 12px;
-            margin-top: 10px;
-            cursor: pointer;
-        }
-        #adminResult {
-            margin-top: 10px;
-            font-size: 12px;
-            background: #1a2632;
-            padding: 8px;
-            border-radius: 8px;
-            word-break: break-all;
-        }
-        .admin-hint {
-            font-size: 10px;
-            color: #aaa;
+        .timer-text {
+            font-size: 14px;
+            color: var(--gold);
             text-align: center;
-            margin-top: 8px;
+            margin: 5px 0;
         }
     </style>
 </head>
@@ -305,18 +232,16 @@
     <div class="container">
         <div class="header">
             <div class="box"><span>余额</span><span id="balanceDisplay">0.00</span></div>
-            <div class="box"><span>奖池</span><span id="poolDisplay">84291.50</span></div>
+            <div class="box"><span>彩金池</span><span id="poolDisplay">50000.00</span></div>
         </div>
 
-        <div class="battle-scene">
+        <div class="battle-scene" id="battleScene">
             <div class="scene-bg"></div>
             <div class="scene-light light-left"></div>
             <div class="scene-light light-right"></div>
-            <!-- 动态文字装饰 -->
-            <div class="deco-dragon">🐉 龙</div>
-            <div class="deco-tiger">🐯 虎</div>
-            <!-- 粒子由 JS 动态生成，保持简单 -->
             <div class="fight-effect" id="fight-effect"></div>
+            <div class="particles" id="particlesContainer"></div>
+            <div class="result-big" id="resultBig"></div>
             <div class="battle-result" id="battle-result">龙虎相争·一触即发</div>
         </div>
 
@@ -351,178 +276,35 @@
             <div class="data-stack">
                 <div class="data-item"><label>总押注</label><value id="totalBetAmount">0.00</value></div>
                 <div class="data-item"><label>预计奖金</label><value id="val-win">0.00</value></div>
-                <div class="data-item"><label>模式</label><value>多选押注</value></div>
+                <div class="data-item"><label>模式</label><value>自动开奖(45秒/局)</value></div>
             </div>
 
             <div class="stake-txt">单注步长：<span id="stepValue">10</span> USDT</div>
 
+            <div class="timer-text" id="timerText">下一局: 30秒</div>
+
             <div class="exec-row">
                 <button class="step-btn refresh-btn" id="refreshBtn">🔄</button>
                 <button class="step-btn" id="stepMinus">-</button>
-                <button class="main-go" id="fightBtn">确认投注</button>
                 <button class="step-btn" id="stepPlus">+</button>
             </div>
-
-            <div class="mode-row">
-                <div id="btn-auto" class="mode-btn">自动投注</div>
-                <div class="mode-btn speed-btn" id="speedSelector">
-                    <span id="speed-1" class="active">1X</span>
-                    <span id="speed-2">2X</span>
-                    <span id="speed-3">3X</span>
-                </div>
-            </div>
-
-            <button class="admin-toggle" id="adminToggleBtn">🔧 管理面板</button>
-            <div id="adminPanel" class="admin-panel">
-                <h4>管理面板</h4>
-                <input type="password" id="adminKey" placeholder="管理员密码" value="wang000000">
-                <hr>
-                <input type="text" id="targetUserId" placeholder="用户ID">
-                <button id="addBalanceBtn">上分 +</button>
-                <button id="subBalanceBtn">下分 -</button>
-                <button id="checkBalanceBtn">查余额</button>
-                <button id="listUsersBtn">用户列表</button>
-                <div id="adminResult"></div>
-            </div>
-            <div class="admin-hint">* 管理面板仅管理员可见</div>
         </div>
     </div>
 </div>
 
 <script>
-// ==================== 配置 ====================
-const USER_ID = "6685731895";
-// ⚠️ 根据访问方式修改 API_URL
-const API_URL = "http://127.0.0.1:8080";
-const ADMIN_KEY = "dola_admin_2024";
-
+// ==================== 本地状态 ====================
 let state = {
-    balance: 0,
+    balance: 10000,
     betStep: 10,
     bets: { DRAGON: 0, TIGER: 0, TIE: 0 },
     betRolling: false,
-    autoMode: false,
-    speed: 1,
-    pool: 84291.5
+    pool: 50000,
+    countdown: 30,
+    countdownInterval: null
 };
 
-function log(msg) { console.log(msg); }
-
-function getAutoDelay() {
-    if (state.speed === 1) return 3000;
-    if (state.speed === 2) return 2200;
-    return 1500;
-}
-
-// 触发光效
-function triggerFightEffect() {
-    const fightEffect = document.getElementById('fight-effect');
-    fightEffect.classList.remove('flash');
-    setTimeout(() => fightEffect.classList.add('flash'), 10);
-}
-
-// 同步余额
-async function syncBalance() {
-    log('正在同步余额...');
-    try {
-        const res = await fetch(`${API_URL}/balance?user_id=${USER_ID}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        state.balance = data.balance;
-        updateUI();
-        document.getElementById('battle-result').innerText = '💰 余额已刷新';
-        setTimeout(() => {
-            if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-        }, 2000);
-        log(`余额同步成功: ${state.balance}`);
-    } catch(e) {
-        console.error("同步余额失败", e);
-        document.getElementById('battle-result').innerText = '❌ 同步失败，请检查网络和API地址';
-        log(`同步余额失败: ${e.message}`, 'error');
-    }
-}
-
-// 押注函数
-async function placeBet(type, amount) {
-    if (state.betRolling) {
-        document.getElementById('battle-result').innerText = '⏳ 押注处理中，请稍后';
-        return false;
-    }
-    if (amount <= 0) {
-        document.getElementById('battle-result').innerText = '⚠️ 押注金额必须大于0';
-        setTimeout(() => {
-            if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-        }, 2000);
-        return false;
-    }
-    if (amount > state.balance) {
-        document.getElementById('battle-result').innerText = '⚠️ 余额不足';
-        setTimeout(() => {
-            if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-        }, 2000);
-        return false;
-    }
-
-    state.betRolling = true;
-    document.getElementById('battle-result').innerText = '💥 押注中... 💥';
-    log(`押注: ${type} ${amount}`);
-
-    try {
-        const res = await fetch(`${API_URL}/bet`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: USER_ID,
-                type: type,
-                amount: amount
-            })
-        });
-        const data = await res.json();
-
-        if (data.error) {
-            document.getElementById('battle-result').innerText = `❌ ${data.error}`;
-            setTimeout(() => {
-                if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-            }, 2000);
-            state.betRolling = false;
-            log(`押注失败: ${data.error}`, 'error');
-            return false;
-        }
-
-        state.balance = data.balance;
-        updateUI();
-        triggerFightEffect();
-
-        const resultMsg = data.win > 0 
-            ? `🎲 开奖: ${data.result}  ✅ 中奖 +${data.win} TRX`
-            : `🎲 开奖: ${data.result}  ❌ 未中奖`;
-        document.getElementById('battle-result').innerText = resultMsg;
-        setTimeout(() => {
-            if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-        }, 10000);
-
-        if (state.autoMode) {
-            setTimeout(() => {
-                if (state.autoMode && !state.betRolling) executeBet();
-            }, getAutoDelay());
-        }
-
-        state.betRolling = false;
-        log(`押注成功，结果: ${data.result}, 赢额: ${data.win}, 新余额: ${data.balance}`);
-        return true;
-    } catch(e) {
-        console.error("押注请求失败", e);
-        document.getElementById('battle-result').innerText = '❌ 网络错误，请检查API';
-        setTimeout(() => {
-            if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-        }, 2000);
-        state.betRolling = false;
-        log(`押注请求异常: ${e.message}`, 'error');
-        return false;
-    }
-}
-
-// 更新UI
+// ==================== UI更新 ====================
 function updateUI() {
     document.getElementById('balanceDisplay').innerText = state.balance.toFixed(2);
     document.getElementById('poolDisplay').innerText = state.pool.toFixed(2);
@@ -551,7 +333,6 @@ function adjustBet(type, delta) {
     if (newVal < 0) newVal = 0;
     state.bets[type] = newVal;
     updateUI();
-    log(`调整押注: ${type} ${delta>=0?'+'+delta:delta} -> ${state.bets[type]}`);
 }
 
 function adjustStep(dir) {
@@ -560,136 +341,179 @@ function adjustStep(dir) {
     if (newStep > 500) newStep = 500;
     state.betStep = newStep;
     document.getElementById('stepValue').innerText = state.betStep;
-    log(`步长调整为: ${state.betStep}`);
 }
 
-function executeBet() {
-    if (state.betRolling) {
-        document.getElementById('battle-result').innerText = '⏳ 押注处理中，请稍后';
-        return;
+// ==================== 特效函数 ====================
+function triggerFightEffect() {
+    const effect = document.getElementById('fight-effect');
+    effect.classList.remove('flash');
+    setTimeout(() => effect.classList.add('flash'), 10);
+}
+
+function showResultBig(result, isWin) {
+    const resultBig = document.getElementById('resultBig');
+    let displayChar = '';
+    if (result === '龙') displayChar = '🐉 龙！';
+    else if (result === '虎') displayChar = '🐯 虎！';
+    else displayChar = '⚖️ 和！';
+    resultBig.innerText = displayChar;
+    resultBig.classList.remove('animate');
+    void resultBig.offsetWidth; // 强制重绘
+    resultBig.classList.add('animate');
+    // 如果中奖，额外增加粒子效果
+    if (isWin) {
+        createWinParticles();
     }
+}
+
+function createWinParticles() {
+    const container = document.getElementById('particlesContainer');
+    const scene = document.getElementById('battleScene');
+    const rect = scene.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    for (let i = 0; i < 40; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 30 + Math.random() * 80;
+        const dx = Math.cos(angle) * distance;
+        const dy = Math.sin(angle) * distance;
+        particle.style.setProperty('--dx', dx + 'px');
+        particle.style.setProperty('--dy', dy + 'px');
+        particle.style.left = centerX + 'px';
+        particle.style.top = centerY + 'px';
+        container.appendChild(particle);
+        setTimeout(() => particle.remove(), 1000);
+    }
+}
+
+// ==================== 开奖逻辑 ====================
+function performDraw() {
+    if (state.betRolling) return;
 
     const totalBet = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
-    if (totalBet <= 0) {
-        document.getElementById('battle-result').innerText = '⚠️ 请至少押注一个选项';
-        setTimeout(() => {
-            if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-        }, 2000);
+    if (totalBet === 0) {
+        document.getElementById('battle-result').innerText = '⏳ 无人押注，跳过此局';
+        clearCountdown();
+        startCountdown(30);
         return;
     }
 
+    // 选择押注金额最大的选项
     let selectedType = null;
     let selectedAmount = 0;
     if (state.bets.DRAGON > 0) { selectedType = "DRAGON"; selectedAmount = state.bets.DRAGON; }
     if (state.bets.TIGER > selectedAmount) { selectedType = "TIGER"; selectedAmount = state.bets.TIGER; }
     if (state.bets.TIE > selectedAmount) { selectedType = "TIE"; selectedAmount = state.bets.TIE; }
 
-    if (!selectedType) {
-        document.getElementById('battle-result').innerText = '⚠️ 请设置至少一个选项的押注金额';
-        setTimeout(() => {
-            if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-        }, 2000);
-        return;
-    }
+    if (!selectedType) return;
 
     const typeMap = { "DRAGON": "龙", "TIGER": "虎", "TIE": "和" };
     const betType = typeMap[selectedType];
     const betAmount = selectedAmount;
 
-    placeBet(betType, betAmount).then(success => {
-        if (success) {
-            state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
-            updateUI();
-        }
-    });
+    if (betAmount > state.balance) {
+        document.getElementById('battle-result').innerText = '⚠️ 余额不足，跳过此局';
+        clearCountdown();
+        startCountdown(30);
+        return;
+    }
+
+    state.betRolling = true;
+    document.getElementById('battle-result').innerText = '🎲 开奖中... 🎲';
+
+    // 模拟随机结果
+    const result = (() => {
+        const r = Math.random();
+        if (r < 0.4) return "龙";
+        if (r < 0.8) return "虎";
+        return "和";
+    })();
+
+    let win = 0;
+    let isWin = false;
+    if (betType === result) {
+        win = betAmount * (result === "和" ? 8 : 2);
+        state.balance += win;
+        isWin = true;
+    } else {
+        state.balance -= betAmount;
+    }
+
+    updateUI();
+    triggerFightEffect();
+    showResultBig(result, isWin);
+
+    const resultMsg = win > 0 
+        ? `🎲 开奖: ${result}  ✅ 中奖 +${win} TRX`
+        : `🎲 开奖: ${result}  ❌ 未中奖`;
+    document.getElementById('battle-result').innerText = resultMsg;
+
+    // 清空押注
+    state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
+    updateUI();
+
+    // 15秒后恢复默认文字，并开始下一轮倒计时
+    setTimeout(() => {
+        document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+        state.betRolling = false;
+        startCountdown(30);
+    }, 15000);
 }
 
-function toggleAuto() {
-    state.autoMode = !state.autoMode;
-    const btn = document.getElementById('btn-auto');
-    btn.classList.toggle('active');
-    btn.innerText = state.autoMode ? '关闭自动' : '自动投注';
-    log(`自动投注: ${state.autoMode ? '开启' : '关闭'}`);
-}
-
-function setSpeed(speed) {
-    state.speed = speed;
-    document.querySelectorAll('.speed-btn span').forEach(s => s.classList.remove('active'));
-    document.getElementById(`speed-${speed}`).classList.add('active');
-    log(`速度设为: ${speed}X`);
-}
-
-function toggleSpeed() {
-    let newSpeed = state.speed % 3 + 1;
-    setSpeed(newSpeed);
-}
-
-// ========== 管理面板 ==========
-async function adminFetch(endpoint, options = {}) {
-    const key = document.getElementById('adminKey').value;
-    const headers = { ...options.headers, 'X-Admin-Key': key };
-    const res = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
-    return await res.json();
-}
-
-function bindAdminEvents() {
-    document.getElementById('adminToggleBtn').onclick = () => {
-        const panel = document.getElementById('adminPanel');
-        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-    };
-    document.getElementById('addBalanceBtn').onclick = async () => {
-        const uid = document.getElementById('targetUserId').value;
-        if (!uid) { alert('请输入用户ID'); return; }
-        const amt = prompt('增加金额 (数字)');
-        if (!amt) return;
-        const res = await adminFetch('/admin/add', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: uid, amount: parseInt(amt) })
-        });
-        document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
-        if (uid === USER_ID) await syncBalance();
-    };
-    document.getElementById('subBalanceBtn').onclick = async () => {
-        const uid = document.getElementById('targetUserId').value;
-        if (!uid) { alert('请输入用户ID'); return; }
-        const amt = prompt('扣除金额 (数字)');
-        if (!amt) return;
-        const res = await adminFetch('/admin/sub', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: uid, amount: parseInt(amt) })
-        });
-        document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
-        if (uid === USER_ID) await syncBalance();
-    };
-    document.getElementById('checkBalanceBtn').onclick = async () => {
-        const uid = document.getElementById('targetUserId').value;
-        if (!uid) { alert('请输入用户ID'); return; }
-        const res = await adminFetch(`/admin/balance?user_id=${uid}`, { method: 'GET' });
-        document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
-    };
-    document.getElementById('listUsersBtn').onclick = async () => {
-        const res = await adminFetch('/admin/list', { method: 'GET' });
-        if (res.users) {
-            let html = '<ul>';
-            res.users.forEach(u => { html += `<li>${u.user_id} - ${u.name} - ${u.balance} TRX</li>`; });
-            html += '</ul>';
-            document.getElementById('adminResult').innerHTML = html;
+// ==================== 倒计时管理 ====================
+function startCountdown(seconds) {
+    if (state.countdownInterval) clearInterval(state.countdownInterval);
+    state.countdown = seconds;
+    document.getElementById('timerText').innerText = `下一局: ${state.countdown}秒`;
+    state.countdownInterval = setInterval(() => {
+        if (state.countdown <= 1) {
+            clearInterval(state.countdownInterval);
+            state.countdownInterval = null;
+            performDraw();
         } else {
-            document.getElementById('adminResult').innerHTML = JSON.stringify(res, null, 2);
+            state.countdown--;
+            document.getElementById('timerText').innerText = `下一局: ${state.countdown}秒`;
         }
-    };
+    }, 1000);
 }
 
-// ========== 绑定游戏事件 ==========
-function bindGameEvents() {
-    document.getElementById('refreshBtn').onclick = syncBalance;
+function clearCountdown() {
+    if (state.countdownInterval) {
+        clearInterval(state.countdownInterval);
+        state.countdownInterval = null;
+    }
+}
+
+// ==================== 彩金池波动 ====================
+function startPoolFluctuation() {
+    setInterval(() => {
+        let change = Math.floor(Math.random() * 61) - 30;
+        let newPool = state.pool + change;
+        if (newPool < 10000) newPool = 10000;
+        if (newPool > 100000) newPool = 100000;
+        state.pool = newPool;
+        document.getElementById('poolDisplay').innerText = state.pool.toFixed(2);
+    }, 1000);
+}
+
+// ==================== 手动刷新 ====================
+function refreshBalance() {
+    updateUI();
+    document.getElementById('battle-result').innerText = '💰 余额已刷新';
+    setTimeout(() => {
+        if (!state.betRolling && document.getElementById('battle-result').innerText === '💰 余额已刷新') {
+            document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+        }
+    }, 2000);
+}
+
+// ==================== 事件绑定 ====================
+function bindEvents() {
+    document.getElementById('refreshBtn').onclick = refreshBalance;
     document.getElementById('stepMinus').onclick = () => adjustStep(-1);
     document.getElementById('stepPlus').onclick = () => adjustStep(1);
-    document.getElementById('fightBtn').onclick = executeBet;
-    document.getElementById('btn-auto').onclick = toggleAuto;
-    document.getElementById('speedSelector').onclick = toggleSpeed;
 
     const decButtons = document.querySelectorAll('.bet-dec');
     const incButtons = document.querySelectorAll('.bet-inc');
@@ -710,32 +534,12 @@ function bindGameEvents() {
     });
 }
 
-// 生成粒子（仅视觉效果）
-function createParticles() {
-    const scene = document.querySelector('.battle-scene');
-    if (!scene) return;
-    for (let i = 0; i < 30; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
-        const size = Math.random() * 4 + 2;
-        particle.style.width = `${size}px`;
-        particle.style.height = `${size}px`;
-        particle.style.left = `${Math.random() * 100}%`;
-        particle.style.top = `${Math.random() * 100}%`;
-        particle.style.animationDelay = `${Math.random() * 8}s`;
-        particle.style.animationDuration = `${Math.random() * 6 + 4}s`;
-        scene.appendChild(particle);
-    }
-}
-
-// 初始化
-async function init() {
-    bindGameEvents();
-    bindAdminEvents();
-    await syncBalance();
-    setSpeed(1);
+// ==================== 初始化 ====================
+function init() {
+    bindEvents();
     updateUI();
-    createParticles(); // 添加粒子装饰
+    startPoolFluctuation();
+    startCountdown(30);
 }
 
 window.onload = init;
