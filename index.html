@@ -1,594 +1,548 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>量化终端 · 密码保护后台</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>龙虎斗 - 手机本地自动开奖版（增强特效）</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-        body {
-            background: #1a2a1a;
-            background-image: radial-gradient(circle at 30% 20%, #2c4a2c 0%, #0a1f0a 100%);
-            font-family: "PingFang SC", "Segoe UI", system-ui, sans-serif;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            padding-bottom: 85px;
+        /* ==================== 外凸内陷布局 ==================== */
+        :root {
+            --jade: #4a7c64; --jade-l: #6b9a85; --jade-d: #2c4a3b;
+            --stone: #6b737e; --inner: inset 8px 8px 16px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.05);
+            --gold: #f1c40f; --red: #ff4d4d; --blue: #3498db; --tiger: #e67e22; --tie: #9b59b6;
         }
-        .status-bar {
-            background: rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(4px);
-            height: 32px;
-            display: flex;
-            align-items: center;
-            padding: 0 18px;
-            font-size: 10px;
-            font-weight: 500;
-            color: #cbd5e1;
-            justify-content: center;
-            border-bottom: 1px solid rgba(0,0,0,0.3);
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: #0c0c0c; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+
+        .container-outer {
+            width: 100vw; height: 100vh; max-width: 480px;
+            display: flex; justify-content: center; align-items: center;
+            background: linear-gradient(45deg, #ff0000, #ff9900, #ffff00, #00ff00, #0099ff, #6633ff, #ff00ff);
+            background-size: 600% 600%;
+            animation: outerNeonRotate 15s linear infinite;
+            padding: 6px;
+            border-radius: 18px;
+            box-shadow: 0 0 50px rgba(255,255,255,0.6);
         }
-        .core-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 16px;
-            gap: 16px;
+        @keyframes outerNeonRotate {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
-        .pit-panel {
-            width: 100%;
-            max-width: 420px;
-            background-color: #2a323f;
-            background-image: linear-gradient(rgba(0,0,0,0.35) 1.2px, transparent 1.2px),
-                              linear-gradient(90deg, rgba(0,0,0,0.35) 1.2px, transparent 1.2px);
-            background-size: 22px 22px;
-            border-radius: 32px;
-            box-shadow: inset 8px 8px 16px rgba(0,0,0,0.55), inset -4px -4px 8px rgba(255,255,255,0.08), 0px 10px 20px rgba(0,0,0,0.4);
-            border: 2px solid #1d4a2c;
-            padding: 18px 16px;
-            text-align: center;
+
+        .container {
+            width: 100%; height: 100%;
+            background: var(--jade);
+            border-radius: 15px;
+            display: flex; flex-direction: column;
+            box-shadow: var(--inner);
         }
-        .bal-val {
-            font-size: 52px;
-            font-weight: 900;
-            color: #ff5e5e;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-            font-family: monospace;
-            cursor: pointer;
+
+        .header { height: 8%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 8px 12px; }
+        .box { background: var(--stone); border: 2px solid var(--jade-d); box-shadow: var(--inner); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; padding: 0 12px;
+            background-image: linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
+            background-size: 15px 15px;
         }
-        .balance-label {
-            font-size: 12px;
-            background: rgba(0,0,0,0.5);
-            display: inline-block;
-            padding: 4px 14px;
-            border-radius: 30px;
-            color: #cddeff;
+        .box span:first-child { font-size: 12px; color: #ccc; letter-spacing: 1px; font-weight: bold; }
+        .box span:last-child { font-size: 20px; font-weight: bold; color: var(--gold); text-shadow: 0 0 6px var(--gold); }
+
+        /* 战场区域 */
+        .battle-scene { 
+            height: 38%; display: flex; justify-content: center; align-items: center; 
+            background: #0a0a0a; border: 3px solid var(--jade-d); 
+            border-radius: 12px; margin: 4px 10px;
+            position: relative;
+            overflow: hidden;
         }
-        .wheel-pit { width: 280px; height: 280px; display: flex; align-items: center; justify-content: center; position: relative; margin: 8px auto; }
-        .wheel-outer {
-            width: 250px; height: 250px; border-radius: 50%; position: relative;
-            background-color: #2b6e3c;
-            background-image: linear-gradient(rgba(210,255,180,0.2) 1.2px, transparent 1.2px),
-                              linear-gradient(90deg, rgba(210,255,180,0.2) 1.2px, transparent 1.2px);
-            background-size: 16px 16px;
-            box-shadow: 8px 12px 24px rgba(0,0,0,0.6), inset 0px 1px 2px rgba(255,255,240,0.3);
-            border: 3px solid #1d4a2c;
-            transition: transform 5s cubic-bezier(0.12,0.72,0.28,0.98);
+        .scene-bg {
+            position: absolute; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+            z-index: 1;
+        }
+        .scene-light {
+            position: absolute; width: 150px; height: 150px;
+            border-radius: 50%; filter: blur(50px);
+            animation: lightPulse 3s ease infinite alternate;
+            z-index: 2;
+        }
+        .light-left { left: 30px; top: 50%; transform: translateY(-50%); background: rgba(52,152,219,0.4); }
+        .light-right { right: 30px; top: 50%; transform: translateY(-50%); background: rgba(230,126,34,0.4); }
+        @keyframes lightPulse {
+            0% { opacity: 0.3; transform: translateY(-50%) scale(1); }
+            100% { opacity: 0.8; transform: translateY(-50%) scale(1.2); }
+        }
+
+        /* 原有的战斗光效 */
+        .fight-effect {
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,100,0,0.9), rgba(255,0,0,0.9));
+            filter: blur(15px);
+            opacity: 0;
             z-index: 5;
         }
-        .wheel-center-val {
-            position: absolute; z-index: 20; width: 68px; height: 68px; background: #2e3a48; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; color: #ff8a6f; font-size: 22px; font-weight: 900;
-            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(255,255,255,0.15), 0 2px 6px black;
-            border: 1px solid #161e28;
+        .fight-effect.flash { animation: shockBlast 0.5s ease-out forwards; }
+        @keyframes shockBlast {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            30% { opacity: 1; transform: translate(-50%, -50%) scale(1.5); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(2); }
         }
-        .slot-content { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 18px; pointer-events: none; }
-        .slot-content-inner { display: flex; flex-direction: column; align-items: center; transform: rotate(0deg); }
-        .beast-ico { font-size: 32px; filter: drop-shadow(1px 2px 4px rgba(0,0,0,0.5)); margin-bottom: 2px; }
-        .beast-txt { font-size: 10px; font-weight: bold; color: #f9f3cf; background: rgba(0,0,0,0.55); padding: 2px 6px; border-radius: 50px; white-space: nowrap; }
-        .pointer-arrow { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 16px solid transparent; border-right: 16px solid transparent; border-top: 28px solid #e32020; z-index: 100; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); }
-        .console-area {
-            width: 100%; background-color: #6a1a1a;
-            background-image: linear-gradient(rgba(0,0,0,0.45) 1.2px, transparent 1.2px),
-                              linear-gradient(90deg, rgba(0,0,0,0.45) 1.2px, transparent 1.2px);
-            background-size: 22px 22px;
-            padding: 24px 20px 35px;
-            box-shadow: inset 8px 8px 18px rgba(0,0,0,0.7), inset -4px -4px 10px rgba(255,80,80,0.2), 0 -6px 16px rgba(0,0,0,0.5);
-            border-top: 3px solid #8b2c2c;
-            border-bottom: 1px solid #4a1010;
-            margin-top: 8px;
-        }
-        .main-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 28px; }
-        .btn-deep-inset {
-            background: #4a1a1a; color: #ffc6a0; font-size: 28px; font-weight: bold; width: 68px; height: 68px;
-            display: flex; align-items: center; justify-content: center; border-radius: 28px;
-            box-shadow: inset 3px 3px 7px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(255,160,120,0.2), 3px 5px 8px rgba(0,0,0,0.4);
-            border: 1px solid #6a2a2a; cursor: pointer; transition: 0.05s linear;
-        }
-        .btn-deep-inset:active { transform: scale(0.94); }
-        .exec-red-btn {
-            flex: 1; height: 68px; background: linear-gradient(145deg, #d43f3f, #a51e1e); border: none;
-            border-bottom: 3px solid #6f1414; color: #fff4e8; font-size: 22px; font-weight: 900; border-radius: 42px;
-            box-shadow: 0 8px 14px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,200,120,0.5); cursor: pointer; transition: 0.06s linear;
-        }
-        .exec-red-btn:active { transform: translateY(3px); border-bottom-width: 1px; }
-        .tech-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 20px; }
-        .mode-btn {
-            padding: 16px 10px; background: #4a1a1a; border-radius: 42px; color: #ffcfb0; font-size: 14px; font-weight: bold;
-            text-align: center; box-shadow: inset 3px 3px 7px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(255,140,100,0.2), 2px 4px 8px rgba(0,0,0,0.3);
-            border: 1px solid #6a2a2a; cursor: pointer;
-        }
-        .mode-btn:active { transform: scale(0.97); }
-        .mode-btn.on { background: #bc3f2e; color: white; box-shadow: inset 1px 1px 5px rgba(0,0,0,0.7); border-color: #9f2a1a; }
-        .audio-row {
-            display: flex; align-items: center; justify-content: space-between; gap: 15px;
-            background-color: #3d1414; background-image: linear-gradient(rgba(0,0,0,0.4) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(0,0,0,0.4) 1px, transparent 1px);
-            background-size: 18px 18px; border-radius: 50px; padding: 8px 18px; margin-top: 10px;
-            border: 1px solid #8b3a2a; box-shadow: inset 3px 3px 6px rgba(0,0,0,0.5), inset -1px -1px 2px rgba(255,120,80,0.2);
-        }
-        .audio-toggle { background: #2a1a1a; border: none; border-radius: 40px; padding: 8px 16px; color: #ffbb88; font-size: 13px; font-weight: bold; cursor: pointer; box-shadow: inset 1px 1px 3px rgba(0,0,0,0.5), inset -1px -1px 2px rgba(255,200,150,0.2); }
-        .audio-toggle:active { transform: scale(0.96); }
-        .volume-slider { flex: 1; height: 4px; -webkit-appearance: none; background: #5a2a2a; border-radius: 4px; outline: none; }
-        .volume-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #ffb072; cursor: pointer; }
-        .volume-icon { font-size: 18px; color: #ffbb88; }
-        .nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 78px; background: #11161f; backdrop-filter: blur(8px); border-top: 1px solid #2c3543; display: grid; grid-template-columns: repeat(4, 1fr); z-index: 1200; }
-        .nav-n { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #7e8a9b; font-size: 11px; font-weight: 600; }
-        .nav-n.act { color: #ff6b5b; }
-        /* 后台管理面板（默认隐藏，需密码调出） */
-        .admin-panel {
-            position: fixed;
-            bottom: 90px;
+
+        /* 开奖结果大文字特效 */
+        .result-big {
+            position: absolute;
             left: 50%;
-            transform: translateX(-50%) translateY(100%);
-            width: calc(100% - 40px);
-            max-width: 400px;
-            background: #1e1e2f;
-            border-radius: 28px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-            border: 1px solid #ffaa66;
-            z-index: 1001;
-            transition: transform 0.3s ease;
-            backdrop-filter: blur(12px);
+            top: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--gold);
+            text-shadow: 0 0 20px gold, 0 0 30px orange;
+            z-index: 15;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: none;
         }
-        .admin-panel.show { transform: translateX(-50%) translateY(0); }
-        .admin-panel h3 { color: #ffaa66; font-size: 18px; margin-bottom: 15px; text-align: center; }
-        .admin-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; gap: 12px; }
-        .admin-row label { color: #ddd; font-size: 14px; font-weight: bold; }
-        .admin-toggle { background: #4a1a1a; border: none; border-radius: 40px; padding: 8px 20px; color: white; font-weight: bold; cursor: pointer; }
-        .admin-toggle.active { background: #2e7d32; }
-        .admin-slider { flex: 1; height: 4px; -webkit-appearance: none; background: #ffaa66; border-radius: 4px; }
-        .admin-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #ffaa66; cursor: pointer; }
-        .close-admin { background: #6a1a1a; border: none; border-radius: 30px; padding: 8px; width: 100%; color: white; margin-top: 10px; cursor: pointer; }
-        /* 密码弹窗样式 */
-        .password-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
+        .result-big.animate {
+            animation: bigResult 0.8s ease-out forwards;
+        }
+        @keyframes bigResult {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            30% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            70% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+        }
+
+        /* 粒子效果容器 */
+        .particles {
+            position: absolute;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 2000;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: radial-gradient(circle, gold, orange);
+            border-radius: 50%;
+            opacity: 0;
+            animation: particleFly 1s ease-out forwards;
+        }
+        @keyframes particleFly {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+        }
+
+        .battle-result {
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            font-size: 16px; font-weight: bold;
+            color: #fff; text-shadow: 0 0 8px var(--gold);
+            z-index: 20;
+            padding: 2px 10px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+        }
+
+        .play-section {
+            flex: 1; display: flex; flex-direction: column;
+            background: var(--stone); box-shadow: var(--inner); border: 3px solid var(--jade-d); 
+            border-radius: 12px; margin: 4px 10px 8px 10px; padding: 12px;
+            background-image: linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px);
+            background-size: 15px 15px;
+        }
+
+        .multi-bet-row {
             display: flex;
-            align-items: center;
-            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            justify-content: space-between;
         }
-        .password-box {
-            background: #2a323f;
-            border-radius: 28px;
-            padding: 24px;
-            width: 280px;
+        .multi-bet-item {
+            flex: 1;
+            background: rgba(0,0,0,0.45);
+            border: 2px solid var(--jade-d);
+            border-radius: 12px;
+            padding: 8px 4px;
             text-align: center;
-            border: 2px solid #ffaa66;
+            cursor: pointer;
         }
-        .password-box input {
-            width: 100%;
-            padding: 12px;
-            margin: 15px 0;
-            border-radius: 40px;
-            border: none;
-            background: #1e1e2f;
-            color: white;
-            text-align: center;
+        .multi-bet-item.selected {
+            border-color: var(--gold);
+            background: rgba(255,255,255,0.15);
+            box-shadow: 0 0 8px rgba(241,196,15,0.5);
+        }
+        .multi-bet-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .multi-bet-name.dragon { color: var(--blue); text-shadow: 0 0 8px var(--blue); }
+        .multi-bet-name.tiger { color: var(--tiger); text-shadow: 0 0 8px var(--tiger); }
+        .multi-bet-name.tie { color: var(--tie); text-shadow: 0 0 8px var(--tie); }
+        .multi-bet-amount {
             font-size: 16px;
+            color: var(--gold);
+            font-weight: bold;
         }
-        .password-box button {
-            background: #ffaa66;
-            border: none;
-            border-radius: 40px;
-            padding: 10px 20px;
-            margin: 5px;
+        .multi-bet-control {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 6px;
+        }
+        .multi-bet-control button {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--gold);
+            border-radius: 20px;
+            width: 28px;
+            height: 28px;
+            color: var(--gold);
+            font-size: 18px;
             font-weight: bold;
             cursor: pointer;
         }
-        .error-msg {
-            color: #ff8888;
-            font-size: 12px;
-            margin-top: 10px;
+
+        .data-stack { display: grid; grid-template-rows: repeat(3, 1fr); gap: 6px; margin: 0 6px; }
+        .data-item { background: rgba(0,0,0,0.6); border: 2px solid var(--jade-d); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; padding: 0 12px; }
+        .data-item label { font-size: 12px; color: #ccc; font-weight: bold; }
+        .data-item value { font-size: 18px; color: var(--gold); font-weight: 900; }
+
+        .stake-txt { text-align: center; color: #eee; font-size: 16px; font-weight: bold; margin: 8px 0; }
+        .stake-txt span { color: var(--gold); }
+
+        .exec-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+        .step-btn { width: 52px; height: 52px; background: var(--jade); border: 3px solid var(--jade-d); border-radius: 10px; color: #fff; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .refresh-btn { background: #3498db; font-size: 24px; }
+        .timer-text {
+            font-size: 14px;
+            color: var(--gold);
+            text-align: center;
+            margin: 5px 0;
         }
     </style>
 </head>
 <body>
-<div class="status-bar">⚡ 量化终端 · 管理员密码保护 ⚡</div>
-<div class="core-section">
-    <div class="pit-panel">
-        <div class="balance-label">💰 可用余额 (USDT)</div>
-        <div class="bal-val" id="ui_bal">1000.00</div>
-        <div style="font-size: 13px; margin-top: 6px; background: rgba(0,0,0,0.4); display: inline-block; padding: 4px 20px; border-radius: 50px;">
-            🔥 单注额度: <span id="ui_bet" style="color:#ff9166; font-size:18px; font-weight:900;">10.0</span>
+<div class="container-outer">
+    <div class="container">
+        <div class="header">
+            <div class="box"><span>余额</span><span id="balanceDisplay">0.00</span></div>
+            <div class="box"><span>彩金池</span><span id="poolDisplay">50000.00</span></div>
         </div>
-    </div>
-    <div class="pit-panel" style="padding: 12px;">
-        <div class="wheel-pit">
-            <div class="pointer-arrow"></div>
-            <div class="wheel-center-val" id="center_val">0倍</div>
-            <div id="ui_wheel" class="wheel-outer"></div>
-        </div>
-    </div>
-</div>
-<div class="console-area">
-    <div class="main-row">
-        <button class="btn-deep-inset" id="decBetBtn">−</button>
-        <button id="go_btn" class="exec-red-btn">▶ 执 行 抽 取</button>
-        <button class="btn-deep-inset" id="incBetBtn">＋</button>
-    </div>
-    <div class="tech-row">
-        <div id="auto_btn" class="mode-btn">🤖 自动模式: 关</div>
-        <div id="speed_btn" class="mode-btn">⚡ 变速: 1X</div>
-    </div>
-    <div class="audio-row">
-        <button id="audioToggleBtn" class="audio-toggle">🔊 音效开</button>
-        <span class="volume-icon">🔉</span>
-        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="70">
-    </div>
-</div>
-<div class="nav">
-    <div class="nav-n">📊 行情</div>
-    <div class="nav-n">🏦 资产中心</div>
-    <div class="nav-n">📜 历史记录</div>
-    <div class="nav-n act">🎛️ 量化终端</div>
-</div>
 
-<div id="adminPanel" class="admin-panel">
-    <h3>🔧 后台管理（仅限管理员）</h3>
-    <div class="admin-row">
-        <label>🩸 回血模式</label>
-        <button id="adminToggleBtn" class="admin-toggle">关闭</button>
+        <div class="battle-scene" id="battleScene">
+            <div class="scene-bg"></div>
+            <div class="scene-light light-left"></div>
+            <div class="scene-light light-right"></div>
+            <div class="fight-effect" id="fight-effect"></div>
+            <div class="particles" id="particlesContainer"></div>
+            <div class="result-big" id="resultBig"></div>
+            <div class="battle-result" id="battle-result">龙虎相争·一触即发</div>
+        </div>
+
+        <div class="play-section">
+            <div class="multi-bet-row">
+                <div class="multi-bet-item" data-type="DRAGON">
+                    <div class="multi-bet-name dragon">🐉 龙</div>
+                    <div class="multi-bet-amount" id="betDragonAmount">0</div>
+                    <div class="multi-bet-control">
+                        <button class="bet-dec" data-type="DRAGON">-</button>
+                        <button class="bet-inc" data-type="DRAGON">+</button>
+                    </div>
+                </div>
+                <div class="multi-bet-item" data-type="TIE">
+                    <div class="multi-bet-name tie">⚖️ 和</div>
+                    <div class="multi-bet-amount" id="betTieAmount">0</div>
+                    <div class="multi-bet-control">
+                        <button class="bet-dec" data-type="TIE">-</button>
+                        <button class="bet-inc" data-type="TIE">+</button>
+                    </div>
+                </div>
+                <div class="multi-bet-item" data-type="TIGER">
+                    <div class="multi-bet-name tiger">🐯 虎</div>
+                    <div class="multi-bet-amount" id="betTigerAmount">0</div>
+                    <div class="multi-bet-control">
+                        <button class="bet-dec" data-type="TIGER">-</button>
+                        <button class="bet-inc" data-type="TIGER">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="data-stack">
+                <div class="data-item"><label>总押注</label><value id="totalBetAmount">0.00</value></div>
+                <div class="data-item"><label>预计奖金</label><value id="val-win">0.00</value></div>
+                <div class="data-item"><label>模式</label><value>自动开奖(45秒/局)</value></div>
+            </div>
+
+            <div class="stake-txt">单注步长：<span id="stepValue">10</span> USDT</div>
+
+            <div class="timer-text" id="timerText">下一局: 30秒</div>
+
+            <div class="exec-row">
+                <button class="step-btn refresh-btn" id="refreshBtn">🔄</button>
+                <button class="step-btn" id="stepMinus">-</button>
+                <button class="step-btn" id="stepPlus">+</button>
+            </div>
+        </div>
     </div>
-    <div class="admin-row">
-        <label>💪 回血强度 (0~100%)</label>
-        <input type="range" id="adminStrength" class="admin-slider" min="0" max="100" value="0">
-        <span id="strengthValue" style="color:#ffaa66; width: 40px;">0%</span>
-    </div>
-    <div class="admin-row">
-        <label>📊 当前模式</label>
-        <span id="modeStatus" style="color:#ffaa66;">正常模式</span>
-    </div>
-    <button id="closeAdminBtn" class="close-admin">✖ 关闭</button>
 </div>
 
 <script>
-    (function() {
-        // ---------- 管理员密码（可自行修改）----------
-        const ADMIN_PASSWORD = "99966666";   // 
+// ==================== 本地状态 ====================
+let state = {
+    balance: 10000,
+    betStep: 10,
+    bets: { DRAGON: 0, TIGER: 0, TIE: 0 },
+    betRolling: false,
+    pool: 50000,
+    countdown: 30,
+    countdownInterval: null
+};
 
-        // ---------- 扇区配置 ----------
-        const beasts = [
-            { icon: "🐺", name: "孤狼", multiplier: 0, display: "0倍" },
-            { icon: "🦢", name: "仙鹤", multiplier: 0, display: "0倍" },
-            { icon: "🐢", name: "玄武", multiplier: 0.5, display: "0.5倍" },
-            { icon: "🦅", name: "大鹏", multiplier: 1, display: "1倍" },
-            { icon: "🐯", name: "猛虎", multiplier: 2, display: "2倍" },
-            { icon: "🦌", name: "麒麟", multiplier: 5, display: "5倍" },
-            { icon: "🐲", name: "神龙", multiplier: 20, display: "20倍" },
-            { icon: "🔥", name: "凤凰", multiplier: 100, display: "100倍" }
-        ];
-        const normalProbs = [650, 120, 100, 70, 40, 15, 3, 2];
-        const maxCompassionProbs = [300, 100, 180, 150, 120, 90, 40, 20];
-        let currentProbs = [...normalProbs];
-        let compassionEnabled = false;
-        let compassionStrength = 0;
+// ==================== UI更新 ====================
+function updateUI() {
+    document.getElementById('balanceDisplay').innerText = state.balance.toFixed(2);
+    document.getElementById('poolDisplay').innerText = state.pool.toFixed(2);
+    document.getElementById('betDragonAmount').innerText = state.bets.DRAGON;
+    document.getElementById('betTigerAmount').innerText = state.bets.TIGER;
+    document.getElementById('betTieAmount').innerText = state.bets.TIE;
 
-        function updateProbsByStrength() {
-            if (!compassionEnabled || compassionStrength <= 0) {
-                currentProbs = [...normalProbs];
-                return;
-            }
-            const t = Math.min(1, compassionStrength / 100);
-            currentProbs = normalProbs.map((p, i) => Math.round(p * (1 - t) + maxCompassionProbs[i] * t));
-            let sum = currentProbs.reduce((a, b) => a + b, 0);
-            if (sum !== 1000) currentProbs[7] += 1000 - sum;
-        }
+    const totalBet = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
+    document.getElementById('totalBetAmount').innerText = totalBet.toFixed(2);
 
-        function setCompassionMode(enable) {
-            compassionEnabled = enable;
-            if (!enable) {
-                compassionStrength = 0;
-                document.getElementById('adminStrength').value = 0;
-                document.getElementById('strengthValue').innerText = '0%';
-                document.getElementById('adminToggleBtn').innerText = '关闭';
-                document.getElementById('adminToggleBtn').classList.remove('active');
-                document.getElementById('modeStatus').innerText = '正常模式';
-            } else {
-                document.getElementById('adminToggleBtn').innerText = '开启';
-                document.getElementById('adminToggleBtn').classList.add('active');
-                document.getElementById('modeStatus').innerText = `回血模式 (强度 ${compassionStrength}%)`;
-            }
-            updateProbsByStrength();
-        }
+    let maxWin = 0;
+    if (state.bets.DRAGON > 0) maxWin = Math.max(maxWin, state.bets.DRAGON * 2);
+    if (state.bets.TIGER > 0) maxWin = Math.max(maxWin, state.bets.TIGER * 2);
+    if (state.bets.TIE > 0) maxWin = Math.max(maxWin, state.bets.TIE * 8);
+    document.getElementById('val-win').innerText = maxWin.toFixed(2);
 
-        function setCompassionStrength(value) {
-            compassionStrength = Math.min(100, Math.max(0, value));
-            document.getElementById('strengthValue').innerText = compassionStrength + '%';
-            if (compassionEnabled) {
-                document.getElementById('modeStatus').innerText = `回血模式 (强度 ${compassionStrength}%)`;
-                updateProbsByStrength();
-            } else if (compassionStrength > 0) {
-                setCompassionMode(true);
-                document.getElementById('adminStrength').value = compassionStrength;
-            } else {
-                updateProbsByStrength();
-            }
-        }
+    document.querySelectorAll('.multi-bet-item').forEach(el => {
+        const type = el.dataset.type;
+        el.classList.toggle('selected', state.bets[type] > 0);
+    });
+}
 
-        const multis = beasts.map(b => b.multiplier);
-        const beastNames = beasts.map(b => b.display);
-        let balance = 1000.0;
-        let bet = 10.0;
-        let rot = 0;
-        let busy = false;
-        let isAuto = false;
-        let speedMode = 1;
+function adjustBet(type, delta) {
+    if (state.betRolling) return;
+    let newVal = state.bets[type] + delta;
+    if (newVal < 0) newVal = 0;
+    state.bets[type] = newVal;
+    updateUI();
+}
 
-        let audioCtx = null;
-        let isAudioEnabled = true;
-        let currentVolume = 0.7;
-        let audioUnlocked = false;
+function adjustStep(dir) {
+    let newStep = state.betStep + dir * 10;
+    if (newStep < 10) newStep = 10;
+    if (newStep > 500) newStep = 500;
+    state.betStep = newStep;
+    document.getElementById('stepValue').innerText = state.betStep;
+}
 
-        function buildWheel() {
-            const wheel = document.getElementById('ui_wheel');
-            wheel.innerHTML = '';
-            const angleStep = 360 / beasts.length;
-            beasts.forEach((beast, idx) => {
-                const angle = idx * angleStep;
-                const slotDiv = document.createElement('div');
-                slotDiv.className = 'slot-content';
-                slotDiv.style.transform = `rotate(${angle}deg)`;
-                const inner = document.createElement('div');
-                inner.className = 'slot-content-inner';
-                inner.style.transform = `rotate(${-angle}deg)`;
-                inner.innerHTML = `<span class="beast-ico">${beast.icon}</span><span class="beast-txt">${beast.name}</span>`;
-                slotDiv.appendChild(inner);
-                wheel.appendChild(slotDiv);
-            });
-        }
+// ==================== 特效函数 ====================
+function triggerFightEffect() {
+    const effect = document.getElementById('fight-effect');
+    effect.classList.remove('flash');
+    setTimeout(() => effect.classList.add('flash'), 10);
+}
 
-        function initAudio() { if (!audioCtx) try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
-        function playEffect(type) {
-            if (!isAudioEnabled || !audioCtx || audioCtx.state === 'closed') return;
-            const doPlay = () => {
-                try {
-                    const now = audioCtx.currentTime;
-                    const gain = audioCtx.createGain();
-                    gain.gain.value = currentVolume;
-                    gain.connect(audioCtx.destination);
-                    const osc = audioCtx.createOscillator();
-                    osc.connect(gain);
-                    if (type === 'spin') {
-                        osc.type = 'sawtooth';
-                        osc.frequency.value = 400;
-                        osc.frequency.exponentialRampToValue(800, 0.25);
-                        gain.gain.exponentialRampToValue(0.0001, 0.25);
-                        osc.start();
-                        osc.stop(now + 0.25);
-                    } else if (type === 'stop') {
-                        osc.type = 'sine';
-                        osc.frequency.value = 880;
-                        gain.gain.setValueAtTime(currentVolume, now);
-                        gain.gain.exponentialRampToValue(0.0001, now + 0.2);
-                        osc.start();
-                        osc.stop(now + 0.2);
-                    } else if (type === 'jackpot') {
-                        const dur = 0.25;
-                        const freq1 = 523.25, freq2 = 659.25;
-                        const osc1 = audioCtx.createOscillator();
-                        osc1.type = 'triangle';
-                        osc1.frequency.value = freq1;
-                        osc1.connect(gain);
-                        osc1.start();
-                        osc1.stop(now + dur);
-                        const osc2 = audioCtx.createOscillator();
-                        osc2.type = 'triangle';
-                        osc2.frequency.value = freq2;
-                        osc2.connect(gain);
-                        osc2.start(now + dur);
-                        osc2.stop(now + dur * 2);
-                        gain.gain.setValueAtTime(currentVolume, now);
-                        gain.gain.exponentialRampToValue(0.0001, now + dur * 2);
-                    }
-                } catch(e) {}
-            };
-            if (audioCtx.state === 'suspended') audioCtx.resume().then(doPlay).catch(()=>{});
-            else doPlay();
-        }
-        function unlockAudio() {
-            if (audioUnlocked) return;
-            initAudio();
-            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().then(() => { audioUnlocked = true; }).catch(()=>{});
-            else if (audioCtx && audioCtx.state === 'running') audioUnlocked = true;
-        }
-        function setVolume(val) { currentVolume = Math.max(0, Math.min(1, val / 100)); }
-        function toggleAudio() {
-            isAudioEnabled = !isAudioEnabled;
-            document.getElementById('audioToggleBtn').innerHTML = isAudioEnabled ? "🔊 音效开" : "🔇 音效关";
-            if (isAudioEnabled && audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-        }
+function showResultBig(result, isWin) {
+    const resultBig = document.getElementById('resultBig');
+    let displayChar = '';
+    if (result === '龙') displayChar = '🐉 龙！';
+    else if (result === '虎') displayChar = '🐯 虎！';
+    else displayChar = '⚖️ 和！';
+    resultBig.innerText = displayChar;
+    resultBig.classList.remove('animate');
+    void resultBig.offsetWidth; // 强制重绘
+    resultBig.classList.add('animate');
+    // 如果中奖，额外增加粒子效果
+    if (isWin) {
+        createWinParticles();
+    }
+}
 
-        function updateUI() {
-            document.getElementById('ui_bal').innerText = balance.toFixed(2);
-            document.getElementById('ui_bet').innerText = bet.toFixed(1);
-        }
-        function changeBet(delta) {
-            if (busy) return;
-            let newBet = bet + delta;
-            if (newBet >= 0.5 && newBet <= balance) bet = parseFloat(newBet.toFixed(1));
-            else if (newBet > balance && delta > 0 && balance >= 0.5) bet = balance;
-            else if (newBet < 0.5) bet = 0.5;
-            updateUI();
-        }
-        function toggleAuto() {
-            if (busy && !isAuto) return;
-            isAuto = !isAuto;
-            const btn = document.getElementById('auto_btn');
-            btn.className = isAuto ? 'mode-btn on' : 'mode-btn';
-            btn.innerHTML = `🤖 自动模式: ${isAuto ? '开' : '关'}`;
-            if (isAuto && !busy && balance >= bet) setTimeout(() => { if(isAuto && !busy && balance >= bet) go(); }, 150);
-        }
-        function cycleSpeed() {
-            speedMode = (speedMode % 3) + 1;
-            const durations = {1:"5s",2:"1.2s",3:"0.5s"};
-            const texts = {1:"1X",2:"2X",3:"3X"};
-            document.getElementById('ui_wheel').style.transitionDuration = durations[speedMode];
-            document.getElementById('speed_btn').innerHTML = `⚡ 变速: ${texts[speedMode]}`;
-        }
-        function getRandomIndex() {
-            const r = Math.random() * 1000;
-            let cum = 0;
-            for (let i = 0; i < currentProbs.length; i++) {
-                cum += currentProbs[i];
-                if (r < cum) return i;
-            }
-            return 0;
-        }
-        function go() {
-            if (busy) return;
-            if (balance < bet) { if (isAuto) toggleAuto(); return; }
-            busy = true;
-            playEffect('spin');
-            unlockAudio();
-            const idx = getRandomIndex();
-            const angleStep = 360 / beasts.length;
-            const targetBase = idx * angleStep;
-            let currentMod = rot % 360;
-            let targetStop = (360 - targetBase + angleStep/2) % 360;
-            let delta = (targetStop - currentMod + 360) % 360;
-            let extra = 8 + Math.floor(Math.random() * 6);
-            rot += delta + extra * 360;
-            const wheel = document.getElementById('ui_wheel');
-            wheel.style.transform = `rotate(${rot}deg)`;
-            const onFinish = () => {
-                wheel.removeEventListener('transitionend', onFinish);
-                try {
-                    const prize = multis[idx] * bet;
-                    balance = balance - bet + prize;
-                    if (balance < 0) balance = 0;
-                    updateUI();
-                    if (multis[idx] >= 20) playEffect('jackpot');
-                    else playEffect('stop');
-                    document.getElementById('center_val').innerText = beastNames[idx];
-                } finally {
-                    busy = false;
-                    if (isAuto && balance >= bet && !busy) setTimeout(() => { if(isAuto && !busy && balance >= bet) go(); }, 350);
-                    else if (balance < bet && isAuto) toggleAuto();
-                }
-            };
-            wheel.addEventListener('transitionend', onFinish, { once: true });
-            const delayMap = {1:5000,2:1200,3:500};
-            setTimeout(() => { if (busy) { wheel.removeEventListener('transitionend', onFinish); onFinish(); } }, delayMap[speedMode] + 100);
-        }
+function createWinParticles() {
+    const container = document.getElementById('particlesContainer');
+    const scene = document.getElementById('battleScene');
+    const rect = scene.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    for (let i = 0; i < 40; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 30 + Math.random() * 80;
+        const dx = Math.cos(angle) * distance;
+        const dy = Math.sin(angle) * distance;
+        particle.style.setProperty('--dx', dx + 'px');
+        particle.style.setProperty('--dy', dy + 'px');
+        particle.style.left = centerX + 'px';
+        particle.style.top = centerY + 'px';
+        container.appendChild(particle);
+        setTimeout(() => particle.remove(), 1000);
+    }
+}
 
-        // 事件绑定
-        document.getElementById('decBetBtn').onclick = () => { changeBet(-0.5); unlockAudio(); };
-        document.getElementById('incBetBtn').onclick = () => { changeBet(0.5); unlockAudio(); };
-        document.getElementById('go_btn').onclick = () => { if(!busy) go(); unlockAudio(); };
-        document.getElementById('auto_btn').onclick = () => { toggleAuto(); unlockAudio(); };
-        document.getElementById('speed_btn').onclick = () => { cycleSpeed(); unlockAudio(); };
-        document.getElementById('audioToggleBtn').onclick = () => { toggleAudio(); unlockAudio(); };
-        document.getElementById('volumeSlider').oninput = (e) => { setVolume(e.target.value); };
+// ==================== 开奖逻辑 ====================
+function performDraw() {
+    if (state.betRolling) return;
 
-        // 后台管理面板（密码保护）
-        const adminPanel = document.getElementById('adminPanel');
-        const adminToggle = document.getElementById('adminToggleBtn');
-        const adminStrength = document.getElementById('adminStrength');
-        const closeAdmin = document.getElementById('closeAdminBtn');
-        const balanceDiv = document.getElementById('ui_bal');
+    const totalBet = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
+    if (totalBet === 0) {
+        document.getElementById('battle-result').innerText = '⏳ 无人押注，跳过此局';
+        clearCountdown();
+        startCountdown(30);
+        return;
+    }
 
-        let isAdminAuthenticated = false;
+    // 选择押注金额最大的选项
+    let selectedType = null;
+    let selectedAmount = 0;
+    if (state.bets.DRAGON > 0) { selectedType = "DRAGON"; selectedAmount = state.bets.DRAGON; }
+    if (state.bets.TIGER > selectedAmount) { selectedType = "TIGER"; selectedAmount = state.bets.TIGER; }
+    if (state.bets.TIE > selectedAmount) { selectedType = "TIE"; selectedAmount = state.bets.TIE; }
 
-        function showPasswordDialog() {
-            // 创建遮罩
-            const overlay = document.createElement('div');
-            overlay.className = 'password-overlay';
-            overlay.innerHTML = `
-                <div class="password-box">
-                    <h3>🔐 管理员验证</h3>
-                    <input type="password" id="adminPasswordInput" placeholder="请输入密码" autocomplete="off">
-                    <div>
-                        <button id="pwdConfirmBtn">确认</button>
-                        <button id="pwdCancelBtn">取消</button>
-                    </div>
-                    <div id="pwdError" class="error-msg"></div>
-                </div>
-            `;
-            document.body.appendChild(overlay);
-            const input = overlay.querySelector('#adminPasswordInput');
-            const confirmBtn = overlay.querySelector('#pwdConfirmBtn');
-            const cancelBtn = overlay.querySelector('#pwdCancelBtn');
-            const errorDiv = overlay.querySelector('#pwdError');
+    if (!selectedType) return;
 
-            const removeOverlay = () => overlay.remove();
-            const checkPassword = () => {
-                if (input.value === ADMIN_PASSWORD) {
-                    isAdminAuthenticated = true;
-                    removeOverlay();
-                    adminPanel.classList.add('show');
-                } else {
-                    errorDiv.innerText = '密码错误，请重试';
-                    input.value = '';
-                    input.focus();
-                }
-            };
-            confirmBtn.onclick = checkPassword;
-            cancelBtn.onclick = removeOverlay;
-            input.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkPassword(); });
-            input.focus();
-        }
+    const typeMap = { "DRAGON": "龙", "TIGER": "虎", "TIE": "和" };
+    const betType = typeMap[selectedType];
+    const betAmount = selectedAmount;
 
-        balanceDiv.addEventListener('dblclick', () => {
-            if (isAdminAuthenticated) {
-                adminPanel.classList.add('show');
-            } else {
-                showPasswordDialog();
-            }
-        });
+    if (betAmount > state.balance) {
+        document.getElementById('battle-result').innerText = '⚠️ 余额不足，跳过此局';
+        clearCountdown();
+        startCountdown(30);
+        return;
+    }
 
-        adminToggle.onclick = () => {
-            if (compassionEnabled) setCompassionMode(false);
-            else setCompassionMode(true);
-            if (!compassionEnabled && compassionStrength === 0) setCompassionStrength(50);
-        };
-        adminStrength.oninput = (e) => { setCompassionStrength(parseInt(e.target.value)); };
-        closeAdmin.onclick = () => { adminPanel.classList.remove('show'); };
-        document.addEventListener('click', (e) => {
-            if (!adminPanel.contains(e.target) && e.target !== balanceDiv && isAdminAuthenticated) {
-                adminPanel.classList.remove('show');
-            }
-        });
+    state.betRolling = true;
+    document.getElementById('battle-result').innerText = '🎲 开奖中... 🎲';
 
-        buildWheel();
-        updateUI();
-        document.getElementById('ui_wheel').style.transitionDuration = "5s";
-        rot = Math.random() * 45;
-        document.getElementById('ui_wheel').style.transform = `rotate(${rot}deg)`;
-        initAudio();
-        setVolume(70);
-        setCompassionMode(false);
+    // 模拟随机结果
+    const result = (() => {
+        const r = Math.random();
+        if (r < 0.4) return "龙";
+        if (r < 0.8) return "虎";
+        return "和";
     })();
+
+    let win = 0;
+    let isWin = false;
+    if (betType === result) {
+        win = betAmount * (result === "和" ? 8 : 2);
+        state.balance += win;
+        isWin = true;
+    } else {
+        state.balance -= betAmount;
+    }
+
+    updateUI();
+    triggerFightEffect();
+    showResultBig(result, isWin);
+
+    const resultMsg = win > 0 
+        ? `🎲 开奖: ${result}  ✅ 中奖 +${win} TRX`
+        : `🎲 开奖: ${result}  ❌ 未中奖`;
+    document.getElementById('battle-result').innerText = resultMsg;
+
+    // 清空押注
+    state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
+    updateUI();
+
+    // 15秒后恢复默认文字，并开始下一轮倒计时
+    setTimeout(() => {
+        document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+        state.betRolling = false;
+        startCountdown(30);
+    }, 15000);
+}
+
+// ==================== 倒计时管理 ====================
+function startCountdown(seconds) {
+    if (state.countdownInterval) clearInterval(state.countdownInterval);
+    state.countdown = seconds;
+    document.getElementById('timerText').innerText = `下一局: ${state.countdown}秒`;
+    state.countdownInterval = setInterval(() => {
+        if (state.countdown <= 1) {
+            clearInterval(state.countdownInterval);
+            state.countdownInterval = null;
+            performDraw();
+        } else {
+            state.countdown--;
+            document.getElementById('timerText').innerText = `下一局: ${state.countdown}秒`;
+        }
+    }, 1000);
+}
+
+function clearCountdown() {
+    if (state.countdownInterval) {
+        clearInterval(state.countdownInterval);
+        state.countdownInterval = null;
+    }
+}
+
+// ==================== 彩金池波动 ====================
+function startPoolFluctuation() {
+    setInterval(() => {
+        let change = Math.floor(Math.random() * 61) - 30;
+        let newPool = state.pool + change;
+        if (newPool < 10000) newPool = 10000;
+        if (newPool > 100000) newPool = 100000;
+        state.pool = newPool;
+        document.getElementById('poolDisplay').innerText = state.pool.toFixed(2);
+    }, 1000);
+}
+
+// ==================== 手动刷新 ====================
+function refreshBalance() {
+    updateUI();
+    document.getElementById('battle-result').innerText = '💰 余额已刷新';
+    setTimeout(() => {
+        if (!state.betRolling && document.getElementById('battle-result').innerText === '💰 余额已刷新') {
+            document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+        }
+    }, 2000);
+}
+
+// ==================== 事件绑定 ====================
+function bindEvents() {
+    document.getElementById('refreshBtn').onclick = refreshBalance;
+    document.getElementById('stepMinus').onclick = () => adjustStep(-1);
+    document.getElementById('stepPlus').onclick = () => adjustStep(1);
+
+    const decButtons = document.querySelectorAll('.bet-dec');
+    const incButtons = document.querySelectorAll('.bet-inc');
+
+    decButtons.forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const type = btn.dataset.type;
+            adjustBet(type, -state.betStep);
+        };
+    });
+    incButtons.forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const type = btn.dataset.type;
+            adjustBet(type, state.betStep);
+        };
+    });
+}
+
+// ==================== 初始化 ====================
+function init() {
+    bindEvents();
+    updateUI();
+    startPoolFluctuation();
+    startCountdown(30);
+}
+
+window.onload = init;
 </script>
 </body>
 </html>
-
