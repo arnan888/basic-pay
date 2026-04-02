@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>龙虎斗 - 手机本地自动开奖版（增强特效）</title>
+    <title>龙虎斗 - 电视动画版</title>
     <style>
         /* ==================== 外凸内陷布局 ==================== */
         :root {
-            --jade: #4a7c64; --jade-l: #6b9a85; --jade-d: #2c4a3b;
+            --jade: #4a7c64; --jade-d: #2c4a3b;
             --stone: #6b737e; --inner: inset 8px 8px 16px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.05);
-            --gold: #f1c40f; --red: #ff4d4d; --blue: #3498db; --tiger: #e67e22; --tie: #9b59b6;
+            --gold: #f1c40f; --blue: #3498db; --tiger: #e67e22; --tie: #9b59b6;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: #0c0c0c; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
@@ -72,7 +72,6 @@
             100% { opacity: 0.8; transform: translateY(-50%) scale(1.2); }
         }
 
-        /* 原有的战斗光效 */
         .fight-effect {
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
             width: 80px; height: 80px;
@@ -89,7 +88,6 @@
             100% { opacity: 0; transform: translate(-50%, -50%) scale(2); }
         }
 
-        /* 开奖结果大文字特效 */
         .result-big {
             position: absolute;
             left: 50%;
@@ -103,7 +101,6 @@
             white-space: nowrap;
             opacity: 0;
             pointer-events: none;
-            transition: none;
         }
         .result-big.animate {
             animation: bigResult 0.8s ease-out forwards;
@@ -115,7 +112,6 @@
             100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
         }
 
-        /* 粒子效果容器 */
         .particles {
             position: absolute;
             width: 100%;
@@ -137,6 +133,18 @@
         @keyframes particleFly {
             0% { transform: translate(0, 0) scale(1); opacity: 1; }
             100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+        }
+
+        .tv-animation {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            object-fit: contain;
+            z-index: 14;
+            display: none;
+            pointer-events: none;
         }
 
         .battle-result {
@@ -225,6 +233,21 @@
             text-align: center;
             margin: 5px 0;
         }
+        .file-select-btn {
+            background: #e67e22;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 12px;
+            margin-top: 8px;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+        }
+        .file-select-btn input {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -242,6 +265,8 @@
             <div class="fight-effect" id="fight-effect"></div>
             <div class="particles" id="particlesContainer"></div>
             <div class="result-big" id="resultBig"></div>
+            <video id="tvVideo" class="tv-animation" muted loop></video>
+            <img id="tvImage" class="tv-animation" style="display: none;">
             <div class="battle-result" id="battle-result">龙虎相争·一触即发</div>
         </div>
 
@@ -280,7 +305,6 @@
             </div>
 
             <div class="stake-txt">单注步长：<span id="stepValue">10</span> USDT</div>
-
             <div class="timer-text" id="timerText">下一局: 30秒</div>
 
             <div class="exec-row">
@@ -288,12 +312,16 @@
                 <button class="step-btn" id="stepMinus">-</button>
                 <button class="step-btn" id="stepPlus">+</button>
             </div>
+
+            <label class="file-select-btn">
+                📺 选择动画
+                <input type="file" id="fileInput" accept="video/*,image/gif">
+            </label>
         </div>
     </div>
 </div>
 
 <script>
-// ==================== 本地状态 ====================
 let state = {
     balance: 10000,
     betStep: 10,
@@ -301,28 +329,25 @@ let state = {
     betRolling: false,
     pool: 50000,
     countdown: 30,
-    countdownInterval: null
+    countdownInterval: null,
+    selectedFile: null
 };
 
-// ==================== UI更新 ====================
 function updateUI() {
     document.getElementById('balanceDisplay').innerText = state.balance.toFixed(2);
     document.getElementById('poolDisplay').innerText = state.pool.toFixed(2);
     document.getElementById('betDragonAmount').innerText = state.bets.DRAGON;
     document.getElementById('betTigerAmount').innerText = state.bets.TIGER;
     document.getElementById('betTieAmount').innerText = state.bets.TIE;
-
-    const totalBet = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
+    let totalBet = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
     document.getElementById('totalBetAmount').innerText = totalBet.toFixed(2);
-
     let maxWin = 0;
     if (state.bets.DRAGON > 0) maxWin = Math.max(maxWin, state.bets.DRAGON * 2);
     if (state.bets.TIGER > 0) maxWin = Math.max(maxWin, state.bets.TIGER * 2);
     if (state.bets.TIE > 0) maxWin = Math.max(maxWin, state.bets.TIE * 8);
     document.getElementById('val-win').innerText = maxWin.toFixed(2);
-
     document.querySelectorAll('.multi-bet-item').forEach(el => {
-        const type = el.dataset.type;
+        let type = el.dataset.type;
         el.classList.toggle('selected', state.bets[type] > 0);
     });
 }
@@ -343,96 +368,98 @@ function adjustStep(dir) {
     document.getElementById('stepValue').innerText = state.betStep;
 }
 
-// ==================== 特效函数 ====================
 function triggerFightEffect() {
-    const effect = document.getElementById('fight-effect');
+    let effect = document.getElementById('fight-effect');
     effect.classList.remove('flash');
     setTimeout(() => effect.classList.add('flash'), 10);
 }
 
 function showResultBig(result, isWin) {
-    const resultBig = document.getElementById('resultBig');
-    let displayChar = '';
-    if (result === '龙') displayChar = '🐉 龙！';
-    else if (result === '虎') displayChar = '🐯 虎！';
-    else displayChar = '⚖️ 和！';
-    resultBig.innerText = displayChar;
-    resultBig.classList.remove('animate');
-    void resultBig.offsetWidth; // 强制重绘
-    resultBig.classList.add('animate');
-    // 如果中奖，额外增加粒子效果
-    if (isWin) {
-        createWinParticles();
-    }
+    let big = document.getElementById('resultBig');
+    let txt = result === '龙' ? '🐉 龙！' : (result === '虎' ? '🐯 虎！' : '⚖️ 和！');
+    big.innerText = txt;
+    big.classList.remove('animate');
+    void big.offsetWidth;
+    big.classList.add('animate');
+    if (isWin) createWinParticles();
 }
 
 function createWinParticles() {
-    const container = document.getElementById('particlesContainer');
-    const scene = document.getElementById('battleScene');
-    const rect = scene.getBoundingClientRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
+    let container = document.getElementById('particlesContainer');
+    let scene = document.getElementById('battleScene');
+    let rect = scene.getBoundingClientRect();
+    let cx = rect.width / 2, cy = rect.height / 2;
     for (let i = 0; i < 40; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
-        const angle = Math.random() * Math.PI * 2;
-        const distance = 30 + Math.random() * 80;
-        const dx = Math.cos(angle) * distance;
-        const dy = Math.sin(angle) * distance;
-        particle.style.setProperty('--dx', dx + 'px');
-        particle.style.setProperty('--dy', dy + 'px');
-        particle.style.left = centerX + 'px';
-        particle.style.top = centerY + 'px';
-        container.appendChild(particle);
-        setTimeout(() => particle.remove(), 1000);
+        let p = document.createElement('div');
+        p.className = 'particle';
+        let angle = Math.random() * Math.PI * 2;
+        let dist = 30 + Math.random() * 80;
+        let dx = Math.cos(angle) * dist;
+        let dy = Math.sin(angle) * dist;
+        p.style.setProperty('--dx', dx + 'px');
+        p.style.setProperty('--dy', dy + 'px');
+        p.style.left = cx + 'px';
+        p.style.top = cy + 'px';
+        container.appendChild(p);
+        setTimeout(() => p.remove(), 1000);
     }
 }
 
-// ==================== 开奖逻辑 ====================
+function playTvAnimation() {
+    if (!state.selectedFile) return;
+    let video = document.getElementById('tvVideo');
+    let img = document.getElementById('tvImage');
+    let url = URL.createObjectURL(state.selectedFile);
+    let type = state.selectedFile.type;
+    video.style.display = 'none';
+    img.style.display = 'none';
+    if (type.startsWith('video/')) {
+        video.src = url;
+        video.style.display = 'block';
+        video.currentTime = 0;
+        video.play().catch(e => console.log(e));
+        setTimeout(() => {
+            video.pause();
+            video.style.display = 'none';
+            URL.revokeObjectURL(url);
+        }, 1500);
+    } else if (type === 'image/gif' || type.startsWith('image/')) {
+        img.src = url;
+        img.style.display = 'block';
+        setTimeout(() => {
+            img.style.display = 'none';
+            URL.revokeObjectURL(url);
+        }, 1500);
+    }
+}
+
 function performDraw() {
     if (state.betRolling) return;
-
-    const totalBet = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
+    let totalBet = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
     if (totalBet === 0) {
         document.getElementById('battle-result').innerText = '⏳ 无人押注，跳过此局';
         clearCountdown();
         startCountdown(30);
         return;
     }
-
-    // 选择押注金额最大的选项
-    let selectedType = null;
-    let selectedAmount = 0;
+    let selectedType = null, selectedAmount = 0;
     if (state.bets.DRAGON > 0) { selectedType = "DRAGON"; selectedAmount = state.bets.DRAGON; }
     if (state.bets.TIGER > selectedAmount) { selectedType = "TIGER"; selectedAmount = state.bets.TIGER; }
     if (state.bets.TIE > selectedAmount) { selectedType = "TIE"; selectedAmount = state.bets.TIE; }
-
     if (!selectedType) return;
-
-    const typeMap = { "DRAGON": "龙", "TIGER": "虎", "TIE": "和" };
-    const betType = typeMap[selectedType];
-    const betAmount = selectedAmount;
-
+    let betType = { DRAGON:"龙", TIGER:"虎", TIE:"和" }[selectedType];
+    let betAmount = selectedAmount;
     if (betAmount > state.balance) {
         document.getElementById('battle-result').innerText = '⚠️ 余额不足，跳过此局';
         clearCountdown();
         startCountdown(30);
         return;
     }
-
     state.betRolling = true;
     document.getElementById('battle-result').innerText = '🎲 开奖中... 🎲';
-
-    // 模拟随机结果
-    const result = (() => {
-        const r = Math.random();
-        if (r < 0.4) return "龙";
-        if (r < 0.8) return "虎";
-        return "和";
-    })();
-
-    let win = 0;
-    let isWin = false;
+    let r = Math.random();
+    let result = r < 0.4 ? "龙" : (r < 0.8 ? "虎" : "和");
+    let win = 0, isWin = false;
     if (betType === result) {
         win = betAmount * (result === "和" ? 8 : 2);
         state.balance += win;
@@ -440,21 +467,14 @@ function performDraw() {
     } else {
         state.balance -= betAmount;
     }
-
     updateUI();
     triggerFightEffect();
     showResultBig(result, isWin);
-
-    const resultMsg = win > 0 
-        ? `🎲 开奖: ${result}  ✅ 中奖 +${win} TRX`
-        : `🎲 开奖: ${result}  ❌ 未中奖`;
-    document.getElementById('battle-result').innerText = resultMsg;
-
-    // 清空押注
+    playTvAnimation();
+    let msg = win > 0 ? `🎲 开奖: ${result}  ✅ 中奖 +${win} TRX` : `🎲 开奖: ${result}  ❌ 未中奖`;
+    document.getElementById('battle-result').innerText = msg;
     state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
     updateUI();
-
-    // 15秒后恢复默认文字，并开始下一轮倒计时
     setTimeout(() => {
         document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
         state.betRolling = false;
@@ -462,10 +482,9 @@ function performDraw() {
     }, 15000);
 }
 
-// ==================== 倒计时管理 ====================
-function startCountdown(seconds) {
+function startCountdown(sec) {
     if (state.countdownInterval) clearInterval(state.countdownInterval);
-    state.countdown = seconds;
+    state.countdown = sec;
     document.getElementById('timerText').innerText = `下一局: ${state.countdown}秒`;
     state.countdownInterval = setInterval(() => {
         if (state.countdown <= 1) {
@@ -480,13 +499,9 @@ function startCountdown(seconds) {
 }
 
 function clearCountdown() {
-    if (state.countdownInterval) {
-        clearInterval(state.countdownInterval);
-        state.countdownInterval = null;
-    }
+    if (state.countdownInterval) clearInterval(state.countdownInterval);
 }
 
-// ==================== 彩金池波动 ====================
 function startPoolFluctuation() {
     setInterval(() => {
         let change = Math.floor(Math.random() * 61) - 30;
@@ -498,43 +513,33 @@ function startPoolFluctuation() {
     }, 1000);
 }
 
-// ==================== 手动刷新 ====================
 function refreshBalance() {
     updateUI();
     document.getElementById('battle-result').innerText = '💰 余额已刷新';
     setTimeout(() => {
-        if (!state.betRolling && document.getElementById('battle-result').innerText === '💰 余额已刷新') {
+        if (!state.betRolling && document.getElementById('battle-result').innerText === '💰 余额已刷新')
             document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
-        }
     }, 2000);
 }
 
-// ==================== 事件绑定 ====================
 function bindEvents() {
     document.getElementById('refreshBtn').onclick = refreshBalance;
     document.getElementById('stepMinus').onclick = () => adjustStep(-1);
     document.getElementById('stepPlus').onclick = () => adjustStep(1);
-
-    const decButtons = document.querySelectorAll('.bet-dec');
-    const incButtons = document.querySelectorAll('.bet-inc');
-
-    decButtons.forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const type = btn.dataset.type;
-            adjustBet(type, -state.betStep);
-        };
+    document.querySelectorAll('.bet-dec').forEach(btn => {
+        btn.onclick = (e) => { e.stopPropagation(); adjustBet(btn.dataset.type, -state.betStep); };
     });
-    incButtons.forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const type = btn.dataset.type;
-            adjustBet(type, state.betStep);
-        };
+    document.querySelectorAll('.bet-inc').forEach(btn => {
+        btn.onclick = (e) => { e.stopPropagation(); adjustBet(btn.dataset.type, state.betStep); };
+    });
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+        if (e.target.files[0]) {
+            state.selectedFile = e.target.files[0];
+            alert(`已选择动画: ${state.selectedFile.name}`);
+        }
     });
 }
 
-// ==================== 初始化 ====================
 function init() {
     bindEvents();
     updateUI();
