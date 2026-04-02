@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>龙虎斗 - 手机本地自动开奖版（增强特效）</title>
+    <title>龙虎斗 - 电视动画版</title>
     <style>
         /* ==================== 外凸内陷布局 ==================== */
         :root {
@@ -46,7 +46,7 @@
         .box span:first-child { font-size: 12px; color: #ccc; letter-spacing: 1px; font-weight: bold; }
         .box span:last-child { font-size: 20px; font-weight: bold; color: var(--gold); text-shadow: 0 0 6px var(--gold); }
 
-        /* 战场区域 */
+        /* 战场区域 - 电视屏幕 */
         .battle-scene { 
             height: 38%; display: flex; justify-content: center; align-items: center; 
             background: #0a0a0a; border: 3px solid var(--jade-d); 
@@ -72,7 +72,6 @@
             100% { opacity: 0.8; transform: translateY(-50%) scale(1.2); }
         }
 
-        /* 原有的战斗光效 */
         .fight-effect {
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
             width: 80px; height: 80px;
@@ -103,7 +102,6 @@
             white-space: nowrap;
             opacity: 0;
             pointer-events: none;
-            transition: none;
         }
         .result-big.animate {
             animation: bigResult 0.8s ease-out forwards;
@@ -137,6 +135,19 @@
         @keyframes particleFly {
             0% { transform: translate(0, 0) scale(1); opacity: 1; }
             100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+        }
+
+        /* 自定义动画层（电视屏幕） */
+        .tv-animation {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            object-fit: contain;
+            z-index: 14;
+            display: none;
+            pointer-events: none;
         }
 
         .battle-result {
@@ -225,6 +236,20 @@
             text-align: center;
             margin: 5px 0;
         }
+        .file-select-btn {
+            background: #e67e22;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 12px;
+            margin-top: 8px;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .file-select-btn input {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -235,6 +260,7 @@
             <div class="box"><span>彩金池</span><span id="poolDisplay">50000.00</span></div>
         </div>
 
+        <!-- 战场区域：电视屏幕 -->
         <div class="battle-scene" id="battleScene">
             <div class="scene-bg"></div>
             <div class="scene-light light-left"></div>
@@ -242,6 +268,9 @@
             <div class="fight-effect" id="fight-effect"></div>
             <div class="particles" id="particlesContainer"></div>
             <div class="result-big" id="resultBig"></div>
+            <!-- 动画播放层 -->
+            <video id="tvVideo" class="tv-animation" muted loop></video>
+            <img id="tvImage" class="tv-animation" style="display: none;">
             <div class="battle-result" id="battle-result">龙虎相争·一触即发</div>
         </div>
 
@@ -288,6 +317,12 @@
                 <button class="step-btn" id="stepMinus">-</button>
                 <button class="step-btn" id="stepPlus">+</button>
             </div>
+
+            <!-- 选择动画文件按钮 -->
+            <label class="file-select-btn">
+                📺 选择动画文件
+                <input type="file" id="fileInput" accept="video/*,image/gif">
+            </label>
         </div>
     </div>
 </div>
@@ -301,7 +336,8 @@ let state = {
     betRolling: false,
     pool: 50000,
     countdown: 30,
-    countdownInterval: null
+    countdownInterval: null,
+    selectedFile: null  // 存储用户选择的动画文件对象
 };
 
 // ==================== UI更新 ====================
@@ -358,9 +394,8 @@ function showResultBig(result, isWin) {
     else displayChar = '⚖️ 和！';
     resultBig.innerText = displayChar;
     resultBig.classList.remove('animate');
-    void resultBig.offsetWidth; // 强制重绘
+    void resultBig.offsetWidth;
     resultBig.classList.add('animate');
-    // 如果中奖，额外增加粒子效果
     if (isWin) {
         createWinParticles();
     }
@@ -388,6 +423,36 @@ function createWinParticles() {
     }
 }
 
+// 播放用户选择的动画（电视效果）
+function playTvAnimation() {
+    if (!state.selectedFile) return;
+    const video = document.getElementById('tvVideo');
+    const img = document.getElementById('tvImage');
+    const url = URL.createObjectURL(state.selectedFile);
+    const fileType = state.selectedFile.type;
+    // 隐藏所有动画层
+    video.style.display = 'none';
+    img.style.display = 'none';
+    if (fileType.startsWith('video/')) {
+        video.src = url;
+        video.style.display = 'block';
+        video.currentTime = 0;
+        video.play().catch(e => console.log("播放失败", e));
+        setTimeout(() => {
+            video.pause();
+            video.style.display = 'none';
+            URL.revokeObjectURL(url);
+        }, 1500);
+    } else if (fileType === 'image/gif' || fileType.startsWith('image/')) {
+        img.src = url;
+        img.style.display = 'block';
+        setTimeout(() => {
+            img.style.display = 'none';
+            URL.revokeObjectURL(url);
+        }, 1500);
+    }
+}
+
 // ==================== 开奖逻辑 ====================
 function performDraw() {
     if (state.betRolling) return;
@@ -400,7 +465,6 @@ function performDraw() {
         return;
     }
 
-    // 选择押注金额最大的选项
     let selectedType = null;
     let selectedAmount = 0;
     if (state.bets.DRAGON > 0) { selectedType = "DRAGON"; selectedAmount = state.bets.DRAGON; }
@@ -423,7 +487,6 @@ function performDraw() {
     state.betRolling = true;
     document.getElementById('battle-result').innerText = '🎲 开奖中... 🎲';
 
-    // 模拟随机结果
     const result = (() => {
         const r = Math.random();
         if (r < 0.4) return "龙";
@@ -444,17 +507,16 @@ function performDraw() {
     updateUI();
     triggerFightEffect();
     showResultBig(result, isWin);
+    playTvAnimation();   // 播放电视动画
 
     const resultMsg = win > 0 
         ? `🎲 开奖: ${result}  ✅ 中奖 +${win} TRX`
         : `🎲 开奖: ${result}  ❌ 未中奖`;
     document.getElementById('battle-result').innerText = resultMsg;
 
-    // 清空押注
     state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
     updateUI();
 
-    // 15秒后恢复默认文字，并开始下一轮倒计时
     setTimeout(() => {
         document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
         state.betRolling = false;
@@ -509,6 +571,18 @@ function refreshBalance() {
     }, 2000);
 }
 
+// ==================== 文件选择 ====================
+function bindFileSelect() {
+    const fileInput = document.getElementById('fileInput');
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            state.selectedFile = file;
+            alert(`已选择动画: ${file.name}`);
+        }
+    });
+}
+
 // ==================== 事件绑定 ====================
 function bindEvents() {
     document.getElementById('refreshBtn').onclick = refreshBalance;
@@ -537,6 +611,7 @@ function bindEvents() {
 // ==================== 初始化 ====================
 function init() {
     bindEvents();
+    bindFileSelect();
     updateUI();
     startPoolFluctuation();
     startCountdown(30);
