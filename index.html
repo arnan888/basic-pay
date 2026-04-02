@@ -234,6 +234,28 @@
             font-weight: bold;
             cursor: pointer;
         }
+        .repeat-btn {
+            width: 52px;
+            height: 52px;
+            background: #2c3e50;
+            border: 3px solid var(--jade-d);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .cancel-btn {
+            width: 52px;
+            height: 52px;
+            background: #c0392b;
+            border: 3px solid var(--jade-d);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
         .main-go {
             flex: 1;
             height: 52px;
@@ -248,17 +270,6 @@
         }
         .main-go:active {
             transform: translateY(2px);
-        }
-        .repeat-btn {
-            width: 52px;
-            height: 52px;
-            background: #2c3e50;
-            border: 3px solid var(--jade-d);
-            border-radius: 10px;
-            color: #fff;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
         }
         .timer-text {
             font-size: 14px;
@@ -353,6 +364,7 @@
             <div class="exec-row">
                 <button class="refresh-btn" id="refreshBtn">🔄</button>
                 <button class="repeat-btn" id="repeatBtn">续押</button>
+                <button class="cancel-btn" id="cancelBtn">取消</button>
                 <button class="main-go" id="fightBtn">确认投注</button>
             </div>
         </div>
@@ -488,9 +500,22 @@ function repeatLastBet() {
     // 直接使用上次的押注
     placeBet(lastBet.type, lastBet.amount).then(success => {
         if (success) {
-            // 续押后不清空押注选项，保持界面原样（可选）
+            // 续押后不清空押注选项，保持界面原样
         }
     });
+}
+
+function cancelAllBets() {
+    if (state.betRolling) {
+        document.getElementById('battle-result').innerText = '⏳ 押注处理中，请稍后再试';
+        return;
+    }
+    state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
+    updateUI();
+    document.getElementById('battle-result').innerText = '✅ 已清空所有押注';
+    setTimeout(() => {
+        if (!state.betRolling) document.getElementById('battle-result').innerText = '龙虎相争·一触即发';
+    }, 2000);
 }
 
 function updateUI() {
@@ -606,6 +631,7 @@ function switchUser() {
 function bindEvents() {
     document.getElementById('refreshBtn').onclick = refreshBalance;
     document.getElementById('repeatBtn').onclick = repeatLastBet;
+    document.getElementById('cancelBtn').onclick = cancelAllBets;
     document.getElementById('fightBtn').onclick = executeBet;
     document.getElementById('switchUserBtn').onclick = switchUser;
 
@@ -613,6 +639,7 @@ function bindEvents() {
         btn.onclick = () => setSpeed(parseInt(btn.dataset.speed));
     });
 
+    // 龙、和、虎的加减按钮，每次固定增减10
     document.querySelectorAll('.bet-dec').forEach(btn => {
         btn.onclick = (e) => {
             e.stopPropagation();
