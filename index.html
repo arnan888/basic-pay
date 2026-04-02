@@ -2,6 +2,373 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <title>红中发财老虎机</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", sans-serif;
+        }
+        body {
+            background: linear-gradient(#8B4513, #CD5C5C);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .game-container {
+            width: 90%;
+            max-width: 800px;
+            background: #F0E68C;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+        .game-title {
+            text-align: center;
+            font-size: 36px;
+            color: #FF0000;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 2px #000;
+        }
+        .top-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #FFFACD;
+            border-radius: 10px;
+        }
+        .slot-area {
+            display: flex;
+            justify-content: space-between;
+            background: #8B4513;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .reel {
+            width: 100px;
+            height: 100px;
+            background: #FFF;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            font-weight: bold;
+            border: 3px solid #FFD700;
+            transition: all 0.3s ease;
+        }
+        .reel.spinning {
+            animation: spin 0.2s infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(5deg); background: #FFE4B5; }
+            100% { transform: rotate(-5deg); }
+        }
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        .bet-control {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 24px;
+        }
+        .bet-btn {
+            width: 40px;
+            height: 40px;
+            font-size: 24px;
+            background: #FF0000;
+            color: #FFF;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .spin-btn {
+            padding: 15px 50px;
+            font-size: 28px;
+            background: #FFD700;
+            color: #FF0000;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .spin-btn:disabled {
+            background: #666;
+            color: #CCC;
+            cursor: not-allowed;
+        }
+        .win-tip {
+            font-size: 24px;
+            color: #FF0000;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 10px;
+            min-height: 30px;
+        }
+        .pay-table {
+            margin-top: 20px;
+            background: #FFFACD;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .pay-table h3 {
+            color: #FF0000;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .pay-table ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+        .pay-table li {
+            margin: 5px;
+            padding: 5px 10px;
+            background: #FFF;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-title">红中发财老虎机</div>
+        
+        <div class="top-info">
+            <div>当前余额：<span id="balance">1000</span> 金币</div>
+            <div>当前下注：<span id="currentBet">10</span> 金币</div>
+        </div>
+        
+        <div class="slot-area">
+            <div class="reel" id="reel1">一</div>
+            <div class="reel" id="reel2">二</div>
+            <div class="reel" id="reel3">三</div>
+            <div class="reel" id="reel4">四</div>
+            <div class="reel" id="reel5">五</div>
+        </div>
+        
+        <div class="control-panel">
+            <div class="bet-control">
+                <button class="bet-btn" id="betMinus">-</button>
+                <span>下注金额</span>
+                <button class="bet-btn" id="betPlus">+</button>
+            </div>
+            <button class="spin-btn" id="spinBtn">红中发财！开转！</button>
+            <div class="win-tip" id="winTip"></div>
+        </div>
+        
+        <div class="pay-table">
+            <h3>牌型奖励说明</h3>
+            <ul>
+                <li>红中×3 → 100倍奖励</li>
+                <li>发财×3 → 80倍奖励</li>
+                <li>红中×2+发财 → 50倍奖励</li>
+                <li>红中赖子 → 20倍奖励（可当任意牌）</li>
+                <li>发财翻倍 → 所有奖励×1.5</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 游戏数据
+        const symbols = ['红中', '发财', '一万', '二万', '三条', '四筒', '五饼'];
+        const balanceEl = document.getElementById('balance');
+        const currentBetEl = document.getElementById('currentBet');
+        const spinBtn = document.getElementById('spinBtn');
+        const winTip = document.getElementById('winTip');
+        const reels = [
+            document.getElementById('reel1'),
+            document.getElementById('reel2'),
+            document.getElementById('reel3'),
+            document.getElementById('reel4'),
+            document.getElementById('reel5')
+        ];
+        const betMinusBtn = document.getElementById('betMinus');
+        const betPlusBtn = document.getElementById('betPlus');
+
+        // 游戏状态
+        let balance = 1000;
+        let currentBet = 10;
+        let isSpinning = false;
+
+        // 初始化显示
+        updateDisplay();
+
+        // 下注调整按钮事件
+        betMinusBtn.addEventListener('click', () => {
+            if (currentBet > 1) {
+                currentBet -= 1;
+                updateDisplay();
+            }
+        });
+        betPlusBtn.addEventListener('click', () => {
+            if (currentBet < balance) {
+                currentBet += 1;
+                updateDisplay();
+            }
+        });
+
+        // 转动按钮事件
+        spinBtn.addEventListener('click', async () => {
+            if (isSpinning || balance < currentBet) {
+                winTip.textContent = balance < currentBet ? '余额不足啦！' : '正在转动中...';
+                return;
+            }
+
+            // 开始转动
+            isSpinning = true;
+            spinBtn.disabled = true;
+            winTip.textContent = '';
+            startSpinAnimation();
+
+            // 模拟转动时间（3秒）
+            await new Promise(resolve => setTimeout(resolve, 3000));
+
+            // 生成结果
+            const result = generateResult();
+            // 计算奖励
+            const winInfo = calculateWin(result);
+            // 更新余额
+            balance = balance - currentBet + winInfo.win;
+
+            // 停止转动并显示结果
+            stopSpinAnimation(result);
+            winTip.textContent = winInfo.win > 0 
+                ? `恭喜！${winInfo.msg} 赢得 ${winInfo.win} 金币！` 
+                : '下次好运~';
+
+            // 更新显示
+            updateDisplay();
+            isSpinning = false;
+            spinBtn.disabled = false;
+        });
+
+        // 更新显示数据
+        function updateDisplay() {
+            balanceEl.textContent = balance;
+            currentBetEl.textContent = currentBet;
+        }
+
+        // 开始转动动画
+        function startSpinAnimation() {
+            reels.forEach(reel => {
+                reel.classList.add('spinning');
+                // 随机显示符号模拟转动
+                let spinInterval = setInterval(() => {
+                    reel.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                }, 100);
+                reel.spinInterval = spinInterval;
+            });
+        }
+
+        // 停止转动动画并显示结果
+        function stopSpinAnimation(result) {
+            reels.forEach((reel, index) => {
+                clearInterval(reel.spinInterval);
+                reel.classList.remove('spinning');
+                // 逐个停止，更有真实感
+                setTimeout(() => {
+                    reel.textContent = result[index];
+                    // 中奖牌高亮
+                    if (result[index] === '红中') {
+                        reel.style.background = '#FF6347';
+                        reel.style.color = '#FFF';
+                    } else if (result[index] === '发财') {
+                        reel.style.background = '#FFD700';
+                        reel.style.color = '#FF0000';
+                    } else {
+                        reel.style.background = '#FFF';
+                        reel.style.color = '#000';
+                    }
+                }, index * 200);
+            });
+        }
+
+        // 生成随机结果
+        function generateResult() {
+            const result = [];
+            // 红中和发财概率稍高
+            const weights = [0.18, 0.15, 0.13, 0.13, 0.13, 0.13, 0.13];
+            for (let i = 0; i < 5; i++) {
+                let random = Math.random();
+                let sum = 0;
+                for (let j = 0; j < symbols.length; j++) {
+                    sum += weights[j];
+                    if (random <= sum) {
+                        result.push(symbols[j]);
+                        break;
+                    }
+                }
+            }
+            return result;
+        }
+
+        // 计算奖励
+        function calculateWin(result) {
+            let win = 0;
+            let msg = '';
+            let hasFaCai = result.includes('发财');
+            let redZhongCount = result.filter(s => s === '红中').length;
+            let faCaiCount = result.filter(s => s === '发财').length;
+
+            // 红中三连
+            if (redZhongCount >= 3) {
+                win = currentBet * 100;
+                msg = '杠上开花！红中三连！';
+            }
+            // 发财三连
+            else if (faCaiCount >= 3) {
+                win = currentBet * 80;
+                msg = '恭喜发财！发财三连！';
+            }
+            // 红中两连+发财
+            else if (redZhongCount >= 2 && faCaiCount >= 1) {
+                win = currentBet * 50;
+                msg = '红中发财！双喜临门！';
+            }
+            // 红中赖子
+            else if (redZhongCount >= 1) {
+                // 检查是否有两个相同的普通牌
+                const normalSymbols = result.filter(s => s !== '红中' && s !== '发财');
+                const symbolCount = {};
+                normalSymbols.forEach(s => {
+                    symbolCount[s] = (symbolCount[s] || 0) + 1;
+                });
+                for (let s in symbolCount) {
+                    if (symbolCount[s] >= 2) {
+                        win = currentBet * 20;
+                        msg = '红中赖子！凑成对子！';
+                        break;
+                    }
+                }
+            }
+
+            // 发财翻倍
+            if (hasFaCai && win > 0) {
+                win = Math.floor(win * 1.5);
+                msg += ' 发财翻倍！';
+            }
+
+            return { win, msg };
+        }
+    </script>
+</body>
+</html>
+——————————————————————————————————————————————————————————————————————————————————————————————————————————————————’’’’’————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>字牌老虎机 | 红中·发财·白板</title>
     <script src="https://cdn.tailwindcss.com"></script>
