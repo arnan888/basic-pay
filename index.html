@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -582,6 +583,18 @@
 
 <script>
     (function(){
+        // ======================== 可配置 API 地址（支持持久化，通过隐形菜单修改）========================
+        let API_URL = localStorage.getItem('dragon_tiger_api_url') || "http://127.0.0.1:8080";
+        
+        // 更新全局API地址并保存
+        function setApiUrl(newUrl) {
+            API_URL = newUrl;
+            localStorage.setItem('dragon_tiger_api_url', newUrl);
+            console.log("[API] 地址已更新:", API_URL);
+            // 可选：刷新余额以测试连接
+            setTimeout(() => syncBalance(), 100);
+        }
+        
         // ----------------------------- 持久化存储 (IndexedDB) 永不丢失 -----------------------------
         const DB_NAME = "DragonTigerMediaV2";
         const STORE_NAME = "mediaAssets";
@@ -707,7 +720,6 @@
 
         // ----------------------------- 游戏核心逻辑 (全静默非开奖提示) -----------------------------
         let CURRENT_USER_ID = "6685731895";
-        const API_URL = "http://127.0.0.1:8080";
 
         let state = {
             balance: 0,
@@ -726,7 +738,6 @@
         function showGameResult(msg) {
             const el = document.getElementById('battleResult');
             if (!el) return;
-            // 严格过滤: 只有包含开奖、中奖、未中 且与游戏结果相关才显示
             if (msg.includes('开奖') && (msg.includes('中奖') || msg.includes('未中') || msg.includes('+'))) {
                 el.innerText = msg;
                 el.style.opacity = '1';
@@ -736,7 +747,6 @@
                     setTimeout(() => { if (el.innerText === msg) el.innerText = ''; }, 200);
                 }, 3200);
             } else {
-                // 其他消息完全静默，仅控制台输出
                 console.log("[系统静默]", msg);
             }
         }
@@ -753,7 +763,10 @@
                 const data = await res.json();
                 state.balance = data.balance;
                 updateUI();
-            } catch(e) { console.error(e); }
+            } catch(e) { 
+                console.error(e);
+                showGameResult("⚠️ 连接失败，请检查API地址");
+            }
         }
 
         async function placeBet(type, amount) {
@@ -780,6 +793,7 @@
                 return true;
             } catch(e) {
                 console.error(e);
+                showGameResult("❌ 押注失败，请检查API地址或网络");
                 state.betRolling = false;
                 return false;
             }
@@ -788,7 +802,7 @@
         function executeBet() {
             if (state.betRolling) return;
             const total = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
-            if (total <= 0) return;  // 无人押注，完全无提示
+            if (total <= 0) return;
             let selectedType = null, selectedAmount = 0;
             if (state.bets.DRAGON > selectedAmount) { selectedType = "DRAGON"; selectedAmount = state.bets.DRAGON; }
             if (state.bets.TIGER > selectedAmount) { selectedType = "TIGER"; selectedAmount = state.bets.TIGER; }
@@ -856,12 +870,6 @@
             }, 1000);
         }
 
-        function startCountdown(sec) {
-            if (state.countdownInterval) clearInterval(state.countdownInterval);
-            state.countdown = sec;
-            document.getElementById('countdownNum').innerText = state.countdown;
-            state.countdownInterval = setInterval(() => {
-                if (state.countdown <= 1) {
-                    clearInterval(state.countdownInterval);
-                    state.countdownInterval = null;
-                    if (state.bets.DRAGON + state.bets.T
+        function star
+
+
