@@ -1,4 +1,5 @@
- <!DOCTYPE html>
+cat > index.html << 'EOF'
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -156,7 +157,10 @@
             font-size: 14px;
             color: #eee;
         }
-        .account-info span { color: #f1c40f; font-weight: bold; }
+        .account-info span {
+            color: #f1c40f;
+            font-weight: bold;
+        }
         .account-switch {
             display: flex;
             gap: 8px;
@@ -354,13 +358,76 @@
             width: 0;
             height: 0;
         }
+        .admin-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1e2a2e;
+            border: 2px solid #f1c40f;
+            border-radius: 28px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            backdrop-filter: blur(20px);
+            z-index: 10001;
+            color: white;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+        .admin-panel h3 {
+            margin-bottom: 16px;
+            color: #f1c40f;
+        }
+        .admin-panel input, .admin-panel select {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            border-radius: 12px;
+            border: 1px solid #f1c40f;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            font-size: 14px;
+        }
+        .admin-panel button {
+            background: #2c3e2f;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 20px;
+            margin: 6px;
+            color: #f1c40f;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .admin-panel .close-btn {
+            background: #c0392b;
+            color: white;
+        }
+        .admin-panel .user-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.4);
+            border-radius: 16px;
+            padding: 8px;
+            margin: 8px 0;
+        }
+        .admin-panel .user-item {
+            padding: 6px;
+            border-bottom: 1px solid #555;
+            cursor: pointer;
+        }
+        .admin-panel .user-item.selected {
+            background: #f1c40f;
+            color: black;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
 <div class="container-outer">
     <div class="container">
         <div class="header">
-            <div class="box"><span>余额</span><span id="balanceDisplay">0.00</span></div>
+            <div class="box"><span>余额</span><span id="balanceDisplay">10000.00</span></div>
             <div class="box"><span>彩金池</span><span id="poolDisplay">50000.00</span></div>
         </div>
         <div class="battle-scene">
@@ -423,24 +490,46 @@
     </div>
 </div>
 <input type="file" id="hiddenFileInput" accept="image/*,video/mp4,video/webm" style="display:none">
+
 <script>
     (function(){
-        function log(msg) { console.log("[龙虎斗]", msg); }
-        let API_URL = localStorage.getItem('dragon_tiger_api_url') || "http://127.0.0.1:8080";
+        // ==================== 用户数据管理 ====================
+        let users = JSON.parse(localStorage.getItem('dragon_tiger_users')) || {};
+        let CURRENT_USER_ID = "6685731895";
+        if (!users[CURRENT_USER_ID]) {
+            users[CURRENT_USER_ID] = { balance: 10000, history: [] };
+            localStorage.setItem('dragon_tiger_users', JSON.stringify(users));
+        }
+        
         let ADMIN_PASSWORD = localStorage.getItem('dragon_tiger_password') || "dragon888";
-        function setApiUrl(newUrl) {
-            API_URL = newUrl;
-            localStorage.setItem('dragon_tiger_api_url', newUrl);
-            setTimeout(() => syncBalance(), 100);
+        
+        function saveUsers() {
+            localStorage.setItem('dragon_tiger_users', JSON.stringify(users));
         }
-        function changePassword(oldPwd, newPwd) {
-            if (oldPwd !== ADMIN_PASSWORD) return false;
-            if (!newPwd || newPwd.length < 4) return false;
-            ADMIN_PASSWORD = newPwd;
-            localStorage.setItem('dragon_tiger_password', newPwd);
-            return true;
+        
+        function getBalance(userId) {
+            if (!users[userId]) users[userId] = { balance: 10000, history: [] };
+            return users[userId].balance;
         }
-        const DB_NAME = "DragonTigerMediaFull";
+        
+        function setBalance(userId, amount) {
+            if (!users[userId]) users[userId] = { balance: 10000, history: [] };
+            users[userId].balance = amount;
+            saveUsers();
+        }
+        
+        function addBalance(userId, delta) {
+            let cur = getBalance(userId);
+            setBalance(userId, cur + delta);
+        }
+        
+        // 获取所有用户列表
+        function getUserList() {
+            return Object.keys(users);
+        }
+        
+        // ==================== 媒体存储 ====================
+        const DB_NAME = "DragonTigerMediaLocal";
         const STORE_NAME = "mediaAssets";
         let db = null;
         function openDB() {
@@ -494,7 +583,7 @@
                 video.style.top = '0';
                 video.style.left = '0';
                 bgDiv.appendChild(video);
-                video.play().catch(e=>log(e));
+                video.play().catch(e=>console.log);
             } else if (mimeType.startsWith('image/')) {
                 bgDiv.style.backgroundImage = `url(${url})`;
                 bgDiv.style.backgroundSize = 'cover';
@@ -505,7 +594,7 @@
             try {
                 const bg = await loadMedia('background');
                 if (bg && bg.blob) applyBackground(bg.blob, bg.mimeType);
-            } catch(e) { log(e); }
+            } catch(e) { console.log(e); }
         }
         async function uploadBackground(file) {
             if (!file) return;
@@ -520,9 +609,10 @@
             if (!file) return;
             await saveMedia('tiger', file, file.type);
         }
-        let CURRENT_USER_ID = "6685731895";
+        
+        // ==================== 游戏核心 ====================
         let state = {
-            balance: 0,
+            balance: getBalance(CURRENT_USER_ID),
             bets: { DRAGON: 0, TIGER: 0, TIE: 0 },
             betRolling: false,
             autoMode: true,
@@ -533,6 +623,7 @@
         };
         let lastBet = null;
         let resultTimer = null;
+        
         function showGameResult(msg) {
             const el = document.getElementById('battleResult');
             if (!el) return;
@@ -546,35 +637,37 @@
                 }, 3000);
             } else console.log("[静默]", msg);
         }
+        
         function getCountdownSec() { return state.speed===1?30:(state.speed===2?20:10); }
-        async function syncBalance() {
-            try {
-                const res = await fetch(`${API_URL}/balance?user_id=${CURRENT_USER_ID}`);
-                const data = await res.json();
-                state.balance = data.balance;
-                updateUI();
-            } catch(e) { showGameResult("⚠️ 连接失败，请检查API地址"); }
+        
+        function syncBalance() {
+            state.balance = getBalance(CURRENT_USER_ID);
+            updateUI();
         }
-        async function placeBet(type, amount) {
+        
+        function placeBet(type, amount) {
             if (state.betRolling || amount<=0 || amount>state.balance) return false;
             state.betRolling = true;
-            try {
-                const res = await fetch(`${API_URL}/bet`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: CURRENT_USER_ID, type: type, amount: amount })
-                });
-                const data = await res.json();
-                if (data.error) throw new Error(data.error);
-                state.balance = data.balance;
-                updateUI();
-                const resultMsg = data.win > 0 ? `🎲 开奖: ${data.result}  ✅ 中奖 +${data.win} TRX` : `🎲 开奖: ${data.result}  ❌ 未中奖`;
-                showGameResult(resultMsg);
-                if (state.autoMode) { clearCountdown(); startCountdown(getCountdownSec()); }
-                state.betRolling = false;
-                return true;
-            } catch(e) { showGameResult("❌ 押注失败"); state.betRolling = false; return false; }
+            const outcomes = ['龙', '虎', '和'];
+            const result = outcomes[Math.floor(Math.random() * 3)];
+            let win = 0;
+            if (type === result) {
+                win = amount * (result === '和' ? 8 : 2);
+            }
+            const newBalance = state.balance - amount + win;
+            setBalance(CURRENT_USER_ID, newBalance);
+            state.balance = newBalance;
+            updateUI();
+            const resultMsg = win > 0 ? `🎲 开奖: ${result}  ✅ 中奖 +${win} TRX` : `🎲 开奖: ${result}  ❌ 未中奖`;
+            showGameResult(resultMsg);
+            if (state.autoMode) {
+                clearCountdown();
+                startCountdown(getCountdownSec());
+            }
+            state.betRolling = false;
+            return true;
         }
+        
         function executeBet() {
             if (state.betRolling) return;
             const total = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
@@ -586,10 +679,17 @@
             if (!selectedType) return;
             const betType = { DRAGON:"龙", TIGER:"虎", TIE:"和" }[selectedType];
             lastBet = { type: betType, amount: selectedAmount };
-            placeBet(betType, selectedAmount).then(success => { if(success){ state.bets = { DRAGON:0, TIGER:0, TIE:0 }; updateUI(); } });
+            placeBet(betType, selectedAmount).then(success => {
+                if (success) {
+                    state.bets = { DRAGON:0, TIGER:0, TIE:0 };
+                    updateUI();
+                }
+            });
         }
+        
         function repeatLastBet() { if(lastBet && !state.betRolling) placeBet(lastBet.type, lastBet.amount); }
         function cancelAllBets() { if(!state.betRolling){ state.bets = { DRAGON:0, TIGER:0, TIE:0 }; updateUI(); } }
+        
         function updateUI() {
             document.getElementById('balanceDisplay').innerText = state.balance.toFixed(2);
             document.getElementById('poolDisplay').innerText = state.pool.toFixed(2);
@@ -609,8 +709,20 @@
                 else el.classList.remove('selected');
             });
         }
+        
         function adjustBet(type, delta) { if(!state.betRolling){ let newVal = state.bets[type] + delta; if(newVal<0) newVal=0; state.bets[type]=newVal; updateUI(); } }
-        function startPoolFluctuation() { setInterval(() => { let change = Math.floor(Math.random()*61)-30; let newPool = state.pool+change; if(newPool<10000) newPool=10000; if(newPool>100000) newPool=100000; state.pool=newPool; document.getElementById('poolDisplay').innerText=state.pool.toFixed(2); }, 1000); }
+        
+        function startPoolFluctuation() {
+            setInterval(() => {
+                let change = Math.floor(Math.random() * 61) - 30;
+                let newPool = state.pool + change;
+                if (newPool < 10000) newPool = 10000;
+                if (newPool > 100000) newPool = 100000;
+                state.pool = newPool;
+                document.getElementById('poolDisplay').innerText = state.pool.toFixed(2);
+            }, 1000);
+        }
+        
         function startCountdown(sec) {
             if(state.countdownInterval) clearInterval(state.countdownInterval);
             state.countdown = sec;
@@ -638,18 +750,124 @@
             clearCountdown();
             startCountdown(getCountdownSec());
         }
+        
         function switchUser() {
             const newId = document.getElementById('switchUserIdInput').value.trim();
             if(!newId) return;
             CURRENT_USER_ID = newId;
+            if (!users[CURRENT_USER_ID]) {
+                users[CURRENT_USER_ID] = { balance: 10000, history: [] };
+                saveUsers();
+            }
             document.getElementById('currentUserId').innerText = CURRENT_USER_ID;
             state.bets = { DRAGON:0, TIGER:0, TIE:0 };
             lastBet = null;
-            updateUI();
             syncBalance();
+            updateUI();
             clearCountdown();
             startCountdown(getCountdownSec());
         }
+        
+        // ==================== 管理员面板 ====================
+        let adminPanel = null;
+        let selectedAdminUserId = CURRENT_USER_ID;
+        
+        function showAdminPanel() {
+            if (adminPanel) {
+                adminPanel.remove();
+                adminPanel = null;
+                return;
+            }
+            const panel = document.createElement('div');
+            panel.className = 'admin-panel';
+            panel.innerHTML = `
+                <h3>🔐 管理员面板</h3>
+                <div class="user-list" id="adminUserList"></div>
+                <div>当前选中用户：<strong id="selectedUserDisplay">${selectedAdminUserId}</strong></div>
+                <input type="number" id="adminAmount" placeholder="金额" value="100">
+                <div style="display: flex; gap: 8px; justify-content: center;">
+                    <button id="adminAddBtn">➕ 上分</button>
+                    <button id="adminSubBtn">➖ 下分</button>
+                    <button id="adminQueryBtn">🔍 查询余额</button>
+                    <button id="adminResetBtn">🔄 重置为10000</button>
+                </div>
+                <button id="adminChangePwdBtn">🔑 修改管理员密码</button>
+                <button class="close-btn" id="adminCloseBtn">关闭</button>
+            `;
+            document.body.appendChild(panel);
+            adminPanel = panel;
+            
+            // 刷新用户列表
+            function refreshUserList() {
+                const userListDiv = document.getElementById('adminUserList');
+                if (!userListDiv) return;
+                const usersArr = getUserList();
+                userListDiv.innerHTML = '';
+                usersArr.forEach(uid => {
+                    const div = document.createElement('div');
+                    div.className = 'user-item' + (uid === selectedAdminUserId ? ' selected' : '');
+                    div.textContent = `${uid} (余额: ${getBalance(uid).toFixed(2)})`;
+                    div.onclick = () => {
+                        selectedAdminUserId = uid;
+                        document.getElementById('selectedUserDisplay').innerText = selectedAdminUserId;
+                        refreshUserList();
+                    };
+                    userListDiv.appendChild(div);
+                });
+            }
+            refreshUserList();
+            
+            // 上分
+            document.getElementById('adminAddBtn').onclick = () => {
+                const amount = parseFloat(document.getElementById('adminAmount').value);
+                if (isNaN(amount) || amount <= 0) { alert("请输入正数金额"); return; }
+                addBalance(selectedAdminUserId, amount);
+                refreshUserList();
+                if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
+                alert(`✅ 已给 ${selectedAdminUserId} 上分 ${amount} TRX，新余额: ${getBalance(selectedAdminUserId).toFixed(2)}`);
+            };
+            // 下分
+            document.getElementById('adminSubBtn').onclick = () => {
+                const amount = parseFloat(document.getElementById('adminAmount').value);
+                if (isNaN(amount) || amount <= 0) { alert("请输入正数金额"); return; }
+                const cur = getBalance(selectedAdminUserId);
+                if (cur < amount) { alert("余额不足，无法下分"); return; }
+                addBalance(selectedAdminUserId, -amount);
+                refreshUserList();
+                if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
+                alert(`✅ 已从 ${selectedAdminUserId} 下分 ${amount} TRX，新余额: ${getBalance(selectedAdminUserId).toFixed(2)}`);
+            };
+            // 查询余额
+            document.getElementById('adminQueryBtn').onclick = () => {
+                const bal = getBalance(selectedAdminUserId);
+                alert(`用户 ${selectedAdminUserId} 当前余额: ${bal.toFixed(2)} TRX`);
+            };
+            // 重置余额
+            document.getElementById('adminResetBtn').onclick = () => {
+                if (confirm(`确认将 ${selectedAdminUserId} 的余额重置为 10000 TRX？`)) {
+                    setBalance(selectedAdminUserId, 10000);
+                    refreshUserList();
+                    if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
+                    alert(`✅ 已重置 ${selectedAdminUserId} 余额为 10000 TRX`);
+                }
+            };
+            // 修改管理员密码
+            document.getElementById('adminChangePwdBtn').onclick = () => {
+                const old = prompt("请输入当前管理员密码:");
+                if (old !== ADMIN_PASSWORD) { alert("密码错误"); return; }
+                const newPwd = prompt("请输入新密码 (至少4位):");
+                if (!newPwd || newPwd.length < 4) { alert("密码至少4位"); return; }
+                ADMIN_PASSWORD = newPwd;
+                localStorage.setItem('dragon_tiger_password', newPwd);
+                alert("✅ 管理员密码修改成功！");
+            };
+            document.getElementById('adminCloseBtn').onclick = () => {
+                panel.remove();
+                adminPanel = null;
+            };
+        }
+        
+        // ==================== 文件上传（背景等） ====================
         const hiddenInput = document.getElementById('hiddenFileInput');
         let pendingUploadType = null;
         hiddenInput.addEventListener('change', (e) => {
@@ -661,12 +879,10 @@
             pendingUploadType = null;
             hiddenInput.value = '';
         });
-        function triggerUpload(type) {
-            pendingUploadType = type;
-            hiddenInput.click();
-        }
-        let longPressTimer = null;
-        let activeMenu = null;
+        function triggerUpload(type) { pendingUploadType = type; hiddenInput.click(); }
+        
+        // ==================== 长按菜单 ====================
+        let longPressTimer = null, activeMenu = null;
         function showSecretMenu() {
             if(activeMenu) { activeMenu.remove(); activeMenu=null; return; }
             const menu = document.createElement('div');
@@ -675,7 +891,7 @@
                 <button id="secretDragon">🐉 上传龙图/视频</button>
                 <button id="secretTiger">🐯 上传虎图/视频</button>
                 <button id="secretBg">🌌 上传背景 (图/视频)</button>
-                <button id="secretSettings">🔐 设置中心 (密码保护)</button>
+                <button id="secretAdmin">👑 管理员面板</button>
             `;
             document.body.appendChild(menu);
             activeMenu = menu;
@@ -685,39 +901,21 @@
                 }
             };
             setTimeout(()=>document.addEventListener('click', closeHandler), 20);
-            document.getElementById('secretDragon').onclick = () => {
+            document.getElementById('secretDragon').onclick = () => { if(activeMenu) activeMenu.remove(); activeMenu=null; triggerUpload('dragon'); };
+            document.getElementById('secretTiger').onclick = () => { if(activeMenu) activeMenu.remove(); activeMenu=null; triggerUpload('tiger'); };
+            document.getElementById('secretBg').onclick = () => { if(activeMenu) activeMenu.remove(); activeMenu=null; triggerUpload('background'); };
+            document.getElementById('secretAdmin').onclick = () => {
                 if(activeMenu) activeMenu.remove();
                 activeMenu = null;
-                triggerUpload('dragon');
-            };
-            document.getElementById('secretTiger').onclick = () => {
-                if(activeMenu) activeMenu.remove();
-                activeMenu = null;
-                triggerUpload('tiger');
-            };
-            document.getElementById('secretBg').onclick = () => {
-                if(activeMenu) activeMenu.remove();
-                activeMenu = null;
-                triggerUpload('background');
-            };
-            document.getElementById('secretSettings').onclick = () => {
-                if(activeMenu) activeMenu.remove();
-                activeMenu = null;
-                const pwd = prompt("🔐 请输入管理密码:", "");
-                if(pwd !== ADMIN_PASSWORD){ alert("密码错误！"); return; }
-                const action = prompt("设置中心\n1. 修改API地址\n2. 修改管理密码\n请输入数字(1/2):", "1");
-                if(action === "1"){
-                    const newApi = prompt("请输入新的API地址:", API_URL);
-                    if(newApi && newApi.trim()){ setApiUrl(newApi.trim()); alert("✅ API地址已更新"); setTimeout(()=>syncBalance(),200); }
-                } else if(action === "2"){
-                    const newPwd = prompt("请输入新的管理密码 (至少4位):", "");
-                    if(newPwd && newPwd.length>=4){
-                        if(changePassword(pwd, newPwd)) alert("✅ 密码修改成功！");
-                        else alert("❌ 密码修改失败");
-                    } else alert("密码无效");
-                } else alert("无效选项");
+                const pwd = prompt("🔐 请输入管理员密码:", "");
+                if(pwd === ADMIN_PASSWORD) {
+                    showAdminPanel();
+                } else {
+                    alert("密码错误！");
+                }
             };
         }
+        
         function onLongPress() {
             const pwd = prompt("🔐 管理员验证（长按续押按钮3秒）\n请输入管理密码:", "");
             if(pwd === ADMIN_PASSWORD) {
@@ -726,6 +924,7 @@
                 alert("密码错误！");
             }
         }
+        
         function bindEvents() {
             document.getElementById('refreshBtn').onclick = refreshBalance;
             const repeatBtn = document.getElementById('repeatBtn');
@@ -750,11 +949,12 @@
             document.querySelectorAll('.bet-dec').forEach(btn => btn.onclick = (e) => { e.stopPropagation(); adjustBet(btn.dataset.type, -10); });
             document.querySelectorAll('.bet-inc').forEach(btn => btn.onclick = (e) => { e.stopPropagation(); adjustBet(btn.dataset.type, 10); });
         }
+        
         async function init() {
             await openDB();
             await restoreBackground();
             bindEvents();
-            await syncBalance();
+            syncBalance();
             startPoolFluctuation();
             setSpeed(1);
             updateUI();
@@ -765,3 +965,5 @@
 </script>
 </body>
 </html>
+EOF
+```
