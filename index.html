@@ -343,7 +343,6 @@
             background: #2c4a3b;
         }
 
-        /* 隐藏菜单 */
         .secret-menu {
             position: fixed;
             bottom: 80px;
@@ -443,6 +442,9 @@
 
 <script>
     (function(){
+        // ========== 调试日志 ==========
+        function log(msg) { console.log("[龙虎斗]", msg); }
+        
         // ========== 密码和API配置 ==========
         let API_URL = localStorage.getItem('dragon_tiger_api_url') || "http://127.0.0.1:8080";
         let ADMIN_PASSWORD = localStorage.getItem('dragon_tiger_password') || "dragon888";
@@ -450,6 +452,7 @@
         function setApiUrl(newUrl) {
             API_URL = newUrl;
             localStorage.setItem('dragon_tiger_api_url', newUrl);
+            log("API地址已更新: " + API_URL);
             setTimeout(() => syncBalance(), 100);
         }
         function changePassword(oldPwd, newPwd) {
@@ -457,10 +460,11 @@
             if (!newPwd || newPwd.length < 4) return false;
             ADMIN_PASSWORD = newPwd;
             localStorage.setItem('dragon_tiger_password', newPwd);
+            log("密码已修改");
             return true;
         }
         
-        // ========== IndexedDB 持久化（龙、虎、背景） ==========
+        // ========== IndexedDB 持久化 ==========
         const DB_NAME = "DragonTigerMediaFull";
         const STORE_NAME = "mediaAssets";
         let db = null;
@@ -470,9 +474,10 @@
                 req.onupgradeneeded = (e) => {
                     const dbRef = e.target.result;
                     if (!dbRef.objectStoreNames.contains(STORE_NAME)) dbRef.createObjectStore(STORE_NAME);
+                    log("IndexedDB 升级/创建");
                 };
-                req.onsuccess = (e) => { db = e.target.result; resolve(db); };
-                req.onerror = (e) => reject(e);
+                req.onsuccess = (e) => { db = e.target.result; log("IndexedDB 打开成功"); resolve(db); };
+                req.onerror = (e) => { log("IndexedDB 打开失败"); reject(e); };
             });
         }
         async function saveMedia(key, blob, mimeType) {
@@ -481,8 +486,8 @@
                 const tx = db.transaction(STORE_NAME, "readwrite");
                 const store = tx.objectStore(STORE_NAME);
                 store.put({ blob, mimeType, updated: Date.now() }, key);
-                tx.oncomplete = () => resolve();
-                tx.onerror = (e) => reject(e);
+                tx.oncomplete = () => { log(`保存 ${key} 成功`); resolve(); };
+                tx.onerror = (e) => { log(`保存 ${key} 失败`); reject(e); };
             });
         }
         async function loadMedia(key) {
@@ -517,37 +522,49 @@
                 video.style.top = '0';
                 video.style.left = '0';
                 bgDiv.appendChild(video);
-                video.play().catch(e=>console.log);
+                video.play().catch(e=>log("视频播放失败: "+e));
+                log("背景视频已应用");
             } else if (mimeType.startsWith('image/')) {
                 bgDiv.style.backgroundImage = `url(${url})`;
                 bgDiv.style.backgroundSize = 'cover';
                 bgDiv.style.backgroundPosition = 'center';
+                log("背景图片已应用");
             }
         }
         
         async function restoreBackground() {
             try {
                 const bg = await loadMedia('background');
-                if (bg && bg.blob) applyBackground(bg.blob, bg.mimeType);
-            } catch(e) { console.warn(e); }
+                if (bg && bg.blob) {
+                    applyBackground(bg.blob, bg.mimeType);
+                    log("恢复背景成功");
+                } else {
+                    log("无保存的背景");
+                }
+            } catch(e) { log("恢复背景失败: "+e); }
         }
         
         async function uploadBackground(file) {
-            if (!file) return;
+            if (!file) { log("未选择文件"); return; }
+            log("开始上传背景: "+file.name+", 类型:"+file.type);
             const mime = file.type;
             const blob = file;
             await saveMedia('background', blob, mime);
             applyBackground(blob, mime);
+            log("背景上传完成");
         }
         
-        // 龙、虎上传：只保存，不显示
         async function uploadDragon(file) {
             if (!file) return;
+            log("上传龙图: "+file.name);
             await saveMedia('dragon', file, file.type);
+            log("龙图已保存（界面不显示）");
         }
         async function uploadTiger(file) {
             if (!file) return;
+            log("上传虎图: "+file.name);
             await saveMedia('tiger', file, file.type);
+            log("虎图已保存（界面不显示）");
         }
         
         // ========== 游戏逻辑 ==========
@@ -584,7 +601,7 @@
                 const data = await res.json();
                 state.balance = data.balance;
                 updateUI();
-            } catch(e) { showGameResult("⚠️ 连接失败，请检查API地址"); }
+            } catch(e) { showGameResult("⚠️ 连接失败，请检查API地址"); log("余额同步失败: "+e); }
         }
         async function placeBet(type, amount) {
             if (state.betRolling || amount<=0 || amount>state.balance) return false;
@@ -604,7 +621,7 @@
                 if (state.autoMode) { clearCountdown(); startCountdown(getCountdownSec()); }
                 state.betRolling = false;
                 return true;
-            } catch(e) { showGameResult("❌ 押注失败"); state.betRolling = false; return false; }
+            } catch(e) { showGameResult("❌ 押注失败"); log("押注失败: "+e); state.betRolling = false; return false; }
         }
         function executeBet() {
             if (state.betRolling) return;
@@ -619,7 +636,7 @@
             lastBet = { type: betType, amount: selectedAmount };
             placeBet(betType, selectedAmount).then(success => { if(success){ state.bets = { DRAGON:0, TIGER:0, TIE:0 }; updateUI(); } });
         }
-        function repeatLastBet() { if(lastBet && !state.betRolling) placeBet(lastBet.type, lastBet.amount); }
+        function repeatLastBet() { if(lastBet && !state.betRolling) { log("续押: "+lastBet.type+" "+lastBet.amount); placeBet(lastBet.type, lastBet.amount); } else { log("无上次押注记录"); } }
         function cancelAllBets() { if(!state.betRolling){ state.bets = { DRAGON:0, TIGER:0, TIE:0 }; updateUI(); } }
         function updateUI() {
             document.getElementById('balanceDisplay').innerText = state.balance.toFixed(2);
@@ -682,7 +699,7 @@
             startCountdown(getCountdownSec());
         }
         
-        // ========== 长按“续押”按钮弹出密码保护菜单 ==========
+        // ========== 长按菜单（密码保护）长按3秒触发 ==========
         let longPressTimer = null;
         let activeMenu = null;
         
@@ -742,9 +759,8 @@
             };
         }
         
-        // 长按检测
         function onLongPress() {
-            const pwd = prompt("🔐 管理员验证（长按触发）\n请输入管理密码:", "");
+            const pwd = prompt("🔐 管理员验证（长按续押按钮3秒）\n请输入管理密码:", "");
             if(pwd === ADMIN_PASSWORD) {
                 showSecretMenu();
             } else if(pwd !== null) {
@@ -754,17 +770,19 @@
         
         function bindEvents() {
             document.getElementById('refreshBtn').onclick = refreshBalance;
-            // 续押按钮：短按原功能，长按弹出密码
             const repeatBtn = document.getElementById('repeatBtn');
-            repeatBtn.onclick = (e) => {
+            // 清除旧监听，重新绑定
+            repeatBtn.onclick = null;
+            repeatBtn.addEventListener('click', (e) => {
                 if(longPressTimer) clearTimeout(longPressTimer);
                 repeatLastBet();
-            };
+            });
+            // 长按3秒触发（3000毫秒）
             repeatBtn.addEventListener('touchstart', (e) => {
                 longPressTimer = setTimeout(() => {
                     onLongPress();
                     longPressTimer = null;
-                }, 5000);
+                }, 3000);
             });
             repeatBtn.addEventListener('touchend', () => {
                 if(longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
@@ -772,12 +790,12 @@
             repeatBtn.addEventListener('touchcancel', () => {
                 if(longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
             });
-            // 防止鼠标事件干扰（桌面调试用）
+            // 桌面调试支持
             repeatBtn.addEventListener('mousedown', (e) => {
                 longPressTimer = setTimeout(() => {
                     onLongPress();
                     longPressTimer = null;
-                }, 5000);
+                }, 3000);
             });
             repeatBtn.addEventListener('mouseup', () => {
                 if(longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
@@ -800,6 +818,7 @@
             setSpeed(1);
             updateUI();
             startCountdown(getCountdownSec());
+            log("初始化完成");
         }
         window.onload = init;
     })();
