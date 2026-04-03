@@ -3,225 +3,964 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI_QUANT_FULL_FUNCTION</title>
+    <title>龙虎斗 · 暗涌终端</title>
     <style>
-        :root {
-            --jade: #4a7c64; --jade-l: #6b9a85; --jade-d: #2c4a3b;
-            --stone: #6b737e; --inner: inset 8px 8px 16px rgba(0,0,0,0.5), inset -4px -4px 8px rgba(255,255,255,0.05);
-            --gold: #f1c40f; --red: #ff4d4d; --blue: #3498db; --tiger: #e67e22;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: #111; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-
-        /* 极宽立体外框 */
+        body {
+            background: #0c0c0c;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+        .container-outer {
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(45deg, #ff0000, #ff9900, #ffff00, #00ff00, #0099ff, #6633ff, #ff00ff);
+            background-size: 600% 600%;
+            animation: outerNeonRotate 15s linear infinite;
+            padding: 8px;
+            border-radius: 0;
+            box-shadow: none;
+        }
+        @keyframes outerNeonRotate {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
         .container {
-            width: 100vw; height: 100vh; max-width: 450px;
-            background: var(--jade); border: 12px solid var(--jade);
-            border-image: linear-gradient(135deg, var(--jade-l), var(--jade-d)) 12;
-            box-shadow: 0 0 30px rgba(0,0,0,0.8); display: flex; flex-direction: column;
+            width: 100%;
+            height: 100%;
+            background: #4a7c64;
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: inset 16px 16px 24px rgba(0,0,0,0.8), inset -8px -8px 12px rgba(255,255,255,0.06);
+            overflow: hidden;
         }
-
-        .divider { height: 6px; background: var(--jade-d); border-top: 2px solid var(--jade-l); border-bottom: 1px solid #000; }
-
-        /* 顶部余额区 */
-        .header { height: 10%; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 10px; }
-        .box { background: var(--stone); border: 2px solid var(--jade-d); box-shadow: var(--inner); border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .box span:first-child { font-size: 10px; color: #ddd; }
-        .box span:last-child { font-size: 16px; font-weight: bold; }
-
-        /* 转盘区 */
-        .main-stage { height: 38%; display: flex; justify-content: center; align-items: center; background: var(--stone); box-shadow: var(--inner); border: 4px solid var(--jade-d); border-radius: 12px; margin: 0 8px; position: relative; }
-        .ptr { position: absolute; top: 5%; z-index: 10; width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-top: 22px solid var(--red); filter: drop-shadow(0 0 5px red); }
-        #wheel { width: 240px; height: 240px; border-radius: 50%; border: 8px solid var(--jade); background: #222; position: relative; transition: transform 4s cubic-bezier(0.1, 0, 0.2, 1.1); }
-        .icon { position: absolute; width: 100%; height: 100%; text-align: center; padding-top: 18px; font-size: 26px; }
-        .hub { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: var(--jade-d); border-radius: 50%; border: 2px solid var(--jade-l); display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 12px; font-weight: bold; }
-
-        /* 沉底操作区 */
-        .controls { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; background: var(--stone); box-shadow: var(--inner); border: 4px solid var(--jade-d); border-radius: 12px; margin: 8px 8px 12px 8px; }
-
-        /* 龙虎博弈格 */
-        .bet-grid { display: grid; grid-template-columns: 1fr 0.6fr 1fr; gap: 8px; margin-bottom: 12px; }
-        .btn-bet { height: 80px; background: rgba(0,0,0,0.3); border: 2px solid var(--jade-d); border-radius: 10px; box-shadow: var(--inner); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; transition: 0.2s; cursor: pointer; }
-        .btn-bet.selected { border-color: var(--gold); background: rgba(255,255,255,0.1); box-shadow: inset 0 0 15px rgba(241,196,15,0.3); }
-        .dragon { color: var(--blue); } .tiger { color: var(--tiger); }
-        
-        .mid-stack { display: grid; grid-template-rows: repeat(3, 1fr); gap: 4px; }
-        .item-small { background: rgba(0,0,0,0.4); border: 1px solid var(--jade-d); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--gold); }
-
-        /* 获胜动画 */
-        @keyframes win-flash { 0% { filter: brightness(1); } 50% { filter: brightness(2); box-shadow: 0 0 20px #fff; } 100% { filter: brightness(1); } }
-        .win-effect { animation: win-flash 0.4s ease 3; }
-
-        /* 操作键 */
-        .stake-bar { text-align: center; color: #fff; font-size: 13px; margin-bottom: 8px; font-weight: bold; }
-        .act-row { display: flex; gap: 10px; margin-bottom: 10px; }
-        .s-btn { width: 45px; height: 45px; background: var(--jade); border: 2px solid var(--jade-d); border-radius: 8px; color: #fff; font-size: 20px; font-weight: bold; }
-        .go-btn { flex: 1; height: 55px; background: linear-gradient(180deg, #d32f2f, #b71c1c); border: none; border-radius: 28px; color: #fff; font-size: 18px; font-weight: bold; box-shadow: 0 5px 0 #7f0000; }
-        .go-btn:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 2px 0 #7f0000; }
-        .go-btn:disabled { opacity: 0.7; filter: grayscale(1); }
-
-        .opt-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .f-btn { background: rgba(0,0,0,0.4); border: 1.5px solid var(--jade-d); height: 36px; border-radius: 6px; color: #ccc; font-size: 11px; display: flex; align-items: center; justify-content: center; }
-        .f-btn.active { border-color: var(--gold); color: #fff; background: var(--jade-d); }
-        
-        .blur { filter: blur(4px); }
+        .header {
+            flex-shrink: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            padding: 12px 16px;
+        }
+        .box {
+            background: #6b737e;
+            border: 2px solid #2c4a3b;
+            border-radius: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            box-shadow: inset 8px 8px 12px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.06);
+            background-image: linear-gradient(rgba(0,0,0,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.2) 1px, transparent 1px);
+            background-size: 12px 12px;
+        }
+        .box span:first-child {
+            font-size: 14px;
+            color: #ccc;
+            font-weight: bold;
+        }
+        .box span:last-child,
+        .multi-bet-amount,
+        .data-item value,
+        .timer-text .red-number,
+        #stepValue,
+        #totalBetAmount,
+        #valWin,
+        #balanceDisplay,
+        #poolDisplay,
+        .red-number {
+            color: #ff3300 !important;
+            font-weight: bold;
+            text-shadow: 0 0 2px rgba(255,51,0,0.5);
+            font-size: 1.2em;
+        }
+        .battle-scene {
+            flex: 0 0 40%;
+            position: relative;
+            margin: 8px 16px;
+            border: 3px solid #2c4a3b;
+            border-radius: 24px;
+            overflow: hidden;
+            background: #0a0a0a;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+        }
+        .scene-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+            z-index: 1;
+            background-size: cover;
+            background-position: center;
+        }
+        .scene-bg video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .battle-result {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            font-weight: bold;
+            color: #ffecb3;
+            background: rgba(0,0,0,0.65);
+            padding: 6px 18px;
+            border-radius: 40px;
+            z-index: 20;
+            backdrop-filter: blur(6px);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .play-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #6b737e;
+            margin: 0 16px 16px 16px;
+            border: 3px solid #2c4a3b;
+            border-radius: 20px;
+            padding: 14px;
+            box-shadow: inset 8px 8px 12px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.06);
+            background-image: linear-gradient(rgba(0,0,0,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.2) 1px, transparent 1px);
+            background-size: 12px 12px;
+            overflow-y: auto;
+        }
+        .account-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.45);
+            border-radius: 16px;
+            padding: 8px 14px;
+            margin-bottom: 12px;
+        }
+        .account-info {
+            font-size: 14px;
+            color: #eee;
+        }
+        .account-info span {
+            color: #f1c40f;
+            font-weight: bold;
+        }
+        .account-switch {
+            display: flex;
+            gap: 8px;
+        }
+        .account-switch input {
+            background: rgba(0,0,0,0.6);
+            border: 1px solid #2c4a3b;
+            border-radius: 12px;
+            padding: 6px 10px;
+            color: white;
+            font-size: 14px;
+            width: 110px;
+        }
+        .account-switch button {
+            background: #4a7c64;
+            border: 1px solid #f1c40f;
+            border-radius: 12px;
+            padding: 6px 14px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .multi-bet-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .multi-bet-item {
+            flex: 1;
+            background: #3a5a4a;
+            border: 2px solid #2c4a3b;
+            border-radius: 18px;
+            padding: 10px 4px;
+            text-align: center;
+            box-shadow: inset 6px 6px 10px rgba(0,0,0,0.5), inset -4px -4px 6px rgba(255,255,255,0.1);
+        }
+        .multi-bet-item.selected {
+            border-color: #f1c40f;
+            background: rgba(255,255,255,0.2);
+        }
+        .multi-bet-name {
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+        .multi-bet-name.dragon { color: #3498db; text-shadow: 0 0 4px #3498db; }
+        .multi-bet-name.tiger { color: #e67e22; text-shadow: 0 0 4px #e67e22; }
+        .multi-bet-name.tie { color: #9b59b6; text-shadow: 0 0 4px #9b59b6; }
+        .multi-bet-amount { font-size: 22px; }
+        .multi-bet-control {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            margin-top: 6px;
+        }
+        .multi-bet-control button {
+            background: rgba(0,0,0,0.65);
+            border: 1px solid #f1c40f;
+            border-radius: 40px;
+            width: 44px;
+            height: 44px;
+            color: #f1c40f;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .data-stack {
+            display: grid;
+            grid-template-rows: repeat(3, 1fr);
+            gap: 8px;
+            margin: 8px 0;
+        }
+        .data-item {
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #2c4a3b;
+            border-radius: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 18px;
+        }
+        .data-item label { font-size: 14px; color: #ccc; font-weight: bold; }
+        .stake-txt {
+            text-align: center;
+            color: #eee;
+            font-size: 14px;
+            margin: 8px 0 6px;
+        }
+        .exec-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .refresh-btn, .repeat-btn, .cancel-btn, .main-go {
+            box-shadow: inset 3px 3px 6px rgba(0,0,0,0.5), inset -2px -2px 4px rgba(255,255,255,0.1);
+            cursor: pointer;
+            transition: 0.05s linear;
+        }
+        .refresh-btn:active, .repeat-btn:active, .cancel-btn:active, .main-go:active {
+            transform: translateY(2px);
+        }
+        .refresh-btn {
+            width: 56px;
+            height: 56px;
+            background: #3498db;
+            border: 2px solid #2c4a3b;
+            border-radius: 16px;
+            color: white;
+            font-size: 28px;
+        }
+        .repeat-btn {
+            width: 56px;
+            height: 56px;
+            background: #2c3e50;
+            border: 2px solid #2c4a3b;
+            border-radius: 16px;
+            color: white;
+            font-size: 24px;
+        }
+        .cancel-btn {
+            width: 56px;
+            height: 56px;
+            background: #c0392b;
+            border: 2px solid #2c4a3b;
+            border-radius: 16px;
+            color: white;
+            font-size: 24px;
+        }
+        .main-go {
+            flex: 1;
+            height: 56px;
+            background: linear-gradient(180deg, #e53935, #b71c1c);
+            border: none;
+            border-radius: 40px;
+            color: white;
+            font-size: 22px;
+            font-weight: bold;
+        }
+        .timer-text {
+            font-size: 15px;
+            color: #f1c40f;
+            text-align: center;
+            margin: 6px 0;
+        }
+        .speed-select {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 8px 0;
+        }
+        .speed-btn {
+            background: rgba(0,0,0,0.4);
+            border: 2px solid #2c4a3b;
+            border-radius: 40px;
+            padding: 6px 20px;
+            color: #aaa;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .speed-btn.active {
+            border-color: #f1c40f;
+            color: white;
+            background: #2c4a3b;
+        }
+        .secret-menu {
+            position: fixed;
+            bottom: 80px;
+            right: 12px;
+            background: #1e2a2e;
+            border: 2px solid #f1c40f;
+            border-radius: 28px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            backdrop-filter: blur(20px);
+            z-index: 10000;
+        }
+        .secret-menu button {
+            background: #2c3e2f;
+            border: none;
+            border-radius: 60px;
+            padding: 10px 32px;
+            color: #f1c40f;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #hiddenFileInput {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+            width: 0;
+            height: 0;
+        }
+        .admin-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1e2a2e;
+            border: 2px solid #f1c40f;
+            border-radius: 28px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            backdrop-filter: blur(20px);
+            z-index: 10001;
+            color: white;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+        .admin-panel h3 {
+            margin-bottom: 16px;
+            color: #f1c40f;
+        }
+        .admin-panel input, .admin-panel select {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            border-radius: 12px;
+            border: 1px solid #f1c40f;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            font-size: 14px;
+        }
+        .admin-panel button {
+            background: #2c3e2f;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 20px;
+            margin: 6px;
+            color: #f1c40f;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .admin-panel .close-btn {
+            background: #c0392b;
+            color: white;
+        }
+        .admin-panel .user-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.4);
+            border-radius: 16px;
+            padding: 8px;
+            margin: 8px 0;
+        }
+        .admin-panel .user-item {
+            padding: 6px;
+            border-bottom: 1px solid #555;
+            cursor: pointer;
+        }
+        .admin-panel .user-item.selected {
+            background: #f1c40f;
+            color: black;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
-
-<div class="container">
-    <div class="header">
-        <div class="box"><span>BALANCE</span><span id="bal-ui" style="color:var(--red)">146.80</span></div>
-        <div class="box"><span>NETWORK POOL</span><span style="color:var(--gold)">84291.50</span></div>
-    </div>
-    <div class="divider"></div>
-    <div class="main-stage">
-        <div class="ptr"></div>
-        <div id="wheel"></div>
-        <div class="hub" id="hub-msg">READY</div>
-    </div>
-    <div class="divider"></div>
-    <div class="controls">
-        <div class="bet-grid">
-            <div id="bet-DRAGON" class="btn-bet dragon" onclick="selectSide('DRAGON')">龙</div>
-            <div class="mid-stack">
-                <div class="item-small">和</div>
-                <div class="item-small">小</div>
-                <div class="item-small">大</div>
+<div class="container-outer">
+    <div class="container">
+        <div class="header">
+            <div class="box"><span>余额</span><span id="balanceDisplay">10000.00</span></div>
+            <div class="box"><span>彩金池</span><span id="poolDisplay">50000.00</span></div>
+        </div>
+        <div class="battle-scene">
+            <div class="scene-bg" id="sceneBg"></div>
+            <div class="battle-result" id="battleResult"></div>
+        </div>
+        <div class="play-section">
+            <div class="account-bar">
+                <div class="account-info">当前账户：<span id="currentUserId">6685731895</span></div>
+                <div class="account-switch">
+                    <input type="text" id="switchUserIdInput" placeholder="用户ID" value="6685731895">
+                    <button id="switchUserBtn">切换</button>
+                </div>
             </div>
-            <div id="bet-TIGER" class="btn-bet tiger" onclick="selectSide('TIGER')">虎</div>
-        </div>
-        <div class="stake-bar">STAKE: <span id="stake-ui" style="color:var(--gold)">5.5</span> USDT</div>
-        <div class="act-row">
-            <button class="s-btn" onclick="changeStake(-1)">-</button>
-            <button class="go-btn" id="go-btn" onclick="startSpin()">EXECUTE</button>
-            <button class="s-btn" onclick="changeStake(1)">+</button>
-        </div>
-        <div class="opt-row">
-            <div id="auto-ui" class="f-btn" onclick="toggleAuto()">🤖 AUTO: OFF</div>
-            <div id="speed-ui" class="f-btn" onclick="toggleSpeed()">⚡ SPEED: 1X</div>
+            <div class="multi-bet-row">
+                <div class="multi-bet-item" data-type="DRAGON">
+                    <div class="multi-bet-name dragon">🐉 龙</div>
+                    <div class="multi-bet-amount" id="betDragonAmount">0</div>
+                    <div class="multi-bet-control">
+                        <button class="bet-dec" data-type="DRAGON">-</button>
+                        <button class="bet-inc" data-type="DRAGON">+</button>
+                    </div>
+                </div>
+                <div class="multi-bet-item" data-type="TIE">
+                    <div class="multi-bet-name tie">⚖️ 和</div>
+                    <div class="multi-bet-amount" id="betTieAmount">0</div>
+                    <div class="multi-bet-control">
+                        <button class="bet-dec" data-type="TIE">-</button>
+                        <button class="bet-inc" data-type="TIE">+</button>
+                    </div>
+                </div>
+                <div class="multi-bet-item" data-type="TIGER">
+                    <div class="multi-bet-name tiger">🐯 虎</div>
+                    <div class="multi-bet-amount" id="betTigerAmount">0</div>
+                    <div class="multi-bet-control">
+                        <button class="bet-dec" data-type="TIGER">-</button>
+                        <button class="bet-inc" data-type="TIGER">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="data-stack">
+                <div class="data-item"><label>总押注</label><value id="totalBetAmount">0.00</value></div>
+                <div class="data-item"><label>预计奖金</label><value id="valWin">0.00</value></div>
+                <div class="data-item"><label>模式</label><value class="mode-value">自动开奖</value></div>
+            </div>
+            <div class="stake-txt">单注步长：<span id="stepValue">10</span> USDT</div>
+            <div class="timer-text">下一局: <span id="countdownNum" class="red-number">30</span>秒</div>
+            <div class="speed-select">
+                <span class="speed-btn active" data-speed="1">1X</span>
+                <span class="speed-btn" data-speed="2">2X</span>
+                <span class="speed-btn" data-speed="3">3X</span>
+            </div>
+            <div class="exec-row">
+                <button class="refresh-btn" id="refreshBtn">🔄</button>
+                <button class="repeat-btn" id="repeatBtn">续押</button>
+                <button class="cancel-btn" id="cancelBtn">取消</button>
+                <button class="main-go" id="fightBtn">确认投注</button>
+            </div>
         </div>
     </div>
 </div>
+<input type="file" id="hiddenFileInput" accept="image/*,video/mp4,video/webm" style="display:none">
 
 <script>
-// 核心状态
-let state = {
-    balance: 146.80,
-    stakes: [5.5, 10, 20, 50, 100],
-    stakeIdx: 0,
-    selectedSide: null,
-    isRolling: false,
-    isAuto: false,
-    speed: 1,
-    currentDeg: 0
-};
-
-const icons = ['💎','💊','⚡','🔥','💰','🦁','🏆','🎲'];
-
-// 初始化转盘
-function init() {
-    const w = document.getElementById('wheel');
-    icons.forEach((icon, i) => {
-        const div = document.createElement('div');
-        div.className = 'icon';
-        div.style.transform = `rotate(${i * 45}deg)`;
-        div.innerText = icon;
-        w.appendChild(div);
-    });
-    updateUI();
-}
-
-// 恢复：选择龙虎
-function selectSide(side) {
-    if (state.isRolling) return;
-    state.selectedSide = side;
-    document.querySelectorAll('.btn-bet').forEach(el => el.classList.remove('selected'));
-    document.getElementById('bet-' + side).classList.add('selected');
-}
-
-// 恢复：金额增减
-function changeStake(dir) {
-    if (state.isRolling) return;
-    state.stakeIdx = Math.max(0, Math.min(state.stakes.length - 1, state.stakeIdx + dir));
-    updateUI();
-}
-
-// 恢复：倍速切换
-function toggleSpeed() {
-    state.speed = (state.speed % 3) + 1;
-    updateUI();
-}
-
-// 恢复：自动化开关
-function toggleAuto() {
-    state.isAuto = !state.isAuto;
-    if (state.isAuto && !state.isRolling) startSpin();
-    updateUI();
-}
-
-// 恢复：核心旋转逻辑
-async function startSpin() {
-    const cost = state.stakes[state.stakeIdx];
-    if (state.isRolling || state.balance < cost || !state.selectedSide) {
-        if (!state.selectedSide && !state.isRolling) alert("请先选择 龙 或 虎");
-        state.isAuto = false; 
-        updateUI();
-        return;
-    }
-
-    state.isRolling = true;
-    state.balance -= cost;
-    document.getElementById('hub-msg').innerText = "SPINNING";
-    document.getElementById('wheel').classList.add('blur');
-    document.querySelectorAll('.btn-bet').forEach(el => el.classList.remove('win-effect'));
-    updateUI();
-
-    // 联动开奖：0-3龙，4-7虎
-    const winIdx = Math.floor(Math.random() * 8); 
-    const resultSide = winIdx <= 3 ? 'DRAGON' : 'TIGER';
-    
-    // 计算旋转角度
-    const extraRounds = state.speed === 3 ? 3 : state.speed === 2 ? 5 : 8;
-    const targetDeg = (360 - (state.currentDeg % 360)) + (extraRounds * 360) - (winIdx * 45);
-    state.currentDeg += targetDeg;
-
-    const wheelEl = document.getElementById('wheel');
-    const duration = state.speed === 3 ? '0.8s' : state.speed === 2 ? '2s' : '4s';
-    wheelEl.style.transitionDuration = duration;
-    wheelEl.style.transform = `rotate(${state.currentDeg}deg)`;
-
-    setTimeout(() => {
-        wheelEl.classList.remove('blur');
-        state.isRolling = false;
-
-        // 判定胜负
-        if (state.selectedSide === resultSide) {
-            state.balance += cost * 2;
-            document.getElementById('hub-msg').innerText = "WIN!";
-            document.getElementById('bet-' + resultSide).classList.add('win-effect');
-        } else {
-            document.getElementById('hub-msg').innerText = "LOSE";
+    (function(){
+        // ==================== 用户数据管理 ====================
+        let users = JSON.parse(localStorage.getItem('dragon_tiger_users')) || {};
+        let CURRENT_USER_ID = "6685731895";
+        if (!users[CURRENT_USER_ID]) {
+            users[CURRENT_USER_ID] = { balance: 10000, history: [] };
+            localStorage.setItem('dragon_tiger_users', JSON.stringify(users));
         }
-
-        updateUI();
-        if (state.isAuto) setTimeout(startSpin, 1000);
-    }, parseFloat(duration) * 1000);
-}
-
-function updateUI() {
-    document.getElementById('bal-ui').innerText = state.balance.toFixed(2);
-    document.getElementById('stake-ui').innerText = state.stakes[state.stakeIdx].toFixed(1);
-    document.getElementById('go-btn').disabled = state.isRolling;
-    
-    const autoBtn = document.getElementById('auto-ui');
-    autoBtn.innerText = "🤖 AUTO: " + (state.isAuto ? "ON" : "OFF");
-    autoBtn.className = "f-btn " + (state.isAuto ? "active" : "");
-
-    document.getElementById('speed-ui').innerText = "⚡ SPEED: " + state.speed + "X";
-}
-
-init();
+        
+        let ADMIN_PASSWORD = localStorage.getItem('dragon_tiger_password') || "dragon888";
+        
+        function saveUsers() {
+            localStorage.setItem('dragon_tiger_users', JSON.stringify(users));
+        }
+        
+        function getBalance(userId) {
+            if (!users[userId]) users[userId] = { balance: 10000, history: [] };
+            return users[userId].balance;
+        }
+        
+        function setBalance(userId, amount) {
+            if (!users[userId]) users[userId] = { balance: 10000, history: [] };
+            users[userId].balance = amount;
+            saveUsers();
+        }
+        
+        function addBalance(userId, delta) {
+            let cur = getBalance(userId);
+            setBalance(userId, cur + delta);
+        }
+        
+        // 获取所有用户列表
+        function getUserList() {
+            return Object.keys(users);
+        }
+        
+        // ==================== 媒体存储 ====================
+        const DB_NAME = "DragonTigerMediaLocal";
+        const STORE_NAME = "mediaAssets";
+        let db = null;
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(DB_NAME, 1);
+                req.onupgradeneeded = (e) => {
+                    const dbRef = e.target.result;
+                    if (!dbRef.objectStoreNames.contains(STORE_NAME)) dbRef.createObjectStore(STORE_NAME);
+                };
+                req.onsuccess = (e) => { db = e.target.result; resolve(db); };
+                req.onerror = (e) => reject(e);
+            });
+        }
+        async function saveMedia(key, blob, mimeType) {
+            if (!db) await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, "readwrite");
+                const store = tx.objectStore(STORE_NAME);
+                store.put({ blob, mimeType, updated: Date.now() }, key);
+                tx.oncomplete = () => resolve();
+                tx.onerror = (e) => reject(e);
+            });
+        }
+        async function loadMedia(key) {
+            if (!db) await openDB();
+            return new Promise((resolve) => {
+                const tx = db.transaction(STORE_NAME, "readonly");
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.get(key);
+                req.onsuccess = () => resolve(req.result || null);
+                req.onerror = () => resolve(null);
+            });
+        }
+        function applyBackground(blob, mimeType) {
+            const bgDiv = document.getElementById('sceneBg');
+            bgDiv.innerHTML = '';
+            bgDiv.style.backgroundImage = 'none';
+            if (!blob) return;
+            const url = URL.createObjectURL(blob);
+            if (mimeType.startsWith('video/')) {
+                const video = document.createElement('video');
+                video.src = url;
+                video.autoplay = true;
+                video.loop = true;
+                video.muted = true;
+                video.playsInline = true;
+                video.style.width = '100%';
+                video.style.height = '100%';
+                video.style.objectFit = 'cover';
+                video.style.position = 'absolute';
+                video.style.top = '0';
+                video.style.left = '0';
+                bgDiv.appendChild(video);
+                video.play().catch(e=>console.log);
+            } else if (mimeType.startsWith('image/')) {
+                bgDiv.style.backgroundImage = `url(${url})`;
+                bgDiv.style.backgroundSize = 'cover';
+                bgDiv.style.backgroundPosition = 'center';
+            }
+        }
+        async function restoreBackground() {
+            try {
+                const bg = await loadMedia('background');
+                if (bg && bg.blob) applyBackground(bg.blob, bg.mimeType);
+            } catch(e) { console.log(e); }
+        }
+        async function uploadBackground(file) {
+            if (!file) return;
+            await saveMedia('background', file, file.type);
+            applyBackground(file, file.type);
+        }
+        async function uploadDragon(file) {
+            if (!file) return;
+            await saveMedia('dragon', file, file.type);
+        }
+        async function uploadTiger(file) {
+            if (!file) return;
+            await saveMedia('tiger', file, file.type);
+        }
+        
+        // ==================== 游戏核心 ====================
+        let state = {
+            balance: getBalance(CURRENT_USER_ID),
+            bets: { DRAGON: 0, TIGER: 0, TIE: 0 },
+            betRolling: false,
+            autoMode: true,
+            speed: 1,
+            pool: 50000,
+            countdown: 30,
+            countdownInterval: null
+        };
+        let lastBet = null;
+        let resultTimer = null;
+        
+        function showGameResult(msg) {
+            const el = document.getElementById('battleResult');
+            if (!el) return;
+            if (msg.includes('开奖') && (msg.includes('中奖') || msg.includes('未中') || msg.includes('+'))) {
+                el.innerText = msg;
+                el.style.opacity = '1';
+                if (resultTimer) clearTimeout(resultTimer);
+                resultTimer = setTimeout(() => {
+                    el.style.opacity = '0';
+                    setTimeout(() => { if (el.innerText === msg) el.innerText = ''; }, 200);
+                }, 3000);
+            } else console.log("[静默]", msg);
+        }
+        
+        function getCountdownSec() { return state.speed===1?30:(state.speed===2?20:10); }
+        
+        function syncBalance() {
+            state.balance = getBalance(CURRENT_USER_ID);
+            updateUI();
+        }
+        
+        function placeBet(type, amount) {
+            if (state.betRolling || amount<=0 || amount>state.balance) return false;
+            state.betRolling = true;
+            const outcomes = ['龙', '虎', '和'];
+            const result = outcomes[Math.floor(Math.random() * 3)];
+            let win = 0;
+            if (type === result) {
+                win = amount * (result === '和' ? 8 : 2);
+            }
+            const newBalance = state.balance - amount + win;
+            setBalance(CURRENT_USER_ID, newBalance);
+            state.balance = newBalance;
+            updateUI();
+            const resultMsg = win > 0 ? `🎲 开奖: ${result}  ✅ 中奖 +${win} TRX` : `🎲 开奖: ${result}  ❌ 未中奖`;
+            showGameResult(resultMsg);
+            if (state.autoMode) {
+                clearCountdown();
+                startCountdown(getCountdownSec());
+            }
+            state.betRolling = false;
+            return true;
+        }
+        
+        function executeBet() {
+            if (state.betRolling) return;
+            const total = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
+            if (total <= 0) return;
+            let selectedType = null, selectedAmount = 0;
+            if (state.bets.DRAGON > selectedAmount) { selectedType = "DRAGON"; selectedAmount = state.bets.DRAGON; }
+            if (state.bets.TIGER > selectedAmount) { selectedType = "TIGER"; selectedAmount = state.bets.TIGER; }
+            if (state.bets.TIE > selectedAmount) { selectedType = "TIE"; selectedAmount = state.bets.TIE; }
+            if (!selectedType) return;
+            const betType = { DRAGON:"龙", TIGER:"虎", TIE:"和" }[selectedType];
+            lastBet = { type: betType, amount: selectedAmount };
+            placeBet(betType, selectedAmount).then(success => {
+                if (success) {
+                    state.bets = { DRAGON:0, TIGER:0, TIE:0 };
+                    updateUI();
+                }
+            });
+        }
+        
+        function repeatLastBet() { if(lastBet && !state.betRolling) placeBet(lastBet.type, lastBet.amount); }
+        function cancelAllBets() { if(!state.betRolling){ state.bets = { DRAGON:0, TIGER:0, TIE:0 }; updateUI(); } }
+        
+        function updateUI() {
+            document.getElementById('balanceDisplay').innerText = state.balance.toFixed(2);
+            document.getElementById('poolDisplay').innerText = state.pool.toFixed(2);
+            document.getElementById('betDragonAmount').innerText = state.bets.DRAGON;
+            document.getElementById('betTigerAmount').innerText = state.bets.TIGER;
+            document.getElementById('betTieAmount').innerText = state.bets.TIE;
+            const total = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
+            document.getElementById('totalBetAmount').innerText = total.toFixed(2);
+            let maxWin = 0;
+            if (state.bets.DRAGON > 0) maxWin = Math.max(maxWin, state.bets.DRAGON * 2);
+            if (state.bets.TIGER > 0) maxWin = Math.max(maxWin, state.bets.TIGER * 2);
+            if (state.bets.TIE > 0) maxWin = Math.max(maxWin, state.bets.TIE * 8);
+            document.getElementById('valWin').innerText = maxWin.toFixed(2);
+            document.querySelectorAll('.multi-bet-item').forEach(el => {
+                const type = el.dataset.type;
+                if (state.bets[type] > 0) el.classList.add('selected');
+                else el.classList.remove('selected');
+            });
+        }
+        
+        function adjustBet(type, delta) { if(!state.betRolling){ let newVal = state.bets[type] + delta; if(newVal<0) newVal=0; state.bets[type]=newVal; updateUI(); } }
+        
+        function startPoolFluctuation() {
+            setInterval(() => {
+                let change = Math.floor(Math.random() * 61) - 30;
+                let newPool = state.pool + change;
+                if (newPool < 10000) newPool = 10000;
+                if (newPool > 100000) newPool = 100000;
+                state.pool = newPool;
+                document.getElementById('poolDisplay').innerText = state.pool.toFixed(2);
+            }, 1000);
+        }
+        
+        function startCountdown(sec) {
+            if(state.countdownInterval) clearInterval(state.countdownInterval);
+            state.countdown = sec;
+            document.getElementById('countdownNum').innerText = state.countdown;
+            state.countdownInterval = setInterval(() => {
+                if(state.countdown <= 1){
+                    clearInterval(state.countdownInterval);
+                    state.countdownInterval = null;
+                    if(state.bets.DRAGON+state.bets.TIGER+state.bets.TIE > 0) executeBet();
+                    else startCountdown(getCountdownSec());
+                } else {
+                    state.countdown--;
+                    document.getElementById('countdownNum').innerText = state.countdown;
+                }
+            }, 1000);
+        }
+        function clearCountdown() { if(state.countdownInterval){ clearInterval(state.countdownInterval); state.countdownInterval=null; } }
+        function refreshBalance() { syncBalance(); }
+        function setSpeed(speed) {
+            state.speed = speed;
+            document.querySelectorAll('.speed-btn').forEach(btn => {
+                if(parseInt(btn.dataset.speed)===speed) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+            clearCountdown();
+            startCountdown(getCountdownSec());
+        }
+        
+        function switchUser() {
+            const newId = document.getElementById('switchUserIdInput').value.trim();
+            if(!newId) return;
+            CURRENT_USER_ID = newId;
+            if (!users[CURRENT_USER_ID]) {
+                users[CURRENT_USER_ID] = { balance: 10000, history: [] };
+                saveUsers();
+            }
+            document.getElementById('currentUserId').innerText = CURRENT_USER_ID;
+            state.bets = { DRAGON:0, TIGER:0, TIE:0 };
+            lastBet = null;
+            syncBalance();
+            updateUI();
+            clearCountdown();
+            startCountdown(getCountdownSec());
+        }
+        
+        // ==================== 管理员面板 ====================
+        let adminPanel = null;
+        let selectedAdminUserId = CURRENT_USER_ID;
+        
+        function showAdminPanel() {
+            if (adminPanel) {
+                adminPanel.remove();
+                adminPanel = null;
+                return;
+            }
+            const panel = document.createElement('div');
+            panel.className = 'admin-panel';
+            panel.innerHTML = `
+                <h3>🔐 管理员面板</h3>
+                <div class="user-list" id="adminUserList"></div>
+                <div>当前选中用户：<strong id="selectedUserDisplay">${selectedAdminUserId}</strong></div>
+                <input type="number" id="adminAmount" placeholder="金额" value="100">
+                <div style="display: flex; gap: 8px; justify-content: center;">
+                    <button id="adminAddBtn">➕ 上分</button>
+                    <button id="adminSubBtn">➖ 下分</button>
+                    <button id="adminQueryBtn">🔍 查询余额</button>
+                    <button id="adminResetBtn">🔄 重置为10000</button>
+                </div>
+                <button id="adminChangePwdBtn">🔑 修改管理员密码</button>
+                <button class="close-btn" id="adminCloseBtn">关闭</button>
+            `;
+            document.body.appendChild(panel);
+            adminPanel = panel;
+            
+            // 刷新用户列表
+            function refreshUserList() {
+                const userListDiv = document.getElementById('adminUserList');
+                if (!userListDiv) return;
+                const usersArr = getUserList();
+                userListDiv.innerHTML = '';
+                usersArr.forEach(uid => {
+                    const div = document.createElement('div');
+                    div.className = 'user-item' + (uid === selectedAdminUserId ? ' selected' : '');
+                    div.textContent = `${uid} (余额: ${getBalance(uid).toFixed(2)})`;
+                    div.onclick = () => {
+                        selectedAdminUserId = uid;
+                        document.getElementById('selectedUserDisplay').innerText = selectedAdminUserId;
+                        refreshUserList();
+                    };
+                    userListDiv.appendChild(div);
+                });
+            }
+            refreshUserList();
+            
+            // 上分
+            document.getElementById('adminAddBtn').onclick = () => {
+                const amount = parseFloat(document.getElementById('adminAmount').value);
+                if (isNaN(amount) || amount <= 0) { alert("请输入正数金额"); return; }
+                addBalance(selectedAdminUserId, amount);
+                refreshUserList();
+                if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
+                alert(`✅ 已给 ${selectedAdminUserId} 上分 ${amount} TRX，新余额: ${getBalance(selectedAdminUserId).toFixed(2)}`);
+            };
+            // 下分
+            document.getElementById('adminSubBtn').onclick = () => {
+                const amount = parseFloat(document.getElementById('adminAmount').value);
+                if (isNaN(amount) || amount <= 0) { alert("请输入正数金额"); return; }
+                const cur = getBalance(selectedAdminUserId);
+                if (cur < amount) { alert("余额不足，无法下分"); return; }
+                addBalance(selectedAdminUserId, -amount);
+                refreshUserList();
+                if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
+                alert(`✅ 已从 ${selectedAdminUserId} 下分 ${amount} TRX，新余额: ${getBalance(selectedAdminUserId).toFixed(2)}`);
+            };
+            // 查询余额
+            document.getElementById('adminQueryBtn').onclick = () => {
+                const bal = getBalance(selectedAdminUserId);
+                alert(`用户 ${selectedAdminUserId} 当前余额: ${bal.toFixed(2)} TRX`);
+            };
+            // 重置余额
+            document.getElementById('adminResetBtn').onclick = () => {
+                if (confirm(`确认将 ${selectedAdminUserId} 的余额重置为 10000 TRX？`)) {
+                    setBalance(selectedAdminUserId, 10000);
+                    refreshUserList();
+                    if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
+                    alert(`✅ 已重置 ${selectedAdminUserId} 余额为 10000 TRX`);
+                }
+            };
+            // 修改管理员密码
+            document.getElementById('adminChangePwdBtn').onclick = () => {
+                const old = prompt("请输入当前管理员密码:");
+                if (old !== ADMIN_PASSWORD) { alert("密码错误"); return; }
+                const newPwd = prompt("请输入新密码 (至少4位):");
+                if (!newPwd || newPwd.length < 4) { alert("密码至少4位"); return; }
+                ADMIN_PASSWORD = newPwd;
+                localStorage.setItem('dragon_tiger_password', newPwd);
+                alert("✅ 管理员密码修改成功！");
+            };
+            document.getElementById('adminCloseBtn').onclick = () => {
+                panel.remove();
+                adminPanel = null;
+            };
+        }
+        
+        // ==================== 文件上传（背景等） ====================
+        const hiddenInput = document.getElementById('hiddenFileInput');
+        let pendingUploadType = null;
+        hiddenInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (pendingUploadType === 'dragon') uploadDragon(file);
+            else if (pendingUploadType === 'tiger') uploadTiger(file);
+            else if (pendingUploadType === 'background') uploadBackground(file);
+            pendingUploadType = null;
+            hiddenInput.value = '';
+        });
+        function triggerUpload(type) { pendingUploadType = type; hiddenInput.click(); }
+        
+        // ==================== 长按菜单 ====================
+        let longPressTimer = null, activeMenu = null;
+        function showSecretMenu() {
+            if(activeMenu) { activeMenu.remove(); activeMenu=null; return; }
+            const menu = document.createElement('div');
+            menu.className = 'secret-menu';
+            menu.innerHTML = `
+                <button id="secretDragon">🐉 上传龙图/视频</button>
+                <button id="secretTiger">🐯 上传虎图/视频</button>
+                <button id="secretBg">🌌 上传背景 (图/视频)</button>
+                <button id="secretAdmin">👑 管理员面板</button>
+            `;
+            document.body.appendChild(menu);
+            activeMenu = menu;
+            const closeHandler = (e) => {
+                if(!menu.contains(e.target)){
+                    menu.remove(); activeMenu=null; document.removeEventListener('click', closeHandler);
+                }
+            };
+            setTimeout(()=>document.addEventListener('click', closeHandler), 20);
+            document.getElementById('secretDragon').onclick = () => { if(activeMenu) activeMenu.remove(); activeMenu=null; triggerUpload('dragon'); };
+            document.getElementById('secretTiger').onclick = () => { if(activeMenu) activeMenu.remove(); activeMenu=null; triggerUpload('tiger'); };
+            document.getElementById('secretBg').onclick = () => { if(activeMenu) activeMenu.remove(); activeMenu=null; triggerUpload('background'); };
+            document.getElementById('secretAdmin').onclick = () => {
+                if(activeMenu) activeMenu.remove();
+                activeMenu = null;
+                const pwd = prompt("🔐 请输入管理员密码:", "");
+                if(pwd === ADMIN_PASSWORD) {
+                    showAdminPanel();
+                } else {
+                    alert("密码错误！");
+                }
+            };
+        }
+        
+        function onLongPress() {
+            const pwd = prompt("🔐 管理员验证（长按续押按钮3秒）\n请输入管理密码:", "");
+            if(pwd === ADMIN_PASSWORD) {
+                showSecretMenu();
+            } else if(pwd !== null) {
+                alert("密码错误！");
+            }
+        }
+        
+        function bindEvents() {
+            document.getElementById('refreshBtn').onclick = refreshBalance;
+            const repeatBtn = document.getElementById('repeatBtn');
+            repeatBtn.onclick = null;
+            repeatBtn.addEventListener('click', (e) => {
+                if(longPressTimer) clearTimeout(longPressTimer);
+                repeatLastBet();
+            });
+            repeatBtn.addEventListener('touchstart', (e) => {
+                longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000);
+            });
+            repeatBtn.addEventListener('touchend', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+            repeatBtn.addEventListener('touchcancel', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+            repeatBtn.addEventListener('mousedown', (e) => {
+                longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000);
+            });
+            repeatBtn.addEventListener('mouseup', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+            document.getElementById('cancelBtn').onclick = cancelAllBets;
+            document.getElementById('fightBtn').onclick = executeBet;
+            document.getElementById('switchUserBtn').onclick = switchUser;
+            document.querySelectorAll('.speed-btn').forEach(btn => btn.onclick = () => setSpeed(parseInt(btn.dataset.speed)));
+            document.querySelectorAll('.bet-dec').forEach(btn => btn.onclick = (e) => { e.stopPropagation(); adjustBet(btn.dataset.type, -10); });
+            document.querySelectorAll('.bet-inc').forEach(btn => btn.onclick = (e) => { e.stopPropagation(); adjustBet(btn.dataset.type, 10); });
+        }
+        
+        async function init() {
+            await openDB();
+            await restoreBackground();
+            bindEvents();
+            syncBalance();
+            startPoolFluctuation();
+            setSpeed(1);
+            updateUI();
+            startCountdown(getCountdownSec());
+        }
+        window.onload = init;
+    })();
 </script>
 </body>
 </html>
