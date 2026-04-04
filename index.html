@@ -21,7 +21,6 @@
             font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
             padding: 16px;
         }
-        /* 抽屉式主容器：宽度占屏幕45%，保持小巧，可滚动 */
         .container-outer {
             width: 45vw;
             max-width: 400px;
@@ -47,7 +46,6 @@
             box-shadow: inset 8px 8px 12px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.06);
             overflow: hidden;
         }
-        /* 顶部余额彩金区域 */
         .top-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -77,7 +75,6 @@
             font-size: 1.2em;
             text-shadow: 0 0 2px rgba(255,51,0,0.5);
         }
-        /* 战场区域 占40% */
         .battle-scene {
             position: relative;
             margin: 8px 12px;
@@ -103,7 +100,6 @@
             height: 100%;
             object-fit: cover;
         }
-        /* 立体大字龙虎 */
         .dragon-word, .tiger-word {
             position: absolute;
             bottom: 12px;
@@ -145,7 +141,6 @@
             pointer-events: none;
             white-space: nowrap;
         }
-        /* 押注及控制区域（可滚动抽屉式） */
         .bet-section {
             background: #6b737e;
             margin: 8px 12px 12px;
@@ -261,7 +256,6 @@
             font-size: 11px;
             margin: 6px 0;
         }
-        /* 历史记录区域 */
         .history-area {
             background: rgba(0,0,0,0.5);
             border-radius: 12px;
@@ -389,7 +383,6 @@
             font-size: 18px;
             font-weight: bold;
         }
-        /* 隐藏文件输入 */
         #hiddenFileInput {
             position: absolute;
             opacity: 0;
@@ -397,7 +390,6 @@
             width: 0;
             height: 0;
         }
-        /* 菜单面板 */
         .secret-menu {
             position: fixed;
             bottom: 80px;
@@ -491,21 +483,16 @@
 <body>
 <div class="container-outer">
     <div class="container">
-        <!-- 顶部余额彩金 -->
         <div class="top-stats">
             <div class="stat-card"><span>余额</span><span id="balanceDisplay">10000.00</span></div>
             <div class="stat-card"><span>彩金池</span><span id="poolDisplay">50000.00</span></div>
         </div>
-
-        <!-- 战场区域 占40% -->
         <div class="battle-scene">
             <div class="scene-bg" id="sceneBg"></div>
             <div class="dragon-word" id="dragonWord">龍</div>
             <div class="tiger-word" id="tigerWord">虎</div>
             <div class="battle-result" id="battleResult"></div>
         </div>
-
-        <!-- 押注及控制区域（可滚动抽屉） -->
         <div class="bet-section">
             <div class="account-bar">
                 <div class="account-info">当前账户：<span id="currentUserId">6685731895</span></div>
@@ -514,7 +501,6 @@
                     <button id="switchUserBtn">切换</button>
                 </div>
             </div>
-
             <div class="multi-bet-row">
                 <div class="multi-bet-item" data-type="DRAGON">
                     <div class="multi-bet-name dragon">🐉 龙</div>
@@ -541,7 +527,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="data-stack">
                 <div class="data-item"><label>总押注</label><value id="totalBetAmount">0.00</value></div>
                 <div class="data-item"><label>预计奖金</label><value id="valWin">0.00</value></div>
@@ -554,15 +539,12 @@
                 <span class="speed-btn" data-speed="2">2X</span>
                 <span class="speed-btn" data-speed="3">3X</span>
             </div>
-
-            <!-- 历史记录区域 -->
             <div class="history-area">
                 <div class="history-title">📊 最近10局开奖</div>
                 <div class="history-grid" id="historyGrid"></div>
                 <div class="history-title">📜 开奖记录</div>
                 <div class="record-list" id="recordList"></div>
             </div>
-
             <div class="exec-row">
                 <button class="refresh-btn" id="refreshBtn">🔄</button>
                 <button class="repeat-btn" id="repeatBtn">续押</button>
@@ -573,79 +555,75 @@
     </div>
 </div>
 <input type="file" id="hiddenFileInput" accept="image/*,video/mp4,video/webm" style="display:none">
-
 <script>
     (function(){
-        // ---------- 用户数据 ----------
+        // 用户数据管理
         let users = JSON.parse(localStorage.getItem('dragon_tiger_users')) || {};
         let CURRENT_USER_ID = "6685731895";
         if (!users[CURRENT_USER_ID]) {
-            users[CURRENT_USER_ID] = { balance: 10000, history: [], records: [], resultHistory: [] };
+            users[CURRENT_USER_ID] = { balance: 10000, records: [], resultHistory: [] };
             localStorage.setItem('dragon_tiger_users', JSON.stringify(users));
         }
         let ADMIN_PASSWORD = localStorage.getItem('dragon_tiger_password') || "dragon888";
         function saveUsers() { localStorage.setItem('dragon_tiger_users', JSON.stringify(users)); }
-        function getBalance(userId) { if (!users[userId]) users[userId] = { balance: 10000, history: [], records: [], resultHistory: [] }; return users[userId].balance; }
-        function setBalance(userId, amount) { if (!users[userId]) users[userId] = { balance: 10000, history: [], records: [], resultHistory: [] }; users[userId].balance = amount; saveUsers(); }
-        function addBalance(userId, delta) { setBalance(userId, getBalance(userId) + delta); }
+        function getBalance(uid) { if (!users[uid]) users[uid] = { balance: 10000, records: [], resultHistory: [] }; return users[uid].balance; }
+        function setBalance(uid, amt) { if (!users[uid]) users[uid] = { balance: 10000, records: [], resultHistory: [] }; users[uid].balance = amt; saveUsers(); }
+        function addBalance(uid, delta) { setBalance(uid, getBalance(uid) + delta); }
         function getUserList() { return Object.keys(users); }
-
-        // 开奖历史（10个小格子）
-        function getResultHistory(userId) { return users[userId]?.resultHistory || []; }
-        function pushResult(userId, result) {
-            if (!users[userId]) users[userId] = { balance: 10000, history: [], records: [], resultHistory: [] };
-            let arr = users[userId].resultHistory || [];
-            arr.unshift(result);
+        
+        function getResultHistory(uid) { return users[uid]?.resultHistory || []; }
+        function pushResult(uid, res) {
+            if (!users[uid]) users[uid] = { balance: 10000, records: [], resultHistory: [] };
+            let arr = users[uid].resultHistory || [];
+            arr.unshift(res);
             if (arr.length > 10) arr.pop();
-            users[userId].resultHistory = arr;
+            users[uid].resultHistory = arr;
             saveUsers();
-            if (userId === CURRENT_USER_ID) updateHistoryGrid();
+            if (uid === CURRENT_USER_ID) updateHistoryGrid();
         }
         function updateHistoryGrid() {
             const grid = document.getElementById('historyGrid');
             if (!grid) return;
-            const history = getResultHistory(CURRENT_USER_ID);
+            const hist = getResultHistory(CURRENT_USER_ID);
             grid.innerHTML = '';
             for (let i = 0; i < 10; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'history-cell';
-                if (i < history.length) {
-                    const res = history[i];
-                    cell.classList.add(res === '龙' ? 'dragon' : (res === '虎' ? 'tiger' : 'tie'));
-                    cell.textContent = res === '龙' ? '🐉' : (res === '虎' ? '🐯' : '⚖️');
+                if (i < hist.length) {
+                    const r = hist[i];
+                    cell.classList.add(r === '龙' ? 'dragon' : (r === '虎' ? 'tiger' : 'tie'));
+                    cell.textContent = r === '龙' ? '🐉' : (r === '虎' ? '🐯' : '⚖️');
                 } else {
                     cell.textContent = '?';
                 }
                 grid.appendChild(cell);
             }
         }
-
-        // 记录文字版
-        function addRecord(userId, betType, result, winAmount, betAmount) {
-            if (!users[userId]) users[userId] = { balance: 10000, history: [], records: [], resultHistory: [] };
-            let records = users[userId].records || [];
-            records.unshift({ time: new Date().toLocaleTimeString(), bet: betType, result: result, win: winAmount, amount: betAmount });
-            if (records.length > 20) records.pop();
-            users[userId].records = records;
+        
+        function addRecord(uid, betType, result, win, betAmt) {
+            if (!users[uid]) users[uid] = { balance: 10000, records: [], resultHistory: [] };
+            let recs = users[uid].records || [];
+            recs.unshift({ time: new Date().toLocaleTimeString(), bet: betType, result: result, win: win, amount: betAmt });
+            if (recs.length > 20) recs.pop();
+            users[uid].records = recs;
             saveUsers();
-            if (userId === CURRENT_USER_ID) refreshRecordDisplay();
+            if (uid === CURRENT_USER_ID) refreshRecordDisplay();
         }
         function refreshRecordDisplay() {
             const container = document.getElementById('recordList');
             if (!container) return;
-            const records = users[CURRENT_USER_ID]?.records || [];
+            const recs = users[CURRENT_USER_ID]?.records || [];
             container.innerHTML = '';
-            if (records.length === 0) { container.innerHTML = '<div style="text-align:center; color:#aaa;">暂无记录</div>'; return; }
-            records.slice(0, 10).forEach(rec => {
+            if (recs.length === 0) { container.innerHTML = '<div style="text-align:center; color:#aaa;">暂无记录</div>'; return; }
+            recs.slice(0, 10).forEach(r => {
                 const div = document.createElement('div');
                 div.className = 'record-item';
-                const isWin = rec.win > 0;
-                div.innerHTML = `<span>${rec.time}</span><span>押 ${rec.bet} → 开 ${rec.result}</span><span class="${isWin ? 'record-win' : 'record-lose'}">${isWin ? `+${rec.win}` : `-${rec.amount}`}</span>`;
+                const isWin = r.win > 0;
+                div.innerHTML = `<span>${r.time}</span><span>押 ${r.bet} → 开 ${r.result}</span><span class="${isWin ? 'record-win' : 'record-lose'}">${isWin ? `+${r.win}` : `-${r.amount}`}</span>`;
                 container.appendChild(div);
             });
         }
-
-        // 高亮立体字
+        
         function highlightWord(result) {
             const dragon = document.getElementById('dragonWord');
             const tiger = document.getElementById('tigerWord');
@@ -666,8 +644,8 @@
                 }, 800);
             }
         }
-
-        // ---------- IndexedDB 媒体存储 ----------
+        
+        // IndexedDB 媒体存储
         const DB_NAME = "DragonTigerMediaLocal";
         const STORE_NAME = "mediaAssets";
         let db = null;
@@ -728,8 +706,8 @@
         async function uploadBackground(file) { if (!file) return; await saveMedia('background', file, file.type); applyBackground(file, file.type); }
         async function uploadDragon(file) { if (!file) return; await saveMedia('dragon', file, file.type); }
         async function uploadTiger(file) { if (!file) return; await saveMedia('tiger', file, file.type); }
-
-        // ---------- 游戏核心 ----------
+        
+        // 游戏状态
         let state = {
             balance: getBalance(CURRENT_USER_ID),
             bets: { DRAGON: 0, TIGER: 0, TIE: 0 },
@@ -742,7 +720,6 @@
         };
         let lastBet = null;
         let resultTimer = null;
-
         function showGameResult(msg) {
             const el = document.getElementById('battleResult');
             if (!el) return;
@@ -753,10 +730,8 @@
                 resultTimer = setTimeout(() => { el.style.opacity = '0'; setTimeout(() => { if (el.innerText === msg) el.innerText = ''; }, 200); }, 3000);
             } else console.log("[静默]", msg);
         }
-
         function getCountdownSec() { return state.speed===1?30:(state.speed===2?20:10); }
         function syncBalance() { state.balance = getBalance(CURRENT_USER_ID); updateUI(); }
-        
         function placeBet(type, amount) {
             if (state.betRolling || amount<=0 || amount>state.balance) return false;
             state.betRolling = true;
@@ -777,7 +752,6 @@
             state.betRolling = false;
             return true;
         }
-
         function executeBet() {
             if (state.betRolling) return;
             const total = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
@@ -791,10 +765,8 @@
             lastBet = { type: betType, amount: selectedAmount };
             placeBet(betType, selectedAmount).then(success => { if(success){ state.bets = { DRAGON:0, TIGER:0, TIE:0 }; updateUI(); } });
         }
-
         function repeatLastBet() { if(lastBet && !state.betRolling) placeBet(lastBet.type, lastBet.amount); }
         function cancelAllBets() { if(!state.betRolling){ state.bets = { DRAGON:0, TIGER:0, TIE:0 }; updateUI(); } }
-
         function updateUI() {
             document.getElementById('balanceDisplay').innerText = state.balance.toFixed(2);
             document.getElementById('poolDisplay').innerText = state.pool.toFixed(2);
@@ -810,7 +782,6 @@
             document.getElementById('valWin').innerText = maxWin.toFixed(2);
             document.querySelectorAll('.multi-bet-item').forEach(el => { const type = el.dataset.type; if (state.bets[type] > 0) el.classList.add('selected'); else el.classList.remove('selected'); });
         }
-
         function adjustBet(type, delta) { if(!state.betRolling){ let newVal = state.bets[type] + delta; if(newVal<0) newVal=0; state.bets[type]=newVal; updateUI(); } }
         function startPoolFluctuation() { setInterval(() => { let change = Math.floor(Math.random()*61)-30; let newPool = state.pool+change; if(newPool<10000) newPool=10000; if(newPool>100000) newPool=100000; state.pool=newPool; document.getElementById('poolDisplay').innerText=state.pool.toFixed(2); }, 1000); }
         function startCountdown(sec) {
@@ -840,7 +811,7 @@
             const newId = document.getElementById('switchUserIdInput').value.trim();
             if(!newId) return;
             CURRENT_USER_ID = newId;
-            if (!users[CURRENT_USER_ID]) { users[CURRENT_USER_ID] = { balance: 10000, history: [], records: [], resultHistory: [] }; saveUsers(); }
+            if (!users[CURRENT_USER_ID]) { users[CURRENT_USER_ID] = { balance: 10000, records: [], resultHistory: [] }; saveUsers(); }
             document.getElementById('currentUserId').innerText = CURRENT_USER_ID;
             state.bets = { DRAGON:0, TIGER:0, TIE:0 };
             lastBet = null;
@@ -848,8 +819,8 @@
             refreshRecordDisplay();
             updateHistoryGrid();
         }
-
-        // ---------- 管理员面板 ----------
+        
+        // 管理员面板
         let adminPanel = null;
         let selectedAdminUserId = CURRENT_USER_ID;
         function showAdminPanel() {
@@ -926,8 +897,8 @@
             };
             document.getElementById('adminCloseBtn').onclick = () => { panel.remove(); adminPanel = null; };
         }
-
-        // ---------- 文件上传 ----------
+        
+        // 文件上传
         const hiddenInput = document.getElementById('hiddenFileInput');
         let pendingUploadType = null;
         hiddenInput.addEventListener('change', (e) => {
@@ -940,8 +911,8 @@
             hiddenInput.value = '';
         });
         function triggerUpload(type) { pendingUploadType = type; hiddenInput.click(); }
-
-        // ---------- 长按菜单 ----------
+        
+        // 长按菜单
         let longPressTimer = null, activeMenu = null;
         function showSecretMenu() {
             if(activeMenu) { activeMenu.remove(); activeMenu=null; return; }
@@ -970,7 +941,7 @@
             const pwd = prompt("🔐 管理员验证（长按续押按钮3秒）\n请输入管理密码:", "");
             if(pwd === ADMIN_PASSWORD) { showSecretMenu(); } else if(pwd !== null) { alert("密码错误！"); }
         }
-
+        
         function bindEvents() {
             document.getElementById('refreshBtn').onclick = refreshBalance;
             const repeatBtn = document.getElementById('repeatBtn');
@@ -988,7 +959,7 @@
             document.querySelectorAll('.bet-dec').forEach(btn => btn.onclick = (e) => { e.stopPropagation(); adjustBet(btn.dataset.type, -10); });
             document.querySelectorAll('.bet-inc').forEach(btn => btn.onclick = (e) => { e.stopPropagation(); adjustBet(btn.dataset.type, 10); });
         }
-
+        
         async function init() {
             await openDB();
             await restoreBackground();
@@ -1006,3 +977,5 @@
 </script>
 </body>
 </html>
+
+
