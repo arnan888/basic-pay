@@ -236,6 +236,40 @@
             font-size: 10px;
             margin: 5px 0;
         }
+        .record-section {
+            background: rgba(0,0,0,0.5);
+            border-radius: 12px;
+            margin-top: 8px;
+            padding: 6px;
+        }
+        .record-title {
+            font-size: 10px;
+            color: #f1c40f;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+        .record-list {
+            max-height: 80px;
+            overflow-y: auto;
+            font-size: 9px;
+            color: #ccc;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .record-item {
+            background: rgba(0,0,0,0.4);
+            padding: 2px 6px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .record-win {
+            color: #4caf50;
+        }
+        .record-lose {
+            color: #f44336;
+        }
         .exec-row {
             display: flex;
             gap: 8px;
@@ -470,6 +504,11 @@
                 <span class="speed-btn" data-speed="2">2X</span>
                 <span class="speed-btn" data-speed="3">3X</span>
             </div>
+            <!-- 开奖记录区域 -->
+            <div class="record-section">
+                <div class="record-title">📜 最近开奖记录</div>
+                <div class="record-list" id="recordList"></div>
+            </div>
             <div class="exec-row">
                 <button class="refresh-btn" id="refreshBtn">🔄</button>
                 <button class="repeat-btn" id="repeatBtn">续押</button>
@@ -485,13 +524,51 @@
         // 用户数据管理
         let users = JSON.parse(localStorage.getItem('dragon_tiger_users')) || {};
         let CURRENT_USER_ID = "6685731895";
-        if (!users[CURRENT_USER_ID]) { users[CURRENT_USER_ID] = { balance: 10000, history: [] }; localStorage.setItem('dragon_tiger_users', JSON.stringify(users)); }
+        if (!users[CURRENT_USER_ID]) { users[CURRENT_USER_ID] = { balance: 10000, history: [], records: [] }; localStorage.setItem('dragon_tiger_users', JSON.stringify(users)); }
         let ADMIN_PASSWORD = localStorage.getItem('dragon_tiger_password') || "dragon888";
         function saveUsers() { localStorage.setItem('dragon_tiger_users', JSON.stringify(users)); }
-        function getBalance(userId) { if (!users[userId]) users[userId] = { balance: 10000, history: [] }; return users[userId].balance; }
-        function setBalance(userId, amount) { if (!users[userId]) users[userId] = { balance: 10000, history: [] }; users[userId].balance = amount; saveUsers(); }
+        function getBalance(userId) { if (!users[userId]) users[userId] = { balance: 10000, history: [], records: [] }; return users[userId].balance; }
+        function setBalance(userId, amount) { if (!users[userId]) users[userId] = { balance: 10000, history: [], records: [] }; users[userId].balance = amount; saveUsers(); }
         function addBalance(userId, delta) { let cur = getBalance(userId); setBalance(userId, cur + delta); }
         function getUserList() { return Object.keys(users); }
+        
+        // 开奖记录管理
+        function addRecord(userId, betType, result, winAmount, betAmount) {
+            if (!users[userId]) users[userId] = { balance: 10000, history: [], records: [] };
+            let records = users[userId].records || [];
+            records.unshift({
+                time: new Date().toLocaleTimeString(),
+                bet: betType,
+                result: result,
+                win: winAmount,
+                amount: betAmount
+            });
+            if (records.length > 20) records.pop(); // 保留最近20条
+            users[userId].records = records;
+            saveUsers();
+            if (userId === CURRENT_USER_ID) refreshRecordDisplay();
+        }
+        function refreshRecordDisplay() {
+            const container = document.getElementById('recordList');
+            if (!container) return;
+            const records = users[CURRENT_USER_ID]?.records || [];
+            container.innerHTML = '';
+            if (records.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:#aaa;">暂无记录</div>';
+                return;
+            }
+            records.slice(0, 10).forEach(rec => {
+                const div = document.createElement('div');
+                div.className = 'record-item';
+                const isWin = rec.win > 0;
+                div.innerHTML = `
+                    <span>${rec.time}</span>
+                    <span>押 ${rec.bet} → 开 ${rec.result}</span>
+                    <span class="${isWin ? 'record-win' : 'record-lose'}">${isWin ? `+${rec.win}` : `-${rec.amount}`}</span>
+                `;
+                container.appendChild(div);
+            });
+        }
         
         // IndexedDB 媒体存储
         const DB_NAME = "DragonTigerMediaLocal";
@@ -580,7 +657,7 @@
             } else console.log("[静默]", msg);
         }
         function getCountdownSec() { return state.speed===1?30:(state.speed===2?20:10); }
-        function syncBalance() { state.balance = getBalance(CURRENT_USER_ID); updateUI(); }
+        function syncBalance() { state.balance = getBalance(CURRENT_USER_ID); updateUI(); refreshRecordDisplay(); }
         function placeBet(type, amount) {
             if (state.betRolling || amount<=0 || amount>state.balance) return false;
             state.betRolling = true;
@@ -592,6 +669,8 @@
             setBalance(CURRENT_USER_ID, newBalance);
             state.balance = newBalance;
             updateUI();
+            // 添加记录
+            addRecord(CURRENT_USER_ID, type, result, win, amount);
             const resultMsg = win > 0 ? `🎲 开奖: ${result}  ✅ 中奖 +${win} TRX` : `🎲 开奖: ${result}  ❌ 未中奖`;
             showGameResult(resultMsg);
             if (state.autoMode) { clearCountdown(); startCountdown(getCountdownSec()); }
@@ -657,11 +736,12 @@
             const newId = document.getElementById('switchUserIdInput').value.trim();
             if(!newId) return;
             CURRENT_USER_ID = newId;
-            if (!users[CURRENT_USER_ID]) { users[CURRENT_USER_ID] = { balance: 10000, history: [] }; saveUsers(); }
+            if (!users[CURRENT_USER_ID]) { users[CURRENT_USER_ID] = { balance: 10000, history: [], records: [] }; saveUsers(); }
             document.getElementById('currentUserId').innerText = CURRENT_USER_ID;
             state.bets = { DRAGON:0, TIGER:0, TIE:0 };
             lastBet = null;
             syncBalance(); updateUI(); clearCountdown(); startCountdown(getCountdownSec());
+            refreshRecordDisplay();
         }
         
         // 管理员面板
@@ -811,6 +891,7 @@
             setSpeed(1);
             updateUI();
             startCountdown(getCountdownSec());
+            refreshRecordDisplay();
         }
         window.onload = init;
     })();
@@ -818,9 +899,3 @@
 </body>
 </html>
 
-
-
-
-
-
- 
