@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>龙虎斗 · 至尊版</title>
     <style>
         * {
@@ -13,31 +13,35 @@
             -webkit-tap-highlight-color: transparent;
         }
         body {
-            background: linear-gradient(145deg, #0a0a1a 0%, #03030f 100%);
+            background: #0a0a1a;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
-            padding: 20px;
+            padding: 16px; /* 四周留白，确保不贴边 */
         }
-        /* 主容器 - 立体外凸 */
+        /* 最外层：强烈外凸效果 */
         .container-outer {
-            width: 90%;
+            width: 100%;
             max-width: 500px;
             margin: 0 auto;
             background: #1e1e2e;
             border-radius: 48px;
             padding: 12px;
-            box-shadow: 12px 12px 24px rgba(0,0,0,0.6), -6px -6px 12px rgba(255,255,255,0.05);
+            /* 外凸阴影：右下深色，左上浅色，制造凸起感 */
+            box-shadow: 12px 12px 24px rgba(0,0,0,0.6), -8px -8px 16px rgba(255,255,255,0.08);
+            transition: all 0.2s;
         }
+        /* 内部容器：强烈内陷效果 */
         .container {
             background: #2a2a3a;
             border-radius: 40px;
             overflow: hidden;
-            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5), inset -2px -2px 5px rgba(255,255,255,0.1);
+            /* 内陷阴影：inset 模拟凹陷 */
+            box-shadow: inset 6px 6px 12px rgba(0,0,0,0.6), inset -6px -6px 12px rgba(255,255,255,0.05);
         }
-        /* 头部余额卡片 */
+        /* 头部余额卡片也做内陷/外凸层次 */
         .top-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -50,10 +54,14 @@
             border-radius: 32px;
             padding: 16px 8px;
             text-align: center;
-            box-shadow: 8px 8px 16px rgba(0,0,0,0.4), -4px -4px 8px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.2);
+            /* 卡片自身外凸 */
+            box-shadow: 6px 6px 12px rgba(0,0,0,0.4), -4px -4px 8px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.1);
             transition: transform 0.1s;
         }
-        .stat-card:active { transform: scale(0.98); }
+        .stat-card:active {
+            transform: scale(0.98);
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.5), inset -2px -2px 4px rgba(255,255,255,0.05);
+        }
         .stat-card span:first-child {
             display: block;
             font-size: 14px;
@@ -66,7 +74,7 @@
             color: #ffaa44;
             text-shadow: 0 0 8px rgba(255,170,68,0.5);
         }
-        /* 战场区域 - 内陷效果 */
+        /* 战场区域：内陷+外凸混合 */
         .battle-scene {
             position: relative;
             margin: 16px;
@@ -141,13 +149,70 @@
             30% { box-shadow: 0 0 0 8px rgba(255,215,0,0.6); background-color: rgba(255,215,0,0.3); }
             100% { box-shadow: 0 0 0 0 rgba(255,215,0,0); background-color: transparent; }
         }
-        /* 押注区域 */
+        /* 开奖动画遮罩层 */
+        .animation-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .dice-container {
+            background: #2a2a3a;
+            border-radius: 60px;
+            padding: 40px 60px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(255,215,0,0.8);
+            transform: scale(0.8);
+            animation: popIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.2) rotate(-180deg); opacity: 0; }
+            80% { transform: scale(1.1) rotate(5deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .dice-box {
+            width: 180px;
+            height: 180px;
+            background: white;
+            border-radius: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 100px;
+            box-shadow: 0 20px 30px rgba(0,0,0,0.3);
+            margin: 0 auto 20px;
+            animation: roll 0.6s ease-out;
+        }
+        @keyframes roll {
+            0% { transform: rotateX(0deg) rotateY(0deg); }
+            50% { transform: rotateX(360deg) rotateY(180deg); }
+            100% { transform: rotateX(720deg) rotateY(360deg); }
+        }
+        .result-text-big {
+            font-size: 48px;
+            font-weight: bold;
+            color: #ffaa44;
+            margin-top: 20px;
+        }
+        /* 押注区域：内陷效果 */
         .bet-section {
             background: #2a2a3a;
             margin: 16px;
             border-radius: 32px;
             padding: 20px;
-            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5), inset -2px -2px 5px rgba(255,255,255,0.05), 8px 8px 16px rgba(0,0,0,0.3);
+            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.5), inset -4px -4px 8px rgba(255,255,255,0.05), 8px 8px 16px rgba(0,0,0,0.3);
         }
         .account-bar {
             display: flex;
@@ -157,7 +222,7 @@
             border-radius: 60px;
             padding: 8px 16px;
             margin-bottom: 20px;
-            box-shadow: inset 1px 1px 3px rgba(0,0,0,0.5), inset -1px -1px 3px rgba(255,255,255,0.05), 4px 4px 8px rgba(0,0,0,0.3);
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5), inset -2px -2px 5px rgba(255,255,255,0.05), 4px 4px 8px rgba(0,0,0,0.3);
         }
         .account-info {
             font-size: 14px;
@@ -253,7 +318,7 @@
             border-radius: 28px;
             padding: 12px;
             text-align: center;
-            box-shadow: inset 1px 1px 3px rgba(0,0,0,0.5), inset -1px -1px 3px rgba(255,255,255,0.05), 6px 6px 12px rgba(0,0,0,0.3);
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5), inset -2px -2px 5px rgba(255,255,255,0.05), 6px 6px 12px rgba(0,0,0,0.3);
         }
         .data-item label {
             font-size: 13px;
@@ -270,7 +335,7 @@
             border-radius: 28px;
             padding: 16px;
             margin: 16px 0;
-            box-shadow: inset 1px 1px 3px rgba(0,0,0,0.5), inset -1px -1px 3px rgba(255,255,255,0.05);
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5), inset -2px -2px 5px rgba(255,255,255,0.05);
         }
         .history-title {
             font-size: 13px;
@@ -481,7 +546,7 @@
 
 <script>
     (function(){
-        // ---------- 语音播报（需要用户首次交互启用）----------
+        // ---------- 语音播报 ----------
         let speechEnabled = false;
         function enableSpeech() {
             if (!speechEnabled) {
@@ -531,7 +596,7 @@
             document.getElementById('modalCloseBtn').onclick = () => modal.remove();
         }
         
-        // 我的历史记录弹窗
+        // 我的历史记录
         function showMyHistory() {
             const recs = users[CURRENT_USER_ID]?.records || [];
             let html = `<div style="max-height:300px; overflow-y:auto; text-align:left;">`;
@@ -608,7 +673,53 @@
             });
         }
         
-        // 开奖动画强化
+        // 开奖动画（旋转骰子，持续3秒，期间禁用押注）
+        let isAnimating = false;
+        function showResultAnimation(result, winAmount, betAmount, callback) {
+            if (isAnimating) return;
+            isAnimating = true;
+            // 禁用所有押注相关按钮
+            const btns = document.querySelectorAll('.bet-dec, .bet-inc, #fightBtn, #repeatBtn, #cancelBtn, .speed-btn, #switchUserBtn, #newUserBtn');
+            btns.forEach(btn => btn.disabled = true);
+            // 显示动画层
+            const overlay = document.createElement('div');
+            overlay.className = 'animation-overlay';
+            let icon = '';
+            let color = '';
+            if (result === '龙') { icon = '🐉'; color = '#e74c3c'; }
+            else if (result === '虎') { icon = '🐯'; color = '#3498db'; }
+            else { icon = '⚖️'; color = '#9b59b6'; }
+            overlay.innerHTML = `
+                <div class="dice-container">
+                    <div class="dice-box">${icon}</div>
+                    <div class="result-text-big" style="color:${color}">${result}</div>
+                    <div style="margin-top:16px; font-size:18px;">${winAmount > 0 ? `🎉 恭喜中奖 +${winAmount} TRX` : `😞 未中奖`}</div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            // 播放语音
+            speak(result);
+            // 3秒后移除动画并恢复按钮
+            setTimeout(() => {
+                overlay.remove();
+                isAnimating = false;
+                btns.forEach(btn => btn.disabled = false);
+                if (callback) callback();
+            }, 3000);
+        }
+        // 游戏状态
+        let state = {
+            balance: getBalance(CURRENT_USER_ID),
+            bets: { DRAGON: 0, TIGER: 0, TIE: 0 },
+            betRolling: false,
+            autoMode: true,
+            speed: 1,
+            pool: 50000,
+            countdown: 30,
+            countdownInterval: null
+        };
+        let lastBet = null;
+        let resultTimer = null;
         function flashAndPop(result) {
             const scene = document.getElementById('battleScene');
             const resultDiv = document.getElementById('battleResult');
@@ -622,8 +733,6 @@
             dragon.style.transform = 'scale(1.1)';
             tiger.style.transform = 'scale(1.1)';
             setTimeout(() => { dragon.style.transform = ''; tiger.style.transform = ''; }, 200);
-            // 语音
-            speak(result);
         }
         
         function highlightWord(result) {
@@ -706,32 +815,12 @@
         async function restoreBackground() {
             try { const bg = await loadMedia('background'); if (bg && bg.blob) applyBackground(bg.blob, bg.mimeType); } catch(e) { console.log(e); } }
         async function uploadBackground(file) { if (!file) return; await saveMedia('background', file, file.type); applyBackground(file, file.type); }
-         // 游戏状态
-        let state = {
-            balance: getBalance(CURRENT_USER_ID),
-            bets: { DRAGON: 0, TIGER: 0, TIE: 0 },
-            betRolling: false,
-            autoMode: true,
-            speed: 1,
-            pool: 50000,
-            countdown: 30,
-            countdownInterval: null
-        };
-        let lastBet = null;
-        let resultTimer = null;
-        function showGameResult(msg, result) {
-            const el = document.getElementById('battleResult');
-            if (!el) return;
-            if (msg.includes('开奖')) {
-                el.innerText = msg;
-                flashAndPop(result);
-                highlightWord(result);
-            }
-        }
+        
         function getCountdownSec() { return state.speed===1?30:(state.speed===2?20:10); }
         function syncBalance() { state.balance = getBalance(CURRENT_USER_ID); updateUI(); }
+        
         function placeBet(type, amount) {
-            if (state.betRolling || amount<=0 || amount>state.balance) return false;
+            if (state.betRolling || isAnimating || amount<=0 || amount>state.balance) return false;
             state.betRolling = true;
             const outcomes = ['龙', '虎', '和'];
             const result = outcomes[Math.floor(Math.random() * 3)];
@@ -743,14 +832,24 @@
             updateUI();
             addRecord(CURRENT_USER_ID, type, result, win, amount);
             pushResult(CURRENT_USER_ID, result);
+            flashAndPop(result);
+            highlightWord(result);
             const resultMsg = win > 0 ? `🎲 开奖: ${result}  ✅ 中奖 +${win} TRX` : `🎲 开奖: ${result}  ❌ 未中奖`;
-            showGameResult(resultMsg, result);
-            if (state.autoMode) { clearCountdown(); startCountdown(getCountdownSec()); }
+            document.getElementById('battleResult').innerText = resultMsg;
+            // 显示全屏动画（3秒）
+            showResultAnimation(result, win, amount, () => {
+                // 动画结束后，如果自动模式，继续倒计时
+                if (state.autoMode) {
+                    clearCountdown();
+                    startCountdown(getCountdownSec());
+                }
+            });
             state.betRolling = false;
             return true;
         }
+        
         function executeBet() {
-            if (state.betRolling) return;
+            if (state.betRolling || isAnimating) return;
             const total = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
             if (total <= 0) return;
             let selectedType = null, selectedAmount = 0;
@@ -760,10 +859,14 @@
             if (!selectedType) return;
             const betType = { DRAGON:"龙", TIGER:"虎", TIE:"和" }[selectedType];
             lastBet = { type: betType, amount: selectedAmount };
+            // 清除倒计时（如果有）
+            clearCountdown();
             placeBet(betType, selectedAmount).then(success => { if(success){ state.bets = { DRAGON:0, TIGER:0, TIE:0 }; updateUI(); } });
         }
-        function repeatLastBet() { if(lastBet && !state.betRolling) placeBet(lastBet.type, lastBet.amount); }
-        function cancelAllBets() { if(!state.betRolling){ state.bets = { DRAGON:0, TIGER:0, TIE:0 }; updateUI(); } }
+        
+        function repeatLastBet() { if(lastBet && !state.betRolling && !isAnimating) placeBet(lastBet.type, lastBet.amount); }
+        function cancelAllBets() { if(!state.betRolling && !isAnimating){ state.bets = { DRAGON:0, TIGER:0, TIE:0 }; updateUI(); } }
+        
         function updateUI() {
             document.getElementById('balanceDisplay').innerText = state.balance.toFixed(2);
             document.getElementById('poolDisplay').innerText = state.pool.toFixed(2);
@@ -779,7 +882,7 @@
             document.getElementById('valWin').innerText = maxWin.toFixed(2);
             document.querySelectorAll('.multi-bet-item').forEach(el => { const type = el.dataset.type; if (state.bets[type] > 0) el.classList.add('selected'); else el.classList.remove('selected'); });
         }
-        function adjustBet(type, delta) { if(!state.betRolling){ let newVal = state.bets[type] + delta; if(newVal<0) newVal=0; state.bets[type]=newVal; updateUI(); } }
+        function adjustBet(type, delta) { if(!state.betRolling && !isAnimating){ let newVal = state.bets[type] + delta; if(newVal<0) newVal=0; state.bets[type]=newVal; updateUI(); } }
         function startPoolFluctuation() { setInterval(() => { let change = Math.floor(Math.random()*61)-30; let newPool = state.pool+change; if(newPool<10000) newPool=10000; if(newPool>100000) newPool=100000; state.pool=newPool; document.getElementById('poolDisplay').innerText=state.pool.toFixed(2); }, 1000); }
         function startCountdown(sec) {
             if(state.countdownInterval) clearInterval(state.countdownInterval);
@@ -800,11 +903,13 @@
         function clearCountdown() { if(state.countdownInterval){ clearInterval(state.countdownInterval); state.countdownInterval=null; } }
         function refreshBalance() { syncBalance(); }
         function setSpeed(speed) {
+            if(isAnimating) return;
             state.speed = speed;
             document.querySelectorAll('.speed-btn').forEach(btn => { if(parseInt(btn.dataset.speed)===speed) btn.classList.add('active'); else btn.classList.remove('active'); });
             clearCountdown(); startCountdown(getCountdownSec());
         }
         function switchUser() {
+            if(isAnimating) return;
             const newId = document.getElementById('switchUserIdInput').value.trim();
             if(!newId) return;
             CURRENT_USER_ID = newId;
@@ -817,7 +922,7 @@
             updateHistoryGrid();
         }
         
-        // 管理员面板（简化）
+        // 管理员面板
         let adminPanel = null;
         let selectedAdminUserId = CURRENT_USER_ID;
         function showAdminPanel() {
@@ -976,11 +1081,10 @@
             startCountdown(getCountdownSec());
             refreshRecordDisplay();
             updateHistoryGrid();
-            // 首次引导
             if (!localStorage.getItem('visited_before')) {
                 localStorage.setItem('visited_before', 'true');
                 setTimeout(() => {
-                    showModal("🎉 欢迎！\n• 点击「新用户」一键注册\n• 押注后开奖会有闪屏+语音播报\n• 长按「续押」3秒进入管理后台", "开始游戏");
+                    showModal("🎉 欢迎！\n• 点击「新用户」一键注册\n• 押注后会有3秒动画，期间无法下注\n• 长按「续押」3秒进入管理后台", "开始游戏");
                 }, 500);
             }
         }
@@ -989,4 +1093,3 @@
 </script>
 </body>
 </html>
-
