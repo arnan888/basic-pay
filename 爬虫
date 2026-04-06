@@ -760,73 +760,26 @@
             scene.classList.add('flash-gold');
             setTimeout(() => scene.classList.remove('flash-gold'), 300);
             resultDiv.classList.add('pop');
-            setTimeout(() => resultDiv.classLi
-
-
-
-
-
-
-
-
-
-
-
-
-const store = tx.objectStore(STORE_NAME);
-                store.put({ blob, mimeType }, key);
-                tx.oncomplete = () => resolve();
-                tx.onerror = (e) => reject(e);
-            });
+            setTimeout(() => resultDiv.classList.remove('pop'), 200);
+            const dragon = document.getElementById('dragonWord');
+            const tiger = document.getElementById('tigerWord');
+            dragon.style.transform = 'scale(1.1)';
+            tiger.style.transform = 'scale(1.1)';
+            setTimeout(() => { dragon.style.transform = ''; tiger.style.transform = ''; }, 200);
         }
-        async function loadMedia(key) {
-            if (!db) await openDB();
-            return new Promise((resolve) => {
-                const tx = db.transaction(STORE_NAME, "readonly");
-                const store = tx.objectStore(STORE_NAME);
-                const req = store.get(key);
-                req.onsuccess = () => resolve(req.result || null);
-                req.onerror = () => resolve(null);
-            });
-        }
-        function applyBackground(blob, mimeType) {
-            const bgDiv = document.getElementById('sceneBg');
-            bgDiv.innerHTML = '';
-            bgDiv.style.backgroundImage = 'none';
-            if (!blob) return;
-            const url = URL.createObjectURL(blob);
-            if (mimeType.startsWith('video/')) {
-                const video = document.createElement('video');
-                video.src = url;
-                video.autoplay = true;
-                video.loop = true;
-                video.muted = true;
-                video.playsInline = true;
-                video.style.width = '100%';
-                video.style.height = '100%';
-                video.style.objectFit = 'cover';
-                bgDiv.appendChild(video);
-                video.play().catch(e=>console.log);
-            } else {
-                bgDiv.style.backgroundImage = `url(${url})`;
-                bgDiv.style.backgroundSize = 'cover';
-                bgDiv.style.backgroundPosition = 'center';
-            }
-        }
-        async function restoreBackground() {
-            try { const bg = await loadMedia('background'); if (bg && bg.blob) applyBackground(bg.blob, bg.mimeType); } catch(e) { console.log(e); } }
-        async function uploadBackground(file) { if (!file) return; await saveMedia('background', file, file.type); applyBackground(file, file.type); }
-        
-        function getCountdownSec() { return state.speed===1?30:(state.speed===2?20:10); }
-        function syncBalance() { state.balance = getBalance(CURRENT_USER_ID); updateUI(); }
 
-        function placeBet(type, amount) {
-            if (state.betRolling || isAnimating || amount<=0 || amount>state.balance) return false;
-            state.betRolling = true;
-            const outcomes = ['龙', '虎', '和'];
-            const result = outcomes[Math.floor(Math.random() * 3)];
-            let win = 0;
-            if (type === result) win = amount * (result === '和' ? 8 : 2);
+        function highlightWord(result) {
+            const dragon = document.getElementById('dragonWord');
+            const tiger = document.getElementById('tigerWord');
+            dragon.classList.remove('highlight-win');
+            tiger.classList.remove('highlight-win');
+            if (result === '龙') {
+                dragon.classList.add('highlight-win');
+                setTimeout(() => dragon.classList.remove('highlight-win'), 800);
+            } else if (result === '虎') {
+                tiger.classList.add('highlight-win');
+                setTimeout(() => tiger.classList.remove('highlight-win'), 800);
+            } else if (result === '和' ? 8 : 2);
             const newBalance = state.balance - amount + win;
             setBalance(CURRENT_USER_ID, newBalance);
             state.balance = newBalance;
