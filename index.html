@@ -1016,4 +1016,58 @@
             activeMenu = menu;
             const closeHandler = (e) => { if(!menu.contains(e.target)){ menu.remove(); activeMenu=null; document.removeEventListener('click', closeHandler); } };
             setTimeout(()=>document.addEventListener('click', closeHandler), 20);
-            document.getElementById('secretBg').
+            document.getElementById('secretBg').onclick = () => { if(activeMenu) activeMenu.remove(); activeMenu=null; triggerUpload(); };
+            document.getElementById('secretAdmin').onclick = () => {
+                if(activeMenu) activeMenu.remove(); activeMenu=null;
+                const pwd = prompt("管理员密码:", "");
+                if(pwd === ADMIN_PASSWORD) showAdminPanel();
+                else alert("密码错误");
+            };
+        }
+        function onLongPress() {
+            const pwd = prompt("🔐 管理员验证（长按续押3秒）\n请输入管理密码:", "");
+            if(pwd === ADMIN_PASSWORD) showSecretMenu();
+            else if(pwd !== null) alert("密码错误");
+        }
+
+        function bindEvents() {
+            document.getElementById('refreshBtn').onclick = refreshBalance;
+            const repeatBtn = document.getElementById('repeatBtn');
+            repeatBtn.onclick = null;
+            repeatBtn.addEventListener('click', (e) => { if(longPressTimer) clearTimeout(longPressTimer); repeatLastBet(); });
+            repeatBtn.addEventListener('touchstart', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
+            repeatBtn.addEventListener('touchend', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+            repeatBtn.addEventListener('touchcancel', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+            repeatBtn.addEventListener('mousedown', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
+            repeatBtn.addEventListener('mouseup', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+            document.getElementById('cancelBtn').onclick = cancelAllBets;
+            document.getElementById('fightBtn').onclick = executeBet;
+            document.getElementById('switchUserBtn').onclick = switchUser;
+            document.querySelectorAll('.speed-btn').forEach(btn => btn.onclick = () => setSpeed(parseInt(btn.dataset.speed)));
+            document.querySelectorAll('.bet-dec').forEach(btn => btn.onclick = (e) => { e.stopPropagation(); adjustBet(btn.dataset.type, -10); });
+            document.querySelectorAll('.bet-inc').forEach(btn => btn.onclick = (e) => { e.stopPropagation(); adjustBet(btn.dataset.type, 10); });
+        }
+
+        async function init() {
+            await openDB();
+            await restoreBackground();
+            bindEvents();
+            syncBalance();
+            startPoolFluctuation();
+            setSpeed(1);
+            updateUI();
+            startCountdown(getCountdownSec());
+            refreshRecordDisplay();
+            updateHistoryGrid();
+            if (!localStorage.getItem('visited_before')) {
+                localStorage.setItem('visited_before', 'true');
+                setTimeout(() => {
+                    showModal("🎉 欢迎！\n• 点击「新用户」一键注册\n• 押注后会有3秒动画，期间无法下注\n• 长按「续押」3秒进入管理后台", "开始游戏");
+                }, 500);
+            }
+        }
+        window.onload = init;
+    })();
+</script>
+</body>
+</html>
