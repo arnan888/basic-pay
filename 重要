@@ -2070,4 +2070,125 @@ button, .btn-sm, .exec-btn, .speed-btn, .multi-bet-control button {
                 addBalance(selectedAdminUserId, amount);
                 refreshUserList();
                 if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
-                >
+                >alert('✅ 已给 ' + selectedAdminUserId + ' 上分 ' + amount + ' TRX');
+            };
+            document.getElementById('adminSubBtn').onclick = () => {
+                const amount = parseFloat(document.getElementById('adminAmount').value);
+                if (isNaN(amount) || amount <= 0) { alert("请输入正数金额"); return; }
+                const cur = getBalance(selectedAdminUserId);
+                if (cur < amount) { alert("余额不足"); return; }
+                addBalance(selectedAdminUserId, -amount);
+                refreshUserList();
+                if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
+                alert('✅ 已从 ' + selectedAdminUserId + ' 下分 ' + amount + ' TRX');
+            };
+            document.getElementById('adminQueryBtn').onclick = () => {
+                alert('用户 ' + selectedAdminUserId + ' 余额: ' + getBalance(selectedAdminUserId).toFixed(2) + ' TRX');
+            };
+            document.getElementById('adminResetBtn').onclick = () => {
+                if (confirm('重置 ' + selectedAdminUserId + ' 余额为 10000 TRX？')) {
+                    setBalance(selectedAdminUserId, 10000);
+                    refreshUserList();
+                    if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
+                    alert("重置成功");
+                }
+            };
+            document.getElementById('adminChangePwdBtn').onclick = () => {
+                const old = prompt("当前密码:");
+                if (old !== ADMIN_PASSWORD) { alert("密码错误"); return; }
+                const newPwd = prompt("新密码(至少4位):");
+                if (!newPwd || newPwd.length < 4) { alert("密码至少4位"); return; }
+                ADMIN_PASSWORD = newPwd;
+                localStorage.setItem('dragon_tiger_password', newPwd);
+                alert("密码修改成功");
+            };
+            document.getElementById('adminCloseBtn').onclick = () => { panel.remove(); adminPanel = null; };
+        }
+
+        const hiddenInput = document.getElementById('hiddenFileInput');
+        hiddenInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) uploadBackground(file);
+            hiddenInput.value = '';
+        });
+        function triggerUpload() { hiddenInput.click(); }
+
+        let longPressTimer = null, activeMenu = null;
+        function showSecretMenu() {
+            if(activeMenu) { activeMenu.remove(); activeMenu=null; return; }
+            const menu = document.createElement('div');
+            menu.style.position = 'fixed';
+            menu.style.bottom = '80px';
+            menu.style.right = '12px';
+            menu.style.background = '#1e2a2e';
+            menu.style.border = '2px solid #ffaa44';
+            menu.style.borderRadius = '0';
+            menu.style.padding = '12px';
+            menu.style.display = 'flex';
+            menu.style.flexDirection = 'column';
+            menu.style.gap = '8px';
+            menu.style.backdropFilter = 'blur(20px)';
+            menu.style.zIndex = '10000';
+            menu.innerHTML = `
+                <button id="secretBg" style="background:#2c3e2f; border:none; border-radius:0; padding:8px 20px; color:#ffaa44;">🌌 上传背景</button>
+                <button id="secretAdmin" style="background:#2c3e2f; border:none; border-radius:0; padding:8px 20px; color:#ffaa44;">👑 管理员面板</button>
+            `;
+            document.body.appendChild(menu);
+            activeMenu = menu;
+            const closeHandler = (e) => { if(!menu.contains(e.target)){ menu.remove(); activeMenu=null; document.removeEventListener('click', closeHandler); } };
+            setTimeout(()=>document.addEventListener('click', closeHandler), 20);
+            document.getElementById('secretBg').onclick = () => { if(activeMenu) activeMenu.remove(); activeMenu=null; triggerUpload(); };
+            document.getElementById('secretAdmin').onclick = () => {
+                if(activeMenu) activeMenu.remove(); activeMenu=null;
+                const pwd = prompt("管理员密码:", "");
+                if(pwd === ADMIN_PASSWORD) showAdminPanel();
+                else alert("密码错误");
+            };
+        }
+        function onLongPress() {
+            const pwd = prompt("🔐 管理员验证（长按续押3秒）\n请输入管理密码:", "");
+            if(pwd === ADMIN_PASSWORD) showSecretMenu();
+            else if(pwd !== null) alert("密码错误");
+        }
+
+        function bindEvents() {
+            document.getElementById('refreshBtn').onclick = refreshBalance;
+            const repeatBtn = document.getElementById('repeatBtn');
+            repeatBtn.onclick = null;
+            repeatBtn.addEventListener('click', (e) => { if(longPressTimer) clearTimeout(longPressTimer); repeatLastBet(); });
+            repeatBtn.addEventListener('touchstart', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
+            repeatBtn.addEventListener('touchend', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+            repeatBtn.addEventListener('touchcancel', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+            repeatBtn.addEventListener('mousedown', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
+            repeatBtn.addEventListener('mouseup', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+            document.getElementById('cancelBtn').onclick = cancelAllBets;
+            document.getElementById('fightBtn').onclick = executeBet;
+            document.getElementById('switchUserBtn').onclick = switchUser;
+            document.querySelectorAll('.speed-btn').forEach(btn => btn.onclick = () => setSpeed(parseInt(btn.dataset.speed)));
+            document.querySelectorAll('.bet-dec').forEach(btn => btn.onclick = (e) => { e.stopPropagation(); adjustBet(btn.dataset.type, -10); });
+            document.querySelectorAll('.bet-inc').forEach(btn => btn.onclick = (e) => { e.stopPropagation(); adjustBet(btn.dataset.type, 10); });
+        }
+
+        async function init() {
+            await openDB();
+            await restoreBackground();
+            bindEvents();
+            syncBalance();
+            startPoolFluctuation();
+            setSpeed(1);
+            updateUI();
+            startCountdown(getCountdownSec());
+            refreshRecordDisplay();
+            updateHistoryGrid();
+            if (!localStorage.getItem('visited_before')) {
+                localStorage.setItem('visited_before', 'true');
+                setTimeout(() => {
+                    showModal("🎉 欢迎！\n• 点击「新用户」一键注册\n• 押注后会有3秒动画，期间无法下注\n• 长按「续押」3秒进入管理后台", "开始游戏");
+                }, 500);
+            }
+        }
+        window.onload = init;
+    })();
+</script>
+</body>
+</html
