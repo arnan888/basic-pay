@@ -1,0 +1,402 @@
+
+
+---
+
+前端代码“写死”/防修改完整教程
+
+一、核心认知
+
+前端永远无法绝对安全
+
+· 所有 HTML/CSS/JS 都会下载到用户浏览器
+· 用户可以通过 F12 开发者工具查看、修改、断点调试
+· 任何前端保护措施都只能 增加修改难度，无法 100% 阻止
+
+安全等级对比
+
+级别 方法 防护效果
+初级 禁用右键/F12 防普通用户
+中级 代码混淆 + 定时检测 增加阅读难度
+高级 关键逻辑放在后端 真正安全
+
+---
+
+二、初级防护：禁用开发者工具
+
+1. 禁用右键菜单
+
+```javascript
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+```
+
+2. 禁用键盘快捷键
+
+```javascript
+document.addEventListener('keydown', function(e) {
+    // F12
+    if (e.key === 'F12') {
+        e.preventDefault();
+    }
+    // Ctrl+Shift+I (开发者工具)
+    if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+        e.preventDefault();
+    }
+    // Ctrl+Shift+J (控制台)
+    if (e.ctrlKey && e.shiftKey && e.key === 'J') {
+        e.preventDefault();
+    }
+    // Ctrl+U (查看源码)
+    if (e.ctrlKey && e.key === 'u') {
+        e.preventDefault();
+    }
+});
+```
+
+3. 检测开发者工具是否打开
+
+```javascript
+// 方法一：检测窗口尺寸变化
+let devtools = /./;
+devtools.toString = function() {
+    this.open = true;
+};
+setInterval(() => {
+    console.log(devtools);
+    if (devtools.open) {
+        alert('请关闭开发者工具！');
+        document.body.innerHTML = '开发者工具已禁用，请刷新页面';
+    }
+}, 1000);
+
+// 方法二：检测 debugger 被调用
+setInterval(() => {
+    debugger; // 如果开发者工具打开，会在这里暂停
+}, 100);
+```
+
+---
+
+三、中级防护：代码混淆
+
+1. 使用在线工具
+
+· JavaScript Obfuscator：https://obfuscator.io/
+· 把代码粘贴进去，点击混淆，生成乱码
+
+2. 混淆前后对比
+
+原始代码：
+
+```javascript
+let balance = 100;
+function addMoney(amount) {
+    balance = balance + amount;
+    return balance;
+}
+```
+
+混淆后：
+
+```javascript
+var _0x2a3f=['\x62\x61\x6c\x61\x6e\x63\x65','\x61\x64\x64\x4d\x6f\x6e\x65\x79'];(function(_0x4d5f2c,_0x2a3f12){...})();function _0x2a3f(...){...}var _0x2a3f12=100;function _0x2a3f13(_0x2a3f14){_0x2a3f12=_0x2a3f12+_0x2a3f14;return _0x2a3f12;}
+```
+
+3. 使用 webpack/vite 打包混淆
+
+```javascript
+// vite.config.js
+import { defineConfig } from 'vite';
+import obfuscator from 'rollup-plugin-obfuscator';
+
+export default defineConfig({
+    build: {
+        minify: 'terser',
+        terserOptions: {
+            compress: {
+                drop_console: true,  // 删除 console.log
+                drop_debugger: true, // 删除 debugger
+            },
+            mangle: true, // 变量名混淆
+        }
+    }
+});
+```
+
+---
+
+四、高级防护：数据写死 + 不依赖外部存储
+
+1. 余额直接写死在 JS 内部
+
+```javascript
+// 不读取 localStorage，直接用固定值
+const FIXED_BALANCE = 100;
+let displayBalance = FIXED_BALANCE;
+
+// 任何操作都不改变这个值
+function placeBet() {
+    // 只是演示动画，不修改余额
+    showAnimation();
+}
+```
+
+2. 使用 Object.defineProperty 冻结对象
+
+```javascript
+const config = Object.freeze({
+    balance: 100,
+    step: 10,
+    odds: { dragon: 2, tiger: 2, tie: 8 }
+});
+
+// 尝试修改会失败（严格模式下会报错）
+config.balance = 200; // 无效
+```
+
+3. 使用 Proxy 拦截修改
+
+```javascript
+const data = { balance: 100 };
+
+const protectedData = new Proxy(data, {
+    set(target, prop, value) {
+        if (prop === 'balance') {
+            console.warn('不允许修改 balance！');
+            return false; // 拒绝修改
+        }
+        target[prop] = value;
+        return true;
+    },
+    deleteProperty(target, prop) {
+        console.warn('不允许删除属性！');
+        return false;
+    }
+});
+
+protectedData.balance = 1000; // 被拦截，修改无效
+```
+
+4. 使用闭包隐藏变量
+
+```javascript
+const Game = (function() {
+    // 私有变量，外部无法直接访问
+    let _balance = 100;
+    
+    function getBalance() {
+        return _balance;
+    }
+    
+    function setBalance(val) {
+        // 可以加入验证逻辑
+        if (val < 0) return false;
+        _balance = val;
+        return true;
+    }
+    
+    // 只暴露需要的接口
+    return {
+        getBalance: getBalance,
+        // 不暴露 setBalance，外部就无法修改
+    };
+})();
+
+console.log(Game.getBalance()); // 100
+Game._balance = 1000; // 无效，无法访问私有变量
+```
+
+---
+
+五、终极方案：核心逻辑放在后端
+
+架构图
+
+```
+用户浏览器（前端）
+     ↓ 发送投注请求
+后端服务器（Node.js/PHP/Java）
+     ↓ 验证余额、计算结果
+数据库
+     ↓ 返回结果
+用户浏览器（显示结果）
+```
+
+前端只负责展示
+
+```javascript
+// 前端代码
+async function placeBet(type, amount) {
+    const response = await fetch('/api/bet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            type: type, 
+            amount: amount,
+            token: localStorage.getItem('token') // 用户身份验证
+        })
+    });
+    const result = await response.json();
+    
+    if (result.success) {
+        showResult(result.winAmount);
+        updateBalance(result.newBalance);
+    } else {
+        alert(result.error);
+    }
+}
+```
+
+后端验证逻辑（Node.js 示例）
+
+```javascript
+// server.js
+const express = require('express');
+const app = express();
+
+// 用户余额存在服务器内存/数据库
+const userBalances = new Map();
+
+app.post('/api/bet', (req, res) => {
+    const { userId, type, amount } = req.body;
+    
+    // 1. 验证用户身份
+    if (!isValidUser(userId)) {
+        return res.json({ success: false, error: '无效用户' });
+    }
+    
+    // 2. 检查余额是否足够
+    let balance = userBalances.get(userId) || 100;
+    if (balance < amount) {
+        return res.json({ success: false, error: '余额不足' });
+    }
+    
+    // 3. 服务器随机产生结果
+    const result = ['龙', '虎', '和'][Math.floor(Math.random() * 3)];
+    let win = 0;
+    if (type === result) {
+        win = amount * (result === '和' ? 8 : 2);
+    }
+    
+    // 4. 更新余额（服务器端）
+    balance = balance - amount + win;
+    userBalances.set(userId, balance);
+    
+    // 5. 返回结果
+    res.json({
+        success: true,
+        result: result,
+        winAmount: win,
+        newBalance: balance
+    });
+});
+```
+
+---
+
+六、综合防护示例代码
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>防护示例</title>
+    <style>/* 正常样式 */</style>
+</head>
+<body>
+    <div id="app">加载中...</div>
+
+    <script>
+    // ========== 1. 禁用开发者工具 ==========
+    (function disableDevTools() {
+        // 禁用右键
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        
+        // 禁用快捷键
+        document.addEventListener('keydown', e => {
+            const keys = ['F12', 'I', 'J', 'C', 'U'];
+            if (e.key === 'F12' || (e.ctrlKey && keys.includes(e.key))) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // 检测开发者工具
+        setInterval(() => {
+            if (window.devtools && window.devtools.open) {
+                location.reload();
+            }
+        }, 1000);
+    })();
+    
+    // ========== 2. 数据写死（闭包 + 冻结） ==========
+    const GameCore = (function() {
+        // 私有变量
+        const _CONFIG = Object.freeze({
+            balance: 100,
+            step: 10,
+            maxBet: 1000
+        });
+        
+        let _currentBalance = _CONFIG.balance;
+        
+        // 不暴露修改方法
+        function getBalance() {
+            return _currentBalance;
+        }
+        
+        // 只允许内部调用
+        function _setBalance(val) {
+            if (val >= 0) _currentBalance = val;
+        }
+        
+        return {
+            getBalance: getBalance,
+            // 故意不暴露 setBalance
+            config: _CONFIG  // 只读
+        };
+    })();
+    
+    // ========== 3. 界面渲染 ==========
+    document.getElementById('app').innerHTML = `
+        <div>余额：${GameCore.getBalance()}</div>
+        <div>配置：${JSON.stringify(GameCore.config)}</div>
+        <button id="test">尝试修改余额</button>
+    `;
+    
+    document.getElementById('test').onclick = () => {
+        // 这里无法修改 GameCore 内部的余额
+        alert('当前余额：' + GameCore.getBalance());
+    };
+    </script>
+</body>
+</html>
+```
+
+---
+
+七、总结对照表
+
+防护目标 推荐方法 代码量 防护强度
+防右键/保存图片 禁用 contextmenu 1行 ★☆☆
+防查看源码 禁用 F12/Ctrl+U 10行 ★★☆
+防修改关键变量 闭包 + 不暴露 setter 20行 ★★★
+防调试 定时检测 devtools 10行 ★★☆
+防阅读 代码混淆 工具处理 ★★★
+真正安全 后端验证 全栈 ★★★★★
+
+---
+
+八、学习资源推荐
+
+1. JavaScript 闭包深入：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Closures
+2. Proxy 代理：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Proxy
+3. Object.freeze()：https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Object/freeze
+4. 代码混淆工具：https://obfuscator.io/
+5. Node.js 后端开发：https://nodejs.org/zh-cn
+
+---
+
+这份教程您可以直接保存为一个 .html 或 .md 文件，以后慢慢研究。需要我针对某个具体方法展开详细讲解吗？
