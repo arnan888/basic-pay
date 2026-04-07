@@ -189,7 +189,6 @@
         .multi-bet-name.tie { color: #bb77ff; }
         .multi-bet-item.selected .multi-bet-name { color: #1a1a2a; }
         
-        /* 押注金额显示区域 */
         .bet-amount-wrapper {
             background: #1e1e2e;
             margin: 8px 0;
@@ -361,6 +360,7 @@
             justify-content: space-between;
             padding: 6px 12px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
+            color: #ddd;
         }
         .record-win { color: #4caf50; }
         .record-lose { color: #f44336; }
@@ -464,7 +464,6 @@
 <body>
 <div class="container-outer">
     <div class="container">
-        <!-- 战场区域 -->
         <div class="battle-scene" id="battleScene">
             <div class="scene-bg" id="sceneBg"></div>
             <div class="dragon-word" id="dragonWord">龍</div>
@@ -474,7 +473,7 @@
         
         <div class="bet-section">
             <div class="account-bar">
-                <div class="account-info">👤 账户：<span id="currentUserId">Log in</span></div>
+                <div class="account-info">👤 账户：<span id="currentUserId">6685731895</span></div>
                 <div class="btn-group">
                     <button id="myHistoryBtn" class="btn-sm my-history-btn">📜 我的记录</button>
                     <button id="newUserBtn" class="btn-sm">✨ 新用户</button>
@@ -487,7 +486,6 @@
                 </div>
             </div>
             
-            <!-- 押注卡片：龙 -->
             <div class="multi-bet-item" data-type="DRAGON">
                 <div class="multi-bet-name dragon">🐉 龙</div>
                 <div class="bet-amount-wrapper">
@@ -505,7 +503,6 @@
                 </div>
             </div>
             
-            <!-- 押注卡片：和 -->
             <div class="multi-bet-item" data-type="TIE">
                 <div class="multi-bet-name tie">⚖️ 和</div>
                 <div class="bet-amount-wrapper">
@@ -523,7 +520,6 @@
                 </div>
             </div>
             
-            <!-- 押注卡片：虎 -->
             <div class="multi-bet-item" data-type="TIGER">
                 <div class="multi-bet-name tiger">🐯 虎</div>
                 <div class="bet-amount-wrapper">
@@ -565,7 +561,7 @@
                 <button class="exec-btn main-go" id="fightBtn">🎲 确认投注</button>
             </div>
             <div class="bottom-stats">
-                <div class="stat-card"><span>💰 余额</span><span id="balanceDisplay">10000.00</span></div>
+                <div class="stat-card"><span>💰 余额</span><span id="balanceDisplay">100.00</span></div>
                 <div class="stat-card"><span>🎰 彩金池</span><span id="poolDisplay">50000.00</span></div>
             </div>
         </div>
@@ -575,7 +571,6 @@
 
 <script>
     (function(){
-        // ==================== 语音播报 ====================
         let speechEnabled = false;
         function enableSpeech() {
             if (!speechEnabled) {
@@ -593,23 +588,21 @@
             }
         }
 
-        // ==================== 用户数据管理 ====================
         let users = JSON.parse(localStorage.getItem('dragon_tiger_users')) || {};
         let CURRENT_USER_ID = "6685731895";
         if (!users[CURRENT_USER_ID]) {
-            users[CURRENT_USER_ID] = { balance: 10000, records: [], resultHistory: [] };
+            users[CURRENT_USER_ID] = { balance: 100, records: [], resultHistory: [] };
             localStorage.setItem('dragon_tiger_users', JSON.stringify(users));
         }
         let ADMIN_PASSWORD = localStorage.getItem('dragon_tiger_password') || "dragon888";
         
         function saveUsers() { localStorage.setItem('dragon_tiger_users', JSON.stringify(users)); }
-        function getBalance(uid) { if (!users[uid]) users[uid] = { balance: 10000, records: [], resultHistory: [] }; return users[uid].balance; }
-        function setBalance(uid, amt) { if (!users[uid]) users[uid] = { balance: 10000, records: [], resultHistory: [] }; users[uid].balance = amt; saveUsers(); }
+        function getBalance(uid) { if (!users[uid]) users[uid] = { balance: 100, records: [], resultHistory: [] }; return users[uid].balance; }
+        function setBalance(uid, amt) { if (!users[uid]) users[uid] = { balance: 100, records: [], resultHistory: [] }; users[uid].balance = amt; saveUsers(); }
         function addBalance(uid, delta) { setBalance(uid, getBalance(uid) + delta); }
         function getUserList() { return Object.keys(users); }
         function generateRandomId() { return "user_" + Math.floor(Math.random() * 1000000); }
 
-        // ==================== UI 辅助函数 ====================
         function showModal(msg, btnText) {
             const modal = document.createElement('div');
             modal.className = 'modal';
@@ -644,12 +637,12 @@
             const newId = generateRandomId();
             document.getElementById('switchUserIdInput').value = newId;
             switchUser();
-            showModal(`✅ 新账户：${newId}\n初始余额：10000 TRX`, "开始游戏");
+            showModal(`✅ 新账户：${newId}\n初始余额：100 TRX`, "开始游戏");
         };
 
         function getResultHistory(uid) { return users[uid]?.resultHistory || []; }
         function pushResult(uid, res) {
-            if (!users[uid]) users[uid] = { balance: 10000, records: [], resultHistory: [] };
+            if (!users[uid]) users[uid] = { balance: 100, records: [], resultHistory: [] };
             let arr = users[uid].resultHistory || [];
             arr.unshift(res);
             if (arr.length > 10) arr.pop();
@@ -678,7 +671,7 @@
         }
 
         function addRecord(uid, betType, result, win, betAmt) {
-            if (!users[uid]) users[uid] = { balance: 10000, records: [], resultHistory: [] };
+            if (!users[uid]) users[uid] = { balance: 100, records: [], resultHistory: [] };
             let recs = users[uid].records || [];
             recs.unshift({ time: new Date().toLocaleTimeString(), bet: betType, result: result, win: win, amount: betAmt });
             if (recs.length > 50) recs.pop();
@@ -702,7 +695,6 @@
             });
         }
 
-        // ==================== 动画与开奖 ====================
         let isAnimating = false;
         function showResultAnimation(result, winAmount, betAmount, callback) {
             if (isAnimating) return;
@@ -808,7 +800,6 @@
             }
         }
 
-        // ==================== 背景与数据库 ====================
         const DB_NAME = "DragonTigerMedia";
         const STORE_NAME = "media";
         let db = null;
@@ -868,7 +859,6 @@
             try { const bg = await loadMedia('background'); if (bg && bg.blob) applyBackground(bg.blob, bg.mimeType); } catch(e) { console.log(e); } }
         async function uploadBackground(file) { if (!file) return; await saveMedia('background', file, file.type); applyBackground(file, file.type); }
 
-        // ==================== 游戏核心逻辑 ====================
         let state = {
             balance: getBalance(CURRENT_USER_ID),
             bets: { DRAGON: 0, TIGER: 0, TIE: 0 },
@@ -913,7 +903,6 @@
 
         function executeBet() {
             if (state.betRolling || isAnimating) return;
-            // 找出押注金额最大的一个选项进行投注（保持原有逻辑）
             let selectedType = null, selectedAmount = 0;
             if (state.bets.DRAGON > selectedAmount) { selectedType = "DRAGON"; selectedAmount = state.bets.DRAGON; }
             if (state.bets.TIGER > selectedAmount) { selectedType = "TIGER"; selectedAmount = state.bets.TIGER; }
@@ -923,7 +912,6 @@
             lastBet = { type: betType, amount: selectedAmount };
             clearCountdown();
             placeBet(betType, selectedAmount);
-            // 投注后清空所有押注金额
             state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
             updateUI();
         }
@@ -947,7 +935,6 @@
             document.querySelectorAll('.multi-bet-item').forEach(el => { const type = el.dataset.type; if (state.bets[type] > 0) el.classList.add('selected'); else el.classList.remove('selected'); });
         }
         
-        // 增加押注金额（带余额检查）
         function addBetAmount(type, amount) {
             if(state.betRolling || isAnimating) return;
             let newVal = state.bets[type] + amount;
@@ -961,7 +948,6 @@
             updateUI();
         }
         
-        // 清空单个押注
         function clearBet(type) {
             if(state.betRolling || isAnimating) return;
             state.bets[type] = 0;
@@ -1012,7 +998,7 @@
             const newId = document.getElementById('switchUserIdInput').value.trim();
             if(!newId) return;
             CURRENT_USER_ID = newId;
-            if (!users[CURRENT_USER_ID]) { users[CURRENT_USER_ID] = { balance: 10000, records: [], resultHistory: [] }; saveUsers(); }
+            if (!users[CURRENT_USER_ID]) { users[CURRENT_USER_ID] = { balance: 100, records: [], resultHistory: [] }; saveUsers(); }
             document.getElementById('currentUserId').innerText = CURRENT_USER_ID;
             state.bets = { DRAGON:0, TIGER:0, TIE:0 };
             lastBet = null;
@@ -1021,7 +1007,6 @@
             updateHistoryGrid();
         }
 
-        // ==================== 管理员面板 ====================
         let adminPanel = null;
         let selectedAdminUserId = CURRENT_USER_ID;
         function showAdminPanel() {
@@ -1084,8 +1069,8 @@
                 alert('用户 ' + selectedAdminUserId + ' 余额: ' + getBalance(selectedAdminUserId).toFixed(2) + ' TRX');
             };
             document.getElementById('adminResetBtn').onclick = () => {
-                if (confirm('重置 ' + selectedAdminUserId + ' 余额为 10000 TRX？')) {
-                    setBalance(selectedAdminUserId, 10000);
+                if (confirm('重置 ' + selectedAdminUserId + ' 余额为 100 TRX？')) {
+                    setBalance(selectedAdminUserId, 100);
                     refreshUserList();
                     if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
                     alert("重置成功");
@@ -1103,7 +1088,6 @@
             document.getElementById('adminCloseBtn').onclick = () => { panel.remove(); adminPanel = null; };
         }
 
-        // ==================== 隐藏菜单（长按续押） ====================
         const hiddenInput = document.getElementById('hiddenFileInput');
         hiddenInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -1150,7 +1134,6 @@
             else if(pwd !== null) alert("密码错误");
         }
 
-        // ==================== 事件绑定 ====================
         function bindEvents() {
             document.getElementById('refreshBtn').onclick = refreshBalance;
             const repeatBtn = document.getElementById('repeatBtn');
@@ -1166,7 +1149,6 @@
             document.getElementById('switchUserBtn').onclick = switchUser;
             document.querySelectorAll('.speed-btn').forEach(btn => btn.onclick = () => setSpeed(parseInt(btn.dataset.speed)));
             
-            // 快捷投注按钮
             document.querySelectorAll('.quick-bet').forEach(btn => {
                 btn.onclick = (e) => {
                     e.stopPropagation();
@@ -1176,7 +1158,6 @@
                 };
             });
             
-            // 清空单个押注按钮
             document.querySelectorAll('.clear-bet').forEach(btn => {
                 btn.onclick = (e) => {
                     e.stopPropagation();
@@ -1186,7 +1167,6 @@
             });
         }
 
-        // ==================== 初始化 ====================
         async function init() {
             await openDB();
             await restoreBackground();
@@ -1201,7 +1181,7 @@
             if (!localStorage.getItem('visited_before')) {
                 localStorage.setItem('visited_before', 'true');
                 setTimeout(() => {
-                    showModal("🎉 欢迎！\n• 点击「新用户」一键注册\n• 每个卡片都清晰显示「单向押注额」\n• 点击 +10/+20 等快捷增加押注\n• 点击「清空」可单独取消该选项\n• 长按「续押」3秒进入管理后台", "开始游戏");
+                    showModal("🎉 欢迎！\n• 初始余额：100 TRX\n• 每个卡片都清晰显示「单向押注额」\n• 点击 +10/+20 等快捷增加押注\n• 点击「清空」可单独取消该选项\n• 长按「续押」3秒进入管理后台", "开始游戏");
                 }, 500);
             }
         }
