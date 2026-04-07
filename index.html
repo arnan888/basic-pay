@@ -1069,34 +1069,61 @@
             if(pwd === ADMIN_PASSWORD) showSecretMenu();
             else if(pwd !== null) alert("密码错误");
         }
-
         function bindEvents() {
-            document.getElementById('refreshBtn').onclick = refreshBalance;
-            const repeatBtn = document.getElementById('repeatBtn');
-            repeatBtn.onclick = null;
-            repeatBtn.addEventListener('click', (e) => { if(longPressTimer) clearTimeout(longPressTimer); repeatLastBet(); });
-            repeatBtn.addEventListener('touchstart', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
-            repeatBtn.addEventListener('touchend', () => { if(longPressTimer) clearTimeout(longPressTimer); });
-            repeatBtn.addEventListener('touchcancel', () => { if(longPressTimer) clearTimeout(longPressTimer); });
-            repeatBtn.addEventListener('mousedown', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
-            repeatBtn.addEventListener('mouseup', () => { if(longPressTimer) clearTimeout(longPressTimer); });
-            document.getElementById('cancelBtn').onclick = cancelAllBets;
-            document.getElementById('fightBtn').onclick = executeBet;
-            document.getElementById('switchUserBtn').onclick = switchUser;
-            document.querySelectorAll('.speed-btn').forEach(btn => btn.onclick = () => setSpeed(parseInt(btn.dataset.speed)));
-            document.querySelectorAll('.bet-dec').forEach(btn => btn.onclick = (e) => { e.stopPropagation(); adjustBet(btn.dataset.type, -10); });
-            document.querySelectorAll('.bet-inc').forEach(btn => btn.onclick = (e) => { e.stopPropagation(); adjustBet(btn.dataset.type, 10); });
-            document.querySelectorAll('.quick-bet').forEach(btn => {
-                btn.onclick = (e) => {
-                    e.stopPropagation();
-                    const type = btn.dataset.type;
-                    const amount = parseInt(btn.dataset.amount);
-                    addBetAmount(type, amount);
-                };
-            });
+    document.getElementById('refreshBtn').onclick = refreshBalance;
+    const repeatBtn = document.getElementById('repeatBtn');
+    repeatBtn.onclick = null;
+    repeatBtn.addEventListener('click', (e) => { if(longPressTimer) clearTimeout(longPressTimer); repeatLastBet(); });
+    repeatBtn.addEventListener('touchstart', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
+    repeatBtn.addEventListener('touchend', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+    repeatBtn.addEventListener('touchcancel', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+    repeatBtn.addEventListener('mousedown', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
+    repeatBtn.addEventListener('mouseup', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+    document.getElementById('cancelBtn').onclick = cancelAllBets;
+    document.getElementById('fightBtn').onclick = executeBet;
+    document.getElementById('switchUserBtn').onclick = switchUser;
+    document.querySelectorAll('.speed-btn').forEach(btn => btn.onclick = () => setSpeed(parseInt(btn.dataset.speed)));
+    
+    // 震动函数
+    function vibrate() {
+        if (window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(200);
         }
-
-        async function init() {
+    }
+    
+    // 快捷按钮：累加（不变）
+    document.querySelectorAll('.quick-bet').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const type = btn.dataset.type;
+            const amount = parseInt(btn.dataset.amount);
+            let newAmount = state.bets[type] + amount;
+            if (newAmount > state.balance) {
+                vibrate();
+                showModal("❌ 余额不足！当前余额：" + state.balance.toFixed(2) + " TRX", "知道了");
+                return;
+            }
+            addBetAmount(type, amount);
+        };
+    });
+    
+    // 取消按钮（原 +/- 按钮）：清空当前卡片的押注金额
+    document.querySelectorAll('.bet-dec, .bet-inc').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const type = btn.dataset.type;
+            if (state.bets[type] > 0) {
+                state.bets[type] = 0;
+                updateUI();
+                if (window.navigator && window.navigator.vibrate) {
+                    window.navigator.vibrate(50);
+                }
+            }
+        };
+    });
+}
+       
+ async function init() {
             await openDB();
             await restoreBackground();
             bindEvents();
