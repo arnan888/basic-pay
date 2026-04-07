@@ -707,76 +707,112 @@
 
         // ==================== 动画与开奖 ====================
         let isAnimating = false;
-        function showResultAnimation(result, winAmount, betAmount, callback) {
-            if (isAnimating) return;
-            isAnimating = true;
-            const btns = document.querySelectorAll('.quick-bet, .clear-bet, #fightBtn, #repeatBtn, #cancelBtn, .speed-btn, #switchUserBtn, #newUserBtn, #refreshBtn');
-            btns.forEach(btn => btn.disabled = true);
+        function 
+function showResultAnimation(result, winAmount, betAmount, callback) {
+    if (isAnimating) return;
+    isAnimating = true;
+    const btns = document.querySelectorAll('.quick-bet, .clear-bet, #fightBtn, #repeatBtn, #cancelBtn, .speed-btn, #switchUserBtn, #newUserBtn, #refreshBtn');
+    btns.forEach(btn => btn.disabled = true);
 
-            const overlay = document.createElement('div');
-            overlay.style.position = 'fixed';
-            overlay.style.top = '0';
-            overlay.style.left = '0';
-            overlay.style.width = '100%';
-            overlay.style.height = '100%';
-            overlay.style.backgroundColor = 'rgba(0,0,0,0.85)';
-            overlay.style.backdropFilter = 'blur(8px)';
-            overlay.style.display = 'flex';
-            overlay.style.alignItems = 'center';
-            overlay.style.justifyContent = 'center';
-            overlay.style.zIndex = '10000';
-            overlay.style.flexDirection = 'column';
+    const overlay = document.createElement('div');
+    overlay.style.position = 'fixed';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.backgroundColor = 'rgba(0,0,0,0.85)';
+    overlay.style.backdropFilter = 'blur(8px)';
+    overlay.style.display = 'flex';
+    overlay.style.alignItems = 'center';
+    overlay.style.justifyContent = 'center';
+    overlay.style.zIndex = '10000';
+    overlay.style.flexDirection = 'column';
 
-            const box = document.createElement('div');
-            box.style.background = '#2a2a3a';
-            box.style.padding = '40px 60px';
-            box.style.textAlign = 'center';
-            box.style.boxShadow = '0 0 50px rgba(255,215,0,0.8)';
-            box.style.borderRadius = '20px';
+    const box = document.createElement('div');
+    box.style.background = '#2a2a3a';
+    box.style.padding = '40px 60px';
+    box.style.textAlign = 'center';
+    box.style.boxShadow = '0 0 50px rgba(255,215,0,0.8)';
+    box.style.borderRadius = '20px';
 
-            const icon = document.createElement('div');
-            icon.style.fontSize = '100px';
-            icon.style.marginBottom = '20px';
-            icon.style.animation = 'roll 0.6s ease-out';
-            if (result === '龙') icon.textContent = '🐉';
-            else if (result === '虎') icon.textContent = '🐯';
-            else icon.textContent = '⚖️';
-            icon.style.color = result === '龙' ? '#ff5555' : (result === '虎' ? '#55aaff' : '#bb77ff');
+    const icon = document.createElement('div');
+    icon.style.fontSize = '100px';
+    icon.style.marginBottom = '20px';
+    icon.style.animation = 'roll 0.6s ease-out';
+    if (result === '龙') icon.textContent = '🐉';
+    else if (result === '虎') icon.textContent = '🐯';
+    else icon.textContent = '⚖️';
+    icon.style.color = result === '龙' ? '#ff5555' : (result === '虎' ? '#55aaff' : '#bb77ff');
 
-            const resultText = document.createElement('div');
-            resultText.style.fontSize = '48px';
-            resultText.style.fontWeight = 'bold';
-            resultText.style.color = '#ffaa44';
-            resultText.style.marginTop = '20px';
-            resultText.textContent = result;
+    const resultText = document.createElement('div');
+    resultText.style.fontSize = '48px';
+    resultText.style.fontWeight = 'bold';
+    resultText.style.color = '#ffaa44';
+    resultText.style.marginTop = '20px';
+    resultText.textContent = result;
 
-            const info = document.createElement('div');
-            info.style.marginTop = '16px';
-            info.style.fontSize = '18px';
-            info.textContent = 
-winAmount > 0 ? `🎉 恭喜中奖 +${winAmount} TRX` : '😞 未中奖';
-
-            box.appendChild(icon);
-            box.appendChild(resultText);
-            box.appendChild(info);
-            overlay.appendChild(box);
-
-            const style = document.createElement('style');
-            style.textContent = `@keyframes roll { 0% { transform: rotate(0deg); } 50% { transform: rotate(360deg); } 100% { transform: rotate(720deg); } }`;
-            document.head.appendChild(style);
-
-            document.body.appendChild(overlay);
-            speak(result);
-
-            setTimeout(() => {
-                overlay.remove();
-                style.remove();
-                isAnimating = false;
-                btns.forEach(btn => btn.disabled = false);
-                if (callback) callback();
-            }, 3000);
+    const info = document.createElement('div');
+    info.style.marginTop = '16px';
+    info.style.fontSize = '32px';
+    info.style.fontWeight = 'bold';
+    info.style.fontFamily = 'monospace';
+    info.style.letterSpacing = '2px';
+    info.style.textShadow = '0 0 5px rgba(0,0,0,0.5)';
+    
+    if (winAmount > 0) {
+        // 火红色
+        info.style.color = '#ff3300';
+        let current = 0;
+        const duration = 800; // 滚动总时长（毫秒）
+        const startTime = performance.now();
+        info.innerHTML = `+0.00 TRX`;
+        
+        function updateNumber(now) {
+            const elapsed = now - startTime;
+            const progress = Math.min(1, elapsed / duration);
+            // 缓动 easeOutCubic，开始快结束慢
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+            current = winAmount * easeProgress;
+            info.innerHTML = `+${current.toFixed(2)} TRX`;
+            if (progress < 1) {
+                requestAnimationFrame(updateNumber);
+            } else {
+                info.innerHTML = `+${winAmount.toFixed(2)} TRX`;
+                // 可选：结束时加一个闪烁效果
+                info.style.animation = 'glowPulse 0.3s ease-out';
+                setTimeout(() => info.style.animation = '', 300);
+            }
         }
+        requestAnimationFrame(updateNumber);
+    } else {
+        info.style.color = '#ff8888';
+        info.innerHTML = `😞 未中奖`;
+    }
 
+    box.appendChild(icon);
+    box.appendChild(resultText);
+    box.appendChild(info);
+    overlay.appendChild(box);
+
+    // 添加闪烁动画关键帧
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes roll { 0% { transform: rotate(0deg); } 50% { transform: rotate(360deg); } 100% { transform: rotate(720deg); } }
+        @keyframes glowPulse { 0% { text-shadow: 0 0 0px #ff3300; } 50% { text-shadow: 0 0 20px #ff3300; } 100% { text-shadow: 0 0 0px #ff3300; } }
+    `;
+    document.head.appendChild(style);
+
+    document.body.appendChild(overlay);
+    speak(result);
+
+    setTimeout(() => {
+        overlay.remove();
+        style.remove();
+        isAnimating = false;
+        btns.forEach(btn => btn.disabled = false);
+        if (callback) callback();
+    }, 2000); // 动画总时长2秒，滚动0.8秒后还有1.2秒展示
+}
         function flashAndPop(result) {
             const scene = document.getElementById('battleScene');
             const resultDiv = document.getElementById('battleResult');
