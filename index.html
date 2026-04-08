@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>龙虎斗 · 稳定版</title>
+    <title>龙虎斗 · 火红滚动数字版</title>
     <style>
         * {
             margin: 0;
@@ -700,6 +700,7 @@
         }
 
         let isAnimating = false;
+        // ========== 火红色滚动数字动画 ==========
         function showResultAnimation(result, winAmount, betAmount, callback) {
             if (isAnimating) return;
             isAnimating = true;
@@ -745,20 +746,59 @@
 
             const info = document.createElement('div');
             info.style.marginTop = '16px';
-            info.style.fontSize = '28px';
+            info.style.fontSize = '32px';
             info.style.fontWeight = 'bold';
-            info.style.color = winAmount > 0 ? '#ffaa44' : '#ff8888';
-            info.textContent = winAmount > 0 ? `🎉 恭喜中奖 +${winAmount} TRX` : '😞 未中奖';
+            info.style.fontFamily = 'monospace';
+            info.style.letterSpacing = '2px';
+            
+            if (winAmount > 0) {
+                info.style.color = '#ff3300'; // 火红色
+                let current = 0;
+                const duration = 800; // 滚动时间0.8秒
+                const startTime = performance.now();
+                info.innerHTML = `+0.00 TRX`;
+                
+                function updateNumber(now) {
+                    const elapsed = now - startTime;
+                    const progress = Math.min(1, elapsed / duration);
+                    const easeProgress = 1 - Math.pow(1 - progress, 3);
+                    current = winAmount * easeProgress;
+                    info.innerHTML = `+${current.toFixed(2)} TRX`;
+                    if (progress < 1) {
+                        requestAnimationFrame(updateNumber);
+                    } else {
+                        info.innerHTML = `+${winAmount.toFixed(2)} TRX`;
+                        info.style.animation = 'glowPulse 0.3s ease-out';
+                        setTimeout(() => info.style.animation = '', 300);
+                    }
+                }
+                requestAnimationFrame(updateNumber);
+            } else {
+                info.style.color = '#ff8888';
+                info.innerHTML = `😞 未中奖`;
+            }
+
             box.appendChild(icon);
             box.appendChild(resultText);
             box.appendChild(info);
             overlay.appendChild(box);
 
             const style = document.createElement('style');
-            style.textContent = `@keyframes roll { 0% { transform: rotate(0deg); } 50% { transform: rotate(360deg); } 100% { transform: rotate(720deg); } }`;
+            style.textContent = `
+                @keyframes roll {
+                    0% { transform: rotate(0deg); }
+                    50% { transform: rotate(360deg); }
+                    100% { transform: rotate(720deg); }
+                }
+                @keyframes glowPulse {
+                    0% { text-shadow: 0 0 0px #ff3300; }
+                    50% { text-shadow: 0 0 20px #ff3300; }
+                    100% { text-shadow: 0 0 0px #ff3300; }
+                }
+            `;
             document.head.appendChild(style);
-
             document.body.appendChild(overlay);
+            
             speak(result);
 
             setTimeout(() => {
@@ -1200,7 +1240,7 @@
             if (!localStorage.getItem('visited_before')) {
                 localStorage.setItem('visited_before', 'true');
                 setTimeout(() => {
-                    showModal("🎉 欢迎！\n• 初始余额：100 TRX\n• 押注金额在亮色背景上清晰显示\n• 点击 +10/+20 等快捷增加押注\n• 点击「清空」可单独取消该选项\n• 长按「续押」3秒进入管理后台\n• 上传背景功能已修复（支持图片/视频）", "开始游戏");
+                    showModal("🎉 欢迎！\n• 初始余额：100 TRX\n• 中奖数字火红色飞速滚动\n• 押注金额清晰显示\n• 点击 +10/+20 等快捷增加押注\n• 点击「清空」可单独取消该选项\n• 长按「续押」3秒进入管理后台\n• 上传背景功能已修复（支持图片/视频）", "开始游戏");
                 }, 500);
             }
         }
@@ -1209,4 +1249,4 @@
 </script>
 </body>
 </html>
-            
+```
