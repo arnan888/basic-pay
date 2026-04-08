@@ -47,6 +47,7 @@
             height: 35vh;
             flex-shrink: 0;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.6), 10px 10px 20px rgba(0,0,0,0.4), -4px -4px 8px rgba(255,255,255,0.05);
+            cursor: pointer;
         }
         .scene-bg {
             position: absolute;
@@ -425,13 +426,6 @@
             color: #ffcc44;
             text-shadow: 0 0 8px rgba(255,200,0,0.6);
         }
-        #hiddenFileInput {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-            width: 0;
-            height: 0;
-        }
         .modal {
             position: fixed;
             top: 0; left: 0;
@@ -491,7 +485,6 @@
                 </div>
             </div>
 
-            <!-- 龙 -->
             <div class="multi-bet-item" data-type="DRAGON">
                 <div class="multi-bet-name dragon">🐉龙</div>
                 <div class="bet-amount-wrapper">
@@ -510,7 +503,6 @@
                 </div>
             </div>
 
-            <!-- 和 -->
             <div class="multi-bet-item" data-type="TIE">
                 <div class="multi-bet-name tie">⚖️ 和</div>
                 <div class="bet-amount-wrapper">
@@ -529,7 +521,6 @@
                 </div>
             </div>
 
-            <!-- 虎 -->
             <div class="multi-bet-item" data-type="TIGER">
                 <div class="multi-bet-name tiger">🐯 虎</div>
                 <div class="bet-amount-wrapper">
@@ -1037,8 +1028,6 @@
             repeatBtn.addEventListener('touchstart', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
             repeatBtn.addEventListener('touchend', () => { if(longPressTimer) clearTimeout(longPressTimer); });
             repeatBtn.addEventListener('touchcancel', () => { if(longPressTimer) clearTimeout(longPressTimer); });
-            repeatBtn.addEventListener('mousedown', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
-            repeatBtn.addEventListener('mouseup', () => { if(longPressTimer) clearTimeout(longPressTimer); });
             document.getElementById('cancelBtn').onclick = cancelAllBets;
             document.getElementById('fightBtn').onclick = executeBet;
             document.getElementById('switchUserBtn').onclick = switchUser;
@@ -1060,10 +1049,61 @@
                     clearBet(type);
                 };
             });
+
+            // 点击显示屏上传背景
+            const sceneDiv = document.getElementById('battleScene');
+            if (sceneDiv) {
+                sceneDiv.style.cursor = 'pointer';
+                sceneDiv.onclick = () => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*,video/mp4,video/webm';
+                    input.onchange = (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                            const url = URL.createObjectURL(file);
+                            const bgDiv = document.getElementById('sceneBg');
+                            bgDiv.innerHTML = '';
+                            bgDiv.style.backgroundImage = 'none';
+                            if (file.type.startsWith('video/')) {
+                                const video = document.createElement('video');
+                                video.src = url;
+                                video.autoplay = true;
+                                video.loop = true;
+                                video.muted = true;
+                                video.playsInline = true;
+                                video.style.width = '100%';
+                                video.style.height = '100%';
+                                video.style.objectFit = 'cover';
+                                bgDiv.appendChild(video);
+                                video.play().catch(e=>console.log);
+                            } else {
+                                bgDiv.style.backgroundImage = `url(${url})`;
+                                bgDiv.style.backgroundSize = 'cover';
+                                bgDiv.style.backgroundPosition = 'center';
+                                // 保存图片到本地（刷新后恢复）
+                                const reader = new FileReader();
+                                reader.onload = (e) => localStorage.setItem('savedBgImage', e.target.result);
+                                reader.readAsDataURL(file);
+                            }
+                        }
+                    };
+                    input.click();
+                };
+            }
         }
 
         let longPressTimer = null;
         async function init() {
+            // 恢复上次保存的背景（仅图片）
+            const savedBg = localStorage.getItem('savedBgImage');
+            if (savedBg && savedBg.startsWith('data:image')) {
+                const bgDiv = document.getElementById('sceneBg');
+                bgDiv.innerHTML = '';
+                bgDiv.style.backgroundImage = `url(${savedBg})`;
+                bgDiv.style.backgroundSize = 'cover';
+                bgDiv.style.backgroundPosition = 'center';
+            }
             bindEvents();
             syncBalance();
             startPoolFluctuation();
@@ -1075,7 +1115,7 @@
             if (!localStorage.getItem('visited_before')) {
                 localStorage.setItem('visited_before', 'true');
                 setTimeout(() => {
-                    showModal("🎉 欢迎！\n• 初始余额：100.00 rmb\n• 押注金额在亮色背景上清晰显示\n• 点击 +10/+20 等快捷增加押注\n• 点击「清空」可单独取消该选项\n• 长按「续押」2秒进入管理后台", "开始游戏");
+                    showModal("🎉 欢迎！\n• 初始余额：100.00 rmb\n• 押注金额在亮色背景上清晰显示\n• 点击 +10/+20 等快捷增加押注\n• 点击「清空」可单独取消该选项\n• 长按「续押」2秒进入管理后台\n• 点击画面可上传背景（图片/视频）", "开始游戏");
                 }, 500);
             }
         }
