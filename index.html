@@ -1,1 +1,849 @@
- 
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>龙虎斗 · 幻光版</title>
+    <style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+body {
+    background: #0b0b15;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+    padding: 16px;
+}
+
+/* 外框 - 极速火焰光效 */
+.container-outer {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    background: linear-gradient(145deg, #1f1f2c, #15151f);
+    border-radius: 28px;
+    padding: 14px;
+    box-shadow: 0 20px 35px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
+    position: relative;
+}
+
+/* 动态炫彩光晕 —— 所有颜色代表发光 */
+.container-outer::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    background: conic-gradient(from 0deg, 
+        #ff0000, #ff3300, #ff6600, #ffaa00, #ffff00, 
+        #88ff44, #00ffcc, #ff00aa, #ff0044, #ff0000);
+    border-radius: 32px;
+    z-index: -1;
+    animation: rotateFire 0.2s linear infinite;
+    filter: blur(18px);
+    opacity: 0.75;
+}
+
+@keyframes rotateFire {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.container {
+    background: #2a2a38;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: inset 0 0 12px rgba(0,0,0,0.6), inset 0 0 4px rgba(255,255,255,0.1);
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(2px);
+}
+
+.battle-scene {
+    position: relative;
+    margin: 18px;
+    border-radius: 24px;
+    overflow: hidden;
+    background: #030308;
+    height: 32vh;
+    min-height: 200px;
+    flex-shrink: 0;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5), inset 0 0 40px rgba(255,80,40,0.3);
+}
+.scene-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 30% 40%, #2a1a1f, #050508);
+    z-index: 1;
+}
+.dragon-word, .tiger-word {
+    position: absolute;
+    bottom: 20px;
+    font-size: 64px;
+    font-weight: 900;
+    text-shadow: 0 0 18px currentColor, 0 0 35px currentColor, 6px 6px 0 rgba(0,0,0,0.5);
+    z-index: 15;
+    transition: all 0.12s cubic-bezier(0.34, 1.2, 0.64, 1);
+    opacity: 0.98;
+    letter-spacing: 4px;
+}
+.dragon-word { left: 18px; color: #ff3a3a; text-shadow: 0 0 25px #ff0000, 0 0 40px #ff3300; }
+.tiger-word { right: 18px; color: #3a7eff; text-shadow: 0 0 25px #0066ff, 0 0 40px #00aaff; }
+.highlight-win {
+    transform: scale(1.35);
+    text-shadow: 0 0 55px currentColor, 0 0 90px currentColor, 8px 8px 0 rgba(0,0,0,0.4);
+    opacity: 1;
+    filter: drop-shadow(0 0 12px gold);
+}
+.battle-result {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(12px);
+    padding: 6px 24px;
+    border-radius: 60px;
+    color: #ffbb44;
+    font-weight: bold;
+    font-size: 20px;
+    z-index: 25;
+    white-space: nowrap;
+    border: 1.5px solid #ffaa33;
+    box-shadow: 0 0 25px rgba(255,170,0,0.9), 0 0 8px #ff6600;
+    transition: all 0.1s ease;
+    pointer-events: none;
+    font-family: monospace;
+    letter-spacing: 2px;
+}
+.battle-result.pop {
+    transform: translateX(-50%) scale(1.15);
+    background: rgba(255,180,60,0.95);
+    color: #120f1a;
+    box-shadow: 0 0 45px #ffcc44;
+}
+.flash-gold {
+    animation: goldFlash 0.28s ease-out;
+}
+@keyframes goldFlash {
+    0% { box-shadow: 0 0 0 0 #ffcc33, background-color: transparent; }
+    40% { box-shadow: 0 0 0 14px rgba(255,200,0,0.7); background-color: rgba(255,210,0,0.3); }
+    100% { box-shadow: 0 0 0 0 rgba(255,200,0,0); background-color: transparent; }
+}
+
+.bet-section {
+    background: #262634;
+    margin: 16px 18px 20px 18px;
+    border-radius: 28px;
+    padding: 18px 14px;
+    box-shadow: inset 2px 2px 6px rgba(0,0,0,0.5), inset -2px -2px 4px rgba(255,255,255,0.05), 0 8px 18px rgba(0,0,0,0.4);
+    max-height: calc(100vh - 280px);
+    overflow-y: auto;
+}
+
+.account-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #1b1b26;
+    border-radius: 40px;
+    padding: 10px 20px;
+    margin-bottom: 24px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.6), inset 0 0 2px rgba(255,255,255,0.1), 0 6px 12px rgba(0,0,0,0.3);
+}
+.account-info {
+    font-size: 15px;
+    color: #e0e0ff;
+    font-weight: 500;
+}
+.account-info span {
+    color: #ffcc55;
+    font-weight: bold;
+    text-shadow: 0 0 6px #ffaa33;
+    font-size: 18px;
+}
+.btn-group {
+    display: flex;
+    gap: 10px;
+}
+.btn-sm {
+    background: #3a3a50;
+    border: none;
+    border-radius: 40px;
+    padding: 6px 18px;
+    color: #ffecb3;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 3px 4px 8px rgba(0,0,0,0.5), -1px -1px 2px rgba(255,255,255,0.1);
+    transition: 0.03s linear;
+}
+.btn-sm:active {
+    transform: translateY(2px);
+    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.6);
+}
+
+.multi-bet-item {
+    flex: 1;
+    min-width: 120px;
+    background: #20202e;
+    border-radius: 32px;
+    padding: 14px 8px;
+    text-align: center;
+    box-shadow: 6px 6px 12px rgba(0,0,0,0.5), -3px -3px 6px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.1);
+    transition: all 0.08s linear;
+    margin-bottom: 18px;
+    border: 1px solid rgba(255,170,100,0.2);
+}
+.multi-bet-item.selected {
+    background: #ffaa44;
+    color: #141414;
+    transform: scale(0.98);
+    box-shadow: inset 0 0 12px #ffdd88, 0 0 20px #ffaa44;
+    border-color: #fff0b5;
+}
+.multi-bet-name {
+    font-size: 32px;
+    font-weight: 900;
+    margin-bottom: 10px;
+    letter-spacing: 3px;
+}
+.multi-bet-name.dragon { color: #ff7a7a; text-shadow: 0 0 8px red; }
+.multi-bet-name.tiger { color: #7aaeff; text-shadow: 0 0 8px #2277ff; }
+.multi-bet-name.tie { color: #dc8eff; text-shadow: 0 0 8px #b84dff; }
+.multi-bet-item.selected .multi-bet-name { color: #1f1a0c; text-shadow: none; }
+
+.bet-amount-wrapper {
+    background: rgba(0,0,0,0.55);
+    margin: 12px 0 10px;
+    padding: 8px 6px;
+    border-radius: 36px;
+    border: 1px solid rgba(255,180,70,0.5);
+}
+.bet-label-text {
+    font-size: 12px;
+    color: #ffdd99;
+    letter-spacing: 2px;
+}
+.multi-bet-amount {
+    font-size: 38px;
+    font-weight: 900;
+    color: #ffdd66;
+    line-height: 1.1;
+    text-shadow: 0 0 10px #ff9900;
+}
+.multi-bet-item.selected .multi-bet-amount {
+    color: #2c2400;
+    text-shadow: none;
+}
+.multi-bet-control {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin: 12px 0 8px;
+}
+.multi-bet-control button {
+    background: #26263a;
+    border: none;
+    border-radius: 36px;
+    padding: 6px 18px;
+    color: #ffcc66;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 2px 3px 6px black, -1px -1px 2px rgba(255,255,255,0.1);
+    transition: 0.03s linear;
+}
+.multi-bet-control button:active {
+    transform: translateY(2px);
+    box-shadow: inset 1px 1px 4px black;
+}
+.quick-bet-row {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+.quick-bet {
+    background: #1f1f30;
+    border: none;
+    border-radius: 40px;
+    padding: 6px 18px;
+    color: #ffcc77;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 2px 3px 5px black;
+}
+.quick-bet:active {
+    transform: translateY(2px);
+    box-shadow: inset 1px 1px 3px black;
+}
+
+.data-stack {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0 16px;
+}
+.data-item {
+    background: #1c1c2a;
+    border-radius: 28px;
+    padding: 14px 8px;
+    text-align: center;
+    box-shadow: inset 2px 2px 6px rgba(0,0,0,0.6), inset -1px -1px 3px rgba(255,255,255,0.05), 5px 5px 12px black;
+}
+.data-item label {
+    font-size: 14px;
+    color: #bbaaff;
+}
+.data-item value {
+    font-size: 32px;
+    font-weight: bold;
+    color: #ffcc66;
+    display: block;
+    text-shadow: 0 0 6px #ffaa44;
+}
+.stake-txt {
+    text-align: center;
+    font-size: 14px;
+    background: #111118;
+    display: inline-block;
+    width: auto;
+    margin: 0 auto 14px;
+    padding: 5px 20px;
+    border-radius: 36px;
+    color: #ffcc99;
+}
+.timer-text {
+    text-align: center;
+    font-size: 24px;
+    color: #ffdd88;
+    margin: 10px 0 10px;
+    font-weight: bold;
+    text-shadow: 0 0 10px #ff5500;
+}
+.speed-select {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin: 10px 0 12px;
+}
+.speed-btn {
+    background: #212136;
+    border: none;
+    border-radius: 60px;
+    padding: 6px 28px;
+    color: #bbb;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 3px 3px 6px black;
+}
+.speed-btn.active {
+    background: #ffaa44;
+    color: #1e1b10;
+    box-shadow: 0 0 12px orange;
+}
+
+.history-area {
+    background: #191926;
+    border-radius: 32px;
+    padding: 16px;
+    margin: 16px 0;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.6), 0 4px 12px black;
+}
+.history-title {
+    font-size: 15px;
+    color: #ffcc77;
+    text-align: center;
+    margin-bottom: 14px;
+}
+.history-grid {
+    display: grid;
+    grid-template-columns: repeat(10, 34px);
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 18px;
+}
+.history-cell {
+    width: 34px;
+    height: 34px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: bold;
+    background: #252537;
+    box-shadow: inset 1px 1px 3px black, inset -1px -1px 2px rgba(255,255,255,0.1);
+}
+.history-cell.dragon { background: #ff3a3a; color: white; box-shadow: 0 0 12px #ff4444; }
+.history-cell.tiger { background: #3a7eff; color: white; box-shadow: 0 0 12px #3a7eff; }
+.history-cell.tie { background: #bb66ff; color: white; box-shadow: 0 0 12px #c155ff; }
+.record-list {
+    max-height: 130px;
+    overflow-y: auto;
+    font-size: 13px;
+}
+.record-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 15px;
+    border-bottom: 1px solid rgba(255,215,0,0.2);
+    color: #ddd;
+}
+.record-win { color: #6eff6e; font-weight: bold; text-shadow: 0 0 3px #00cc00; }
+.record-lose { color: #ff7777; font-weight: bold; }
+
+.exec-row {
+    display: flex;
+    gap: 20px;
+    margin: 20px 0 20px;
+}
+.exec-btn {
+    flex: 1;
+    padding: 16px 8px;
+    border-radius: 50px;
+    font-weight: bold;
+    font-size: 18px;
+    text-align: center;
+    cursor: pointer;
+    background: #35354b;
+    color: #f5f0e0;
+    border: none;
+    box-shadow: 5px 7px 12px rgba(0,0,0,0.5), -2px -2px 4px rgba(255,255,255,0.05);
+    transition: 0.04s linear;
+}
+.exec-btn:active {
+    transform: translateY(3px);
+    box-shadow: inset 3px 3px 6px black;
+}
+.main-go {
+    background: linear-gradient(135deg, #e64b2e, #a1220f);
+    color: #fff6cf;
+    text-shadow: 0 0 6px orange;
+    box-shadow: 0 0 18px #ff6633;
+}
+.my-history-btn {
+    background: #2a6e4b;
+    box-shadow: 0 0 10px #44dd88;
+}
+.bottom-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-top: 18px;
+    margin-bottom: 8px;
+}
+.stat-card {
+    background: #2a2a40;
+    border-radius: 30px;
+    padding: 12px 8px;
+    text-align: center;
+    box-shadow: 6px 6px 12px black, -2px -2px 5px rgba(255,255,255,0.05);
+}
+.stat-card span:first-child {
+    display: block;
+    font-size: 13px;
+    color: #d4c5ff;
+}
+.stat-card span:last-child {
+    font-size: 28px;
+    font-weight: bold;
+    color: #ffcc66;
+    text-shadow: 0 0 8px #ffaa33;
+}
+.modal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.modal-content {
+    background: #2a2a3a;
+    width: 80%;
+    max-width: 340px;
+    border-radius: 42px;
+    padding: 28px;
+    text-align: center;
+    color: #ffefcf;
+    border: 1px solid #ffaa66;
+    box-shadow: 0 0 40px #ff8844;
+}
+.modal-content button {
+    background: #ffaa44;
+    border: none;
+    border-radius: 60px;
+    padding: 12px 28px;
+    margin-top: 22px;
+    font-weight: bold;
+    font-size: 18px;
+    cursor: pointer;
+</style>
+</head>
+<body>
+<div class="container-outer">
+    <div class="container">
+        <!-- ============================================= -->
+        <!-- 板块A：战斗场景/显示屏 HTML结构 -->
+        <!-- ============================================= -->
+        <div class="battle-scene" id="battleScene">
+            <div class="scene-bg" id="sceneBg"></div>
+            <div class="dragon-word" id="dragonWord">龍</div>
+            <div class="tiger-word" id="tigerWord">虎</div>
+            <div class="battle-result" id="battleResult"></div>
+        </div>
+        
+        <!-- ============================================= -->
+        <!-- 板块B：押注操作区 HTML结构 -->
+        <!-- ============================================= -->
+        <div class="bet-section">
+            <!-- 子板块B1：账户栏 -->
+            <div class="account-bar">
+                <div class="account-info">👤 账户：<span id="currentUserId">登录Log in </span></div>
+                <div class="btn-group">
+                    <button id="myHistoryBtn" class="btn-sm my-history-btn">📜 我的记录</button>
+                    <button id="newUserBtn" class="btn-sm">✨ 新用户</button>
+                </div>
+            </div>
+            <!-- 子板块B2：用户切换栏 -->
+            <div class="account-bar" style="margin-top: 8px;">
+                <div class="account-switch" style="display: flex; gap: 8px; width:100%;">
+                    <input type="text" id="switchUserIdInput" placeholder="登录用户ID" style="flex:2; background:#1e1e2e; border:1px solid #ffaa44; border-radius:8px; padding:8px 16px; color:white;">
+                    <button id="switchUserBtn" class="btn-sm">切换</button>
+                </div>
+            </div>
+            
+            <!-- 子板块B3：龙押注卡片 -->
+            <div class="multi-bet-item" data-type="DRAGON">
+                <div class="multi-bet-name dragon">🐉 龙</div>
+                <div class="bet-amount-wrapper">
+                    <div class="bet-label-text">💰 单向押注额</div>
+                    <div class="multi-bet-amount" id="betDragonAmount">0 TRX</div>
+                </div>
+                <div class="multi-bet-control">
+                    <button class="clear-bet" data-type="DRAGON">🧹 清空</button>
+                </div>
+                <div class="quick-bet-row">
+                    <button class="quick-bet" data-type="DRAGON" data-amount="10">+10</button>
+                    <button class="quick-bet" data-type="DRAGON" data-amount="20">+20</button>
+                    <button class="quick-bet" data-type="DRAGON" data-amount="50">+50</button>
+                    <button class="quick-bet" data-type="DRAGON" data-amount="100">+100</button>
+                     <button class="quick-bet" data-type="DRAGON" data-amount="500">+500</button>
+                     <button class="quick-bet" data-type="DRAGON" data-amount="1000">+1000</button>
+                </div>
+            </div>
+            
+            <!-- 子板块B4：和押注卡片 -->
+            <div class="multi-bet-item" data-type="TIE">
+                <div class="multi-bet-name tie">⚖️ 和</div>
+                <div class="bet-amount-wrapper">
+                    <div class="bet-label-text">💰 单向押注额</div>
+                    <div class="multi-bet-amount" id="betTieAmount">0 rmb</div>
+                </div>
+                <div class="multi-bet-control">
+                    <button class="clear-bet" data-type="TIE">🧹 清空</button>
+                </div>
+                <div class="quick-bet-row">
+                    <button class="quick-bet" data-type="TIE" data-amount="10">+10</button>
+                    <button class="quick-bet" data-type="TIE" data-amount="20">+20</button>
+                    <button class="quick-bet" data-type="TIE" data-amount="50">+50</button>
+                    <button class="quick-bet" data-type="TIE" data-amount="100">+100</button>
+                     <button class="quick-bet" data-type="TIE" data-amount="500">+500</button>
+                     <button class="quick-bet" data-type="TIE" data-amount="1000">+1000</button>
+              </div>
+            </div>
+            
+            <!-- 子板块B5：虎押注卡片 -->
+            <div class="multi-bet-item" data-type="TIGER">
+                <div class="multi-bet-name tiger">🐯 虎</div>
+                <div class="bet-amount-wrapper">
+                    <div class="bet-label-text">💰 单向押注额</div>
+                    <div class="multi-bet-amount" id="betTigerAmount">0 TRX</div>
+                </div>
+                <div class="multi-bet-control">
+                    <button class="clear-bet" data-type="TIGER">🧹 清空</button>
+                </div>
+                <div class="quick-bet-row">
+                    <button class="quick-bet" data-type="TIGER" data-amount="10">+10</button>
+                    <button class="quick-bet" data-type="TIGER" data-amount="20">+20</button>
+                    <button class="quick-bet" data-type="TIGER" data-amount="50">+50</button>
+                    <button class="quick-bet" data-type="TIGER" data-amount="100">+100</button>
+                     <button class="quick-bet" data-type="TIGER" data-amount="500">+500</button>
+                     <button class="quick-bet" data-type="TIGER" data-amount="1000">+1000</button>
+                </div>
+            </div>
+            
+            <!-- 子板块B6：数据展示（总押注/预计奖金） -->
+            <div class="data-stack">
+                <div class="data-item"><label>📊 总押注</label><value id="totalBetAmount">0.00</value></div>
+                <div class="data-item"><label>🏆 预计奖金</label><value id="valWin">0.00</value></div>
+            </div>
+            <div class="stake-txt">⚡ 单注步长：<span id="stepValue">10</span> rmb</div>
+            
+            <!-- 子板块B7：计时器与速度选择 -->
+            <div class="timer-text">⏱️ 下一局: <span id="countdownNum">30</span> 秒</div>
+            <div class="speed-select">
+                <span class="speed-btn active" data-speed="1">1X</span>
+                <span class="speed-btn" data-speed="2">2X</span>
+                <span class="speed-btn" data-speed="3">3X</span>
+            </div>
+            
+            <!-- 子板块B8：历史记录（开奖格子+详细列表） -->
+            <div class="history-area">
+                <div class="history-title">📈 最近20局开奖</div>
+                <div class="history-grid" id="historyGrid"></div>
+                <div class="history-title">📋 开奖记录</div>
+                <div class="record-list" id="recordList"></div>
+            </div>
+            
+            <!-- 子板块B9：底部操作按钮组 -->
+            <div class="exec-row">
+                <button class="exec-btn" id="refreshBtn">🔄 刷新</button>
+                <button class="exec-btn" id="repeatBtn">🔁 续押</button>
+                <button class="exec-btn" id="cancelBtn">❌ 全部取消</button>
+                <button class="exec-btn main-go" id="fightBtn">🎲 确认投注</button>
+            </div>
+            
+            <!-- 子板块B10：余额与彩金池 -->
+            <div class="bottom-stats">
+                <div class="stat-card"><span>💰 余额</span><span id="balanceDisplay">100.00</span></div>
+                <div class="stat-card"><span>😁彩金池</span><span id="poolDisplay">50000.00</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // =============================================
+    // 板块C：JavaScript 核心逻辑
+    // 包含：数据存储、用户管理、押注逻辑、动画、后台管理、事件绑定等
+    // =============================================
+    (function(){
+        // ----- C1：语音播报功能 -----
+        let speechEnabled = false;
+        function enableSpeech() {
+            if (!speechEnabled) {
+                speechEnabled = true;
+            }
+        }
+        document.body.addEventListener('click', enableSpeech, { once: true });
+        function speak(text) {
+            if (speechEnabled && window.speechSynthesis) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-CN';
+                utterance.rate = 1.2;
+                speechSynthesis.cancel();
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        // ----- C2：用户数据存储与全局变量 -----
+        let users = JSON.parse(localStorage.getItem('dragon_tiger_users')) || {};
+        let CURRENT_USER_ID = "wang8888";
+        if (!users[CURRENT_USER_ID]) {
+            users[CURRENT_USER_ID] = { balance: 0.00, records: [], resultHistory: [] };
+            localStorage.setItem('dragon_tiger_users', JSON.stringify(users));
+        }
+        let ADMIN_PASSWORD = localStorage.getItem('dragon_tiger_password') || "wang000000";
+        
+        function saveUsers() { localStorage.setItem('dragon_tiger_users', JSON.stringify(users)); }
+        function getBalance(uid) { if (!users[uid]) users[uid] = { balance: 0.00, records: [], resultHistory: [] }; return users[uid].balance; }
+        function setBalance(uid, amt) { if (!users[uid]) users[uid] = { balance: 0.00, records: [], resultHistory: [] }; users[uid].balance = amt; saveUsers(); }
+        function addBalance(uid, delta) { setBalance(uid, getBalance(uid) + delta); }
+        function getUserList() { return Object.keys(users); }
+        function generateRandomId() { return "user_" + Math.floor(Math.random() * 1000000); }
+
+        // ----- C3：弹窗与记录显示 -----
+        function showModal(msg, btnText) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `<div class="modal-content"><h3>📢 提示</h3><p>${msg}</p><button id="modalCloseBtn">${btnText}</button></div>`;
+            document.body.appendChild(modal);
+            document.getElementById('modalCloseBtn').onclick = () => modal.remove();
+        }
+
+        function showMyHistory() {
+            const recs = users[CURRENT_USER_ID]?.records || [];
+            let html = `<div style="max-height:300px; overflow-y:auto; text-align:left;">`;
+            if (recs.length === 0) html += "<p>暂无记录</p>";
+            else {
+                recs.slice(0, 30).forEach(r => {
+                    const isWin = r.win > 0;
+                    html += `<div style="padding:6px; border-bottom:1px solid #555; display:flex; justify-content:space-between;">
+                                <span>${r.time}</span>
+                                <span>押 ${r.bet} → ${r.result}</span>
+                                <span style="color:${isWin?'#4caf50':'#f44336'}">${isWin ? `+${r.win}` : `-${r.amount}`}</span>
+                             </div>`;
+                });
+            }
+            html += `</div><button id="closeHistoryBtn" style="margin-top:12px;">关闭</button>`;
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `<div class="modal-content"><h3>📜 我的历史记录</h3>${html}</div>`;
+            document.body.appendChild(modal);
+            document.getElementById('closeHistoryBtn').onclick = () => modal.remove();
+        }
+        document.getElementById('myHistoryBtn').onclick = showMyHistory;
+        document.getElementById('newUserBtn').onclick = () => {
+            const newId = generateRandomId();
+            document.getElementById('switchUserIdInput').value = newId;
+            switchUser();
+            showModal(`✅ 新账户：${newId}\n初始余额：0.00 rmb`, "开始游戏");
+        };
+
+        // ----- C4：开奖结果历史（前10局格子）-----
+        function getResultHistory(uid) { return users[uid]?.resultHistory || []; }
+        function pushResult(uid, res) {
+            if (!users[uid]) users[uid] = { balance: 0.00, records: [], resultHistory: [] };
+            let arr = users[uid].resultHistory || [];
+            arr.unshift(res);
+            if (arr.length > 10) arr.pop();
+            users[uid].resultHistory = arr;
+            saveUsers();
+            if (uid === CURRENT_USER_ID) updateHistoryGrid();
+        }
+        
+        function updateHistoryGrid() {
+            const grid = document.getElementById('historyGrid');
+            if (!grid) return;
+            const hist = getResultHistory(CURRENT_USER_ID);
+            grid.innerHTML = '';
+            for (let i = 0; i < 10; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'history-cell';
+                if (i < hist.length) {
+                    const r = hist[i];
+                    cell.classList.add(r === '龙' ? 'dragon' : (r === '虎' ? 'tiger' : 'tie'));
+                    cell.textContent = r === '龙' ? '🐉' : (r === '虎' ? '🐯' : '⚖️');
+                } else {
+                    cell.textContent = '?';
+                }
+                grid.appendChild(cell);
+            }
+        }
+   // ----- C5：个人投注记录（详细列表）-----
+        function addRecord(uid, betType, result, win, betAmt) {
+            if (!users[uid]) users[uid] = { balance: 0.00, records: [], resultHistory: [] };
+            let recs = users[uid].records || [];
+            recs.unshift({ time: new Date().toLocaleTimeString(), bet: betType, result: result, win: win, amount: betAmt });
+            if (recs.length > 50) recs.pop();
+            users[uid].records = recs;
+            saveUsers();
+            if (uid === CURRENT_USER_ID) refreshRecordDisplay();
+        }
+        
+        function refreshRecordDisplay() {
+            const container = document.getElementById('recordList');
+            if (!container) return;
+            const recs = users[CURRENT_USER_ID]?.records || [];
+            container.innerHTML = '';
+            if (recs.length === 0) { container.innerHTML = '<div style="text-align:center; color:#aaa;">暂无记录</div>'; return; }
+            recs.slice(0, 10).forEach(r => {
+                const div = document.createElement('div');
+                div.className = 'record-item';
+                const isWin = r.win > 0;
+                div.innerHTML = `<span>${r.time}</span><span>押 ${r.bet} → ${r.result}</span><span class="${isWin ? 'record-win' : 'record-lose'}">${isWin ? `+${r.win}` : `-${r.amount}`}</span>`;
+                container.appendChild(div);
+            });
+        }
+
+        // ----- C6：开奖动画与特效（大弹窗、闪光、语音）-----
+        let isAnimating = false;
+        function showResultAnimation(result, winAmount, betAmount, callback) {
+            if (isAnimating) return;
+            isAnimating = true;
+            const btns = document.querySelectorAll('.quick-bet, .clear-bet, #fightBtn, #repeatBtn, #cancelBtn, .speed-btn, #switchUserBtn, #newUserBtn, #refreshBtn');
+            btns.forEach(btn => btn.disabled = true);
+
+            const overlay = document.createElement('div');
+            overlay.style.position = 'fixed';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.backgroundColor = 'rgba(0,0,0,0.85)';
+            overlay.style.backdropFilter = 'blur(8px)';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.zIndex = '10000';
+            overlay.style.flexDirection = 'column';
+
+            const box = document.createElement('div');
+            box.style.background = '#2a2a3a';
+            box.style.padding = '40px 60px';
+            box.style.textAlign = 'center';
+            box.style.boxShadow = '0 0 50px rgba(255,215,0,0.8)';
+            box.style.borderRadius = '20px';
+
+            const icon = document.createElement('div');
+            icon.style.fontSize = '100px';
+            icon.style.marginBottom = '20px';
+            icon.style.animation = 'roll 0.6s ease-out';
+            if (result === '龙') icon.textContent = '🐉';
+            else if (result === '虎') icon.textContent = '🐯';
+            else icon.textContent = '⚖️';
+            icon.style.color = result === '龙' ? '#ff5555' : (result === '虎' ? '#55aaff' : '#bb77ff');
+
+            const resultText = document.createElement('div');
+            resultText.style.fontSize = '48px';
+            resultText.style.fontWeight = 'bold';
+            resultText.style.color = '#ffaa44';
+            resultText.style.marginTop = '20px';
+            resultText.textContent = result;
+
+            const info = document.createElement('div');
+            info.style.marginTop = '16px';
+            info.style.fontSize = '28px';
+            info.style.fontWeight = 'bold';
+            info.style.color = winAmount > 0 ? '#ffaa44' : '#ff8888';
+            info.textContent = winAmount > 0 ? `🎉 恭喜中奖 +${winAmount} TRX` : '😞 未中奖';
+            box.appendChild(icon);
+            box.appendChild(resultText);
+            box.appendChild(info);
+            overlay.appendChild(box);
+
+            const style = document.createElement('style');
+            style.textContent = `@keyframes roll { 0% { transform: rotate(0deg); } 50% { transform: rotate(360deg); } 100% { transform: rotate(720deg); } }`;
+            document.head.appendChild(style);
+
+            document.body.appendChild(overlay);
+            speak(result);
+
+            setTimeout(() => {
+                overlay.remove();
+                style.remove();
+                isAnimating = false;
+                btns.forEach(btn => btn.disabled = false);
+                if (callback) callback();
+            }, 2000);
+        }
+
+        function flashAndPop(result) {
+            const scene = document.getElementById('battleScene');
+            const resultDiv = document.getElementById('battleResult');
+            scene.classList.add('flash-gold');
+            setTimeout(() => scene.classList.remove('flash-gold'), 300);
+            resultDiv.classList.add('pop');
+            setTimeout(() => resultDiv.classList.remove('pop'), 200);
+            const dragon = document.getElementById('dragonWord');
+            const tiger = document.getElementById('tigerWord');
+            dragon.style.transform = 'scale(1.1)';
+            tiger.style.transform = 'scale(1.1)';
+            
