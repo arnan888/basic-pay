@@ -1,1 +1,812 @@
- 
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>龙虎斗 · 运营系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background: #0a0a0f;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+        /* 登录/注册页面 */
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0a0a0f, #1a1a2e);
+            padding: 20px;
+        }
+        .auth-card {
+            background: rgba(18, 18, 31, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 48px;
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 380px;
+            border: 1px solid rgba(255, 170, 85, 0.3);
+            box-shadow: 0 0 50px rgba(255, 170, 0, 0.2);
+        }
+        .auth-card h2 {
+            color: #ffcc77;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .auth-card input {
+            width: 100%;
+            background: #1e1e30;
+            border: 1px solid #ffaa66;
+            border-radius: 60px;
+            padding: 14px 20px;
+            color: #ffdd99;
+            font-size: 16px;
+            margin-bottom: 16px;
+            outline: none;
+        }
+        .auth-card button {
+            width: 100%;
+            background: linear-gradient(135deg, #ffaa44, #ff8844);
+            border: none;
+            border-radius: 60px;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a1a2a;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .auth-card .switch-btn {
+            background: transparent;
+            color: #ffcc77;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        /* 主游戏界面 */
+        .game-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 16px;
+            display: none;
+        }
+        .game-header {
+            background: linear-gradient(135deg, #1a1a2a, #0f0f1a);
+            border-radius: 32px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255,170,85,0.3);
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #ffaa44, #ff6644);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        .user-details h3 {
+            color: #ffcc88;
+            font-size: 16px;
+        }
+        .user-details p {
+            color: #888;
+            font-size: 11px;
+        }
+        .balance-box {
+            text-align: right;
+        }
+        .balance-label {
+            font-size: 12px;
+            color: #aaa;
+        }
+        .balance-amount {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffcc66;
+            text-shadow: 0 0 8px #ffaa33;
+        }
+        .admin-badge {
+            background: #ff4444;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+        .battle-area {
+            background: #0f0f16;
+            border-radius: 32px;
+            padding: 20px;
+            margin-bottom: 16px;
+            text-align: center;
+            border: 1px solid rgba(255,170,85,0.2);
+        }
+        .dragon-tiger {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+        }
+        .dragon-side, .tiger-side {
+            flex: 1;
+            text-align: center;
+        }
+        .dragon-side h1 {
+            font-size: 80px;
+            color: #ff3366;
+            text-shadow: 0 0 30px #ff3366;
+        }
+        .tiger-side h1 {
+            font-size: 80px;
+            color: #33aaff;
+            text-shadow: 0 0 30px #33aaff;
+        }
+        .vs {
+            font-size: 32px;
+            color: #ffcc88;
+            font-weight: bold;
+        }
+        .result-box {
+            background: rgba(0,0,0,0.5);
+            border-radius: 60px;
+            padding: 12px;
+            margin: 15px 0;
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffcc66;
+        }
+        .bet-panel {
+            background: #0f0f16;
+            border-radius: 32px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .bet-options {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .bet-card {
+            flex: 1;
+            background: #1a1a2a;
+            border-radius: 24px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.1s;
+            border: 2px solid transparent;
+        }
+        .bet-card.selected {
+            border-color: #ffaa44;
+            background: linear-gradient(135deg, #ffaa44, #ff8844);
+            transform: scale(0.98);
+        }
+        .bet-card h3 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .bet-card .dragon-color { color: #ff6688; }
+        .bet-card .tiger-color { color: #66aaff; }
+        .bet-card .tie-color { color: #cc88ff; }
+        .bet-card.selected h3 { color: #1a1a2a; }
+        .bet-amount {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffcc66;
+        }
+        .bet-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 12px;
+        }
+        .bet-controls button {
+            background: #2a2a4a;
+            border: none;
+            border-radius: 30px;
+            padding: 6px 20px;
+            color: #ffcc77;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .quick-bets {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+            justify-content: center;
+        }
+        .quick-bets button {
+            background: #2a2a4a;
+            border: none;
+            border-radius: 30px;
+            padding: 6px 16px;
+            color: #ffcc77;
+            cursor: pointer;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .btn-battle {
+            flex: 2;
+            background: linear-gradient(135deg, #ff6644, #dd4422);
+            border: none;
+            border-radius: 60px;
+            padding: 16px;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+        }
+        .btn-repeat {
+            flex: 1;
+            background: #2a2a4a;
+            border: none;
+            border-radius: 60px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffcc77;
+            cursor: pointer;
+        }
+        .stats-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .stat-card {
+            background: #1a1a2a;
+            border-radius: 24px;
+            padding: 12px;
+            text-align: center;
+        }
+        .stat-card span:first-child {
+            font-size: 12px;
+            color: #aaa;
+        }
+        .stat-card span:last-child {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffcc66;
+            display: block;
+        }
+        .history-area {
+            background: #0f0f16;
+            border-radius: 32px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        .history-grid {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .history-cell {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .history-dragon { background: #ff3366; color: white; }
+        .history-tiger { background: #33aaff; color: white; }
+        .history-tie { background: #aa66ff; color: white; }
+        /* 管理后台 */
+        .admin-panel {
+            display: none;
+            padding: 16px;
+        }
+        .admin-tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .admin-tab {
+            background: #1a1a2a;
+            border: none;
+            border-radius: 30px;
+            padding: 10px 20px;
+            color: #aaa;
+            cursor: pointer;
+        }
+        .admin-tab.active {
+            background: #ffaa44;
+            color: #1a1a2a;
+        }
+        .admin-table {
+            width: 100%;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #ddd;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        th {
+            color: #ffcc88;
+        }
+        .config-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #333;
+        }
+        .config-row input {
+            background: #1e1e30;
+            border: 1px solid #ffaa66;
+            border-radius: 30px;
+            padding: 8px 16px;
+            color: #ffdd99;
+            width: 120px;
+        }
+        .save-btn {
+            background: #ffaa44;
+            border: none;
+            border-radius: 30px;
+            padding: 10px 20px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+        .nav-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .nav-btn {
+            background: #2a2a4a;
+            border: none;
+            border-radius: 30px;
+            padding: 10px 20px;
+            color: #ffcc77;
+            cursor: pointer;
+        }
+        .nav-btn.active {
+            background: #ffaa44;
+            color: #1a1a2a;
+        }
+    </style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+    const API_URL = '';
+    let currentUser = null;
+    let token = null;
+    let currentView = 'game';
+
+    // 下注状态
+    let betDragon = 0, betTiger = 0, betTie = 0;
+    let lastBet = { dragon: 0, tiger: 0, tie: 0 };
+    let historyResults = [];
+    let userStats = { totalRounds: 0, winCount: 0, maxStreak: 0 };
+
+    // 辅助函数
+    function showMessage(msg, isError = false) {
+        alert(msg);
+    }
+
+    async function apiCall(url, options = {}) {
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        const res = await fetch(API_URL + url, { ...options, headers });
+        return res.json();
+    }
+
+    // 登录/注册页面
+    function renderAuth() {
+        document.getElementById('app').innerHTML = `
+            <div class="auth-container">
+                <div class="auth-card">
+                    <h2>🐉 龙虎斗 🐅</h2>
+                    <input type="text" id="username" placeholder="用户名" autocomplete="off">
+                    <input type="password" id="password" placeholder="密码">
+                    <button id="loginBtn">登录</button>
+                    <button id="registerBtn" class="switch-btn">注册新账号</button>
+                </div>
+            </div>
+        `;
+        document.getElementById('loginBtn').onclick = async () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const res = await apiCall('/api/login', { method: 'POST', body: JSON.stringify({ username, password }) });
+            if (res.code === 200) {
+                currentUser = res.user;
+                token = res.token;
+                localStorage.setItem('token', token);
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                renderMain();
+            } else {
+                alert(res.msg);
+            }
+        };
+        document.getElementById('registerBtn').onclick = async () => {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const res = await apiCall('/api/register', { method: 'POST', body: JSON.stringify({ username, password }) });
+            alert(res.msg);
+            if (res.code === 200) {
+                document.getElementById('password').value = '';
+            }
+        };
+    }
+
+    // 主游戏界面
+    function renderMain() {
+        if (!currentUser) {
+            renderAuth();
+            return;
+        }
+
+        const isAdmin = currentUser.isAdmin;
+
+        document.getElementById('app').innerHTML = `
+            <div class="game-container" id="gameContainer">
+                <div class="game-header">
+                    <div class="user-info">
+                        <div class="avatar">🐉</div>
+                        <div class="user-details">
+                            <h3>${currentUser.username} ${isAdmin ? '<span class="admin-badge">管理员</span>' : ''}</h3>
+                            <p>ID: ${currentUser.id}</p>
+                        </div>
+                    </div>
+                    <div class="balance-box">
+                        <div class="balance-label">灵蕴余额</div>
+                        <div class="balance-amount" id="balanceAmount">${currentUser.balance}</div>
+                    </div>
+                </div>
+
+                ${isAdmin ? `
+                <div class="nav-buttons">
+                    <button class="nav-btn ${currentView === 'game' ? 'active' : ''}" id="navGameBtn">🎮 游戏大厅</button>
+                    <button class="nav-btn ${currentView === 'admin' ? 'active' : ''}" id="navAdminBtn">⚙️ 管理后台</button>
+                </div>
+                ` : ''}
+
+                <div id="gameView" style="display: ${currentView === 'game' ? 'block' : 'none'}">
+                    <div class="battle-area">
+                        <div class="dragon-tiger">
+                            <div class="dragon-side"><h1>龍</h1></div>
+                            <div class="vs">VS</div>
+                            <div class="tiger-side"><h1>虎</h1></div>
+                        </div>
+                        <div class="result-box" id="resultBox">等待开战</div>
+                    </div>
+
+                    <div class="bet-panel">
+                        <div class="bet-options">
+                            <div class="bet-card" id="betDragonCard">
+                                <h3 class="dragon-color">🐉 龙</h3>
+                                <div class="bet-amount" id="dragonAmount">0</div>
+                                <div class="bet-controls">
+                                    <button class="decBtn" data-type="dragon">-</button>
+                                    <button class="incBtn" data-type="dragon">+</button>
+                                </div>
+                                <div class="quick-bets">
+                                    <button data-type="dragon" data-val="100">+100</button>
+                                    <button data-type="dragon" data-val="500">+500</button>
+                                    <button data-type="dragon" data-val="1000">+1k</button>
+                                </div>
+                            </div>
+                            <div class="bet-card" id="betTigerCard">
+                                <h3 class="tiger-color">🐅 虎</h3>
+                                <div class="bet-amount" id="tigerAmount">0</div>
+                                <div class="bet-controls">
+                                    <button class="decBtn" data-type="tiger">-</button>
+                                    <button class="incBtn" data-type="tiger">+</button>
+                                </div>
+                                <div class="quick-bets">
+                                    <button data-type="tiger" data-val="100">+100</button>
+                                    <button data-type="tiger" data-val="500">+500</button>
+                                    <button data-type="tiger" data-val="1000">+1k</button>
+                                </div>
+                            </div>
+                            <div class="bet-card" id="betTieCard">
+                                <h3 class="tie-color">⚖️ 和</h3>
+                                <div class="bet-amount" id="tieAmount">0</div>
+                                <div class="bet-controls">
+                                    <button class="decBtn" data-type="tie">-</button>
+                                    <button class="incBtn" data-type="tie">+</button>
+                                </div>
+                                <div class="quick-bets">
+                                    <button data-type="tie" data-val="100">+100</button>
+                                    <button data-type="tie" data-val="500">+500</button>
+                                    <button data-type="tie" data-val="1000">+1k</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button class="btn-battle" id="battleBtn">🐉 开战 ⚔️ 虎</button>
+                            <button class="btn-repeat" id="repeatBtn">🔄 续押</button>
+                        </div>
+                    </div>
+
+                    <div class="stats-panel">
+                        <div class="stat-card"><span>🏆 总场次</span><span id="totalRounds">0</span></div>
+                        <div class="stat-card"><span>📈 胜率</span><span id="winRate">0%</span></div>
+                        <div class="stat-card"><span>⚡ 当前连胜</span><span id="currentStreak">0</span></div>
+                        <div class="stat-card"><span>🔥 最高连胜</span><span id="maxStreak">0</span></div>
+                    </div>
+
+                    <div class="history-area">
+                        <div style="text-align:center; margin-bottom:12px; color:#ffcc77;">📜 最近10局</div>
+                        <div class="history-grid" id="historyGrid"></div>
+                    </div>
+                </div>
+
+                <div id="adminView" style="display: ${currentView === 'admin' ? 'block' : 'none'}">
+                    ${isAdmin ? '<div class="admin-panel" id="adminPanel"></div>' : ''}
+                </div>
+            </div>
+        `;
+
+        if (isAdmin && currentView === 'admin') {
+            renderAdminPanel();
+        }
+
+        // 绑定游戏事件
+        bindGameEvents();
+        loadUserStats();
+        loadHistory();
+    }
+
+    function bindGameEvents() {
+        // 加减注
+        document.querySelectorAll('.decBtn').forEach(btn => {
+            btn.onclick = () => modifyBet(btn.getAttribute('data-type'), -100);
+        });
+        document.querySelectorAll('.incBtn').forEach(btn => {
+            btn.onclick = () => modifyBet(btn.getAttribute('data-type'), 100);
+        });
+        document.querySelectorAll('.quick-bets button').forEach(btn => {
+            btn.onclick = () => {
+                const type = btn.getAttribute('data-type');
+                const val = parseInt(btn.getAttribute('data-val'));
+                modifyBet(type, val);
+            };
+        });
+
+        document.getElementById('battleBtn').onclick = startBattle;
+        document.getElementById('repeatBtn').onclick = repeatBet;
+
+        // 高亮选中
+        updateBetUI();
+
+        // 导航
+        const navGame = document.getElementById('navGameBtn');
+        const navAdmin = document.getElementById('navAdminBtn');
+        if (navGame) navGame.onclick = () => { currentView = 'game'; renderMain(); };
+        if (navAdmin) navAdmin.onclick = () => { currentView = 'admin'; renderMain(); };
+    }
+
+    function modifyBet(type, delta) {
+        let current = type === 'dragon' ? betDragon : (type === 'tiger' ? betTiger : betTie);
+        let newVal = Math.max(0, current + delta);
+        if (newVal > currentUser.balance) return;
+        if (type === 'dragon') betDragon = newVal;
+        else if (type === 'tiger') betTiger = newVal;
+        else betTie = newVal;
+        updateBetUI();
+    }
+
+    function updateBetUI() {
+        document.getElementById('dragonAmount').innerText = betDragon;
+        document.getElementById('tigerAmount').innerText = betTiger;
+        document.getElementById('tieAmount').innerText = betTie;
+
+        const dragonCard = document.getElementById('betDragonCard');
+        const tigerCard = document.getElementById('betTigerCard');
+        const tieCard = document.getElementById('betTieCard');
+
+        dragonCard.classList.toggle('selected', betDragon > 0);
+        tigerCard.classList.toggle('selected', betTiger > 0);
+        tieCard.classList.toggle('selected', betTie > 0);
+    }
+
+    function repeatBet() {
+        betDragon = lastBet.dragon;
+        betTiger = lastBet.tiger;
+        betTie = lastBet.tie;
+        updateBetUI();
+        showMessage('🔄 已续押上局注码');
+    }
+
+    async function startBattle() {
+        const totalBet = betDragon + betTiger + betTie;
+        if (totalBet === 0) {
+            showMessage('请先下注');
+            return;
+        }
+        if (totalBet > currentUser.balance) {
+            showMessage('余额不足');
+            return;
+        }
+
+        // 记录续押数据
+        lastBet = { dragon: betDragon, tiger: betTiger, tie: betTie };
+
+        const res = await apiCall('/api/bet', {
+            method: 'POST',
+            body: JSON.stringify({
+                userId: currentUser.id,
+                betDragon, betTiger, betTie
+            })
+        });
+
+        if (res.code === 200) {
+            // 更新余额
+            currentUser.balance = res.newBalance;
+            document.getElementById('balanceAmount').innerText = res.newBalance;
+
+            // 显示结果
+            const resultText = res.result === '龙' ? '🐉 龙胜！' : (res.result === '虎' ? '🐅 虎胜！' : '⚖️ 和局！');
+            const winText = res.winAmount > 0 ? ` 赢得 +${res.winAmount}` : ' 遗憾败北';
+            document.getElementById('resultBox').innerHTML = `${resultText}${winText}`;
+
+            // 添加到历史
+            historyResults.unshift(res.result);
+            if (historyResults.length > 10) historyResults.pop();
+            renderHistory();
+
+            // 清空下注
+            betDragon = betTiger = betTie = 0;
+            updateBetUI();
+
+            // 刷新用户数据
+            await loadUserStats();
+        } else {
+            showMessage(res.msg);
+        }
+    }
+
+    async function loadUserStats() {
+        const res = await apiCall(`/api/user/${currentUser.id}`);
+        if (res.code === 200) {
+            const data = res.data;
+            document.getElementById('totalRounds').innerText = data.total_rounds || 0;
+            const winRate = data.total_rounds > 0 ? ((data.win_count / data.total_rounds) * 100).toFixed(1) : 0;
+            document.getElementById('winRate').innerText = winRate + '%';
+            document.getElementById('maxStreak').innerText = data.max_streak || 0;
+            currentUser.balance = data.balance;
+            document.getElementById('balanceAmount').innerText = data.balance;
+        }
+    }
+
+    async function loadHistory() {
+        // 从本地存储历史（简化版）
+        renderHistory();
+    }
+
+    function renderHistory() {
+        const grid = document.getElementById('historyGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        historyResults.slice(0, 10).forEach(r => {
+            const cell = document.createElement('div');
+            cell.className = `history-cell history-${r === '龙' ? 'dragon' : (r === '虎' ? 'tiger' : 'tie')}`;
+            cell.innerText = r === '龙' ? '龍' : (r === '虎' ? '虎' : '和');
+            grid.appendChild(cell);
+        });
+    }
+
+    // 管理后台
+    async function renderAdminPanel() {
+        const container = document.getElementById('adminPanel');
+        if (!container) return;
+
+        // 加载统计数据
+        const statsRes = await apiCall('/api/admin/stats');
+        const configRes = await apiCall('/api/admin/config');
+        const usersRes = await apiCall('/api/admin/users');
+        const withdrawsRes = await apiCall('/api/admin/withdraws');
+        const rechargesRes = await apiCall('/api/admin/recharges');
+
+        const stats = statsRes.data || {};
+        const config = configRes.data || {};
+        const users = usersRes.data || [];
+        const withdraws = withdrawsRes.data || [];
+        const recharges = rechargesRes.data || [];
+
+        container.innerHTML = `
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-tab="dashboard">📊 仪表盘</button>
+                <button class="admin-tab" data-tab="users">👥 用户管理</button>
+                <button class="admin-tab" data-tab="withdraws">💸 提现审核</button>
+                <button class="admin-tab" data-tab="recharges">💰 充值记录</button>
+                <button class="admin-tab" data-tab="config">⚙️ 系统配置</button>
+            </div>
+
+            <div id="adminTabContent">
+                <div class="tab-dashboard">
+                    <div class="stats-panel" style="grid-template-columns:repeat(3,1fr); display:grid; gap:12px; margin-bottom:20px;">
+                        <div class="stat-card"><span>总用户数</span><span>${stats.users?.total_users || 0}</span></div>
+                        <div class="stat-card"><span>总充值</span><span>${stats.recharges?.total_amount || 0}</span></div>
+                        <div class="stat-card"><span>总派奖</span><span>${stats.games?.total_payout || 0}</span></div>
+                    </div>
+                </div>
+                <div class="tab-users" style="display:none;">
+                    <div class="admin-table">
+                        <table>
+                            <tr><th>ID</th><th>用户名</th><th>余额</th><th>总下注</th><th>总赢取</th><th>操作</th></tr>
+                            ${users.map(u => `
+                                <tr>
+                                    <td>${u.id}</td><td>${u.username}</td><td>${u.balance}</td>
+                                    <td>${u.total_bet}</td><td>${u.total_win}</td>
+                                    <td><button onclick="adminAddBalance(${u.id})">+余额</button></td>
+                                </tr>
+                            `).join('')}
+                        </table>
+                    </div>
+                </div>
+                <div class="tab-withdraws" style="display:none;">
+                    <div class="admin-table">
+                        <table>
+                            <tr><th>用户</th><th>金额</th><th>账号</th><th>状态</th><th>操作</th></tr>
+                            ${withdraws.map(w => `
+                                <tr>
+                                    <td>${w.username}</td><td>${w.amount}</td><td>${w.account}</td>
+                                    <td>${w.status}</td>
+                                    <td>
+                                        <button onclick="processWithdraw(${w.id}, 'approve')">通过</button>
+                                        <button onclick="processWithdraw(${w.id}, 'reject')">拒绝</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </table>
+                    </div>
+                </div>
+                <div class="tab-recharges" style="display:none;">
+                    <div class="admin-table">
+                        <table>
+                            <tr><th>用户</th><th>金额</th><th>订单号</th><th>时间</th></tr>
+                            ${recharges.map(r => `
+                                <tr><td>${r.username}</td><td>${r.amount}</td><td>${r.order_no}</td><td>${r.created_at}</td></tr>
+                            `).join('')}
+                        </table>
+                    </div>
+                </div>
+                <div class="tab-config" style="display:none;">
+                    <div class="config-row"><span>龙赔率</span><input type="number" id="cfg_dragon_odds" value="${config.dragon_odds || 2}" step="0.1"></div>
+                    <div class="config-row"><span>虎赔率</span><input type="number" id="cfg_tiger_odds" value="${config.tiger_odds || 2}" step="0.1"></div>
+                    <div class="config-row"><span>和赔率</span><input type="number" id="cfg_tie_odds" value="${config.tie_odds || 8}" step="0.1"></div>
+                    <div class="config-row"><span>龙概率(%)</span><input type="number" id="cfg_dragon_weight" value="${config.dragon_weight || 45}" step="1"></div>
+                    <div class="config-row"><span>虎概率(%)</span><input type="number" id="cfg_tiger_weight" value="${config.tiger_weight || 45}" step="1"></div>
+                    <div class="config-row"><span>最小下注</span><input type="number" id="cfg_min_bet" value="${config.min_bet || 10}"></div>
+                    <div class="config-row"><span>最大下注</span><input type="number" id="cfg_max_bet" value="${config.max_bet 
