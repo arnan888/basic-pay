@@ -753,3 +753,588 @@ vh;
 
 
 
+        // ----- C3：弹窗与记录显示 -----
+        function showModal(msg, btnText) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `<div class="modal-content"><h3>📢 提示</h3><p>${msg}</p><button id="modalCloseBtn">${btnText}</button></div>`;
+            document.body.appendChild(modal);
+            document.getElementById('modalCloseBtn').onclick = () => modal.remove();
+        }
+
+        function showMyHistory() {
+            const recs = users[CURRENT_USER_ID]?.records || [];
+            let html = `<div style="max-height:300px; overflow-y:auto; text-align:left;">`;
+            if (recs.length === 0) html += "<p>暂无记录</p>";
+            else {
+                recs.slice(0, 30).forEach(r => {
+                    const isWin = r.win > 0;
+                    html += `<div style="padding:6px; border-bottom:1px solid #555; display:flex; justify-content:space-between;">
+                                <span>${r.time}</span>
+                                <span>押 ${r.bet} → ${r.result}</span>
+                                <span style="color:${isWin?'#4caf50':'#f44336'}">${isWin ? `+${r.win}` : `-${r.amount}`}</span>
+                             </div>`;
+                });
+            }
+            html += `</div><button id="closeHistoryBtn" style="margin-top:12px;">关闭</button>`;
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `<div class="modal-content"><h3>📜 我的历史记录</h3>${html}</div>`;
+            document.body.appendChild(modal);
+            document.getElementById('closeHistoryBtn').onclick = () => modal.remove();
+        }
+        document.getElementById('myHistoryBtn').onclick = showMyHistory;
+        
+        // ========== 修改点：原“新用户”按钮改为充值入口（人民币/泰铢）==========
+        document.getElementById('newUserBtn').onclick = () => {
+            const modalDiv = document.createElement('div');
+            modalDiv.className = 'modal';
+            modalDiv.innerHTML = `
+                <div class="modal-content">
+                    <h3>💎 充值中心</h3>
+                    <div style="display:flex; gap:12px; margin:12px 0;">
+                        <div id="rechargeCurrCNY" style="flex:1; background:#ffaa44; padding:8px; border-radius:40px; cursor:pointer; text-align:center;">🇨🇳 人民币</div>
+                        <div id="rechargeCurrTHB" style="flex:1; background:#1e1e2e; padding:8px; border-radius:40px; cursor:pointer; text-align:center; color:white;">🇹🇭 泰铢</div>
+                    </div>
+                    <input type="number" id="rechargeAmountInput" placeholder="输入金额" step="1" value="100" style="width:100%; padding:12px; border-radius:40px; border:none; background:#1e1e2e; color:white; text-align:center;">
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:12px 0;">
+                        <span class="quick-recharge" data-val="50" style="background:#1e1e2e; padding:6px 14px; border-radius:30px; cursor:pointer;">50</span>
+                        <span class="quick-recharge" data-val="100" style="background:#1e1e2e; padding:6px 14px; border-radius:30px; cursor:pointer;">100</span>
+                        <span class="quick-recharge" data-val="200" style="background:#1e1e2e; padding:6px 14px; border-radius:30px; cursor:pointer;">200</span>
+                        <span class="quick-recharge" data-val="500" style="background:#1e1e2e; padding:6px 14px; border-radius:30px; cursor:pointer;">500</span>
+                    </div>
+                    <button id="confirmRechargeBtn" style="background:#ffaa44; border:none; border-radius:40px; padding:12px; width:100%; margin-top:8px; font-weight:bold;">确认充值</button>
+                    <button id="closeRechargeBtn" style="background:#555; border:none; border-radius:40px; padding:12px; width:100%; margin-top:8px; color:white;">取消</button>
+                </div>
+            `;
+            document.body.appendChild(modalDiv);
+
+            let currentCurrency = 'CNY';
+            const cnyBtn = modalDiv.querySelector('#rechargeCurrCNY');
+            const thbBtn = modalDiv.querySelector('#rechargeCurrTHB');
+            const amountInput = modalDiv.querySelector('#rechargeAmountInput');
+            const quickSpans = modalDiv.querySelectorAll('.quick-recharge');
+
+            function updateCurrencyStyle() {
+                if (currentCurrency === 'CNY') {
+                    cnyBtn.style.background = '#ffaa44';
+                    cnyBtn.style.color = '#1e1e2e';
+                    thbBtn.style.background = '#1e1e2e';
+                    thbBtn.style.color = 'white';
+                    const quickVals = [50,100,200,500];
+                    quickSpans.forEach((span, idx) => {
+                        span.innerText = quickVals[idx];
+                        span.setAttribute('data-val', quickVals[idx]);
+                    });
+                } else {
+                    thbBtn.style.background = '#ffaa44';
+                    thbBtn.style.color = '#1e1e2e';
+                    cnyBtn.style.background = '#1e1e2e';
+                    cnyBtn.style.color = 'white';
+                    const quickVals = [200,500,1000,2000];
+                    quickSpans.forEach((span, idx) => {
+                        span.innerText = quickVals[idx];
+                        span.setAttribute('data-val', quickVals[idx]);
+                    });
+                }
+            }
+
+            cnyBtn.onclick = () => { currentCurrency = 'CNY'; updateCurrencyStyle(); };
+            thbBtn.onclick = () => { currentCurrency = 'THB'; updateCurrencyStyle(); };
+            quickSpans.forEach(span => {
+                span.onclick = () => { amountInput.value = span.getAttribute('data-val'); };
+            });
+
+            modalDiv.querySelector('#confirmRechargeBtn').onclick = () => {
+                let rawAmount = parseFloat(amountInput.value);
+                if (isNaN(rawAmount) || rawAmount <= 0) {
+                    alert('请输入有效金额');
+                    return;
+                }
+                let addCNY = 0;
+                if (currentCurrency === 'CNY') {
+                    addCNY = rawAmount;
+                } else {
+                    // 泰铢转人民币，汇率 1 THB = 0.2 CNY（示例）
+                    addCNY = rawAmount * 0.2;
+                }
+                addBalance(CURRENT_USER_ID, addCNY);
+                syncBalance();
+                alert(`充值成功！ +${addCNY.toFixed(2)} 人民币已到账`);
+                modalDiv.remove();
+            };
+            modalDiv.querySelector('#closeRechargeBtn').onclick = () => modalDiv.remove();
+            updateCurrencyStyle();
+        };
+        // ========== 修改结束 ==========
+
+        // ----- C4：开奖结果历史（前10局格子）-----
+        function getResultHistory(uid) { return users[uid]?.resultHistory || []; }
+        function pushResult(uid, res) {
+            if (!users[uid]) users[uid] = { balance: 0.00, records: [], resultHistory: [] };
+            let arr = users[uid].resultHistory || [];
+            arr.unshift(res);
+            if (arr.length > 10) arr.pop();
+            users[uid].resultHistory = arr;
+            saveUsers();
+            if (uid === CURRENT_USER_ID) updateHistoryGrid();
+        }
+        
+        function updateHistoryGrid() {
+            const grid = document.getElementById('historyGrid');
+            if (!grid) return;
+            const hist = getResultHistory(CURRENT_USER_ID);
+            grid.innerHTML = '';
+            for (let i = 0; i < 10; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'history-cell';
+                if (i < hist.length) {
+                    const r = hist[i];
+                    cell.classList.add(r === '龙' ? 'dragon' : (r === '虎' ? 'tiger' : 'tie'));
+                    cell.textContent = r === '龙' ? '🐉' : (r === '虎' ? '🐯' : '⚖️');
+                } else {
+                    cell.textContent = '?';
+                }
+                grid.appendChild(cell);
+            }
+        }
+
+        // ----- C5：个人投注记录（详细列表）-----
+        function addRecord(uid, betType, result, win, betAmt) {
+            if (!users[uid]) users[uid] = { balance: 0.00, records: [], resultHistory: [] };
+            let recs = users[uid].records || [];
+            recs.unshift({ time: new Date().toLocaleTimeString(), bet: betType, result: result, win: win, amount: betAmt });
+            if (recs.length > 50) recs.pop();
+            users[uid].records = recs;
+            saveUsers();
+            if (uid === CURRENT_USER_ID) refreshRecordDisplay();
+        }
+        
+        function refreshRecordDisplay() {
+            const container = document.getElementById('recordList');
+            if (!container) return;
+            const recs = users[CURRENT_USER_ID]?.records || [];
+            container.innerHTML = '';
+            if (recs.length === 0) { container.innerHTML = '<div style="text-align:center; color:#aaa;">暂无记录</div>'; return; }
+            recs.slice(0, 10).forEach(r => {
+                const div = document.createElement('div');
+                div.className = 'record-item';
+                const isWin = r.win > 0;
+                div.innerHTML = `<span>${r.time}</span><span>${r.bet} → ${r.result}</span><span class="${isWin ? 'record-win' : 'record-lose'}">${isWin ? `+${r.win}` : `-${r.amount}`}</span>`;
+                container.appendChild(div);
+            });
+        }
+
+        // ----- C6：押注状态与UI更新（原版保留）-----
+        const state = {
+            bets: { DRAGON: 0, TIGER: 0, TIE: 0 },
+            pool: 50000,
+            speed: 1,
+            countdown: 30,
+            countdownInterval: null
+        };
+        let lastBet = null;
+        let isAnimating = false;
+        
+        function updateUI() {
+            document.getElementById('betDragonAmount').innerText = state.bets.DRAGON.toFixed(2);
+            document.getElementById('betTigerAmount').innerText = state.bets.TIGER.toFixed(2);
+            document.getElementById('betTieAmount').innerText = state.bets.TIE.toFixed(2);
+            const total = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
+            document.getElementById('totalBetAmount').innerText = total.toFixed(2);
+            let expected = state.bets.DRAGON * 1.95 + state.bets.TIGER * 1.95 + state.bets.TIE * 8;
+            document.getElementById('valWin').innerText = expected.toFixed(2);
+        }
+        
+        function syncBalance() {
+            const bal = getBalance(CURRENT_USER_ID);
+            document.getElementById('balanceDisplay').innerText = bal.toFixed(2);
+        }
+        
+        function addBetAmount(type, amount) {
+            const bal = getBalance(CURRENT_USER_ID);
+            const totalBet = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
+            if (totalBet + amount > bal) {
+                alert("余额不足");
+                return;
+            }
+            state.bets[type] += amount;
+            updateUI();
+        }
+        
+        function clearBet(type) {
+            state.bets[type] = 0;
+            updateUI();
+        }
+        
+        function cancelAllBets() {
+            state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
+            updateUI();
+        }
+        
+        function repeatLastBet() {
+            if (lastBet) {
+                const bal = getBalance(CURRENT_USER_ID);
+                const total = lastBet.DRAGON + lastBet.TIGER + lastBet.TIE;
+                if (total > bal) {
+                    alert("余额不足，无法续押");
+                    return;
+                }
+                state.bets = { ...lastBet };
+                updateUI();
+            } else {
+                alert("暂无历史押注");
+            }
+        }
+        
+        // ----- C7：开奖核心逻辑（保留原样）-----
+        async function executeBet() {
+            if (isAnimating) return;
+            const total = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
+            if (total === 0) {
+                alert("请先下注");
+                return;
+            }
+            const bal = getBalance(CURRENT_USER_ID);
+            if (total > bal) {
+                alert("余额不足");
+                return;
+            }
+            addBalance(CURRENT_USER_ID, -total);
+            syncBalance();
+            lastBet = { ...state.bets };
+            isAnimating = true;
+            
+            // 开奖动画
+            const dragonWord = document.getElementById('dragonWord');
+            const tigerWord = document.getElementById('tigerWord');
+            dragonWord.classList.add('highlight-win');
+            tigerWord.classList.add('highlight-win');
+            await new Promise(r => setTimeout(r, 300));
+            dragonWord.classList.remove('highlight-win');
+            tigerWord.classList.remove('highlight-win');
+            
+            // 随机结果
+            const rand = Math.random();
+            let result = '';
+            if (rand < 0.45) result = '龙';
+            else if (rand < 0.9) result = '虎';
+            else result = '和';
+            
+            let winAmount = 0;
+            if (result === '龙') winAmount = state.bets.DRAGON * 1.95;
+            else if (result === '虎') winAmount = state.bets.TIGER * 1.95;
+            else winAmount = state.bets.TIE * 8;
+            
+            if (winAmount > 0) {
+                addBalance(CURRENT_USER_ID, winAmount);
+                syncBalance();
+                document.getElementById('battleResult').innerText = `🎉 恭喜！${result} 胜！赢得 ${winAmount.toFixed(2)} 🎉`;
+                speak(`${result} 胜，赢得 ${winAmount.toFixed(2)}`);
+            } else {
+                document.getElementById('battleResult').innerText = `😞 ${result} 胜，未中奖`;
+                speak(`${result} 胜，未中奖`);
+            }
+            const resultDiv = document.getElementById('battleResult');
+            resultDiv.classList.add('pop');
+            setTimeout(() => resultDiv.classList.remove('pop'), 500);
+            
+            // 记录
+            const betDesc = `龙:${state.bets.DRAGON} 虎:${state.bets.TIGER} 和:${state.bets.TIE}`;
+            addRecord(CURRENT_USER_ID, betDesc, result, winAmount, total);
+            pushResult(CURRENT_USER_ID, result);
+            
+            state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
+            updateUI();
+            isAnimating = false;
+        }
+        
+        // ----- C8：背景上传与恢复（保留原样）-----
+        let currentBackground = localStorage.getItem('dragon_tiger_bg') || '';
+        async function uploadBackground(file) {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const dataUrl = e.target.result;
+                localStorage.setItem('dragon_tiger_bg', dataUrl);
+                currentBackground = dataUrl;
+                const sceneBg = document.getElementById('sceneBg');
+                sceneBg.style.backgroundImage = `url(${dataUrl})`;
+                sceneBg.style.backgroundSize = 'cover';
+                if (file.type.startsWith('video/')) {
+                    const video = document.createElement('video');
+                    video.src = dataUrl;
+                    video.autoplay = true;
+                    video.loop = true;
+                    video.muted = true;
+                    video.style.width = '100%';
+                    video.style.height = '100%';
+                    video.style.objectFit = 'cover';
+                    sceneBg.innerHTML = '';
+                    sceneBg.appendChild(video);
+                } else {
+                    sceneBg.innerHTML = '';
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+        async function restoreBackground() {
+            if (currentBackground) {
+                const sceneBg = document.getElementById('sceneBg');
+                sceneBg.style.backgroundImage = `url(${currentBackground})`;
+                sceneBg.style.backgroundSize = 'cover';
+                if (currentBackground.startsWith('data:video')) {
+                    const video = document.createElement('video');
+                    video.src = currentBackground;
+                    video.autoplay = true;
+                    video.loop = true;
+                    video.muted = true;
+                    sceneBg.innerHTML = '';
+                    sceneBg.appendChild(video);
+                }
+            }
+        }
+        
+        // ----- C9：计时器与速度（保留原样）-----
+        function getCountdownSec() {
+            return Math.floor(30 / state.speed);
+        }
+        
+        function startCountdown(sec) {
+            if (state.countdownInterval) clearInterval(state.countdownInterval);
+            state.countdown = sec;
+            document.getElementById('countdownNum').innerText = state.countdown;
+            state.countdownInterval = setInterval(() => {
+                if (state.countdown <= 1) {
+                    clearInterval(state.countdownInterval);
+                    state.countdownInterval = null;
+                    if (state.bets.DRAGON + state.bets.TIGER + state.bets.TIE > 0) executeBet();
+                    else startCountdown(getCountdownSec());
+                } else {
+                    state.countdown--;
+                    document.getElementById('countdownNum').innerText = state.countdown;
+                }
+            }, 1000);
+        }
+        
+        function setSpeed(speed) {
+            if (isAnimating) return;
+            state.speed = speed;
+            document.querySelectorAll('.speed-btn').forEach(btn => {
+                if (parseInt(btn.dataset.speed) === speed) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+            if (state.countdownInterval) clearInterval(state.countdownInterval);
+            startCountdown(getCountdownSec());
+        }
+        
+        // ----- C10：彩金池波动（保留）-----
+        function startPoolFluctuation() {
+            setInterval(() => {
+                let change = Math.floor(Math.random() * 61) - 30;
+                let newPool = state.pool + change;
+                if (newPool < 10000) newPool = 10000;
+                if (newPool > 100000) newPool = 100000;
+                state.pool = newPool;
+                document.getElementById('poolDisplay').innerText = state.pool.toFixed(2);
+            }, 1000);
+        }
+        
+        // ----- C11：管理员面板与长按菜单（保留原样）-----
+        let adminPanel = null;
+        let selectedAdminUserId = CURRENT_USER_ID;
+        function showAdminPanel() {
+            if (adminPanel) { adminPanel.remove(); adminPanel = null; return; }
+            const panel = document.createElement('div');
+            panel.className = 'modal';
+            panel.innerHTML = '<div class="modal-content" style="width:90%; max-width:360px;">' +
+                '<h3>🔐 管理员面板</h3>' +
+                '<div id="adminUserList" style="max-height:150px; overflow-y:auto; margin:12px 0; background:#1e2a2e; border-radius:8px; padding:8px;"></div>' +
+                '<div>当前选中：<strong id="selectedUserDisplay">' + selectedAdminUserId + '</strong></div>' +
+                '<input type="number" id="adminAmount" placeholder="金额" value="0.00" style="margin:8px 0; width:100%; padding:8px; border-radius:6px;">' +
+                '<div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">' +
+                    '<button id="adminAddBtn">➕ 上分</button>' +
+                    '<button id="adminSubBtn">➖ 下分</button>' +
+                    '<button id="adminQueryBtn">🔍 查询</button>' +
+                    '<button id="adminResetBtn">🔄 重置</button>' +
+                    '<button id="adminChangePwdBtn">🔑 改密码</button>' +
+                '</div>' +
+                '<button id="adminCloseBtn" style="margin-top:16px;">关闭</button>' +
+            '</div>';
+            document.body.appendChild(panel);
+            adminPanel = panel;
+            function refreshUserList() {
+                const userListDiv = document.getElementById('adminUserList');
+                if (!userListDiv) return;
+                const usersArr = getUserList();
+                userListDiv.innerHTML = '';
+                usersArr.forEach(uid => {
+                    const div = document.createElement('div');
+                    div.style.padding = '6px';
+                    div.style.borderBottom = '1px solid #555';
+                    div.style.cursor = 'pointer';
+                    div.style.background = uid === selectedAdminUserId ? '#ffaa44' : 'transparent';
+                    div.style.color = uid === selectedAdminUserId ? '#1a1a2a' : 'white';
+                    div.textContent = uid + ' (余额: ' + getBalance(uid).toFixed(2) + ')';
+                    div.onclick = () => { selectedAdminUserId = uid; document.getElementById('selectedUserDisplay').innerText = selectedAdminUserId; refreshUserList(); };
+                    userListDiv.appendChild(div);
+                });
+            }
+            refreshUserList();
+            document.getElementById('adminAddBtn').onclick = () => {
+                const amount = parseFloat(document.getElementById('adminAmount').value);
+                if (isNaN(amount) || amount <= 0) { alert("请输入正数金额"); return; }
+                addBalance(selectedAdminUserId, amount);
+                refreshUserList();
+                if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
+                alert('✅ 已给 ' + selectedAdminUserId + ' 上分 ' + amount + ' rmb');
+            };
+            document.getElementById('adminSubBtn').onclick = () => {
+                const amount = parseFloat(document.getElementById('adminAmount').value);
+                if (isNaN(amount) || amount <= 0) { alert("请输入正数金额"); return; }
+                const cur = getBalance(selectedAdminUserId);
+                if (cur < amount) { alert("余额不足"); return; }
+                addBalance(selectedAdminUserId, -amount);
+                refreshUserList();
+                if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
+                alert('✅ 已从 ' + selectedAdminUserId + ' 下分 ' + amount + ' rmb');
+            };
+            document.getElementById('adminQueryBtn').onclick = () => {
+                alert('用户 ' + selectedAdminUserId + ' 余额: ' + getBalance(selectedAdminUserId).toFixed(2) + ' rmb');
+            };
+            document.getElementById('adminResetBtn').onclick = () => {
+                if (confirm('重置 ' + selectedAdminUserId + ' 余额为 0.00 rmb？')) {
+                    setBalance(selectedAdminUserId, 100);
+                    refreshUserList();
+                    if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
+                    alert("重置成功");
+                }
+            };
+            document.getElementById('adminChangePwdBtn').onclick = () => {
+                const old = prompt("当前密码:");
+                if (old !== ADMIN_PASSWORD) { alert("密码错误"); return; }
+                const newPwd = prompt("新密码(至少6位):");
+                if (!newPwd || newPwd.length < 6) { alert("密码至少6位"); return; }
+                ADMIN_PASSWORD = newPwd;
+                localStorage.setItem('dragon_tiger_password', newPwd);
+                alert("密码修改成功");
+            };
+            document.getElementById('adminCloseBtn').onclick = () => { panel.remove(); adminPanel = null; };
+        }
+        
+        function triggerUpload() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*,video/mp4,video/webm';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) uploadBackground(file);
+            };
+            input.click();
+        }
+        
+        let longPressTimer = null, activeMenu = null;
+        function showSecretMenu() {
+            if(activeMenu) { activeMenu.remove(); activeMenu=null; return; }
+            const menu = document.createElement('div');
+            menu.style.position = 'fixed';
+            menu.style.bottom = '80px';
+            menu.style.right = '12px';
+            menu.style.background = '#1e2a2e';
+            menu.style.border = '2px solid #ffaa44';
+            menu.style.borderRadius = '12px';
+            menu.style.padding = '12px';
+            menu.style.display = 'flex';
+            menu.style.flexDirection = 'column';
+            menu.style.gap = '8px';
+            menu.style.backdropFilter = 'blur(20px)';
+            menu.style.zIndex = '10000';
+            menu.innerHTML = `
+                <button id="secretBg" style="background:#2c3e2f; border:none; border-radius:8px; padding:8px 20px; color:#ffaa44; cursor:pointer;">🌌 上传背景</button>
+                <button id="secretAdmin" style="background:#2c3e2f; border:none; border-radius:8px; padding:8px 20px; color:#ffaa44; cursor:pointer;">👑 管理员面板</button>
+            `;
+            document.body.appendChild(menu);
+            activeMenu = menu;
+            const closeHandler = (e) => { if(!menu.contains(e.target)){ menu.remove(); activeMenu=null; document.removeEventListener('click', closeHandler); } };
+            setTimeout(()=>document.addEventListener('click', closeHandler), 20);
+            document.getElementById('secretBg').onclick = () => { if(activeMenu) activeMenu.remove(); activeMenu=null; triggerUpload(); };
+            document.getElementById('secretAdmin').onclick = () => {
+                if(activeMenu) activeMenu.remove(); activeMenu=null;
+                const pwd = prompt("管理员密码:", "");
+                if(pwd === ADMIN_PASSWORD) showAdminPanel();
+                else alert("密码错误");
+            };
+        }
+        function onLongPress() {
+            const pwd = prompt("🔐 管理员验证（长按续押3秒）\n请输入管理密码:", "");
+            if(pwd === ADMIN_PASSWORD) showSecretMenu();
+            else if(pwd !== null) alert("密码错误");
+        }
+        
+        // ----- C12：全局事件绑定（保留原样）-----
+        function bindEvents() {
+            document.getElementById('refreshBtn').onclick = () => syncBalance();
+            const repeatBtn = document.getElementById('repeatBtn');
+            repeatBtn.onclick = null;
+            repeatBtn.addEventListener('click', (e) => { if(longPressTimer) clearTimeout(longPressTimer); repeatLastBet(); });
+            repeatBtn.addEventListener('touchstart', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
+            repeatBtn.addEventListener('touchend', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+            repeatBtn.addEventListener('touchcancel', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+            repeatBtn.addEventListener('mousedown', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
+            repeatBtn.addEventListener('mouseup', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+            document.getElementById('cancelBtn').onclick = cancelAllBets;
+            document.getElementById('fightBtn').onclick = executeBet;
+            document.getElementById('switchUserBtn').onclick = () => {
+                const newId = document.getElementById('switchUserIdInput').value.trim();
+                if(!newId) return;
+                CURRENT_USER_ID = newId;
+                if (!users[CURRENT_USER_ID]) { users[CURRENT_USER_ID] = { balance: 0.00, records: [], resultHistory: [] }; saveUsers(); }
+                document.getElementById('currentUserId').innerText = CURRENT_USER_ID;
+                state.bets = { DRAGON:0, TIGER:0, TIE:0 };
+                lastBet = null;
+                syncBalance(); updateUI(); 
+                if (state.countdownInterval) clearInterval(state.countdownInterval);
+                startCountdown(getCountdownSec());
+                refreshRecordDisplay();
+                updateHistoryGrid();
+            };
+            document.querySelectorAll('.speed-btn').forEach(btn => btn.onclick = () => setSpeed(parseInt(btn.dataset.speed)));
+            document.querySelectorAll('.quick-bet').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const type = btn.dataset.type;
+                    const amount = parseInt(btn.dataset.amount);
+                    addBetAmount(type, amount);
+                };
+            });
+            document.querySelectorAll('.clear-bet').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const type = btn.dataset.type;
+                    clearBet(type);
+                };
+            });
+        }
+        
+        // ----- C13：初始化入口 -----
+        async function init() {
+            await restoreBackground();
+            bindEvents();
+            syncBalance();
+            startPoolFluctuation();
+            setSpeed(1);
+            updateUI();
+            startCountdown(getCountdownSec());
+            refreshRecordDisplay();
+            updateHistoryGrid();
+            if (!localStorage.getItem('visited_before')) {
+                localStorage.setItem('visited_before', 'true');
+                setTimeout(() => {
+                    showModal("🎉 欢迎！\n• 初始余额：0.00 rmb\n• 押注金额在亮色背景上清晰显示\n• 点击 +10/+20 等快捷增加押注\n• 点击「清空」可单独取消该选项\n• 长按「续押」1.5秒进入管理后台\n• 上传背景功能已修复（支持图片/视频）", "开始游戏");
+                }, 500);
+            }
+        }
+        window.onload = init;
+    })();
+</script>
+</body>
+</html>
