@@ -1304,7 +1304,7 @@
             if(pwd === ADMIN_PASSWORD) showSecretMenu();
             else if(pwd !== null) alert("密码错误");
        }
-        // ----- C10：全局事件绑定（按钮、长按、速度等）-----
+        // ----- C10：全局事件绑定（保持原逻辑不变）-----
         function bindEvents() {
             document.getElementById('refreshBtn').onclick = refreshBalance;
             const repeatBtn = document.getElementById('repeatBtn');
@@ -1338,7 +1338,7 @@
             });
         }
 
-        // ----- C11：初始化入口（恢复背景、绑定事件、启动倒计时等）-----
+        // ----- C11：初始化入口（保持原逻辑不变）-----
         async function init() {
             await restoreBackground();
             bindEvents();
@@ -1348,14 +1348,25 @@
             updateUI();
             startCountdown(getCountdownSec());
 
-// ========== 转盘代码开始 ==========
+// ========== 重新配置后的转盘代码开始 ==========
             const wheelCanvas = document.getElementById('wheelCanvas');
             if (wheelCanvas) {
+                // 高DPI屏幕适配：让画布在高清屏上更清晰
+                const dpr = window.devicePixelRatio || 1;
+                const canvasWidth = 400;
+                const canvasHeight = 400;
+                wheelCanvas.width = canvasWidth * dpr;
+                wheelCanvas.height = canvasHeight * dpr;
+                wheelCanvas.style.width = `${canvasWidth}px`;
+                wheelCanvas.style.height = `${canvasHeight}px`;
+                
                 const ctx = wheelCanvas.getContext('2d');
-                // 新增：开启画布抗锯齿，提升整体清晰度
+                ctx.scale(dpr, dpr); // 缩放画布适配高清屏
+                // 全局抗锯齿设置
                 ctx.imageSmoothingEnabled = true;
                 ctx.webkitImageSmoothingEnabled = true;
                 ctx.mozImageSmoothingEnabled = true;
+                ctx.textRendering = 'optimizeLegibility'; // 优化文字渲染
                 
                 const spinBtn = document.getElementById('spinWheelBtn');
                 const wheelToast = document.getElementById('wheelToast');
@@ -1367,19 +1378,28 @@
                 
                 function drawWheel(rotation) {
                     const size = 400;
-                    wheelCanvas.width = size;
-                    wheelCanvas.height = size;
                     const centerX = size/2, centerY = size/2;
-                    const radius = size/2 - 2;
+                    const radius = size/2 - 4; // 增加边距让背景更清爽
                     
+                    // 重新配置：高对比度背景色，更通亮
                     const colorList = [
-    #005a32;
+                        '#FF5555', '#FF5555', '#5555FF', '#5555FF',
+                        '#FFFF55', '#FFFF55', '#55FF55', '#55FF55',
+                        '#55FFFF', '#55FFFF', '#FFAA55', '#FFAA55',
+                        '#CC55FF', '#CC55FF'
                     ];
+                    // 每个颜色都提升了亮度，同时保证和字体的对比度
                     const textList = [
                         '龍', '虎', '龍', '虎', '龍', '虎',
                         '龍', '虎', '龍', '虎', '龍', '虎',
                         '龍', '虎', '王'
                     ];
+                    
+                    // 先绘制转盘外框，提升整体层次感
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius + 2, 0, 2*Math.PI);
+                    ctx.fillStyle = '#FFFFFF'; // 白色外框让转盘更突出
+                    ctx.fill();
                     
                     for (let i = 0; i < SEGMENTS; i++) {
                         const start = i * SEG_ANGLE + rotation;
@@ -1387,101 +1407,125 @@
                         ctx.beginPath();
                         ctx.moveTo(centerX, centerY);
                         ctx.arc(centerX, centerY, radius, start, end);
+                        ctx.closePath(); // 闭合路径防止边缘漏色
                         
                         if (i === 14) {
-                            const grad = ctx.createLinearGradient(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
-                            grad.addColorStop(0, '#ff0000');
-                            grad.addColorStop(0.16, '#ff6600');
-                            grad.addColorStop(0.33, '#ffff00');
-                            grad.addColorStop(0.5, '#00ff00');
-                            grad.addColorStop(0.66, '#00ffff');
-                            grad.addColorStop(0.83, '#0000ff');
-                            grad.addColorStop(1, '#ff00ff');
+                            // 重新配置：更明亮的彩虹渐变
+                            const grad = ctx.createLinearGradient(centerX - radius, centerY, centerX + radius, centerY);
+                            grad.addColorStop(0, '#FF3333');
+                            grad.addColorStop(0.17, '#FF9933');
+                            grad.addColorStop(0.33, '#FFFF33');
+                            grad.addColorStop(0.5, '#33FF33');
+                            grad.addColorStop(0.67, '#33FFFF');
+                            grad.addColorStop(0.83, '#3333FF');
+                            grad.addColorStop(1, '#CC33FF');
                             ctx.fillStyle = grad;
+                            // 给“王”区加白色描边，更醒目
+                            ctx.strokeStyle = '#FFFFFF';
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
                         } else {
                             ctx.fillStyle = colorList[i];
+                            // 每个扇形加浅白描边，分隔更清晰
+                            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+                            ctx.lineWidth = 0.8;
+                            ctx.stroke();
                         }
                         ctx.fill();
                         
-                        ctx.shadowBlur = 12;
-                        ctx.shadowColor = ctx.fillStyle;
-
-// --- 优化后的文字绘制部分 ---
+                        // 背景发光调整：柔和不刺眼
+                        ctx.shadowBlur = 8;
+                        ctx.shadowColor = colorList[i] || '#FFFFFF';
+                        
+// --- 清晰通亮的字体绘制 ---
 ctx.save();
 ctx.translate(centerX, centerY);
-// 精准计算文字旋转角度，确保和扇形对齐
 const textRotate = start + SEG_ANGLE / 2;
 ctx.rotate(textRotate);
 ctx.textAlign = "center";
 ctx.textBaseline = "middle";
 
-// 区分文字样式，统一属性定义
+// 重新配置字体样式：高对比度+清晰发光
 let targetColor, shadowColor, fontSize, fontWeight;
 if (textList[i] === '龍') {
-    targetColor = '#ff3300';
-    shadowColor = 'rgba(255, 51, 0, 0.7)';
-    fontSize = 32;
+    targetColor = '#FFFFFF'; // 白色字体在彩色背景上最清晰
+    shadowColor = 'rgba(0,0,0,0.3)'; // 深色阴影增加立体感
+    fontSize = 34;
     fontWeight = 'bold';
 } else if (textList[i] === '虎') {
-    targetColor = '#005a32';
-    shadowColor = 'rgba(0, 90, 50, 0.7)';
-    fontSize = 32;
+    targetColor = '#FFFFFF'; // 统一白色字体，保证一致性
+    shadowColor = 'rgba(0,0,0,0.3)';
+    fontSize = 34;
     fontWeight = 'bold';
 } else {
-    targetColor = '#ffcc44';
-    shadowColor = 'rgba(255, 204, 68, 0.8)';
-    fontSize = 28;
+    targetColor = '#FFFFFF'; // 王字也用白色，更通亮
+    shadowColor = 'rgba(255,204,68,0.8)';
+    fontSize = 30;
     fontWeight = 'bold';
 }
 
-// 明确字体属性，增加备选字体防止兼容问题
 ctx.font = `${fontWeight} ${fontSize}px 'PingFang SC', 'Microsoft Yahei', sans-serif`;
 ctx.fillStyle = targetColor;
 
-// 单一层级阴影，避免重复绘制模糊
+// 字体发光逻辑：清晰不模糊
 ctx.shadowColor = shadowColor;
-ctx.shadowBlur = 6;
+ctx.shadowBlur = 5;
 ctx.shadowOffsetX = 0;
 ctx.shadowOffsetY = 0;
 
-// 固定文字位置，提升稳定性
-const textRadius = radius * 0.6;
+// 固定文字位置，居中更准确
+const textRadius = radius * 0.58;
 ctx.fillText(textList[i], textRadius, 0);
 
-// 可选：如需更强清晰度，可取消注释添加细描边
-// ctx.strokeStyle = '#ffffff';
-// ctx.lineWidth = 1;
-// ctx.strokeText(textList[i], textRadius, 0);
+// 可选：加细黑边让字体在浅色背景上也清晰
+ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+ctx.lineWidth = 0.8;
+ctx.strokeText(textList[i], textRadius, 0);
 
 ctx.restore();
-// --- 文字绘制部分结束 ---
+// --- 字体绘制结束 ---
 
                     }                    
+                    // 重新配置中心按钮：更清晰醒目
                     ctx.beginPath();                    
-                    ctx.arc(centerX, centerY, 22, 0, 2*Math.PI);                    
-                    ctx.fillStyle = "#ffaa44";                    
-                    ctx.shadowBlur = 15;                    
-                    ctx.shadowColor = "#ffaa44";
+                    ctx.arc(centerX, centerY, 24, 0, 2*Math.PI); // 加大按钮尺寸
+                    ctx.fillStyle = "#FFCC55"; // 更明亮的底色
+                    ctx.strokeStyle = '#FFFFFF'; // 白色描边
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    ctx.shadowBlur = 12;                    
+                    ctx.shadowColor = "#FFCC55";
                     ctx.fill();                    
                     ctx.shadowBlur = 0;
-                    ctx.font = "bold 22px 'PingFang SC'";                    
-                    ctx.fillStyle = "#1a1a2a";                    
+                    
+                    // 中心文字优化
+                    ctx.font = "bold 24px 'PingFang SC', 'Microsoft Yahei', sans-serif";                    
+                    ctx.fillStyle = "#222222"; // 深色文字更清晰
                     ctx.textAlign = "center";                    
                     ctx.textBaseline = "middle";                    
                     ctx.fillText("转", centerX, centerY);
+                    
+                    // 转盘指针提示（可选：加个顶部小箭头，让指向更清晰）
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY - radius - 8);
+                    ctx.lineTo(centerX - 8, centerY - radius);
+                    ctx.lineTo(centerX + 8, centerY - radius);
+                    ctx.closePath();
+                    ctx.fillStyle = '#FF5555';
+                    ctx.fill();
                 }
                 
                 function spinWheel() {
                     if (isSpinning) return;
                     isSpinning = true;
-                    const spinAngle = Math.random() * 2 * Math.PI + 10 * Math.PI;
-                    const duration = 2000;
+                    const spinAngle = Math.random() * 2 * Math.PI + 12 * Math.PI; // 增加旋转圈数更动感
+                    const duration = 2500; // 稍长动画让过程更清晰
                     const startTime = performance.now();
                     const startRotation = currentRotation;
                     function animateSpin(now) {
                         const elapsed = now - startTime;
                         let t = Math.min(1, elapsed / duration);
-                        const easeOut = 1 - Math.pow(1 - t, 3);                        
+                        const easeOut = 1 - Math.pow(1 - t, 4); // 更顺滑的减速效果
                         currentRotation = startRotation + spinAngle * easeOut;                        
                         drawWheel(currentRotation);
                         if (t < 1) {
@@ -1492,19 +1536,32 @@ ctx.restore();
                             let angleDiff = (pointerAngle - finalRotation + 2 * Math.PI) % (2 * Math.PI);
                             let idx = Math.floor(angleDiff / SEG_ANGLE) % SEGMENTS;                            
                             const prize = prizes[idx];                            
-                            wheelToast.innerText = `🎉 转盘结果：${prize} 区 🎉`;                            
-                            wheelToast.style.opacity = '1';                            
-                            setTimeout(() => { wheelToast.style.opacity = '0'; }, 2000);
+                            // 结果提示优化：更清晰的文字和样式
+                            wheelToast.innerText = `🎉 转盘结果：${textList[idx]}(${prize}区) 🎉`;                            
+                            wheelToast.style.opacity = '1';
+                            wheelToast.style.backgroundColor = 'rgba(255,255,255,0.9)';
+                            wheelToast.style.color = '#222222';
+                            wheelToast.style.border = '2px solid #FFCC55';
+                            setTimeout(() => { wheelToast.style.opacity = '0'; }, 2500);
                             isSpinning = false;
                         }
                     }
                     requestAnimationFrame(animateSpin);
                 }
                 
-                if (spinBtn) spinBtn.addEventListener('click', spinWheel);
+                if (spinBtn) {
+                    spinBtn.addEventListener('click', spinWheel);
+                    // 给按钮加样式提示（如果页面里没设置的话）
+                    spinBtn.style.padding = '10px 20px';
+                    spinBtn.style.backgroundColor = '#FFCC55';
+                    spinBtn.style.color = '#222222';
+                    spinBtn.style.border = 'none';
+                    spinBtn.style.borderRadius = '8px';
+                    spinBtn.style.fontWeight = 'bold';
+                }
                 drawWheel(currentRotation);
             }
-            // ========== 转盘代码结束 ==========                        
+            // ========== 重新配置后的转盘代码结束 ==========                        
             refreshRecordDisplay();            
             updateHistoryGrid();
             if (!localStorage.getItem('visited_before')) {
