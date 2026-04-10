@@ -1349,159 +1349,141 @@ vh;
             setSpeed(1);
             updateUI();
             startCountdown(getCountdownSec());
+
 // ========== 转盘代码开始 ==========
-const wheelCanvas = document.getElementById('wheelCanvas');
-if (wheelCanvas) {
-    const ctx = wheelCanvas.getContext('2d');
-    const spinBtn = document.getElementById('spinWheelBtn');
-    const wheelToast = document.getElementById('wheelToast');
-    const SEGMENTS = 15;
-    const SEG_ANGLE = (Math.PI * 2) / SEGMENTS;
-    let currentRotation = 0;
-    let isSpinning = false;
-    const prizes = Array.from({length: SEGMENTS}, (_, i) => (i+1).toString());
-    
-    function 
-function drawWheel(rotation) {
-    const size = 400;
-    wheelCanvas.width = size;
-    wheelCanvas.height = size;
-    const centerX = size/2, centerY = size/2;
-    const radius = size/2 - 2;
-    
-    // 前14个区块的颜色（每两个同色）
-    const colorList = [
-        '#ff3333', '#ff3333', // 红
-        '#3333ff', '#3333ff', // 蓝
-        '#ffff33', '#ffff33', // 黄
-        '#33ff33', '#33ff33', // 绿
-        '#33ffff', '#33ffff', // 青
-        '#ff9933', '#ff9933', // 橙
-        '#cc33ff', '#cc33ff'  // 紫
-    ];
-    
-    // 每个区块显示的文字（龙/虎/王）
-    const textList = [
-        '龍', '虎',  // 红
-        '龍', '虎',  // 蓝
-        '龍', '虎',  // 黄
-        '龍', '虎',  // 绿
-        '龍', '虎',  // 青
-        '龍', '虎',  // 橙
-        '龍', '虎',  // 紫
-        '王'         // 第15个七彩区块
-    ];
-    
-    for (let i = 0; i < SEGMENTS; i++) {
-        const start = i * SEG_ANGLE + rotation;
-        const end = (i+1) * SEG_ANGLE + rotation;
-        ctx.beginPath();
-        ctx.moveTo(centerX, centerY);
-        ctx.arc(centerX, centerY, radius, start, end);
-        
-        // 颜色
-        if (i === 14) {
-            const grad = ctx.createLinearGradient(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
-            grad.addColorStop(0, '#ff0000');
-            grad.addColorStop(0.16, '#ff6600');
-            grad.addColorStop(0.33, '#ffff00');
-            grad.addColorStop(0.5, '#00ff00');
-            grad.addColorStop(0.66, '#00ffff');
-            grad.addColorStop(0.83, '#0000ff');
-            grad.addColorStop(1, '#ff00ff');
-            ctx.fillStyle = grad;
-        } else {
-            ctx.fillStyle = colorList[i];
-        }
-        ctx.fill();
-        
-        // 发光
-        ctx.shadowBlur = 12;
-        ctx.shadowColor = ctx.fillStyle;
-        
-        // 绘制文字（龙/虎/王）
-        ctx.save();
-        ctx.translate(centerX, centerY);
-        ctx.rotate(start + SEG_ANGLE/2);
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.shadowBlur = 0;
-        
-        // 龙用 #ff3300，虎用 #005a32，王用金色
-        if (textList[i] === '龍') {
-            ctx.fillStyle = '#ff3300';
-            ctx.font = "bold 28px 'PingFang SC'";
-            ctx.shadowBlur = 8;
-            ctx.shadowColor = '#ff3300';
-        } else if (textList[i] === '虎') {
-            ctx.fillStyle = '#005a32';
-            ctx.font = "bold 28px 'PingFang SC'";
-            ctx.shadowBlur = 8;
-            ctx.shadowColor = '#005a32';
-        } else {
-            ctx.fillStyle = '#ffcc44';
-            ctx.font = "bold 28px 'PingFang SC'";
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = '#ffaa44';
-        }
-        
-        ctx.fillText(textList[i], radius * 0.65, 8);
-        ctx.restore();
-    }
-    
-    // 中心圆点
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, 22, 0, 2*Math.PI);
-    ctx.fillStyle = "#ffaa44";
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = "#ffaa44";
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    
-    // 中心写"转"
-    ctx.font = "bold 22px 'PingFang SC'";
-    ctx.fillStyle = "#1a1a2a";
-    ctx.shadowBlur = 0;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("转", centerX, centerY);
-}
- ← 结束在这里（恢复阴影设置）
-}
-    function spinWheel() {
-        if (isSpinning) return;
-        isSpinning = true;
-        const spinAngle = Math.random() * 2 * Math.PI + 10 * Math.PI;
-        const duration = 2000;
-        const startTime = performance.now();
-        const startRotation = currentRotation;
-        function animateSpin(now) {
-            const elapsed = now - startTime;
-            let t = Math.min(1, elapsed / duration);
-            const easeOut = 1 - Math.pow(1-t, 3);
-            currentRotation = startRotation + spinAngle * easeOut;
-            drawWheel(currentRotation);
-            if (t < 1) {
-                requestAnimationFrame(animateSpin);
-            } else {
-                const finalRotation = currentRotation % (Math.PI*2);
-                let pointerAngle = -Math.PI/2;
-                let angleDiff = (pointerAngle - finalRotation + 2*Math.PI) % (2*Math.PI);
-                let idx = Math.floor(angleDiff / SEG_ANGLE) % SEGMENTS;
-                const prize = prizes[idx];
-                wheelToast.innerText = `🎉 转盘结果：${prize} 区 🎉`;
-                wheelToast.style.opacity = '1';
-                setTimeout(() => { wheelToast.style.opacity = '0'; }, 2000);
-                isSpinning = false;
+            const wheelCanvas = document.getElementById('wheelCanvas');
+            if (wheelCanvas) {
+                const ctx = wheelCanvas.getContext('2d');
+                const spinBtn = document.getElementById('spinWheelBtn');
+                const wheelToast = document.getElementById('wheelToast');
+                const SEGMENTS = 15;
+                const SEG_ANGLE = (Math.PI * 2) / SEGMENTS;
+                let currentRotation = 0;
+                let isSpinning = false;
+                const prizes = Array.from({length: SEGMENTS}, (_, i) => (i+1).toString());
+                
+                function drawWheel(rotation) {
+                    const size = 400;
+                    wheelCanvas.width = size;
+                    wheelCanvas.height = size;
+                    const centerX = size/2, centerY = size/2;
+                    const radius = size/2 - 2;
+                    
+                    const colorList = [
+                        '#ff3333', '#ff3333', '#3333ff', '#3333ff',
+                        '#ffff33', '#ffff33', '#33ff33', '#33ff33',
+                        '#33ffff', '#33ffff', '#ff9933', '#ff9933',
+                        '#cc33ff', '#cc33ff'
+                    ];
+                    const textList = [
+                        '龍', '虎', '龍', '虎', '龍', '虎',
+                        '龍', '虎', '龍', '虎', '龍', '虎',
+                        '龍', '虎', '王'
+                    ];
+                    
+                    for (let i = 0; i < SEGMENTS; i++) {
+                        const start = i * SEG_ANGLE + rotation;
+                        const end = (i+1) * SEG_ANGLE + rotation;
+                        ctx.beginPath();
+                        ctx.moveTo(centerX, centerY);
+                        ctx.arc(centerX, centerY, radius, start, end);
+                        
+                        if (i === 14) {
+                            const grad = ctx.createLinearGradient(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
+                            grad.addColorStop(0, '#ff0000');
+                            grad.addColorStop(0.16, '#ff6600');
+                            grad.addColorStop(0.33, '#ffff00');
+                            grad.addColorStop(0.5, '#00ff00');
+                            grad.addColorStop(0.66, '#00ffff');
+                            grad.addColorStop(0.83, '#0000ff');
+                            grad.addColorStop(1, '#ff00ff');
+                            ctx.fillStyle = grad;
+                        } else {
+                            ctx.fillStyle = colorList[i];
+                        }
+                        ctx.fill();
+                        
+                        ctx.shadowBlur = 12;
+                        ctx.shadowColor = ctx.fillStyle;
+                        
+                        ctx.save();
+                        ctx.translate(centerX, centerY);
+                        ctx.rotate(start + SEG_ANGLE/2);
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.shadowBlur = 0;
+                        
+                        if (textList[i] === '龍') {
+                            ctx.fillStyle = '#ff3300';
+                            ctx.font = "bold 28px 'PingFang SC'";
+                            ctx.shadowBlur = 8;
+                            ctx.shadowColor = '#ff3300';
+                        } else if (textList[i] === '虎') {
+                            ctx.fillStyle = '#005a32';
+                            ctx.font = "bold 28px 'PingFang SC'";
+                            ctx.shadowBlur = 8;
+                            ctx.shadowColor = '#005a32';
+                        } else {
+                            ctx.fillStyle = '#ffcc44';
+                            ctx.font = "bold 28px 'PingFang SC'";
+                            ctx.shadowBlur = 10;
+                            ctx.shadowColor = '#ffaa44';
+                        }
+                        
+                        ctx.fillText(textList[i], radius * 0.65, 8);
+                        ctx.restore();
+                    }
+                    
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, 22, 0, 2*Math.PI);
+                    ctx.fillStyle = "#ffaa44";
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = "#ffaa44";
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    ctx.font = "bold 22px 'PingFang SC'";
+                    ctx.fillStyle = "#1a1a2a";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText("转", centerX, centerY);
+                }
+                
+                function spinWheel() {
+                    if (isSpinning) return;
+                    isSpinning = true;
+                    const spinAngle = Math.random() * 2 * Math.PI + 10 * Math.PI;
+                    const duration = 2000;
+                    const startTime = performance.now();
+                    const startRotation = currentRotation;
+                    function animateSpin(now) {
+                        const elapsed = now - startTime;
+                        let t = Math.min(1, elapsed / duration);
+                        const easeOut = 1 - Math.pow(1 - t, 3);
+                        currentRotation = startRotation + spinAngle * easeOut;
+                        drawWheel(currentRotation);
+                        if (t < 1) {
+                            requestAnimationFrame(animateSpin);
+                        } else {
+                            const finalRotation = currentRotation % (Math.PI * 2);
+                            let pointerAngle = -Math.PI / 2;
+                            let angleDiff = (pointerAngle - finalRotation + 2 * Math.PI) % (2 * Math.PI);
+                            let idx = Math.floor(angleDiff / SEG_ANGLE) % SEGMENTS;
+                            const prize = prizes[idx];
+                            wheelToast.innerText = `🎉 转盘结果：${prize} 区 🎉`;
+                            wheelToast.style.opacity = '1';
+                            setTimeout(() => { wheelToast.style.opacity = '0'; }, 2000);
+                            isSpinning = false;
+                        }
+                    }
+                    requestAnimationFrame(animateSpin);
+                }
+                
+                if (spinBtn) spinBtn.addEventListener('click', spinWheel);
+                drawWheel(currentRotation);
             }
-        }
-        requestAnimationFrame(animateSpin);
-    }
-    
-    if (spinBtn) spinBtn.addEventListener('click', spinWheel);
-    drawWheel(currentRotation);
-}
-// ========== 转盘代码结束 ==========         refreshRecordDisplay();
+            // ========== 转盘代码结束 ==========
+            
+            refreshRecordDisplay();
             updateHistoryGrid();
             if (!localStorage.getItem('visited_before')) {
                 localStorage.setItem('visited_before', 'true');
