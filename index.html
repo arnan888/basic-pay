@@ -1348,25 +1348,34 @@
             updateUI();
             startCountdown(getCountdownSec());
 
-// ========== 重新配置后的转盘代码开始 ==========
+// ========== 居中修正后的转盘代码开始 ==========
             const wheelCanvas = document.getElementById('wheelCanvas');
             if (wheelCanvas) {
-                // 高DPI屏幕适配：让画布在高清屏上更清晰
+                // 强制画布容器居中（如果页面CSS没设置的话）
+                wheelCanvas.style.display = 'block';
+                wheelCanvas.style.margin = '0 auto';
+                wheelCanvas.style.position = 'relative';
+                wheelCanvas.style.left = '0';
+                wheelCanvas.style.top = '0';
+                
+                // 高DPI适配同时保证居中
                 const dpr = window.devicePixelRatio || 1;
-                const canvasWidth = 400;
-                const canvasHeight = 400;
-                wheelCanvas.width = canvasWidth * dpr;
-                wheelCanvas.height = canvasHeight * dpr;
-                wheelCanvas.style.width = `${canvasWidth}px`;
-                wheelCanvas.style.height = `${canvasHeight}px`;
+                const canvasSize = 400; // 固定画布尺寸
+                wheelCanvas.width = canvasSize * dpr;
+                wheelCanvas.height = canvasSize * dpr;
+                wheelCanvas.style.width = `${canvasSize}px`;
+                wheelCanvas.style.height = `${canvasSize}px`;
                 
                 const ctx = wheelCanvas.getContext('2d');
-                ctx.scale(dpr, dpr); // 缩放画布适配高清屏
-                // 全局抗锯齿设置
+                ctx.scale(dpr, dpr);
+                // 重置所有变换，防止继承偏移
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                
+                // 全局优化
                 ctx.imageSmoothingEnabled = true;
                 ctx.webkitImageSmoothingEnabled = true;
                 ctx.mozImageSmoothingEnabled = true;
-                ctx.textRendering = 'optimizeLegibility'; // 优化文字渲染
+                ctx.textRendering = 'optimizeLegibility';
                 
                 const spinBtn = document.getElementById('spinWheelBtn');
                 const wheelToast = document.getElementById('wheelToast');
@@ -1377,40 +1386,44 @@
                 const prizes = Array.from({length: SEGMENTS}, (_, i) => (i+1).toString());
                 
                 function drawWheel(rotation) {
-                    const size = 400;
-                    const centerX = size/2, centerY = size/2;
-                    const radius = size/2 - 4; // 增加边距让背景更清爽
+                    const size = canvasSize;
+                    // 绝对居中的中心点坐标
+                    const centerX = size / 2;
+                    const centerY = size / 2;
+                    const radius = size / 2 - 4;
                     
-                    // 重新配置：高对比度背景色，更通亮
+                    // 清空画布，防止残留偏移
+                    ctx.clearRect(0, 0, size, size);
+                    
+                    // 绘制白色底圈，保证整体居中
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius + 2, 0, 2 * Math.PI);
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fill();
+                    
                     const colorList = [
                         '#FF5555', '#FF5555', '#5555FF', '#5555FF',
                         '#FFFF55', '#FFFF55', '#55FF55', '#55FF55',
                         '#55FFFF', '#55FFFF', '#FFAA55', '#FFAA55',
                         '#CC55FF', '#CC55FF'
                     ];
-                    // 每个颜色都提升了亮度，同时保证和字体的对比度
                     const textList = [
                         '龍', '虎', '龍', '虎', '龍', '虎',
                         '龍', '虎', '龍', '虎', '龍', '虎',
                         '龍', '虎', '王'
                     ];
                     
-                    // 先绘制转盘外框，提升整体层次感
-                    ctx.beginPath();
-                    ctx.arc(centerX, centerY, radius + 2, 0, 2*Math.PI);
-                    ctx.fillStyle = '#FFFFFF'; // 白色外框让转盘更突出
-                    ctx.fill();
-                    
                     for (let i = 0; i < SEGMENTS; i++) {
                         const start = i * SEG_ANGLE + rotation;
-                        const end = (i+1) * SEG_ANGLE + rotation;
+                        const end = (i + 1) * SEG_ANGLE + rotation;
+                        
+                        // 绘制扇形：路径绝对居中，无偏移
                         ctx.beginPath();
                         ctx.moveTo(centerX, centerY);
                         ctx.arc(centerX, centerY, radius, start, end);
-                        ctx.closePath(); // 闭合路径防止边缘漏色
+                        ctx.closePath();
                         
                         if (i === 14) {
-                            // 重新配置：更明亮的彩虹渐变
                             const grad = ctx.createLinearGradient(centerX - radius, centerY, centerX + radius, centerY);
                             grad.addColorStop(0, '#FF3333');
                             grad.addColorStop(0.17, '#FF9933');
@@ -1420,45 +1433,46 @@
                             grad.addColorStop(0.83, '#3333FF');
                             grad.addColorStop(1, '#CC33FF');
                             ctx.fillStyle = grad;
-                            // 给“王”区加白色描边，更醒目
                             ctx.strokeStyle = '#FFFFFF';
                             ctx.lineWidth = 1;
                             ctx.stroke();
                         } else {
                             ctx.fillStyle = colorList[i];
-                            // 每个扇形加浅白描边，分隔更清晰
                             ctx.strokeStyle = 'rgba(255,255,255,0.6)';
                             ctx.lineWidth = 0.8;
                             ctx.stroke();
                         }
                         ctx.fill();
                         
-                        // 背景发光调整：柔和不刺眼
                         ctx.shadowBlur = 8;
                         ctx.shadowColor = colorList[i] || '#FFFFFF';
                         
-// --- 清晰通亮的字体绘制 ---
+// --- 完全居中的文字绘制 ---
 ctx.save();
+// 重置变换后再设置，防止累积偏移
+ctx.setTransform(1, 0, 0, 1, 0, 0);
+// 先缩放再平移，保证文字旋转后不偏移
+ctx.scale(dpr, dpr);
 ctx.translate(centerX, centerY);
+// 精确计算旋转角度，让文字正对扇形中间
 const textRotate = start + SEG_ANGLE / 2;
 ctx.rotate(textRotate);
-ctx.textAlign = "center";
-ctx.textBaseline = "middle";
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
 
-// 重新配置字体样式：高对比度+清晰发光
 let targetColor, shadowColor, fontSize, fontWeight;
 if (textList[i] === '龍') {
-    targetColor = '#FFFFFF'; // 白色字体在彩色背景上最清晰
-    shadowColor = 'rgba(0,0,0,0.3)'; // 深色阴影增加立体感
+    targetColor = '#FFFFFF';
+    shadowColor = 'rgba(0,0,0,0.3)';
     fontSize = 34;
     fontWeight = 'bold';
 } else if (textList[i] === '虎') {
-    targetColor = '#FFFFFF'; // 统一白色字体，保证一致性
+    targetColor = '#FFFFFF';
     shadowColor = 'rgba(0,0,0,0.3)';
     fontSize = 34;
     fontWeight = 'bold';
 } else {
-    targetColor = '#FFFFFF'; // 王字也用白色，更通亮
+    targetColor = '#FFFFFF';
     shadowColor = 'rgba(255,204,68,0.8)';
     fontSize = 30;
     fontWeight = 'bold';
@@ -1466,46 +1480,45 @@ if (textList[i] === '龍') {
 
 ctx.font = `${fontWeight} ${fontSize}px 'PingFang SC', 'Microsoft Yahei', sans-serif`;
 ctx.fillStyle = targetColor;
-
-// 字体发光逻辑：清晰不模糊
 ctx.shadowColor = shadowColor;
 ctx.shadowBlur = 5;
 ctx.shadowOffsetX = 0;
 ctx.shadowOffsetY = 0;
 
-// 固定文字位置，居中更准确
+// 绝对居中的文字位置，无计算误差
 const textRadius = radius * 0.58;
 ctx.fillText(textList[i], textRadius, 0);
-
-// 可选：加细黑边让字体在浅色背景上也清晰
 ctx.strokeStyle = 'rgba(0,0,0,0.4)';
 ctx.lineWidth = 0.8;
 ctx.strokeText(textList[i], textRadius, 0);
 
 ctx.restore();
-// --- 字体绘制结束 ---
+// 恢复全局缩放
+ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+// --- 文字绘制结束 ---
 
-                    }                    
-                    // 重新配置中心按钮：更清晰醒目
-                    ctx.beginPath();                    
-                    ctx.arc(centerX, centerY, 24, 0, 2*Math.PI); // 加大按钮尺寸
-                    ctx.fillStyle = "#FFCC55"; // 更明亮的底色
-                    ctx.strokeStyle = '#FFFFFF'; // 白色描边
+                    }
+                    
+                    // 居中的中心按钮
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, 24, 0, 2 * Math.PI);
+                    ctx.fillStyle = '#FFCC55';
+                    ctx.strokeStyle = '#FFFFFF';
                     ctx.lineWidth = 2;
                     ctx.stroke();
-                    ctx.shadowBlur = 12;                    
-                    ctx.shadowColor = "#FFCC55";
-                    ctx.fill();                    
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = '#FFCC55';
+                    ctx.fill();
                     ctx.shadowBlur = 0;
                     
-                    // 中心文字优化
-                    ctx.font = "bold 24px 'PingFang SC', 'Microsoft Yahei', sans-serif";                    
-                    ctx.fillStyle = "#222222"; // 深色文字更清晰
-                    ctx.textAlign = "center";                    
-                    ctx.textBaseline = "middle";                    
-                    ctx.fillText("转", centerX, centerY);
+                    // 中心文字绝对居中
+                    ctx.font = "bold 24px 'PingFang SC', 'Microsoft Yahei', sans-serif";
+                    ctx.fillStyle = '#222222';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('转', centerX, centerY);
                     
-                    // 转盘指针提示（可选：加个顶部小箭头，让指向更清晰）
+                    // 居中的顶部指针
                     ctx.beginPath();
                     ctx.moveTo(centerX, centerY - radius - 8);
                     ctx.lineTo(centerX - 8, centerY - radius);
@@ -1518,15 +1531,15 @@ ctx.restore();
                 function spinWheel() {
                     if (isSpinning) return;
                     isSpinning = true;
-                    const spinAngle = Math.random() * 2 * Math.PI + 12 * Math.PI; // 增加旋转圈数更动感
-                    const duration = 2500; // 稍长动画让过程更清晰
+                    const spinAngle = Math.random() * 2 * Math.PI + 12 * Math.PI;
+                    const duration = 2500;
                     const startTime = performance.now();
                     const startRotation = currentRotation;
                     function animateSpin(now) {
                         const elapsed = now - startTime;
                         let t = Math.min(1, elapsed / duration);
-                        const easeOut = 1 - Math.pow(1 - t, 4); // 更顺滑的减速效果
-                        currentRotation = startRotation + spinAngle * easeOut;                        
+                        const easeOut = 1 - Math.pow(1 - t, 4);
+                        currentRotation = startRotation + spinAngle * easeOut;
                         drawWheel(currentRotation);
                         if (t < 1) {
                             requestAnimationFrame(animateSpin);
@@ -1534,14 +1547,16 @@ ctx.restore();
                             const finalRotation = currentRotation % (Math.PI * 2);
                             let pointerAngle = -Math.PI / 2;
                             let angleDiff = (pointerAngle - finalRotation + 2 * Math.PI) % (2 * Math.PI);
-                            let idx = Math.floor(angleDiff / SEG_ANGLE) % SEGMENTS;                            
-                            const prize = prizes[idx];                            
-                            // 结果提示优化：更清晰的文字和样式
-                            wheelToast.innerText = `🎉 转盘结果：${textList[idx]}(${prize}区) 🎉`;                            
+                            let idx = Math.floor(angleDiff / SEG_ANGLE) % SEGMENTS;
+                            const prize = prizes[idx];
+                            wheelToast.innerText = `🎉 转盘结果：${textList[idx]}(${prize}区) 🎉`;
                             wheelToast.style.opacity = '1';
                             wheelToast.style.backgroundColor = 'rgba(255,255,255,0.9)';
                             wheelToast.style.color = '#222222';
                             wheelToast.style.border = '2px solid #FFCC55';
+                            wheelToast.style.position = 'relative';
+                            wheelToast.style.margin = '10px auto';
+                            wheelToast.style.textAlign = 'center';
                             setTimeout(() => { wheelToast.style.opacity = '0'; }, 2500);
                             isSpinning = false;
                         }
@@ -1551,7 +1566,8 @@ ctx.restore();
                 
                 if (spinBtn) {
                     spinBtn.addEventListener('click', spinWheel);
-                    // 给按钮加样式提示（如果页面里没设置的话）
+                    spinBtn.style.display = 'block';
+                    spinBtn.style.margin = '15px auto';
                     spinBtn.style.padding = '10px 20px';
                     spinBtn.style.backgroundColor = '#FFCC55';
                     spinBtn.style.color = '#222222';
@@ -1559,9 +1575,10 @@ ctx.restore();
                     spinBtn.style.borderRadius = '8px';
                     spinBtn.style.fontWeight = 'bold';
                 }
+                // 初始绘制保证居中
                 drawWheel(currentRotation);
             }
-            // ========== 重新配置后的转盘代码结束 ==========                        
+            // ========== 居中修正后的转盘代码结束 ==========                        
             refreshRecordDisplay();            
             updateHistoryGrid();
             if (!localStorage.getItem('visited_before')) {
