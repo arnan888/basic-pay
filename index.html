@@ -803,3 +803,241 @@ vh;
             saveUsers();
             if (uid === CURRENT_USER_ID) updateHistoryGrid();
         } 
+showModal(`✅ 新账户：${newId}\n初始余额：0.00 rmb`, "开始游戏");
+        };
+
+        // ----- C4：开奖结果历史（前10局格子）-----
+        function getResultHistory(uid) { return users[uid]?.resultHistory || []; }
+        function pushResult(uid, res) {
+            if (!users[uid]) users[uid] = { balance: 0.00, records: [], resultHistory: [] };
+            let arr = users[uid].resultHistory || [];
+            arr.unshift(res);
+            if (arr.length > 10) arr.pop();
+            users[uid].resultHistory = arr;
+            saveUsers();
+            if (uid === CURRENT_USER_ID) updateHistoryGrid();
+        }
+
+        function updateHistoryGrid() {
+            const grid = document.getElementById('historyGrid');
+            if (!grid) return;
+            const hist = getResultHistory(CURRENT_USER_ID);
+            grid.innerHTML = '';
+            for (let i = 0; i < 10; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'history-cell';
+                if (i < hist.length) {
+                    const r = hist[i];
+                    cell.classList.add(r === '龙' ? 'dragon' : (r === '虎' ? 'tiger' : 'tie'));
+                    cell.textContent = r === '龙' ? '🐉' : (r === '虎' ? '🐯' : '⚖️');
+                } else {
+                    cell.textContent = '?';
+                }
+                grid.appendChild(cell);
+            }
+        }
+        // ----- C5：个人投注记录（详细列表）-----
+        function addRecord(uid, betType, result, win, betAmt) {
+            if (!users[uid]) users[uid] = { balance: 0.00, records: [], resultHistory: [] };
+            let recs = users[uid].records || [];
+            recs.unshift({ time: new Date().toLocaleTimeString(), bet: betType, result: result, win: win, amount: betAmt });
+            if (recs.length > 50) recs.pop();
+            users[uid].records = recs;
+            saveUsers();
+            if (uid === CURRENT_USER_ID) refreshRecordDisplay();
+        }
+
+        function refreshRecordDisplay() {
+            const container = document.getElementById('recordList');
+            if (!container) return;
+            const recs = users[CURRENT_USER_ID]?.records || [];
+            container.innerHTML = '';
+            if (recs.length === 0) { container.innerHTML = '<div style="text-align:center; color:#aaa;">暂无记录</div>'; return; }
+            recs.slice(0, 10).forEach(r => {
+                const div = document.createElement('div');
+                div.className = 'record-item';
+                const isWin = r.win > 0;
+                div.innerHTML = `<span>${r.time}</span><span>押 ${r.bet} → ${r.result}</span><span class="${isWin ? 'record-win' : 'record-lose'}">${isWin ? `+${r.win}` : `-${r.amount}`}</span>`;
+                container.appendChild(div);
+            });
+        }
+
+        // ----- C6：开奖动画与特效（大弹窗、闪光、语音）-----
+        let isAnimating = false;
+        function showResultAnimation(result, winAmount, betAmount, callback) {
+            if (isAnimating) return;
+            isAnimating = true;
+            const btns = document.querySelectorAll('.quick-bet, .clear-bet, #fightBtn, #repeatBtn, #cancelBtn, .speed-btn, #switchUserBtn, #newUserBtn, #refreshBtn');
+            btns.forEach(btn => btn.disabled = true);
+
+            const overlay = document.createElement('div');
+            overlay.style.position = 'fixed';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.backgroundColor = 'rgba(0,0,0,0.85)';
+            overlay.style.backdropFilter = 'blur(8px)';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.zIndex = '10000';
+            overlay.style.flexDirection = 'column';
+
+            const box = document.createElement('div');
+            box.style.background = '#2a2a3a';
+            box.style.padding = '40px 60px';
+            box.style.textAlign = 'center';
+            box.style.boxShadow = '0 0 50px rgba(255,215,0,0.8)';
+            box.style.borderRadius = '20px';
+
+            const icon = document.createElement('div');
+            icon.style.fontSize = '100px';
+            icon.style.marginBottom = '20px';
+            icon.style.animation = 'roll 0.6s ease-out';
+            if (result === '龙') icon.textContent = '🐉';
+            else if (result === '虎') icon.textContent = '🐯';
+            else icon.textContent = '⚖️';
+            icon.style.color = result === '龙' ? '#ff5555' : (result === '虎' ? '#55aaff' : '#bb77ff');
+
+            const resultText = document.createElement('div');
+            resultText.style.fontSize = '48px';
+            resultText.style.fontWeight = 'bold';
+            resultText.style.color = '#ffaa44';
+            resultText.style.marginTop = '20px';
+            resultText.textContent = result;
+
+            const info = document.createElement('div');
+            info.style.marginTop = '16px';
+            info.style.fontSize = '28px';
+            info.style.fontWeight = 'bold';
+            info.style.color = winAmount > 0 ? '#ffaa44' : '#ff8888';
+            info.textContent = winAmount > 0 ? `🎉 恭喜中奖 +${winAmount} rmb` : '😞 未中奖';
+            box.appendChild(icon);
+            box.appendChild(resultText);
+            box.appendChild(info);
+            overlay.appendChild(box);
+
+            const style = document.createElement('style');
+            style.textContent = `@keyframes roll { 0% { transform: rotate(0deg); } 50% { transform: rotate(360deg); } 100% { transform: rotate(720deg); } }`;
+            document.head.appendChild(style);
+
+            document.body.appendChild(overlay);
+            speak(result);
+
+            setTimeout(() => {
+                overlay.remove();
+                style.remove();
+                isAnimating = false;
+                btns.forEach(btn => btn.disabled = false);
+                if (callback) callback();
+            }, 2000);
+        }
+
+        function flashAndPop(result) {
+            const scene = document.getElementById('battleScene');
+            const resultDiv = document.getElementById('battleResult');
+            scene.classList.add('flash-gold');
+            setTimeout(() => scene.classList.remove('flash-gold'), 300);
+            resultDiv.classList.add('pop');
+            setTimeout(() => resultDiv.classList.remove('pop'), 200);
+            const dragon = document.getElementById('dragonWord');
+            const tiger = document.getElementById('tigerWord');
+            dragon.style.transform = 'scale(1.1)';
+            tiger.style.transform = 'scale(1.1)';
+            setTimeout(() => { dragon.style.transform = ''; tiger.style.transform = ''; }, 200);
+        }
+
+        function highlightWord(result) {
+            const dragon = document.getElementById('dragonWord');
+            const tiger = document.getElementById('tigerWord');
+            dragon.classList.remove('highlight-win');
+            tiger.classList.remove('highlight-win');
+            if (result === '龙') {
+                dragon.classList.add('highlight-win');
+                setTimeout(() => dragon.classList.remove('highlight-win'), 800);
+            } else if (result === '虎') {
+                tiger.classList.add('highlight-win');
+                setTimeout(() => tiger.classList.remove('highlight-win'), 800);
+            } else if (result === '和') {
+                dragon.classList.add('highlight-win');
+                tiger.classList.add('highlight-win');
+                setTimeout(() => {
+                    dragon.classList.remove('highlight-win');
+                    tiger.classList.remove('highlight-win');
+                }, 800);
+            }
+        }
+
+        // ----- C7：背景媒体上传与 IndexedDB 存储（支持图片/视频）-----
+        const DB_NAME = "DragonTigerMedia";
+        const STORE_NAME = "media";
+        let db = null;
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(DB_NAME, 1);
+                req.onupgradeneeded = (e) => { const dbRef = e.target.result; if (!dbRef.objectStoreNames.contains(STORE_NAME)) dbRef.createObjectStore(STORE_NAME); };
+                req.onsuccess = (e) => { db = e.target.result; resolve(db); };
+                req.onerror = (e) => reject(e);
+            });
+        }
+        async function saveMedia(key, blob, mimeType) {
+            if (!db) await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, "readwrite");
+                const store = tx.objectStore(STORE_NAME);
+                store.put({ blob, mimeType }, key);
+                tx.oncomplete = () => resolve();
+                tx.onerror = (e) => reject(e);
+            });
+        }
+        async function loadMedia(key) {
+            if (!db) await openDB();
+            return new Promise((resolve) => {
+                const tx = db.transaction(STORE_NAME, "readonly");
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.get(key);
+                req.onsuccess = () => resolve(req.result || null);
+                req.onerror = () => resolve(null);
+            });
+        }
+        function applyBackground(blob, mimeType) {
+            const bgDiv = document.getElementById('sceneBg');
+            bgDiv.innerHTML = '';
+            bgDiv.style.backgroundImage = 'none';
+            if (!blob) return;
+            const url = URL.createObjectURL(blob);
+            if (mimeType.startsWith('video/')) {
+                const video = document.createElement('video');
+                video.src = url;
+                video.autoplay = true;
+                video.loop = true;
+                video.muted = true;
+                video.playsInline = true;
+                video.style.width = '100%';
+                video.style.height = '100%';
+                video.style.objectFit = 'cover';
+                bgDiv.appendChild(video);
+                video.play().catch(e=>console.log);
+            } else {
+                bgDiv.style.backgroundImage = `url(${url})`;
+                bgDiv.style.backgroundSize = 'cover';
+                bgDiv.style.backgroundPosition = 'center';
+                const reader = new FileReader();
+                reader.onload = e => { try { localStorage.setItem('savedBgImage', e.target.result); } catch(err) {} };
+                reader.readAsDataURL(blob);
+            }
+        }
+        async function restoreBackground() {
+            const savedImg = localStorage.getItem('savedBgImage');
+            if (savedImg && savedImg.startsWith('data:image')) {
+                const bgDiv = document.getElementById('sceneBg');
+                bgDiv.innerHTML = '';
+                bgDiv.style.backgroundImage = `url(${savedImg})`;
+                bgDiv.style.backgroundSize = 'cover';
+                bgDiv.style.backgroundPosition = 'center';
+            }
+            try { const bg = await loadMedia('background'); if (bg && bg.blob) applyBackground(bg.blob, bg.mimeType); } catch(e) { console.log(e); }
+        }
+        async function uploadBackground(file) { if (!file) return; await saveMedia('background', file, file.type); applyBackground(file, file.type); }
+
+        // ----- C8：游戏状态、押注核心逻辑与倒计时 -----
