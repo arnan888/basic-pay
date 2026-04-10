@@ -1349,7 +1349,82 @@ vh;
             setSpeed(1);
             updateUI();
             startCountdown(getCountdownSec());
-            refreshRecordDisplay();
+// ========== 转盘代码开始 ==========
+const wheelCanvas = document.getElementById('wheelCanvas');
+if (wheelCanvas) {
+    const ctx = wheelCanvas.getContext('2d');
+    const spinBtn = document.getElementById('spinWheelBtn');
+    const wheelToast = document.getElementById('wheelToast');
+    const SEGMENTS = 15;
+    const SEG_ANGLE = (Math.PI * 2) / SEGMENTS;
+    let currentRotation = 0;
+    let isSpinning = false;
+    const prizes = Array.from({length: SEGMENTS}, (_, i) => (i+1).toString());
+    
+    function drawWheel(rotation) {
+        const size = 400;
+        wheelCanvas.width = size;
+        wheelCanvas.height = size;
+        const centerX = size/2, centerY = size/2;
+        const radius = size/2 - 2;
+        for (let i = 0; i < SEGMENTS; i++) {
+            const start = i * SEG_ANGLE + rotation;
+            const end = (i+1) * SEG_ANGLE + rotation;
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, start, end);
+            ctx.fillStyle = `hsl(${i * 24}, 70%, 55%)`;
+            ctx.fill();
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(start + SEG_ANGLE/2);
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 18px 'PingFang SC'";
+            ctx.fillText(prizes[i], radius * 0.7, 10);
+            ctx.restore();
+        }
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 20, 0, 2*Math.PI);
+        ctx.fillStyle = "#ffaa44";
+        ctx.fill();
+    }
+    
+    function spinWheel() {
+        if (isSpinning) return;
+        isSpinning = true;
+        const spinAngle = Math.random() * 2 * Math.PI + 10 * Math.PI;
+        const duration = 2000;
+        const startTime = performance.now();
+        const startRotation = currentRotation;
+        function animateSpin(now) {
+            const elapsed = now - startTime;
+            let t = Math.min(1, elapsed / duration);
+            const easeOut = 1 - Math.pow(1-t, 3);
+            currentRotation = startRotation + spinAngle * easeOut;
+            drawWheel(currentRotation);
+            if (t < 1) {
+                requestAnimationFrame(animateSpin);
+            } else {
+                const finalRotation = currentRotation % (Math.PI*2);
+                let pointerAngle = -Math.PI/2;
+                let angleDiff = (pointerAngle - finalRotation + 2*Math.PI) % (2*Math.PI);
+                let idx = Math.floor(angleDiff / SEG_ANGLE) % SEGMENTS;
+                const prize = prizes[idx];
+                wheelToast.innerText = `🎉 转盘结果：${prize} 区 🎉`;
+                wheelToast.style.opacity = '1';
+                setTimeout(() => { wheelToast.style.opacity = '0'; }, 2000);
+                isSpinning = false;
+            }
+        }
+        requestAnimationFrame(animateSpin);
+    }
+    
+    if (spinBtn) spinBtn.addEventListener('click', spinWheel);
+    drawWheel(currentRotation);
+}
+// ========== 转盘代码结束 ==========         refreshRecordDisplay();
             updateHistoryGrid();
             if (!localStorage.getItem('visited_before')) {
                 localStorage.setItem('visited_before', 'true');
