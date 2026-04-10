@@ -1304,6 +1304,7 @@
             if(pwd === ADMIN_PASSWORD) showSecretMenu();
             else if(pwd !== null) alert("密码错误");
        }
+              
         // ----- C10：全局事件绑定（保持原逻辑不变）-----
         function bindEvents() {
             document.getElementById('refreshBtn').onclick = refreshBalance;
@@ -1348,30 +1349,43 @@
             updateUI();
             startCountdown(getCountdownSec());
 
-// ========== 居中修正后的转盘代码开始 ==========
+// ========== 彻底解决偏移的转盘代码开始 ==========
             const wheelCanvas = document.getElementById('wheelCanvas');
             if (wheelCanvas) {
-                // 强制画布容器居中（如果页面CSS没设置的话）
-                wheelCanvas.style.display = 'block';
-                wheelCanvas.style.margin = '0 auto';
-                wheelCanvas.style.position = 'relative';
+                // ========== 第一步：强制容器居中且尺寸固定 ==========
+                // 先给canvas外面包个容器（如果没有的话，动态创建）
+                let wheelContainer = wheelCanvas.parentNode;
+                if(!wheelContainer || wheelContainer.tagName !== 'DIV'){
+                    wheelContainer = document.createElement('div');
+                    wheelCanvas.parentNode.insertBefore(wheelContainer, wheelCanvas);
+                    wheelContainer.appendChild(wheelCanvas);
+                }
+                // 容器样式：固定宽高，绝对居中
+                wheelContainer.style.width = '400px';
+                wheelContainer.style.height = '400px';
+                wheelContainer.style.margin = '0 auto';
+                wheelContainer.style.position = 'relative';
+                wheelContainer.style.overflow = 'hidden';
+                // canvas本身样式：填满容器，无偏移
+                wheelCanvas.style.width = '100%';
+                wheelCanvas.style.height = '100%';
+                wheelCanvas.style.position = 'absolute';
                 wheelCanvas.style.left = '0';
                 wheelCanvas.style.top = '0';
                 
-                // 高DPI适配同时保证居中
+                // ========== 第二步：精确设置画布像素 ==========
                 const dpr = window.devicePixelRatio || 1;
-                const canvasSize = 400; // 固定画布尺寸
-                wheelCanvas.width = canvasSize * dpr;
-                wheelCanvas.height = canvasSize * dpr;
-                wheelCanvas.style.width = `${canvasSize}px`;
-                wheelCanvas.style.height = `${canvasSize}px`;
+                const actualSize = 400 * dpr; // 实际渲染像素
+                wheelCanvas.width = actualSize;
+                wheelCanvas.height = actualSize;
                 
                 const ctx = wheelCanvas.getContext('2d');
-                ctx.scale(dpr, dpr);
-                // 重置所有变换，防止继承偏移
-                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                // 重置所有变换，从零开始
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                // 仅在绘制前缩放，避免坐标混乱
+                const scale = dpr;
                 
-                // 全局优化
+                // 全局渲染优化
                 ctx.imageSmoothingEnabled = true;
                 ctx.webkitImageSmoothingEnabled = true;
                 ctx.mozImageSmoothingEnabled = true;
@@ -1385,19 +1399,19 @@
                 let isSpinning = false;
                 const prizes = Array.from({length: SEGMENTS}, (_, i) => (i+1).toString());
                 
+                // ========== 第三步：所有绘制基于绝对中心坐标 ==========
                 function drawWheel(rotation) {
-                    const size = canvasSize;
-                    // 绝对居中的中心点坐标
-                    const centerX = size / 2;
-                    const centerY = size / 2;
-                    const radius = size / 2 - 4;
+                    // 清空整个画布
+                    ctx.clearRect(0, 0, actualSize, actualSize);
                     
-                    // 清空画布，防止残留偏移
-                    ctx.clearRect(0, 0, size, size);
+                    // 核心尺寸：基于实际像素计算，100%精准
+                    const centerX = actualSize / 2;
+                    const centerY = actualSize / 2;
+                    const radius = (actualSize / 2) - (4 * scale); // 边距也按比例缩放
                     
-                    // 绘制白色底圈，保证整体居中
+                    // 绘制底圈：绝对居中
                     ctx.beginPath();
-                    ctx.arc(centerX, centerY, radius + 2, 0, 2 * Math.PI);
+                    ctx.arc(centerX, centerY, radius + (2 * scale), 0, 2 * Math.PI);
                     ctx.fillStyle = '#FFFFFF';
                     ctx.fill();
                     
@@ -1417,7 +1431,7 @@
                         const start = i * SEG_ANGLE + rotation;
                         const end = (i + 1) * SEG_ANGLE + rotation;
                         
-                        // 绘制扇形：路径绝对居中，无偏移
+                        // 绘制扇形：路径坐标100%精准
                         ctx.beginPath();
                         ctx.moveTo(centerX, centerY);
                         ctx.arc(centerX, centerY, radius, start, end);
@@ -1434,95 +1448,89 @@
                             grad.addColorStop(1, '#CC33FF');
                             ctx.fillStyle = grad;
                             ctx.strokeStyle = '#FFFFFF';
-                            ctx.lineWidth = 1;
+                            ctx.lineWidth = 1 * scale;
                             ctx.stroke();
                         } else {
                             ctx.fillStyle = colorList[i];
                             ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-                            ctx.lineWidth = 0.8;
+                            ctx.lineWidth = 0.8 * scale;
                             ctx.stroke();
                         }
                         ctx.fill();
                         
-                        ctx.shadowBlur = 8;
+                        ctx.shadowBlur = 8 * scale;
                         ctx.shadowColor = colorList[i] || '#FFFFFF';
                         
-// --- 完全居中的文字绘制 ---
+// --- 文字绝对居中，绝不偏移 ---
 ctx.save();
-// 重置变换后再设置，防止累积偏移
+// 完全重置变换，从头开始设置
 ctx.setTransform(1, 0, 0, 1, 0, 0);
-// 先缩放再平移，保证文字旋转后不偏移
-ctx.scale(dpr, dpr);
+// 移动到画布正中心
 ctx.translate(centerX, centerY);
-// 精确计算旋转角度，让文字正对扇形中间
-const textRotate = start + SEG_ANGLE / 2;
-ctx.rotate(textRotate);
-ctx.textAlign = 'center';
-ctx.textBaseline = 'middle';
-
-let targetColor, shadowColor, fontSize, fontWeight;
+// 旋转到扇形正中间
+ctx.rotate(start + SEG_ANGLE / 2);
+// 文字样式按比例缩放
+let targetColor, shadowColor, fontSize;
 if (textList[i] === '龍') {
     targetColor = '#FFFFFF';
     shadowColor = 'rgba(0,0,0,0.3)';
-    fontSize = 34;
-    fontWeight = 'bold';
+    fontSize = 34 * scale;
 } else if (textList[i] === '虎') {
     targetColor = '#FFFFFF';
     shadowColor = 'rgba(0,0,0,0.3)';
-    fontSize = 34;
-    fontWeight = 'bold';
+    fontSize = 34 * scale;
 } else {
     targetColor = '#FFFFFF';
     shadowColor = 'rgba(255,204,68,0.8)';
-    fontSize = 30;
-    fontWeight = 'bold';
+    fontSize = 30 * scale;
 }
 
-ctx.font = `${fontWeight} ${fontSize}px 'PingFang SC', 'Microsoft Yahei', sans-serif`;
+ctx.font = `bold ${fontSize}px 'PingFang SC', 'Microsoft Yahei', sans-serif`;
 ctx.fillStyle = targetColor;
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
 ctx.shadowColor = shadowColor;
-ctx.shadowBlur = 5;
+ctx.shadowBlur = 5 * scale;
 ctx.shadowOffsetX = 0;
 ctx.shadowOffsetY = 0;
 
-// 绝对居中的文字位置，无计算误差
+// 文字位置精准计算，无误差
 const textRadius = radius * 0.58;
 ctx.fillText(textList[i], textRadius, 0);
 ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-ctx.lineWidth = 0.8;
+ctx.lineWidth = 0.8 * scale;
 ctx.strokeText(textList[i], textRadius, 0);
 
 ctx.restore();
-// 恢复全局缩放
-ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 // --- 文字绘制结束 ---
 
                     }
                     
-                    // 居中的中心按钮
+                    // 中心按钮绝对居中
                     ctx.beginPath();
-                    ctx.arc(centerX, centerY, 24, 0, 2 * Math.PI);
+                    ctx.arc(centerX, centerY, 24 * scale, 0, 2 * Math.PI);
                     ctx.fillStyle = '#FFCC55';
                     ctx.strokeStyle = '#FFFFFF';
-                    ctx.lineWidth = 2;
+                    ctx.lineWidth = 2 * scale;
                     ctx.stroke();
-                    ctx.shadowBlur = 12;
+                    ctx.shadowBlur = 12 * scale;
                     ctx.shadowColor = '#FFCC55';
                     ctx.fill();
                     ctx.shadowBlur = 0;
                     
-                    // 中心文字绝对居中
-                    ctx.font = "bold 24px 'PingFang SC', 'Microsoft Yahei', sans-serif";
+                    // 中心文字精准定位
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+                    ctx.font = `bold ${24 * scale}px 'PingFang SC', 'Microsoft Yahei', sans-serif`;
                     ctx.fillStyle = '#222222';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText('转', centerX, centerY);
                     
-                    // 居中的顶部指针
+                    // 顶部指针绝对居中
                     ctx.beginPath();
-                    ctx.moveTo(centerX, centerY - radius - 8);
-                    ctx.lineTo(centerX - 8, centerY - radius);
-                    ctx.lineTo(centerX + 8, centerY - radius);
+                    ctx.moveTo(centerX, centerY - radius - (8 * scale));
+                    ctx.lineTo(centerX - (8 * scale), centerY - radius);
+                    ctx.lineTo(centerX + (8 * scale), centerY - radius);
                     ctx.closePath();
                     ctx.fillStyle = '#FF5555';
                     ctx.fill();
@@ -1551,12 +1559,15 @@ ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
                             const prize = prizes[idx];
                             wheelToast.innerText = `🎉 转盘结果：${textList[idx]}(${prize}区) 🎉`;
                             wheelToast.style.opacity = '1';
+                            wheelToast.style.position = 'relative';
+                            wheelToast.style.margin = '10px auto';
+                            wheelToast.style.width = '300px';
+                            wheelToast.style.textAlign = 'center';
                             wheelToast.style.backgroundColor = 'rgba(255,255,255,0.9)';
                             wheelToast.style.color = '#222222';
                             wheelToast.style.border = '2px solid #FFCC55';
-                            wheelToast.style.position = 'relative';
-                            wheelToast.style.margin = '10px auto';
-                            wheelToast.style.textAlign = 'center';
+                            wheelToast.style.borderRadius = '8px';
+                            wheelToast.style.padding = '10px';
                             setTimeout(() => { wheelToast.style.opacity = '0'; }, 2500);
                             isSpinning = false;
                         }
@@ -1564,6 +1575,7 @@ ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
                     requestAnimationFrame(animateSpin);
                 }
                 
+                // 按钮也强制居中
                 if (spinBtn) {
                     spinBtn.addEventListener('click', spinWheel);
                     spinBtn.style.display = 'block';
@@ -1574,11 +1586,319 @@ ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
                     spinBtn.style.border = 'none';
                     spinBtn.style.borderRadius = '8px';
                     spinBtn.style.fontWeight = 'bold';
+                    spinBtn.style.cursor = 'pointer';
                 }
-                // 初始绘制保证居中
+                
+                // 初始绘制前再校准一次
+                currentRotation = 0;
                 drawWheel(currentRotation);
             }
-            // ========== 居中修正后的转盘代码结束 ==========                        
+            // ========== 彻底解决偏移的转盘代码结束 ==========                        
+            refreshRecordDisplay();            
+            updateHistoryGrid();
+            if (!localStorage.getItem('visited_before')) {
+                localStorage.setItem('visited_before', 'true');
+                setTimeout(() => {
+                    showModal("🎉 欢迎！\n• 初始余额：0.00 rmb\n• 押注金额在亮色背景上清晰显示\n• 点击 +10/+20 等快捷增加押注\n• 点击「清空」可单独取消该选项\n• 长按「续押」1.5秒进入管理后台\n• 上传背景功能已修复（支持图片/视频）", "开始游戏");
+                }, 500);
+            }
+        }
+        window.onload = init;
+    })();
+</script>
+</body>
+</html>
+<script>
+    (function() {
+        // ----- C10：全局事件绑定（保持原逻辑不变）-----
+        function bindEvents() {
+            document.getElementById('refreshBtn').onclick = refreshBalance;
+            const repeatBtn = document.getElementById('repeatBtn');
+            repeatBtn.onclick = null;
+            repeatBtn.addEventListener('click', (e) => { if(longPressTimer) clearTimeout(longPressTimer); repeatLastBet(); });
+            repeatBtn.addEventListener('touchstart', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
+            repeatBtn.addEventListener('touchend', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+            repeatBtn.addEventListener('touchcancel', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+            repeatBtn.addEventListener('mousedown', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
+            repeatBtn.addEventListener('mouseup', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+            document.getElementById('cancelBtn').onclick = cancelAllBets;
+            document.getElementById('fightBtn').onclick = executeBet;
+            document.getElementById('switchUserBtn').onclick = switchUser;
+            document.querySelectorAll('.speed-btn').forEach(btn => btn.onclick = () => setSpeed(parseInt(btn.dataset.speed)));
+
+            document.querySelectorAll('.quick-bet').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const type = btn.dataset.type;
+                    const amount = parseInt(btn.dataset.amount);
+                    addBetAmount(type, amount);
+                };
+            });
+
+            document.querySelectorAll('.clear-bet').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const type = btn.dataset.type;
+                    clearBet(type);
+                };
+            });
+        }
+
+        // ----- C11：初始化入口（保持原逻辑不变）-----
+        async function init() {
+            await restoreBackground();
+            bindEvents();
+            syncBalance();
+            startPoolFluctuation();
+            setSpeed(1);
+            updateUI();
+            startCountdown(getCountdownSec());
+
+// ========== 彻底解决偏移的转盘代码开始 ==========
+            const wheelCanvas = document.getElementById('wheelCanvas');
+            if (wheelCanvas) {
+                // ========== 第一步：强制容器居中且尺寸固定 ==========
+                // 先给canvas外面包个容器（如果没有的话，动态创建）
+                let wheelContainer = wheelCanvas.parentNode;
+                if(!wheelContainer || wheelContainer.tagName !== 'DIV'){
+                    wheelContainer = document.createElement('div');
+                    wheelCanvas.parentNode.insertBefore(wheelContainer, wheelCanvas);
+                    wheelContainer.appendChild(wheelCanvas);
+                }
+                // 容器样式：固定宽高，绝对居中
+                wheelContainer.style.width = '400px';
+                wheelContainer.style.height = '400px';
+                wheelContainer.style.margin = '0 auto';
+                wheelContainer.style.position = 'relative';
+                wheelContainer.style.overflow = 'hidden';
+                // canvas本身样式：填满容器，无偏移
+                wheelCanvas.style.width = '100%';
+                wheelCanvas.style.height = '100%';
+                wheelCanvas.style.position = 'absolute';
+                wheelCanvas.style.left = '0';
+                wheelCanvas.style.top = '0';
+                
+                // ========== 第二步：精确设置画布像素 ==========
+                const dpr = window.devicePixelRatio || 1;
+                const actualSize = 400 * dpr; // 实际渲染像素
+                wheelCanvas.width = actualSize;
+                wheelCanvas.height = actualSize;
+                
+                const ctx = wheelCanvas.getContext('2d');
+                // 重置所有变换，从零开始
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                // 仅在绘制前缩放，避免坐标混乱
+                const scale = dpr;
+                
+                // 全局渲染优化
+                ctx.imageSmoothingEnabled = true;
+                ctx.webkitImageSmoothingEnabled = true;
+                ctx.mozImageSmoothingEnabled = true;
+                ctx.textRendering = 'optimizeLegibility';
+                
+                const spinBtn = document.getElementById('spinWheelBtn');
+                const wheelToast = document.getElementById('wheelToast');
+                const SEGMENTS = 15;
+                const SEG_ANGLE = (Math.PI * 2) / SEGMENTS;
+                let currentRotation = 0;
+                let isSpinning = false;
+                const prizes = Array.from({length: SEGMENTS}, (_, i) => (i+1).toString());
+                
+                // ========== 第三步：所有绘制基于绝对中心坐标 ==========
+                function drawWheel(rotation) {
+                    // 清空整个画布
+                    ctx.clearRect(0, 0, actualSize, actualSize);
+                    
+                    // 核心尺寸：基于实际像素计算，100%精准
+                    const centerX = actualSize / 2;
+                    const centerY = actualSize / 2;
+                    const radius = (actualSize / 2) - (4 * scale); // 边距也按比例缩放
+                    
+                    // 绘制底圈：绝对居中
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius + (2 * scale), 0, 2 * Math.PI);
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fill();
+                    
+                    const colorList = [
+                        '#FF5555', '#FF5555', '#5555FF', '#5555FF',
+                        '#FFFF55', '#FFFF55', '#55FF55', '#55FF55',
+                        '#55FFFF', '#55FFFF', '#FFAA55', '#FFAA55',
+                        '#CC55FF', '#CC55FF'
+                    ];
+                    const textList = [
+                        '龍', '虎', '龍', '虎', '龍', '虎',
+                        '龍', '虎', '龍', '虎', '龍', '虎',
+                        '龍', '虎', '王'
+                    ];
+                    
+                    for (let i = 0; i < SEGMENTS; i++) {
+                        const start = i * SEG_ANGLE + rotation;
+                        const end = (i + 1) * SEG_ANGLE + rotation;
+                        
+                        // 绘制扇形：路径坐标100%精准
+                        ctx.beginPath();
+                        ctx.moveTo(centerX, centerY);
+                        ctx.arc(centerX, centerY, radius, start, end);
+                        ctx.closePath();
+                        
+                        if (i === 14) {
+                            const grad = ctx.createLinearGradient(centerX - radius, centerY, centerX + radius, centerY);
+                            grad.addColorStop(0, '#FF3333');
+                            grad.addColorStop(0.17, '#FF9933');
+                            grad.addColorStop(0.33, '#FFFF33');
+                            grad.addColorStop(0.5, '#33FF33');
+                            grad.addColorStop(0.67, '#33FFFF');
+                            grad.addColorStop(0.83, '#3333FF');
+                            grad.addColorStop(1, '#CC33FF');
+                            ctx.fillStyle = grad;
+                            ctx.strokeStyle = '#FFFFFF';
+                            ctx.lineWidth = 1 * scale;
+                            ctx.stroke();
+                        } else {
+                            ctx.fillStyle = colorList[i];
+                            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+                            ctx.lineWidth = 0.8 * scale;
+                            ctx.stroke();
+                        }
+                        ctx.fill();
+                        
+                        ctx.shadowBlur = 8 * scale;
+                        ctx.shadowColor = colorList[i] || '#FFFFFF';
+                        
+// --- 文字绝对居中，绝不偏移 ---
+ctx.save();
+// 完全重置变换，从头开始设置
+ctx.setTransform(1, 0, 0, 1, 0, 0);
+// 移动到画布正中心
+ctx.translate(centerX, centerY);
+// 旋转到扇形正中间
+ctx.rotate(start + SEG_ANGLE / 2);
+// 文字样式按比例缩放
+let targetColor, shadowColor, fontSize;
+if (textList[i] === '龍') {
+    targetColor = '#FFFFFF';
+    shadowColor = 'rgba(0,0,0,0.3)';
+    fontSize = 34 * scale;
+} else if (textList[i] === '虎') {
+    targetColor = '#FFFFFF';
+    shadowColor = 'rgba(0,0,0,0.3)';
+    fontSize = 34 * scale;
+} else {
+    targetColor = '#FFFFFF';
+    shadowColor = 'rgba(255,204,68,0.8)';
+    fontSize = 30 * scale;
+}
+
+ctx.font = `bold ${fontSize}px 'PingFang SC', 'Microsoft Yahei', sans-serif`;
+ctx.fillStyle = targetColor;
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.shadowColor = shadowColor;
+ctx.shadowBlur = 5 * scale;
+ctx.shadowOffsetX = 0;
+ctx.shadowOffsetY = 0;
+
+// 文字位置精准计算，无误差
+const textRadius = radius * 0.58;
+ctx.fillText(textList[i], textRadius, 0);
+ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+ctx.lineWidth = 0.8 * scale;
+ctx.strokeText(textList[i], textRadius, 0);
+
+ctx.restore();
+// --- 文字绘制结束 ---
+
+                    }
+                    
+                    // 中心按钮绝对居中
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, 24 * scale, 0, 2 * Math.PI);
+                    ctx.fillStyle = '#FFCC55';
+                    ctx.strokeStyle = '#FFFFFF';
+                    ctx.lineWidth = 2 * scale;
+                    ctx.stroke();
+                    ctx.shadowBlur = 12 * scale;
+                    ctx.shadowColor = '#FFCC55';
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                    
+                    // 中心文字精准定位
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+                    ctx.font = `bold ${24 * scale}px 'PingFang SC', 'Microsoft Yahei', sans-serif`;
+                    ctx.fillStyle = '#222222';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('转', centerX, centerY);
+                    
+                    // 顶部指针绝对居中
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY - radius - (8 * scale));
+                    ctx.lineTo(centerX - (8 * scale), centerY - radius);
+                    ctx.lineTo(centerX + (8 * scale), centerY - radius);
+                    ctx.closePath();
+                    ctx.fillStyle = '#FF5555';
+                    ctx.fill();
+                }
+                
+                function spinWheel() {
+                    if (isSpinning) return;
+                    isSpinning = true;
+                    const spinAngle = Math.random() * 2 * Math.PI + 12 * Math.PI;
+                    const duration = 2500;
+                    const startTime = performance.now();
+                    const startRotation = currentRotation;
+                    function animateSpin(now) {
+                        const elapsed = now - startTime;
+                        let t = Math.min(1, elapsed / duration);
+                        const easeOut = 1 - Math.pow(1 - t, 4);
+                        currentRotation = startRotation + spinAngle * easeOut;
+                        drawWheel(currentRotation);
+                        if (t < 1) {
+                            requestAnimationFrame(animateSpin);
+                        } else {
+                            const finalRotation = currentRotation % (Math.PI * 2);
+                            let pointerAngle = -Math.PI / 2;
+                            let angleDiff = (pointerAngle - finalRotation + 2 * Math.PI) % (2 * Math.PI);
+                            let idx = Math.floor(angleDiff / SEG_ANGLE) % SEGMENTS;
+                            const prize = prizes[idx];
+                            wheelToast.innerText = `🎉 转盘结果：${textList[idx]}(${prize}区) 🎉`;
+                            wheelToast.style.opacity = '1';
+                            wheelToast.style.position = 'relative';
+                            wheelToast.style.margin = '10px auto';
+                            wheelToast.style.width = '300px';
+                            wheelToast.style.textAlign = 'center';
+                            wheelToast.style.backgroundColor = 'rgba(255,255,255,0.9)';
+                            wheelToast.style.color = '#222222';
+                            wheelToast.style.border = '2px solid #FFCC55';
+                            wheelToast.style.borderRadius = '8px';
+                            wheelToast.style.padding = '10px';
+                            setTimeout(() => { wheelToast.style.opacity = '0'; }, 2500);
+                            isSpinning = false;
+                        }
+                    }
+                    requestAnimationFrame(animateSpin);
+                }
+                
+                // 按钮也强制居中
+                if (spinBtn) {
+                    spinBtn.addEventListener('click', spinWheel);
+                    spinBtn.style.display = 'block';
+                    spinBtn.style.margin = '15px auto';
+                    spinBtn.style.padding = '10px 20px';
+                    spinBtn.style.backgroundColor = '#FFCC55';
+                    spinBtn.style.color = '#222222';
+                    spinBtn.style.border = 'none';
+                    spinBtn.style.borderRadius = '8px';
+                    spinBtn.style.fontWeight = 'bold';
+                    spinBtn.style.cursor = 'pointer';
+                }
+                
+                // 初始绘制前再校准一次
+                currentRotation = 0;
+                drawWheel(currentRotation);
+            }
+            // ========== 彻底解决偏移的转盘代码结束 ==========                        
             refreshRecordDisplay();            
             updateHistoryGrid();
             if (!localStorage.getItem('visited_before')) {
