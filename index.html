@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>至尊骰宝 · 3D骰子</title>
+    <title>至尊骰宝 · 真3D骰子</title>
     <style>
         * {
             margin: 0;
@@ -35,87 +35,66 @@
             padding: 16px;
         }
         
-        /* ========== 3D骰子样式 ========== */
+        /* ========== 真3D骰子 ========== */
         .dice-area {
             background: rgba(0,0,0,0.4);
             border-radius: 28px;
             padding: 20px;
             text-align: center;
             margin-bottom: 16px;
-            position: relative;
-        }
-        .dice-area::before {
-            content: '';
-            position: absolute;
-            top: 10px;
-            left: 20px;
-            right: 20px;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, #ffaa44, #ffdd88, #ffaa44, transparent);
         }
         .dice-row {
             display: flex;
             justify-content: center;
-            gap: 25px;
+            gap: 30px;
             margin-bottom: 20px;
-            perspective: 600px;
         }
-        /* 3D骰子容器 */
+        /* 3D骰子容器 - 关键！设置perspective才能看到3D效果 */
         .dice-3d {
-            width: 85px;
-            height: 85px;
+            width: 80px;
+            height: 80px;
             position: relative;
             transform-style: preserve-3d;
-            transition: transform 0.3s ease;
-            cursor: pointer;
+            transition: transform 0.5s ease;
         }
-        /* 骰子各个面 */
+        /* 骰子各个面 - 所有面都可见，通过旋转定位 */
         .dice-face {
             position: absolute;
-            width: 85px;
-            height: 85px;
+            width: 80px;
+            height: 80px;
             background: linear-gradient(145deg, #f8f8f8, #e8e8e8);
-            border-radius: 18px;
-            box-shadow: inset 0 2px 5px rgba(255,255,255,0.8), 0 8px 20px rgba(0,0,0,0.4);
+            border-radius: 16px;
+            box-shadow: inset 0 2px 5px rgba(255,255,255,0.8), 0 5px 15px rgba(0,0,0,0.3);
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             align-items: center;
             border: 2px solid #ffaa44;
+            backface-visibility: visible;
         }
-        /* 6个面的位置 */
-        .face-front { transform: translateZ(42.5px); background: radial-gradient(circle at 30% 30%, #fff, #e8e8e8); }
-        .face-back { transform: rotateY(180deg) translateZ(42.5px); background: radial-gradient(circle at 30% 30%, #f0f0f0, #ddd); }
-        .face-right { transform: rotateY(90deg) translateZ(42.5px); background: radial-gradient(circle at 30% 30%, #fafafa, #e0e0e0); }
-        .face-left { transform: rotateY(-90deg) translateZ(42.5px); background: radial-gradient(circle at 30% 30%, #f5f5f5, #dcdcdc); }
-        .face-top { transform: rotateX(90deg) translateZ(42.5px); background: radial-gradient(circle at 30% 30%, #ffffff, #ececec); }
-        .face-bottom { transform: rotateX(-90deg) translateZ(42.5px); background: radial-gradient(circle at 30% 30%, #f0f0f0, #d5d5d5); }
+        /* 6个面的3D位置 - 这才是关键！ */
+        .face-front  { transform: translateZ(40px); }
+        .face-back   { transform: rotateY(180deg) translateZ(40px); }
+        .face-right  { transform: rotateY(90deg) translateZ(40px); }
+        .face-left   { transform: rotateY(-90deg) translateZ(40px); }
+        .face-top    { transform: rotateX(90deg) translateZ(40px); }
+        .face-bottom { transform: rotateX(-90deg) translateZ(40px); }
         
         /* 点数圆点 */
         .pip {
             position: absolute;
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
             background: radial-gradient(circle at 35% 35%, #c0392b, #8b1a1a);
             border-radius: 50%;
-            box-shadow: inset 0 1px 2px rgba(255,255,255,0.6), 0 2px 3px rgba(0,0,0,0.3);
+            box-shadow: inset 0 1px 2px rgba(255,255,255,0.5), 0 1px 2px rgba(0,0,0,0.3);
         }
-        /* 1点 */
         .pip-center { top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        /* 2点 */
         .pip-tl { top: 20%; left: 20%; }
-        .pip-br { bottom: 20%; right: 20%; }
-        /* 3点 */
         .pip-tr { top: 20%; right: 20%; }
         .pip-bl { bottom: 20%; left: 20%; }
-        /* 4点 */
-        .pip-tl2 { top: 20%; left: 20%; }
-        .pip-tr2 { top: 20%; right: 20%; }
-        .pip-bl2 { bottom: 20%; left: 20%; }
-        .pip-br2 { bottom: 20%; right: 20%; }
-        /* 5点 */
+        .pip-br { bottom: 20%; right: 20%; }
         .pip-mid { top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        /* 6点 */
         .pip-l1 { left: 20%; top: 15%; }
         .pip-l2 { left: 20%; top: 50%; transform: translateY(-50%); }
         .pip-l3 { left: 20%; bottom: 15%; }
@@ -123,34 +102,33 @@
         .pip-r2 { right: 20%; top: 50%; transform: translateY(-50%); }
         .pip-r3 { right: 20%; bottom: 15%; }
         
-        /* 骰子面上的点默认隐藏 */
-        .pip { display: none; }
-        /* 各面显示对应的点 */
+        /* 各面的点数布局 */
         .face-1 .pip-center { display: block; }
         .face-2 .pip-tl, .face-2 .pip-br { display: block; }
         .face-3 .pip-tl, .face-3 .pip-center, .face-3 .pip-br { display: block; }
-        .face-4 .pip-tl2, .face-4 .pip-tr2, .face-4 .pip-bl2, .face-4 .pip-br2 { display: block; }
-        .face-5 .pip-tl2, .face-5 .pip-tr2, .face-5 .pip-mid, .face-5 .pip-bl2, .face-5 .pip-br2 { display: block; }
+        .face-4 .pip-tl, .face-4 .pip-tr, .face-4 .pip-bl, .face-4 .pip-br { display: block; }
+        .face-5 .pip-tl, .face-5 .pip-tr, .face-5 .pip-mid, .face-5 .pip-bl, .face-5 .pip-br { display: block; }
         .face-6 .pip-l1, .face-6 .pip-l2, .face-6 .pip-l3, .face-6 .pip-r1, .face-6 .pip-r2, .face-6 .pip-r3 { display: block; }
+        .pip { display: none; }
         
-        /* 摇骰子动画 */
+        /* 摇骰子动画 - 真正旋转所有面 */
         .dice-shake {
-            animation: diceShake3D 0.08s infinite;
+            animation: diceSpin 0.1s infinite linear;
         }
-        @keyframes diceShake3D {
-            0% { transform: translate(0,0) rotateX(0deg) rotateY(0deg); }
-            25% { transform: translate(-6px,-6px) rotateX(45deg) rotateY(45deg); }
-            50% { transform: translate(6px,6px) rotateX(90deg) rotateY(90deg); }
-            75% { transform: translate(-6px,6px) rotateX(135deg) rotateY(135deg); }
-            100% { transform: translate(0,0) rotateX(180deg) rotateY(180deg); }
+        @keyframes diceSpin {
+            0% { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+            25% { transform: rotateX(180deg) rotateY(90deg) rotateZ(45deg); }
+            50% { transform: rotateX(360deg) rotateY(180deg) rotateZ(90deg); }
+            75% { transform: rotateX(540deg) rotateY(270deg) rotateZ(135deg); }
+            100% { transform: rotateX(720deg) rotateY(360deg) rotateZ(180deg); }
         }
         /* 落地动画 */
         .dice-land {
             animation: diceLand 0.2s ease-out;
         }
         @keyframes diceLand {
-            0% { transform: scale(1.1) rotateX(10deg) rotateY(10deg); }
-            100% { transform: scale(1) rotateX(0deg) rotateY(0deg); }
+            0% { transform: scale(1.1); }
+            100% { transform: scale(1); }
         }
         
         .total {
@@ -427,29 +405,32 @@
         <!-- 3D骰子区 -->
         <div class="dice-area">
             <div class="dice-row">
+                <!-- 骰子1 -->
                 <div class="dice-3d" id="dice1">
                     <div class="dice-face face-front face-1"><div class="pip pip-center"></div></div>
                     <div class="dice-face face-back face-6"><div class="pip pip-l1"></div><div class="pip pip-l2"></div><div class="pip pip-l3"></div><div class="pip pip-r1"></div><div class="pip pip-r2"></div><div class="pip pip-r3"></div></div>
-                    <div class="dice-face face-right face-4"><div class="pip pip-tl2"></div><div class="pip pip-tr2"></div><div class="pip pip-bl2"></div><div class="pip pip-br2"></div></div>
+                    <div class="dice-face face-right face-4"><div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div></div>
                     <div class="dice-face face-left face-3"><div class="pip pip-tl"></div><div class="pip pip-center"></div><div class="pip pip-br"></div></div>
                     <div class="dice-face face-top face-2"><div class="pip pip-tl"></div><div class="pip pip-br"></div></div>
-                    <div class="dice-face face-bottom face-5"><div class="pip pip-tl2"></div><div class="pip pip-tr2"></div><div class="pip pip-mid"></div><div class="pip pip-bl2"></div><div class="pip pip-br2"></div></div>
+                    <div class="dice-face face-bottom face-5"><div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-mid"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div></div>
                 </div>
+                <!-- 骰子2 -->
                 <div class="dice-3d" id="dice2">
                     <div class="dice-face face-front face-1"><div class="pip pip-center"></div></div>
                     <div class="dice-face face-back face-6"><div class="pip pip-l1"></div><div class="pip pip-l2"></div><div class="pip pip-l3"></div><div class="pip pip-r1"></div><div class="pip pip-r2"></div><div class="pip pip-r3"></div></div>
-                    <div class="dice-face face-right face-4"><div class="pip pip-tl2"></div><div class="pip pip-tr2"></div><div class="pip pip-bl2"></div><div class="pip pip-br2"></div></div>
+                    <div class="dice-face face-right face-4"><div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div></div>
                     <div class="dice-face face-left face-3"><div class="pip pip-tl"></div><div class="pip pip-center"></div><div class="pip pip-br"></div></div>
                     <div class="dice-face face-top face-2"><div class="pip pip-tl"></div><div class="pip pip-br"></div></div>
-                    <div class="dice-face face-bottom face-5"><div class="pip pip-tl2"></div><div class="pip pip-tr2"></div><div class="pip pip-mid"></div><div class="pip pip-bl2"></div><div class="pip pip-br2"></div></div>
+                    <div class="dice-face face-bottom face-5"><div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-mid"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div></div>
                 </div>
+                <!-- 骰子3 -->
                 <div class="dice-3d" id="dice3">
                     <div class="dice-face face-front face-1"><div class="pip pip-center"></div></div>
                     <div class="dice-face face-back face-6"><div class="pip pip-l1"></div><div class="pip pip-l2"></div><div class="pip pip-l3"></div><div class="pip pip-r1"></div><div class="pip pip-r2"></div><div class="pip pip-r3"></div></div>
-                    <div class="dice-face face-right face-4"><div class="pip pip-tl2"></div><div class="pip pip-tr2"></div><div class="pip pip-bl2"></div><div class="pip pip-br2"></div></div>
+                    <div class="dice-face face-right face-4"><div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div></div>
                     <div class="dice-face face-left face-3"><div class="pip pip-tl"></div><div class="pip pip-center"></div><div class="pip pip-br"></div></div>
                     <div class="dice-face face-top face-2"><div class="pip pip-tl"></div><div class="pip pip-br"></div></div>
-                    <div class="dice-face face-bottom face-5"><div class="pip pip-tl2"></div><div class="pip pip-tr2"></div><div class="pip pip-mid"></div><div class="pip pip-bl2"></div><div class="pip pip-br2"></div></div>
+                    <div class="dice-face face-bottom face-5"><div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-mid"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div></div>
                 </div>
             </div>
             <div class="total">
@@ -467,20 +448,17 @@
             </div>
         </div>
         
-        <!-- 登录切换 -->
         <div style="display: flex; gap: 8px; margin-bottom: 16px;">
             <input type="text" id="switchId" placeholder="输入ID登录" style="flex:1; background:rgba(0,0,0,0.5); border:1px solid #ffaa44; border-radius:30px; padding:8px 12px; color:#fff">
             <button id="switchBtn" class="clear-bet-btn">登录</button>
         </div>
 
-        <!-- 顶部按钮行 -->
         <div class="top-buttons">
             <button class="top-btn" id="clearAllBtn">全部取消</button>
             <button class="top-btn" id="refreshBtn">刷新余额</button>
             <button class="top-btn top-btn-primary" id="betBtn">确认投注</button>
         </div>
 
-        <!-- 余额和彩金 -->
         <div class="balance-pool-row">
             <div class="balance-pool-card" id="adminEntry">
                 <div class="balance-pool-label">💰 账户余额</div>
@@ -492,7 +470,6 @@
             </div>
         </div>
 
-        <!-- 筹码区 -->
         <div class="chips">
             <div class="chip chip-10" data-val="10">10</div>
             <div class="chip chip-20" data-val="20">20</div>
@@ -507,7 +484,6 @@
             <div class="selected-chip-value" id="selectedChip">0</div>
         </div>
 
-        <!-- 大小单双 -->
         <div class="special-bets">
             <div class="special-card" data-type="BIG"><div class="special-name">🎲 大</div><div class="special-odds">赔 2倍</div><div class="special-bet-amount" id="bet_BIG">0</div></div>
             <div class="special-card" data-type="SMALL"><div class="special-name">🎲 小</div><div class="special-odds">赔 2倍</div><div class="special-bet-amount" id="bet_SMALL">0</div></div>
@@ -515,28 +491,23 @@
             <div class="special-card" data-type="EVEN"><div class="special-name">🎲 双</div><div class="special-odds">赔 2倍</div><div class="special-bet-amount" id="bet_EVEN">0</div></div>
         </div>
 
-        <!-- 点数网格 -->
         <div class="points-grid" id="pointsGrid"></div>
 
-        <!-- 统计 -->
         <div class="stats">
             <div class="stat-card"><div class="stat-label">总押注</div><div class="stat-value" id="totalBet">0</div></div>
             <div class="stat-card"><div class="stat-label">选中点数</div><div class="stat-value" id="selectedPoint">-</div></div>
         </div>
 
-        <!-- 倒计时 -->
         <div class="countdown">
             <div class="countdown-label">下注倒计时</div>
             <div class="countdown-num" id="countdownNum">25</div>
         </div>
 
-        <!-- 历史 -->
         <div class="history" id="historyList"></div>
     </div>
 </div>
 
 <script>
-const diceMap = {1:'⚀',2:'⚁',3:'⚂',4:'⚃',5:'⚄',6:'⚅'};
 const oddsMap = {4:60,5:30,6:18,7:12,8:8,9:7,10:6,11:6,12:7,13:8,14:12,15:18,16:30,17:60,'BIG':2,'SMALL':2,'ODD':2,'EVEN':2};
 
 let users = JSON.parse(localStorage.getItem('dice_users')) || {};
@@ -554,23 +525,18 @@ let currentBalance = getBalance(currentUser);
 const diceEl = [document.getElementById('dice1'), document.getElementById('dice2'), document.getElementById('dice3')];
 const totalEl = document.getElementById('totalPoints');
 
-// 设置骰子显示的值
-function setDiceValue(diceElement, value) {
-    // 移除所有面的类
-    const faces = diceElement.querySelectorAll('.dice-face');
-    faces.forEach(face => {
-        face.style.display = 'none';
-    });
-    // 显示对应的面
-    const targetFace = diceElement.querySelector(`.face-${value}`);
-    if (targetFace) targetFace.style.display = 'flex';
-}
-
-// 初始化骰子
-function initDice() {
-    setDiceValue(diceEl[0], 1);
-    setDiceValue(diceEl[1], 1);
-    setDiceValue(diceEl[2], 1);
+// 关键函数：通过旋转骰子让指定数字朝上
+function setDiceToValue(diceElement, value) {
+    // 骰子各面朝上的旋转角度（让对应数字的面对准相机）
+    const rotations = {
+        1: 'rotateX(0deg) rotateY(0deg)',
+        2: 'rotateX(-90deg) rotateY(0deg)',
+        3: 'rotateX(0deg) rotateY(90deg)',
+        4: 'rotateX(0deg) rotateY(-90deg)',
+        5: 'rotateX(90deg) rotateY(0deg)',
+        6: 'rotateX(180deg) rotateY(0deg)'
+    };
+    diceElement.style.transform = rotations[value];
 }
 
 function getResultType(total) {
@@ -625,20 +591,28 @@ function rollDice(finalVals, finalTotal, winAmounts) {
     let step = 0, maxStep = 20;
     rollTimer = setInterval(() => {
         step++;
-        diceEl.forEach(d => { let r = Math.floor(Math.random() * 6) + 1; setDiceValue(d, r); });
-        let sum = 0;
         diceEl.forEach(d => {
-            for (let i = 1; i <= 6; i++) {
-                if (d.querySelector(`.face-${i}`)?.style.display === 'flex') { sum += i; break; }
-            }
+            let r = Math.floor(Math.random() * 6) + 1;
+            setDiceToValue(d, r);
         });
-        totalEl.innerText = sum;
+        let sum = 0;
+        diceEl.forEach((d, idx) => {
+            let transform = d.style.transform;
+            if (transform.includes('0deg')) sum += 1;
+            else if (transform.includes('-90deg')) sum += 2;
+            else if (transform.includes('90deg')) sum += 3;
+            else if (transform.includes('90deg') && transform.includes('-90deg')) sum += 4;
+            else if (transform.includes('90deg') && !transform.includes('-90deg')) sum += 5;
+            else if (transform.includes('180deg')) sum += 6;
+            else sum += finalVals[idx];
+        });
+        totalEl.innerText = sum || (step % 20 + 5);
         if (step >= maxStep) {
             clearInterval(rollTimer);
             rollTimer = null;
             diceEl.forEach(d => d.classList.remove('dice-shake'));
             totalEl.classList.remove('total-blink');
-            diceEl.forEach((d, i) => { setDiceValue(d, finalVals[i]); d.classList.add('dice-land'); setTimeout(() => d.classList.remove('dice-land'), 200); });
+            diceEl.forEach((d, i) => { setDiceToValue(d, finalVals[i]); d.classList.add('dice-land'); setTimeout(() => d.classList.remove('dice-land'), 200); });
             totalEl.innerText = finalTotal;
             let totalWin = winAmounts.reduce((a,b)=>a+b,0);
             if (totalWin > 0) { totalEl.style.color = '#4caf50'; setTimeout(() => totalEl.style.color = '#ffcc44', 2000); }
@@ -764,8 +738,12 @@ function createPointsGrid() {
 }
 
 function init() {
-    initDice();
     createPointsGrid();
+    // 初始化骰子为1点朝上
+    setDiceToValue(diceEl[0], 1);
+    setDiceToValue(diceEl[1], 1);
+    setDiceToValue(diceEl[2], 1);
+    totalEl.innerText = 3;
     updateBetsDisplay();
     updateHistory();
     startCountdown(25);
