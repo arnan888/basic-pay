@@ -1,9 +1,10 @@
-!DOCTYPE html>
+```html
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>至尊骰宝 · 完美布局</title>
+    <title>至尊骰宝 · 完整版</title>
     <style>
         * {
             margin: 0;
@@ -18,7 +19,7 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            font-family: system-ui, 'PingFang SC', sans-serif;
+            font-family: system-ui, 'PingFang SC', 'Segoe UI', sans-serif;
             padding: 12px;
         }
         /* 主容器 */
@@ -36,11 +37,11 @@
             border-radius: 32px;
             padding: 16px;
         }
-        /* 通用区块间距 */
+        /* 区块间距 */
         .section {
             margin-bottom: 20px;
         }
-        /* 骰子区域 */
+        /* 3D骰子区域 */
         .dice-area {
             background: rgba(0,0,0,0.6);
             border-radius: 28px;
@@ -155,7 +156,35 @@
             50% { text-shadow: 0 0 20px #ff6600; color: #ffdd88; }
         }
 
-        /* 信息条：倒计时+当前筹码 */
+        /* 中奖滚动数字区 */
+        .rolling-win {
+            background: rgba(0,0,0,0.5);
+            border-radius: 30px;
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+        .rolling-label {
+            font-size: 14px;
+            color: #ffaa88;
+        }
+        .rolling-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffcc44;
+            font-family: monospace;
+            text-shadow: 0 0 5px #ff6600;
+        }
+        .rolling-animate {
+            animation: rollNumber 0.05s step-end infinite;
+        }
+        @keyframes rollNumber {
+            0% { text-shadow: 0 0 5px #ffaa44; transform: scale(1); }
+            50% { text-shadow: 0 0 20px #ff6600; color: #ffdd88; transform: scale(1.05); }
+        }
+
+        /* 信息条 */
         .info-bar {
             background: rgba(0,0,0,0.5);
             border-radius: 30px;
@@ -163,7 +192,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
         }
         .info-item {
             text-align: center;
@@ -185,11 +213,10 @@
         }
         @keyframes warning { 0%,100% { opacity:1; } 50% { opacity:0.5; text-shadow:0 0 10px red; } }
 
-        /* 三个主按钮 */
+        /* 按钮组 */
         .action-buttons {
             display: flex;
             gap: 12px;
-            margin-bottom: 16px;
         }
         .action-btn {
             flex: 1;
@@ -215,7 +242,6 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
-            margin-bottom: 16px;
         }
         .balance-card {
             background: rgba(0,0,0,0.5);
@@ -233,7 +259,6 @@
             gap: 10px;
             justify-content: center;
             flex-wrap: wrap;
-            margin-bottom: 16px;
         }
         .chip {
             width: 60px;
@@ -262,7 +287,6 @@
             display: grid;
             grid-template-columns: repeat(4,1fr);
             gap: 10px;
-            margin-bottom: 16px;
         }
         .special-card {
             background: linear-gradient(145deg,#2a3a2a,#1a2a1a);
@@ -287,16 +311,12 @@
             border-radius: 30px;
             padding: 2px;
         }
-        .special-card.selected .special-name,
-        .special-card.selected .special-odds,
-        .special-card.selected .special-bet-amount { color:#fff; }
 
         /* 点数网格 */
         .points-grid {
             display: grid;
             grid-template-columns: repeat(4,1fr);
             gap: 8px;
-            margin-bottom: 16px;
         }
         .point-card {
             background: rgba(0,0,0,0.5);
@@ -318,16 +338,12 @@
             color: #ffaa44;
             margin-top: 4px;
         }
-        .point-card.selected .point-value,
-        .point-card.selected .point-odds,
-        .point-card.selected .point-bet-amount { color:#fff; }
 
         /* 统计 */
         .stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
-            margin-bottom: 16px;
         }
         .stat-card {
             background: rgba(0,0,0,0.5);
@@ -362,12 +378,10 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
         }
         .login-row {
             display: flex;
             gap: 8px;
-            margin-bottom: 16px;
         }
         .login-input {
             flex: 1;
@@ -485,8 +499,14 @@
             </div>
         </div>
 
+        <!-- 中奖滚动数字 -->
+        <div class="rolling-win section">
+            <div class="rolling-label">🎲 本局中奖</div>
+            <div class="rolling-number" id="rollingWinNumber">0.00</div>
+        </div>
+
         <!-- 用户栏 -->
-        <div class="user-row">
+        <div class="user-row section">
             <div><span style="color:#ffaa44">👤</span> <span id="currentUserId" style="color:#ffaa44; font-weight:bold">player888</span></div>
             <div>
                 <button id="historyBtn" class="small-btn">📜 记录</button>
@@ -495,13 +515,13 @@
         </div>
 
         <!-- 登录行 -->
-        <div class="login-row">
+        <div class="login-row section">
             <input type="text" id="switchId" class="login-input" placeholder="输入ID登录">
             <button id="switchBtn" class="small-btn">登录</button>
         </div>
 
         <!-- 信息条：倒计时 + 当前筹码 -->
-        <div class="info-bar">
+        <div class="info-bar section">
             <div class="info-item">
                 <div class="info-label">⏱️ 下注倒计时</div>
                 <div class="info-value" id="countdownNum">25</div>
@@ -513,14 +533,14 @@
         </div>
 
         <!-- 三个主按钮 -->
-        <div class="action-buttons">
+        <div class="action-buttons section">
             <button class="action-btn" id="clearAllBtn">全部取消</button>
             <button class="action-btn" id="refreshBtn">刷新余额</button>
             <button class="action-btn btn-primary" id="betBtn">确认投注</button>
         </div>
 
         <!-- 余额 & 奖池 -->
-        <div class="balance-row">
+        <div class="balance-row section">
             <div class="balance-card" id="adminEntry">
                 <div class="balance-label">💰 账户余额</div>
                 <div class="balance-value" id="balanceDisplay">1000.00</div>
@@ -532,7 +552,7 @@
         </div>
 
         <!-- 筹码区 -->
-        <div class="chips">
+        <div class="chips section">
             <div class="chip chip-10" data-val="10">10</div>
             <div class="chip chip-20" data-val="20">20</div>
             <div class="chip chip-50" data-val="50">50</div>
@@ -542,7 +562,7 @@
         </div>
 
         <!-- 大小单双 -->
-        <div class="special-grid">
+        <div class="special-grid section">
             <div class="special-card" data-type="BIG"><div class="special-name">🎲 大</div><div class="special-odds">赔 2倍</div><div class="special-bet-amount" id="bet_BIG">0</div></div>
             <div class="special-card" data-type="SMALL"><div class="special-name">🎲 小</div><div class="special-odds">赔 2倍</div><div class="special-bet-amount" id="bet_SMALL">0</div></div>
             <div class="special-card" data-type="ODD"><div class="special-name">🎲 单</div><div class="special-odds">赔 2倍</div><div class="special-bet-amount" id="bet_ODD">0</div></div>
@@ -550,10 +570,10 @@
         </div>
 
         <!-- 点数网格 4-17 -->
-        <div class="points-grid" id="pointsGrid"></div>
+        <div class="points-grid section" id="pointsGrid"></div>
 
         <!-- 统计 -->
-        <div class="stats">
+        <div class="stats section">
             <div class="stat-card"><div class="stat-label">总押注</div><div class="stat-value" id="totalBet">0</div></div>
             <div class="stat-card"><div class="stat-label">选中点数</div><div class="stat-value" id="selectedPoint">-</div></div>
         </div>
@@ -564,7 +584,13 @@
 </div>
 
 <script>
-const oddsMap = {4:60,5:30,6:18,7:12,8:8,9:7,10:6,11:6,12:7,13:8,14:12,15:18,16:30,17:60,'BIG':2,'SMALL':2,'ODD':2,'EVEN':2};
+// ======================= 赔率表 =======================
+const oddsMap = {
+    4:60,5:30,6:18,7:12,8:8,9:7,10:6,11:6,12:7,13:8,14:12,15:18,16:30,17:60,
+    'BIG':2, 'SMALL':2, 'ODD':2, 'EVEN':2
+};
+
+// ======================= 用户系统 =======================
 let users = JSON.parse(localStorage.getItem('dice_users')) || {};
 let currentUser = "player888";
 if (!users[currentUser]) users[currentUser] = { balance: 1000, records: [] };
@@ -573,225 +599,427 @@ function saveUsers() { localStorage.setItem('dice_users', JSON.stringify(users))
 function getBalance(uid) { return users[uid]?.balance || 1000; }
 function setBalance(uid, amt) { if (!users[uid]) users[uid] = { balance: 1000, records: [] }; users[uid].balance = amt; saveUsers(); }
 
-let bets = {'BIG':0,'SMALL':0,'ODD':0,'EVEN':0,4:0,5:0,6:0,7:0,8:0,9:0,10:0,11:0,12:0,13:0,14:0,15:0,16:0,17:0};
+// ======================= 游戏状态 =======================
+let bets = {
+    'BIG':0, 'SMALL':0, 'ODD':0, 'EVEN':0,
+    4:0,5:0,6:0,7:0,8:0,9:0,10:0,11:0,12:0,13:0,14:0,15:0,16:0,17:0
+};
 let selectedChip = 0;
 let currentBalance = getBalance(currentUser);
 const diceEl = [document.getElementById('dice1'), document.getElementById('dice2'), document.getElementById('dice3')];
 const totalEl = document.getElementById('totalPoints');
+const rollingWinEl = document.getElementById('rollingWinNumber');
 
+// 3D骰子旋转设置
 function setDiceValue(dice, val) {
-    const rot = {1:'rotateX(0deg) rotateY(0deg)',2:'rotateX(-90deg) rotateY(0deg)',3:'rotateX(0deg) rotateY(90deg)',4:'rotateX(0deg) rotateY(-90deg)',5:'rotateX(90deg) rotateY(0deg)',6:'rotateX(180deg) rotateY(0deg)'};
+    const rot = {
+        1: 'rotateX(0deg) rotateY(0deg)',
+        2: 'rotateX(-90deg) rotateY(0deg)',
+        3: 'rotateX(0deg) rotateY(90deg)',
+        4: 'rotateX(0deg) rotateY(-90deg)',
+        5: 'rotateX(90deg) rotateY(0deg)',
+        6: 'rotateX(180deg) rotateY(0deg)'
+    };
     dice.style.transform = rot[val];
 }
+
+// 骰子滚动动画 (0.9秒)
 function startRolling(finalVals) {
-    return new Promise(resolve=>{
-        diceEl[0].classList.add('rolling1'); diceEl[1].classList.add('rolling2'); diceEl[2].classList.add('rolling3');
+    return new Promise(resolve => {
+        diceEl[0].classList.add('rolling1');
+        diceEl[1].classList.add('rolling2');
+        diceEl[2].classList.add('rolling3');
         totalEl.classList.add('total-blink');
-        let step=0, maxStep=18;
-        let iv = setInterval(()=>{
+        let step = 0, maxStep = 18;
+        let iv = setInterval(() => {
             step++;
-            diceEl.forEach(d=>setDiceValue(d, Math.floor(Math.random()*6)+1));
-            if(step>=maxStep){
+            diceEl.forEach(d => setDiceValue(d, Math.floor(Math.random() * 6) + 1));
+            if (step >= maxStep) {
                 clearInterval(iv);
-                diceEl.forEach(d=>d.classList.remove('rolling1','rolling2','rolling3'));
+                diceEl.forEach(d => d.classList.remove('rolling1', 'rolling2', 'rolling3'));
                 totalEl.classList.remove('total-blink');
-                diceEl.forEach((d,i)=>{ setDiceValue(d,finalVals[i]); d.classList.add('land'); setTimeout(()=>d.classList.remove('land'),200); });
+                diceEl.forEach((d, i) => {
+                    setDiceValue(d, finalVals[i]);
+                    d.classList.add('land');
+                    setTimeout(() => d.classList.remove('land'), 200);
+                });
                 resolve();
             }
-        },55);
+        }, 50);
     });
 }
-function getResultType(t){
-    let r=[];
-    if(t>=11&&t<=17) r.push('BIG');
-    if(t>=4&&t<=10) r.push('SMALL');
-    if(t%2===1) r.push('ODD');
-    if(t%2===0) r.push('EVEN');
-    return r;
-}
-function updateUI(){
-    document.getElementById('bet_BIG').innerText=bets['BIG'];
-    document.getElementById('bet_SMALL').innerText=bets['SMALL'];
-    document.getElementById('bet_ODD').innerText=bets['ODD'];
-    document.getElementById('bet_EVEN').innerText=bets['EVEN'];
-    for(let i=4;i<=17;i++){ let el=document.getElementById(`bet_${i}`); if(el) el.innerText=bets[i]; }
-    let total=Object.values(bets).reduce((a,b)=>a+b,0);
-    document.getElementById('totalBet').innerText=total;
-    document.getElementById('balanceDisplay').innerText=currentBalance.toFixed(2);
-    let pool=50000+(Math.random()-0.5)*3000;
-    pool=Math.max(40000,Math.min(60000,pool));
-    document.getElementById('poolDisplay').innerText=pool.toFixed(2);
-}
-function addBet(type){
-    if(selectedChip<=0){ alert("请先选择筹码"); return; }
-    if(selectedChip>currentBalance){ alert("余额不足"); return; }
-    currentBalance-=selectedChip;
-    setBalance(currentUser,currentBalance);
-    bets[type]+=selectedChip;
-    updateUI();
-    document.querySelectorAll('.special-card, .point-card').forEach(el=>el.classList.remove('selected'));
-    if(typeof type==='string') document.querySelector(`.special-card[data-type="${type}"]`)?.classList.add('selected');
-    else document.querySelector(`.point-card[data-point="${type}"]`)?.classList.add('selected');
-    setTimeout(()=>document.querySelectorAll('.special-card, .point-card').forEach(el=>el.classList.remove('selected')),800);
-}
-function clearAll(){
-    let total=Object.values(bets).reduce((a,b)=>a+b,0);
-    currentBalance+=total;
-    setBalance(currentUser,currentBalance);
-    for(let k in bets) bets[k]=0;
-    updateUI();
-}
-let isDrawing=false, isLocked=false, countdownInterval=null;
-async function draw(){
-    if(isDrawing) return;
-    let total=Object.values(bets).reduce((a,b)=>a+b,0);
-    if(total===0){ alert("请先下注"); return; }
-    isDrawing=true; isLocked=true;
-    let d1=Math.floor(Math.random()*6)+1, d2=Math.floor(Math.random()*6)+1, d3=Math.floor(Math.random()*6)+1, totalNum=d1+d2+d3;
-    let resultTypes=getResultType(totalNum);
-    let wins=[];
-    if(resultTypes.includes('BIG') && bets['BIG']>0) wins.push(bets['BIG']*2);
-    if(resultTypes.includes('SMALL') && bets['SMALL']>0) wins.push(bets['SMALL']*2);
-    if(resultTypes.includes('ODD') && bets['ODD']>0) wins.push(bets['ODD']*2);
-    if(resultTypes.includes('EVEN') && bets['EVEN']>0) wins.push(bets['EVEN']*2);
-    if(bets[totalNum]>0) wins.push(bets[totalNum]*oddsMap[totalNum]);
-    let totalWin=wins.reduce((a,b)=>a+b,0);
-    await startRolling([d1,d2,d3]);
-    totalEl.innerText=totalNum;
-    if(totalWin>0){ totalEl.style.color='#4caf50'; setTimeout(()=>totalEl.style.color='#ffcc44',2000); }
-    else{ totalEl.style.color='#f44336'; setTimeout(()=>totalEl.style.color='#ffcc44',2000); }
-    currentBalance+=totalWin;
-    setBalance(currentUser,currentBalance);
-    let betSummary=[];
-    for(let k in bets) if(bets[k]>0){
-        if(typeof k==='string') betSummary.push((k==='BIG'?'大':k==='SMALL'?'小':k==='ODD'?'单':'双')+bets[k]);
-        else betSummary.push(k+'点'+bets[k]);
+
+// 中奖金额滚动动画 (5秒)
+let rollingAnimation = null;
+function startRollingNumber(finalAmount) {
+    if (rollingAnimation) cancelAnimationFrame(rollingAnimation);
+    const startTime = performance.now();
+    const duration = 5000;
+    const startVal = 0.01;
+    rollingWinEl.classList.add('rolling-animate');
+    function update(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        const ease = 1 - Math.pow(1 - progress, 2);
+        let current = startVal + (finalAmount - startVal) * ease;
+        rollingWinEl.innerText = current.toFixed(2);
+        if (progress < 1) {
+            rollingAnimation = requestAnimationFrame(update);
+        } else {
+            rollingWinEl.innerText = finalAmount.toFixed(2);
+            rollingWinEl.classList.remove('rolling-animate');
+            rollingAnimation = null;
+        }
     }
-    let recs=users[currentUser].records||[];
-    recs.unshift({time:new Date().toLocaleTimeString(), bets:betSummary.join(' '), result:totalNum, resultType:resultTypes.map(t=>t==='BIG'?'大':t==='SMALL'?'小':t==='ODD'?'单':'双').join(','), win:totalWin, isWin:totalWin>0});
-    if(recs.length>30) recs.pop();
-    users[currentUser].records=recs;
+    rollingAnimation = requestAnimationFrame(update);
+}
+
+// 辅助函数
+function getResultType(total) {
+    let types = [];
+    if (total >= 11 && total <= 17) types.push('BIG');
+    if (total >= 4 && total <= 10) types.push('SMALL');
+    if (total % 2 === 1) types.push('ODD');
+    if (total % 2 === 0) types.push('EVEN');
+    return types;
+}
+
+function updateUI() {
+    document.getElementById('bet_BIG').innerText = bets['BIG'];
+    document.getElementById('bet_SMALL').innerText = bets['SMALL'];
+    document.getElementById('bet_ODD').innerText = bets['ODD'];
+    document.getElementById('bet_EVEN').innerText = bets['EVEN'];
+    for (let i = 4; i <= 17; i++) {
+        let el = document.getElementById(`bet_${i}`);
+        if (el) el.innerText = bets[i];
+    }
+    let total = Object.values(bets).reduce((a, b) => a + b, 0);
+    document.getElementById('totalBet').innerText = total;
+    document.getElementById('balanceDisplay').innerText = currentBalance.toFixed(2);
+    let pool = 50000 + (Math.random() - 0.5) * 3000;
+    pool = Math.max(40000, Math.min(60000, pool));
+    document.getElementById('poolDisplay').innerText = pool.toFixed(2);
+}
+
+function addBet(type) {
+    if (selectedChip <= 0) { alert("请先选择筹码"); return; }
+    if (selectedChip > currentBalance) { alert("余额不足！当前余额：" + currentBalance); return; }
+    currentBalance -= selectedChip;
+    setBalance(currentUser, currentBalance);
+    bets[type] += selectedChip;
+    updateUI();
+    // 高亮选中的项目    document.querySelectorAll('.special-card, .point-card').forEach(el => el.classList.remove('selected'));
+    if (typeof type === 'string') {
+        document.querySelector(`.special-card[data-type="${type}"]`)?.classList.add('selected');
+    } else {
+        document.querySelector(`.point-card[data-point="${type}"]`)?.classList.add('selected');
+    }
+    setTimeout(() => {
+        document.querySelectorAll('.special-card, .point-card').forEach(el => el.classList.remove('selected'));
+    }, 800);
+    if (navigator.vibrate) navigator.vibrate(30);
+}
+
+function clearAll() {
+    let total = Object.values(bets).reduce((a, b) => a + b, 0);
+    currentBalance += total;
+    setBalance(currentUser, currentBalance);
+    for (let k in bets) bets[k] = 0;
+    updateUI();
+    if (navigator.vibrate) navigator.vibrate(30);
+}
+
+let isDrawing = false, isLocked = false, countdownInterval = null;
+
+async function draw() {
+    if (isDrawing) return;
+    let totalBet = Object.values(bets).reduce((a, b) => a + b, 0);
+    if (totalBet === 0) { alert("请先下注"); return; }
+    isDrawing = true;
+    isLocked = true;
+    const d1 = Math.floor(Math.random() * 6) + 1;
+    const d2 = Math.floor(Math.random() * 6) + 1;
+    const d3 = Math.floor(Math.random() * 6) + 1;
+    const total = d1 + d2 + d3;
+    const resultTypes = getResultType(total);
+    let totalWin = 0;
+    if (resultTypes.includes('BIG') && bets['BIG'] > 0) totalWin += bets['BIG'] * 2;
+    if (resultTypes.includes('SMALL') && bets['SMALL'] > 0) totalWin += bets['SMALL'] * 2;
+    if (resultTypes.includes('ODD') && bets['ODD'] > 0) totalWin += bets['ODD'] * 2;
+    if (resultTypes.includes('EVEN') && bets['EVEN'] > 0) totalWin += bets['EVEN'] * 2;
+    if (bets[total] > 0) totalWin += bets[total] * oddsMap[total];
+    // 同时启动数字滚动和骰子动画
+    startRollingNumber(totalWin);
+    await startRolling([d1, d2, d3]);
+    totalEl.innerText = total;
+    if (totalWin > 0) {
+        totalEl.style.color = '#4caf50';
+        setTimeout(() => totalEl.style.color = '#ffcc44', 2000);
+    } else {
+        totalEl.style.color = '#f44336';
+        setTimeout(() => totalEl.style.color = '#ffcc44', 2000);
+    }
+    currentBalance += totalWin;
+    setBalance(currentUser, currentBalance);
+    // 记录历史
+    let betSummary = [];
+    for (let k in bets) if (bets[k] > 0) {
+        if (typeof k === 'string') {
+            let name = k === 'BIG' ? '大' : (k === 'SMALL' ? '小' : (k === 'ODD' ? '单' : '双'));
+            betSummary.push(name + bets[k]);
+        } else {
+            betSummary.push(k + '点' + bets[k]);
+        }
+    }
+    let recs = users[currentUser].records || [];
+    recs.unshift({
+        time: new Date().toLocaleTimeString(),
+        bets: betSummary.join(' '),
+        result: total,
+        resultType: resultTypes.map(t => t === 'BIG' ? '大' : (t === 'SMALL' ? '小' : (t === 'ODD' ? '单' : '双'))).join(','),
+        win: totalWin,
+        isWin: totalWin > 0
+    });
+    if (recs.length > 30) recs.pop();
+    users[currentUser].records = recs;
     saveUsers();
     updateHistory();
-    for(let k in bets) bets[k]=0;
+    // 清空押注
+    for (let k in bets) bets[k] = 0;
     updateUI();
-    if(navigator.vibrate) navigator.vibrate(totalWin>0?[100,50,100]:80);
-    setTimeout(()=>{ isDrawing=false; isLocked=false; startCountdown(25); },3000);
+    if (navigator.vibrate) navigator.vibrate(totalWin > 0 ? [100, 50, 100] : 80);
+    setTimeout(() => {
+        isDrawing = false;
+        isLocked = false;
+        startCountdown(25);
+    }, 5000); // 等待滚动动画结束
 }
-function startCountdown(sec){
-    if(countdownInterval) clearInterval(countdownInterval);
-    let c=sec;
-    const cdSpan=document.getElementById('countdownNum');
-    cdSpan.innerText=c;
+
+function startCountdown(sec) {
+    if (countdownInterval) clearInterval(countdownInterval);
+    let c = sec;
+    const cdSpan = document.getElementById('countdownNum');
+    cdSpan.innerText = c;
     cdSpan.classList.remove('countdown-warning');
-    isLocked=false;
-    countdownInterval=setInterval(()=>{
-        if(c<=1){
+    isLocked = false;
+    countdownInterval = setInterval(() => {
+        if (c <= 1) {
             clearInterval(countdownInterval);
-            countdownInterval=null;
-            isLocked=true;
+            countdownInterval = null;
+            isLocked = true;
             draw();
         } else {
             c--;
-            cdSpan.innerText=c;
-            if(c<=5) cdSpan.classList.add('countdown-warning');
+            cdSpan.innerText = c;
+            if (c <= 5) cdSpan.classList.add('countdown-warning');
         }
-    },1000);
+    }, 1000);
 }
-function updateHistory(){
-    let container=document.getElementById('historyList');
-    let recs=users[currentUser]?.records||[];
-    container.innerHTML='';
-    if(recs.length===0){ container.innerHTML='<div style="text-align:center;color:#666">暂无记录</div>'; return; }
-    recs.slice(0,10).forEach(r=>{
-        let div=document.createElement('div');
-        div.className='history-item';
-        div.innerHTML=`<span>${r.time}</span><span>${r.bets}</span><span>开${r.result}(${r.resultType})</span><span class="${r.isWin?'win':'lose'}">${r.isWin?'+'+r.win:''}</span>`;
+
+function updateHistory() {
+    const container = document.getElementById('historyList');
+    const recs = users[currentUser]?.records || [];
+    container.innerHTML = '';
+    if (recs.length === 0) {
+        container.innerHTML = '<div style="text-align:center;color:#666">暂无记录</div>';
+        return;
+    }
+    recs.slice(0, 10).forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `<span>${r.time}</span><span>${r.bets}</span><span>开${r.result}(${r.resultType})</span><span class="${r.isWin ? 'win' : 'lose'}">${r.isWin ? '+' + r.win : ''}</span>`;
         container.appendChild(div);
     });
 }
-function refreshBalance(){ currentBalance=getBalance(currentUser); updateUI(); }
-function switchUser(){
-    let newId=document.getElementById('switchId').value.trim();
-    if(!newId) return;
-    currentUser=newId;
-    if(!users[currentUser]) users[currentUser]={balance:1000,records:[]};
-    document.getElementById('currentUserId').innerText=currentUser;
-    currentBalance=getBalance(currentUser);
-    for(let k in bets) bets[k]=0;
+
+function refreshBalance() {
+    currentBalance = getBalance(currentUser);
     updateUI();
-    if(countdownInterval) clearInterval(countdownInterval);
+    if (navigator.vibrate) navigator.vibrate(30);
+}
+
+function switchUser() {
+    let newId = document.getElementById('switchId').value.trim();
+    if (!newId) return;
+    currentUser = newId;
+    if (!users[currentUser]) users[currentUser] = { balance: 1000, records: [] };
+    document.getElementById('currentUserId').innerText = currentUser;
+    currentBalance = getBalance(currentUser);
+    for (let k in bets) bets[k] = 0;
+    updateUI();
+    if (countdownInterval) clearInterval(countdownInterval);
     startCountdown(25);
     updateHistory();
+    document.querySelectorAll('.special-card, .point-card').forEach(el => el.classList.remove('selected'));
 }
-function showHistoryModal(){
-    let recs=users[currentUser]?.records||[];
-    let html='<div style="max-height:300px;overflow-y:auto">';
-    if(recs.length===0) html+='<p>暂无记录</p>';
-    else recs.forEach(r=>{ html+=`<div style="padding:8px;border-bottom:1px solid #333;display:flex;justify-content:space-between"><span>${r.time}</span><span>${r.bets}</span><span>开${r.result}点</span><span style="color:${r.isWin?'#4caf50':'#f44336'}">${r.isWin?'+'+r.win:''}</span></div>`; });
-    html+='</div><button id="closeModalBtn" style="background:#ff6600;border:none;border-radius:30px;padding:10px 24px;margin-top:16px;color:#fff">关闭</button>';
-    let modal=document.createElement('div'); modal.className='modal'; modal.innerHTML=`<div class="modal-content"><h3>📜 投注记录</h3>${html}</div>`;
+
+function showHistoryModal() {
+    const recs = users[currentUser]?.records || [];
+    let html = '<div style="max-height:300px;overflow-y:auto">';
+    if (recs.length === 0) html += '<p>暂无记录</p>';
+    else {
+        recs.forEach(r => {
+            html += `<div style="padding:8px;border-bottom:1px solid #333;display:flex;justify-content:space-between">
+                        <span>${r.time}</span>
+                        <span>${r.bets}</span>
+                        <span>开${r.result}点</span>
+                        <span style="color:${r.isWin ? '#4caf50' : '#f44336'}">${r.isWin ? '+' + r.win : ''}</span>
+                     </div>`;
+        });
+    }
+    html += '</div><button id="closeModalBtn" style="background:#ff6600;border:none;border-radius:30px;padding:10px 24px;margin-top:16px;color:#fff">关闭</button>';
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `<div class="modal-content"><h3>📜 投注记录</h3>${html}</div>`;
     document.body.appendChild(modal);
-    document.getElementById('closeModalBtn').onclick=()=>modal.remove();
+    document.getElementById('closeModalBtn').onclick = () => modal.remove();
 }
-let adminPanel=null, adminSelectedUser=currentUser;
-function showAdminPanel(){
-    if(adminPanel){ adminPanel.remove(); adminPanel=null; return; }
-    let panel=document.createElement('div'); panel.className='modal';
-    panel.innerHTML=`<div class="modal-content" style="width:90%;max-width:360px"><h3>🔐 管理员</h3><div id="adminUserList" class="admin-user-list"></div><div>当前：<strong id="adminSelectedUser">${adminSelectedUser}</strong></div><input type="number" id="adminAmount" class="admin-input" placeholder="金额" value="0"><div class="admin-btns"><button id="adminAdd" class="admin-btn" style="background:#4caf50;color:#fff">上分</button><button id="adminSub" class="admin-btn" style="background:#f44336;color:#fff">下分</button><button id="adminQuery" class="admin-btn" style="background:#2196f3;color:#fff">查询</button><button id="adminReset" class="admin-btn" style="background:#ff9800;color:#fff">重置</button><button id="adminPwd" class="admin-btn" style="background:#9c27b0;color:#fff">改密</button></div><button id="adminClose" style="background:#ffaa44;color:#1a1a2a;padding:8px 24px;border-radius:25px;border:none;margin-top:12px">关闭</button></div>`;
-    document.body.appendChild(panel); adminPanel=panel;
-    function refreshList(){
-        let listDiv=document.getElementById('adminUserList');
-        let usersArr=Object.keys(users);
-        listDiv.innerHTML='';
-        usersArr.forEach(uid=>{
-            let div=document.createElement('div'); div.className='admin-user'; if(uid===adminSelectedUser) div.classList.add('selected');
-            div.textContent=`${uid} (${getBalance(uid).toFixed(2)})`;
-            div.onclick=()=>{ adminSelectedUser=uid; document.getElementById('adminSelectedUser').innerText=adminSelectedUser; refreshList(); };
+
+// ======================= 管理员面板 =======================
+let adminPanel = null;
+let adminSelectedUser = currentUser;
+function showAdminPanel() {
+    if (adminPanel) { adminPanel.remove(); adminPanel = null; return; }
+    const panel = document.createElement('div');
+    panel.className = 'modal';
+    panel.innerHTML = `
+        <div class="modal-content" style="width:90%;max-width:360px">
+            <h3>🔐 管理员面板</h3>
+            <div id="adminUserList" class="admin-user-list"></div>
+            <div>当前：<strong id="adminSelectedUser">${adminSelectedUser}</strong></div>
+            <input type="number" id="adminAmount" class="admin-input" placeholder="金额" value="0">
+            <div class="admin-btns">
+                <button id="adminAdd" class="admin-btn" style="background:#4caf50;color:#fff">上分</button>
+                <button id="adminSub" class="admin-btn" style="background:#f44336;color:#fff">下分</button>
+                <button id="adminQuery" class="admin-btn" style="background:#2196f3;color:#fff">查询</button>
+                <button id="adminReset" class="admin-btn" style="background:#ff9800;color:#fff">重置</button>
+                <button id="adminPwd" class="admin-btn" style="background:#9c27b0;color:#fff">改密</button>
+            </div>
+            <button id="adminClose" style="background:#ffaa44;color:#1a1a2a;padding:8px 24px;border-radius:25px;border:none;margin-top:12px">关闭</button>
+        </div>
+    `;
+    document.body.appendChild(panel);
+    adminPanel = panel;
+    function refreshList() {
+        const listDiv = document.getElementById('adminUserList');
+        const usersArr = Object.keys(users);
+        listDiv.innerHTML = '';
+        usersArr.forEach(uid => {
+            const div = document.createElement('div');
+            div.className = 'admin-user';
+            if (uid === adminSelectedUser) div.classList.add('selected');
+            div.textContent = `${uid} (${getBalance(uid).toFixed(2)})`;
+            div.onclick = () => {
+                adminSelectedUser = uid;
+                document.getElementById('adminSelectedUser').innerText = adminSelectedUser;
+                refreshList();
+            };
             listDiv.appendChild(div);
         });
     }
     refreshList();
-    document.getElementById('adminAdd').onclick=()=>{ let amt=parseFloat(document.getElementById('adminAmount').value); if(isNaN(amt)||amt<=0){ alert("请输入正数"); return; } let cur=getBalance(adminSelectedUser); setBalance(adminSelectedUser,cur+amt); refreshList(); if(adminSelectedUser===currentUser){ currentBalance=getBalance(currentUser); updateUI(); } alert(`给 ${adminSelectedUser} 上分 ${amt}`); };
-    document.getElementById('adminSub').onclick=()=>{ let amt=parseFloat(document.getElementById('adminAmount').value); if(isNaN(amt)||amt<=0){ alert("请输入正数"); return; } let cur=getBalance(adminSelectedUser); if(cur<amt){ alert("余额不足"); return; } setBalance(adminSelectedUser,cur-amt); refreshList(); if(adminSelectedUser===currentUser){ currentBalance=getBalance(currentUser); updateUI(); } alert(`从 ${adminSelectedUser} 下分 ${amt}`); };
-    document.getElementById('adminQuery').onclick=()=>{ alert(`${adminSelectedUser} 余额: ${getBalance(adminSelectedUser).toFixed(2)}`); };
-    document.getElementById('adminReset').onclick=()=>{ if(confirm(`重置 ${adminSelectedUser} 余额为1000？`)){ setBalance(adminSelectedUser,1000); refreshList(); if(adminSelectedUser===currentUser){ currentBalance=getBalance(currentUser); updateUI(); } alert("重置成功"); } };
-    document.getElementById('adminPwd').onclick=()=>{ let old=prompt("当前密码:"); if(old!==adminPwd){ alert("密码错误"); return; } let newPwd=prompt("新密码(至少6位):"); if(!newPwd||newPwd.length<6){ alert("密码至少6位"); return; } adminPwd=newPwd; localStorage.setItem('dice_admin_pwd',newPwd); alert("密码修改成功"); };
-    document.getElementById('adminClose').onclick=()=>{ panel.remove(); adminPanel=null; };
+    document.getElementById('adminAdd').onclick = () => {
+        let amt = parseFloat(document.getElementById('adminAmount').value);
+        if (isNaN(amt) || amt <= 0) { alert("请输入正数"); return; }
+        let cur = getBalance(adminSelectedUser);
+        setBalance(adminSelectedUser, cur + amt);
+        refreshList();
+        if (adminSelectedUser === currentUser) { currentBalance = getBalance(currentUser); updateUI(); }
+        alert(`给 ${adminSelectedUser} 上分 ${amt}`);
+    };
+    document.getElementById('adminSub').onclick = () => {
+        let amt = parseFloat(document.getElementById('adminAmount').value);
+        if (isNaN(amt) || amt <= 0) { alert("请输入正数"); return; }
+        let cur = getBalance(adminSelectedUser);
+        if (cur < amt) { alert("余额不足"); return; }
+        setBalance(adminSelectedUser, cur - amt);
+        refreshList();
+        if (adminSelectedUser === currentUser) { currentBalance = getBalance(currentUser); updateUI(); }
+        alert(`从 ${adminSelectedUser} 下分 ${amt}`);
+    };
+    document.getElementById('adminQuery').onclick = () => {
+        alert(`${adminSelectedUser} 余额: ${getBalance(adminSelectedUser).toFixed(2)}`);
+    };
+    document.getElementById('adminReset').onclick = () => {
+        if (confirm(`重置 ${adminSelectedUser} 余额为1000？`)) {
+            setBalance(adminSelectedUser, 1000);
+            refreshList();
+            if (adminSelectedUser === currentUser) { currentBalance = getBalance(currentUser); updateUI(); }
+            alert("重置成功");
+        }
+    };
+    document.getElementById('adminPwd').onclick = () => {
+        let old = prompt("当前密码:");
+        if (old !== adminPwd) { alert("密码错误"); return; }
+        let newPwd = prompt("新密码(至少6位):");
+        if (!newPwd || newPwd.length < 6) { alert("密码至少6位"); return; }
+        adminPwd = newPwd;
+        localStorage.setItem('dice_admin_pwd', newPwd);
+        alert("密码修改成功");
+    };
+    document.getElementById('adminClose').onclick = () => { panel.remove(); adminPanel = null; };
 }
-function createPointsGrid(){
-    let grid=document.getElementById('pointsGrid');
-    for(let i=4;i<=17;i++){
-        let card=document.createElement('div'); card.className='point-card'; card.setAttribute('data-point',i);
-        card.innerHTML=`<div class="point-value">${i}点</div><div class="point-odds">赔 ${oddsMap[i]}倍</div><div class="point-bet-amount" id="bet_${i}">0</div>`;
-        card.onclick=()=>addBet(i);
+
+// ======================= 创建点数网格 =======================
+function createPointsGrid() {
+    const grid = document.getElementById('pointsGrid');
+    for (let i = 4; i <= 17; i++) {
+        const card = document.createElement('div');
+        card.className = 'point-card';
+        card.setAttribute('data-point', i);
+        card.innerHTML = `<div class="point-value">${i}点</div><div class="point-odds">赔 ${oddsMap[i]}倍</div><div class="point-bet-amount" id="bet_${i}">0</div>`;
+        card.onclick = () => addBet(i);
         grid.appendChild(card);
     }
 }
-function init(){
+
+// ======================= 初始化 =======================
+function init() {
     createPointsGrid();
-    setDiceValue(diceEl[0],1); setDiceValue(diceEl[1],1); setDiceValue(diceEl[2],1);
-    totalEl.innerText=3;
+    // 初始化骰子显示为1点
+    setDiceValue(diceEl[0], 1);
+    setDiceValue(diceEl[1], 1);
+    setDiceValue(diceEl[2], 1);
+    totalEl.innerText = 3;
     updateUI();
     updateHistory();
     startCountdown(25);
-    let saved=localStorage.getItem('dice_admin_pwd'); if(saved) adminPwd=saved;
-    document.querySelectorAll('.chip').forEach(chip=>{
-        chip.onclick=()=>{ selectedChip=parseInt(chip.dataset.val); document.getElementById('selectedChip').innerText=selectedChip; document.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected-chip')); chip.classList.add('selected-chip'); };
+    // 读取保存的管理员密码
+    let saved = localStorage.getItem('dice_admin_pwd');
+    if (saved) adminPwd = saved;
+    // 筹码点击事件
+    document.querySelectorAll('.chip').forEach(chip => {
+        chip.onclick = () => {
+            selectedChip = parseInt(chip.dataset.val);
+            document.getElementById('selectedChip').innerText = selectedChip;
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected-chip'));
+            chip.classList.add('selected-chip');
+            if (navigator.vibrate) navigator.vibrate(20);
+        };
     });
-    document.querySelectorAll('.special-card').forEach(card=>{ card.onclick=()=>addBet(card.dataset.type); });
-    document.getElementById('clearAllBtn').onclick=clearAll;
-    document.getElementById('refreshBtn').onclick=refreshBalance;
-    document.getElementById('betBtn').onclick=draw;
-    document.getElementById('switchBtn').onclick=switchUser;
-    document.getElementById('historyBtn').onclick=showHistoryModal;
-    document.getElementById('adminEntry').onclick=()=>{ let pwd=prompt("管理员密码:"); if(pwd===adminPwd) showAdminPanel(); else if(pwd!==null) alert("密码错误"); };
-    document.getElementById('newUserBtn').onclick=()=>{ let newId="player_"+Math.floor(Math.random()*100000); document.getElementById('switchId').value=newId; switchUser(); alert(`新账户：${newId}\n初始余额：1000`); };
+    // 大小单双点击
+    document.querySelectorAll('.special-card').forEach(card => {
+        card.onclick = () => addBet(card.dataset.type);
+    });
+    // 按钮事件
+    document.getElementById('clearAllBtn').onclick = clearAll;
+    document.getElementById('refreshBtn').onclick = refreshBalance;
+    document.getElementById('betBtn').onclick = draw;
+    document.getElementById('switchBtn').onclick = switchUser;
+    document.getElementById('historyBtn').onclick = showHistoryModal;
+    document.getElementById('adminEntry').onclick = () => {
+        let pwd = prompt("管理员密码:");
+        if (pwd === adminPwd) showAdminPanel();
+        else if (pwd !== null) alert("密码错误");
+    };
+    document.getElementById('newUserBtn').onclick = () => {
+        let newId = "player_" + Math.floor(Math.random() * 100000);
+        document.getElementById('switchId').value = newId;
+        switchUser();
+        alert(`新账户：${newId}\n初始余额：1000`);
+    };
 }
 init();
 </script>
 </body>
-</html>
-
-
-
+</html
