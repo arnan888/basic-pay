@@ -636,7 +636,95 @@
             tiger.classList.add('highlight-win');
             setTimeout(() => {
                 dragon.classList.remove('highlight-win');
-            
+                tiger.classList.remove('highlight-win');
+            }, 800);
+        }
+    }
+
+    // ========== 游戏状态 ==========
+    let state = {
+        balance: getBalance(CURRENT_USER_ID),
+        bets: { DRAGON: 0, TIGER: 0, TIE: 0 },
+        betRolling: false,
+        autoMode: true,
+        speed: 1,
+        pool: 50000,
+        countdown: 30,
+        countdownInterval: null
+    };
+    let lastBet = null;
+    let isBetLocked = false;
+
+    function syncBalance() { state.balance = getBalance(CURRENT_USER_ID); updateUI(); }
+
+    function enableBetButtons(enabled) {
+        const betBtns = document.querySelectorAll('.quick-bet, .clear-bet, #fightBtn');
+        betBtns.forEach(btn => {
+            if(enabled) { btn.disabled = false; btn.style.opacity = '1'; }
+            else { btn.disabled = true; btn.style.opacity = '0.5'; }
+        });
+    }
+
+    // 转盘同步函数（在转盘部分定义，先占位）
+    let syncWheelToResultFunc = null;
+
+    // 核心：下注开奖函数（转盘同步）
+    function placeBet(type, amount) {
+        if (state.betRolling || isAnimating || amount<=0 || amount>state.balance) return false;
+        state.betRolling = true;
+        
+        const outcomes = ['龙', '虎', '和'];
+        const result = outcomes[Math.floor(Math.random() * 3)];
+        let win = 0;
+        if (type === result) win = amount * (result === '和' ? 8 : 2);
+        
+        // 同步转盘到结果
+        if (syncWheelToResultFunc) {
+            syncWheelToResultFunc(result);
+        }
+        
+        const newBalance = state.balance - amount + win;
+        setBalance(CURRENT_USER_ID, newBalance);
+        state.balance = newBalance;
+        updateUI();
+        addRecord(CURRENT_USER_ID, type, result, win, amount);
+        pushResult(CURRENT_USER_ID, result);
+        flashAndPop(result);
+        highlightWord(result);
+        const resultMsg = win > 0 ? '🎲 开奖: ' + result + '  ✅ 中奖 +' + win + ' TRX' : '🎲 开奖: ' + result + '  ❌ 未中奖';
+        document.getElementById('battleResult').innerHTML = resultMsg;
+        showResultAnimation(result, win, amount, () => {
+            if (state.autoMode) {
+                clearCountdown();
+                startCountdown(30);
+            }
+        });
+        state.betRolling = false;
+        return true;
+    }
+
+    function executeBet() {
+        if (state.betRolling || isAnimating) return;
+        let selectedType = null, selectedAmount = 0;
+        if (state.bets.DRAGON > selectedAmount) { selectedType = "DRAGON"; selectedAmount = state.bets.DRAGON; }
+        if (state.bets.TIGER > selectedAmount) { selectedType = "TIGER"; selectedAmount = state.bets.TIGER; }
+        if (state.bets.TIE > selectedAmount) { selectedType = "TIE"; selectedAmount = state.bets.TIE; }
+        if (!selectedType) return;
+        const betType = { DRAGON:"龙", TIGER:"虎", TIE:"和" }[selectedType];
+        lastBet = { type: betType, amount: selectedAmount };
+        clearCountdown();
+        placeBet(betType, selectedAmount);
+        state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
+        updateUI();
+    }
+
+    function repeatLastBet() { 
+        if(lastBet && !state.betRolling && !isAnimating && !isBetLocked) {
+            placeBet(lastBet.type, lastBet.amount);
+        } else if(isBetLocked) {
+            showModal("⏰ 最后3秒禁止下注！请等待开奖", "知道了");
+        }
+
 
 
 
