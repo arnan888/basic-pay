@@ -1,147 +1,121 @@
-```html
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>三骰子 · 猜点数</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>至尊骰宝 · 大小单双点数</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             user-select: none;
-            -webkit-tap-highlight-color: transparent;
         }
         body {
-            background: linear-gradient(135deg, #0a2a1a 0%, #0a3a2a 100%);
-            min-height: 100vh;
+            background: #0a0a0a;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+            min-height: 100vh;
+            font-family: system-ui, 'PingFang SC', sans-serif;
             padding: 12px;
         }
-        .container-outer {
-            width: 100%;
+        .game-box {
             max-width: 500px;
-            margin: 0 auto;
-            background: linear-gradient(145deg, #1a3a2a, #0a2a1a);
-            border-radius: 32px;
-            padding: 12px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            width: 100%;
+            background: linear-gradient(145deg, #1a4a2a, #0a2a1a);
+            border-radius: 40px;
+            padding: 16px;
+            border: 1px solid #ffaa44;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
         }
-        .container {
-            background: linear-gradient(135deg, #1e3a2e, #152a20);
-            border-radius: 24px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* 骰子区域 */
-        .dice-area {
+        .inner {
             background: rgba(0,0,0,0.3);
-            margin: 16px;
-            border-radius: 24px;
+            border-radius: 32px;
+            padding: 16px;
+        }
+        .dice-area {
+            background: rgba(0,0,0,0.4);
+            border-radius: 28px;
             padding: 20px;
             text-align: center;
-            box-shadow: inset 0 0 30px rgba(0,0,0,0.3), 0 10px 20px rgba(0,0,0,0.3);
+            margin-bottom: 16px;
         }
-        .dice-title {
-            font-size: 14px;
-            color: #ffaa44;
-            letter-spacing: 3px;
-            margin-bottom: 15px;
-        }
-        .three-dice {
+        .dice-row {
             display: flex;
             justify-content: center;
             gap: 20px;
             margin-bottom: 20px;
         }
-        .dice-single {
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(145deg, #fff, #e8e8e8);
-            border-radius: 16px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.8);
+        .dice {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(145deg, #fff, #e0e0e0);
+            border-radius: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 36px;
+            font-size: 48px;
             font-weight: bold;
             color: #c0392b;
-            transition: all 0.1s ease;
             border: 2px solid #ffaa44;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
         }
-        .dice-rolling {
-            animation: diceShake 0.1s infinite;
+        .dice-shake {
+            animation: shake 0.08s infinite;
         }
-        @keyframes diceShake {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            25% { transform: translateY(-5px) rotate(10deg); }
-            75% { transform: translateY(5px) rotate(-10deg); }
+        @keyframes shake {
+            0% { transform: translate(0,0) rotate(0deg); }
+            25% { transform: translate(-5px,-5px) rotate(10deg); }
+            50% { transform: translate(5px,5px) rotate(-10deg); }
+            75% { transform: translate(-5px,5px) rotate(15deg); }
+            100% { transform: translate(0,0) rotate(0deg); }
         }
-        .total-points {
-            text-align: center;
-            margin-top: 15px;
+        .total {
+            background: rgba(0,0,0,0.5);
+            border-radius: 50px;
             padding: 10px;
-            background: rgba(0,0,0,0.4);
+        }
+        .total-label { font-size: 12px; color: #ffaa88; }
+        .total-number { font-size: 48px; font-weight: bold; color: #ffcc44; font-family: monospace; }
+        .total-blink { animation: blink 0.05s step-end infinite; }
+        @keyframes blink {
+            0% { text-shadow: 0 0 5px #ffaa44; }
+            50% { text-shadow: 0 0 20px #ff6600; color: #ffdd88; }
+        }
+        .special-bets {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin: 16px 0;
+        }
+        .special-card {
+            background: linear-gradient(145deg, #2a3a2a, #1a2a1a);
             border-radius: 20px;
-        }
-        .total-label {
-            font-size: 14px;
-            color: #ffaa44;
-        }
-        .total-number {
-            font-size: 48px;
-            font-weight: 900;
-            color: #ffaa44;
-            text-shadow: 0 0 10px #ff6600;
-            font-family: monospace;
-        }
-        .rolling-animation {
-            animation: numberPulse 0.05s step-end infinite;
-        }
-        @keyframes numberPulse {
-            0% { text-shadow: 0 0 5px #ffaa44; transform: scale(1); }
-            50% { text-shadow: 0 0 20px #ff6600; color: #ffdd88; transform: scale(1.05); }
-            100% { text-shadow: 0 0 5px #ffaa44; transform: scale(1); }
-        }
-
-        /* 下注区域 */
-        .bet-section {
-            background: rgba(0,0,0,0.3);
-            margin: 0 16px 16px 16px;
-            border-radius: 20px;
-            padding: 16px;
-            backdrop-filter: blur(10px);
-            max-height: calc(100vh - 420px);
-            overflow-y: auto;
-        }
-        .account-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(0,0,0,0.4);
-            border-radius: 12px;
-            padding: 8px 12px;
-            margin-bottom: 16px;
-        }
-        .account-info { font-size: 13px; color: #ffaa44; }
-        .btn-group { display: flex; gap: 8px; }
-        .btn-sm {
-            background: #1e2a2e;
-            border: none;
-            border-radius: 8px;
-            padding: 5px 14px;
-            color: #ffaa44;
-            font-size: 11px;
+            padding: 12px 8px;
+            text-align: center;
             cursor: pointer;
+            border: 1px solid rgba(255,170,68,0.3);
+            position: relative;
         }
-        
-        /* 点数押注网格 */
+        .special-card.selected {
+            background: linear-gradient(135deg, #ff6600, #cc3300);
+            transform: scale(0.98);
+        }
+        .special-name { font-size: 22px; font-weight: bold; color: #ffcc44; }
+        .special-odds { font-size: 12px; color: #88aa88; margin-top: 4px; }
+        .special-bet-amount {
+            font-size: 14px;
+            font-weight: bold;
+            color: #ffaa44;
+            margin-top: 6px;
+            padding: 4px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 20px;
+        }
+        .special-card.selected .special-name,
+        .special-card.selected .special-odds,
+        .special-card.selected .special-bet-amount { color: #fff; }
         .points-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -151,653 +125,570 @@
         .point-card {
             background: rgba(0,0,0,0.5);
             border-radius: 16px;
-            padding: 12px 8px;
+            padding: 10px 6px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.05s;
             border: 1px solid rgba(255,170,68,0.3);
+            position: relative;
         }
         .point-card.selected {
             background: linear-gradient(135deg, #ff6600, #cc3300);
             transform: scale(0.97);
-            border-color: #ffcc44;
         }
-        .point-value {
-            font-size: 24px;
-            font-weight: 900;
+        .point-value { font-size: 18px; font-weight: bold; color: #ffcc44; }
+        .point-odds { font-size: 10px; color: #88aa88; }
+        .point-bet-amount {
+            font-size: 12px;
+            font-weight: bold;
             color: #ffaa44;
+            margin-top: 4px;
         }
-        .point-card.selected .point-value {
-            color: #fff;
-            text-shadow: 0 0 5px rgba(0,0,0,0.5);
-        }
-        .point-amount {
-            font-size: 14px;
-            color: #ffaa44;
-            margin-top: 5px;
-        }
-        .point-card.selected .point-amount {
-            color: #fff;
-        }
-        
-        .bet-control {
+        .point-card.selected .point-value,
+        .point-card.selected .point-odds,
+        .point-card.selected .point-bet-amount { color: #fff; }
+        .chips {
             display: flex;
             gap: 10px;
+            justify-content: center;
             margin: 16px 0;
             flex-wrap: wrap;
-            justify-content: center;
         }
-        .bet-amount-btn {
-            background: #1e2a2e;
-            border: none;
-            border-radius: 30px;
-            padding: 8px 20px;
-            color: #ffaa44;
+        .chip {
+            width: 65px;
+            padding: 10px 0;
+            border-radius: 50px;
+            text-align: center;
             font-weight: bold;
+            font-size: 18px;
             cursor: pointer;
-            font-size: 16px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: 0.05s;
         }
-        .data-stack {
+        .chip:active { transform: scale(0.94); }
+        .chip.selected-chip {
+            box-shadow: 0 0 0 3px #ffaa44, 0 4px 8px rgba(0,0,0,0.3);
+            transform: scale(1.02);
+        }
+        .chip-10 { background: radial-gradient(#4a90d9, #1a4a8a); color: #fff; }
+        .chip-20 { background: radial-gradient(#50b86a, #2a6a3a); color: #fff; }
+        .chip-50 { background: radial-gradient(#e85d3a, #aa2a1a); color: #fff; }
+        .chip-100 { background: radial-gradient(#9b59b6, #6c3483); color: #fff; }
+        .chip-500 { background: radial-gradient(#f1c40f, #d4a00a); color: #333; }
+        .chip-1000 { background: radial-gradient(#e74c3c, #c0392b); color: #fff; }
+        .selected-chip-display {
+            text-align: center;
+            margin: 8px 0;
+            padding: 8px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 30px;
+        }
+        .selected-chip-text { color: #ffaa44; font-size: 14px; }
+        .selected-chip-value { color: #ffcc44; font-size: 24px; font-weight: bold; }
+        .stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
             margin: 16px 0;
         }
-        .data-item {
-            background: rgba(0,0,0,0.4);
-            border-radius: 12px;
-            padding: 10px;
-            text-align: center;
-        }
-        .data-item label {
-            font-size: 12px;
-            color: #ffaa44;
-        }
-        .data-item value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #ffaa44;
-            display: block;
-        }
-        .timer-text {
-            text-align: center;
-            font-size: 18px;
-            color: #ffaa44;
-            margin: 10px 0;
-            font-weight: bold;
-        }
-        .history-area {
-            background: rgba(0,0,0,0.4);
-            border-radius: 12px;
+        .stat-card {
+            background: rgba(0,0,0,0.5);
+            border-radius: 16px;
             padding: 12px;
+            text-align: center;
+        }
+        .stat-label { font-size: 11px; color: #88aa88; }
+        .stat-value { font-size: 22px; font-weight: bold; color: #ffcc44; }
+        .countdown {
+            text-align: center;
             margin: 16px 0;
         }
-        .history-title {
-            font-size: 12px;
-            color: #ffaa44;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        .history-list {
+        .countdown-num { font-size: 32px; font-weight: bold; color: #ffaa44; }
+        .countdown-warning { animation: warning 0.5s infinite; color: #ff3300 !important; }
+        @keyframes warning { 0%,100% { opacity: 1; } 50% { opacity: 0.5; text-shadow: 0 0 10px red; } }
+        .history {
+            background: rgba(0,0,0,0.4);
+            border-radius: 16px;
+            padding: 12px;
+            margin: 16px 0;
             max-height: 120px;
             overflow-y: auto;
-            font-size: 12px;
         }
         .history-item {
             display: flex;
             justify-content: space-between;
             padding: 6px 10px;
             border-bottom: 1px solid rgba(255,255,255,0.1);
-            color: #ddd;
+            font-size: 12px;
+            color: #ccc;
         }
-        .history-win { color: #4caf50; }
-        .history-lose { color: #f44336; }
-        
-        .exec-row {
+        .win { color: #4caf50; }
+        .lose { color: #f44336; }
+        .buttons {
             display: flex;
-            gap: 10px;
-            margin-top: 12px;
+            gap: 12px;
+            margin: 16px 0;
         }
-        .exec-btn {
+        .btn {
             flex: 1;
             padding: 12px;
-            border-radius: 12px;
-            font-weight: bold;
+            border-radius: 50px;
             text-align: center;
+            font-weight: bold;
             cursor: pointer;
-            background: #1e2a2e;
+            background: rgba(0,0,0,0.5);
             color: #ffaa44;
+            border: 1px solid #ffaa44;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6600, #cc3300);
+            color: #fff;
             border: none;
         }
-        .main-go {
-            background: linear-gradient(135deg, #ff6600, #cc3300);
-            color: white;
-        }
-        .bottom-stats {
+        .btn:active { transform: scale(0.97); }
+        .balance-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
-            margin-top: 12px;
+            margin-top: 16px;
         }
-        .stat-card {
-            background: rgba(0,0,0,0.4);
-            border-radius: 12px;
-            padding: 10px;
+        .balance-card {
+            background: rgba(0,0,0,0.5);
+            border-radius: 16px;
+            padding: 12px;
             text-align: center;
+            cursor: pointer;
         }
-        .stat-card span:first-child {
-            display: block;
-            font-size: 11px;
-            color: #ffaa44;
-        }
-        .stat-card span:last-child {
-            font-size: 22px;
-            font-weight: bold;
-            color: #ffaa44;
-        }
+        .balance-label { font-size: 11px; color: #88aa88; }
+        .balance-value { font-size: 22px; font-weight: bold; color: #ffcc44; }
         .modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.95);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 1000;
         }
         .modal-content {
-            background: #1e2a2e;
+            background: #1a2a1a;
+            border-radius: 28px;
+            padding: 24px;
+            text-align: center;
+            border: 1px solid #ffaa44;
             width: 85%;
             max-width: 340px;
-            border-radius: 20px;
-            padding: 20px;
-            text-align: center;
-            color: white;
+            color: #fff;
         }
-        .modal-content button {
-            background: #ffaa44;
-            border: none;
-            border-radius: 8px;
-            padding: 8px 20px;
-            margin-top: 12px;
+        .admin-user-list {
+            max-height: 150px;
+            overflow-y: auto;
+            margin: 12px 0;
+            background: #0a1a0a;
+            border-radius: 12px;
+            padding: 8px;
+        }
+        .admin-user {
+            padding: 8px;
+            border-bottom: 1px solid #333;
             cursor: pointer;
         }
-        .btn-highlight {
-            animation: btnFlash 0.1s ease-out;
+        .admin-user.selected { background: #ffaa44; color: #1a1a2a; }
+        .admin-input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 12px;
+            background: #0a1a0a;
+            border: 1px solid #ffaa44;
+            color: #fff;
         }
-        @keyframes btnFlash {
-            0% { transform: scale(1); }
-            50% { transform: scale(0.92); }
-            100% { transform: scale(1); }
+        .admin-btns {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 12px 0;
+        }
+        .admin-btn {
+            padding: 8px 16px;
+            border-radius: 25px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .clear-bet-btn {
+            background: rgba(255,170,68,0.2);
+            border: 1px solid #ffaa44;
+            border-radius: 30px;
+            padding: 8px 16px;
+            color: #ffaa44;
+            cursor: pointer;
+            font-size: 12px;
         }
     </style>
 </head>
 <body>
-<div class="container-outer">
-    <div class="container">
-        <!-- 骰子区域 -->
+<div class="game-box">
+    <div class="inner">
         <div class="dice-area">
-            <div class="dice-title">🎲 三 骰 子 开 奖 🎲</div>
-            <div class="three-dice">
-                <div class="dice-single" id="dice1">⚀</div>
-                <div class="dice-single" id="dice2">⚀</div>
-                <div class="dice-single" id="dice3">⚀</div>
+            <div class="dice-row">
+                <div class="dice" id="dice1">⚀</div>
+                <div class="dice" id="dice2">⚀</div>
+                <div class="dice" id="dice3">⚀</div>
             </div>
-            <div class="total-points">
+            <div class="total">
                 <div class="total-label">总 点 数</div>
                 <div class="total-number" id="totalPoints">3</div>
             </div>
         </div>
 
-        <!-- 下注区域 -->
-        <div class="bet-section">
-            <div class="account-bar">
-                <div class="account-info">👤 <span id="currentUserId">player888</span></div>
-                <div class="btn-group">
-                    <button id="myHistoryBtn" class="btn-sm">记录</button>
-                    <button id="newUserBtn" class="btn-sm">新用户</button>
-                </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="color:#ffaa44">👤</span>
+                <span id="currentUserId" style="color:#ffaa44; font-weight:bold">player888</span>
             </div>
-            <div class="account-bar" style="margin-top: 0;">
-                <div style="display: flex; gap: 8px; width:100%;">
-                    <input type="text" id="switchUserIdInput" placeholder="登录ID" style="flex:2; background:#1e2a2e; border:1px solid #ffaa44; border-radius:8px; padding:6px 12px; color:white; font-size:12px;">
-                    <button id="switchUserBtn" class="btn-sm">登录</button>
-                </div>
+            <div>
+                <button id="historyBtn" class="clear-bet-btn">记录</button>
+                <button id="newUserBtn" class="clear-bet-btn">新用户</button>
             </div>
+        </div>
+        
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+            <input type="text" id="switchId" placeholder="输入ID登录" style="flex:1; background:rgba(0,0,0,0.5); border:1px solid #ffaa44; border-radius:30px; padding:8px 12px; color:#fff">
+            <button id="switchBtn" class="clear-bet-btn">登录</button>
+        </div>
 
-            <!-- 点数押注网格 4-17点 -->
-            <div class="points-grid" id="pointsGrid"></div>
+        <div class="selected-chip-display">
+            <div class="selected-chip-text">当前筹码</div>
+            <div class="selected-chip-value" id="selectedChip">0</div>
+        </div>
 
-            <!-- 快捷下注按钮 -->
-            <div class="bet-control">
-                <button class="bet-amount-btn" data-amount="10">+10</button>
-                <button class="bet-amount-btn" data-amount="20">+20</button>
-                <button class="bet-amount-btn" data-amount="50">+50</button>
-                <button class="bet-amount-btn" data-amount="100">+100</button>
-                <button class="bet-amount-btn" data-amount="500">+500</button>
-                <button class="bet-amount-btn" data-amount="1000">+1000</button>
+        <div class="special-bets">
+            <div class="special-card" data-type="BIG">
+                <div class="special-name">🎲 大</div>
+                <div class="special-odds">赔 2倍</div>
+                <div class="special-bet-amount" id="bet_BIG">0</div>
             </div>
-
-            <!-- 数据展示 -->
-            <div class="data-stack">
-                <div class="data-item"><label>当前押注</label><value id="currentBetAmount">0.00</value></div>
-                <div class="data-item"><label>选中点数</label><value id="selectedPoint">-</value></div>
+            <div class="special-card" data-type="SMALL">
+                <div class="special-name">🎲 小</div>
+                <div class="special-odds">赔 2倍</div>
+                <div class="special-bet-amount" id="bet_SMALL">0</div>
             </div>
-
-            <!-- 倒计时 -->
-            <div class="timer-text">⏱️ 下注时间: <span id="countdownNum">25</span> 秒</div>
-
-            <!-- 历史记录 -->
-            <div class="history-area">
-                <div class="history-title">📋 开奖记录</div>
-                <div class="history-list" id="historyList"></div>
+            <div class="special-card" data-type="ODD">
+                <div class="special-name">🎲 单</div>
+                <div class="special-odds">赔 2倍</div>
+                <div class="special-bet-amount" id="bet_ODD">0</div>
             </div>
-
-            <!-- 操作按钮 -->
-            <div class="exec-row">
-                <button class="exec-btn" id="refreshBtn">刷新</button>
-                <button class="exec-btn" id="cancelBtn">取消</button>
-                <button class="exec-btn main-go" id="fightBtn">确认投注</button>
+            <div class="special-card" data-type="EVEN">
+                <div class="special-name">🎲 双</div>
+                <div class="special-odds">赔 2倍</div>
+                <div class="special-bet-amount" id="bet_EVEN">0</div>
             </div>
+        </div>
 
-            <!-- 余额 -->
-            <div class="bottom-stats">
-                <div class="stat-card"><span>💰 余额</span><span id="balanceDisplay">0.00</span></div>
-                <div class="stat-card"><span>🎰 奖池</span><span id="poolDisplay">50000.00</span></div>
+        <div class="points-grid" id="pointsGrid"></div>
+
+        <div class="chips">
+            <div class="chip chip-10" data-val="10">10</div>
+            <div class="chip chip-20" data-val="20">20</div>
+            <div class="chip chip-50" data-val="50">50</div>
+            <div class="chip chip-100" data-val="100">100</div>
+            <div class="chip chip-500" data-val="500">500</div>
+            <div class="chip chip-1000" data-val="1000">1K</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card"><div class="stat-label">总押注</div><div class="stat-value" id="totalBet">0</div></div>
+            <div class="stat-card"><div class="stat-label">余额</div><div class="stat-value" id="balanceDisplay">1000</div></div>
+        </div>
+
+        <div class="countdown">
+            <div class="countdown-label">下注倒计时</div>
+            <div class="countdown-num" id="countdownNum">25</div>
+        </div>
+
+        <div class="history" id="historyList"></div>
+
+        <div class="buttons">
+            <button class="btn" id="clearAllBtn">全部取消</button>
+            <button class="btn" id="refreshBtn">刷新</button>
+            <button class="btn btn-primary" id="betBtn">确认投注</button>
+        </div>
+
+        <div class="balance-row">
+            <div class="balance-card" id="adminEntry">
+                <div class="balance-label">💰 余额</div>
+                <div class="balance-value" id="balanceDisplay2">1000.00</div>
+            </div>
+            <div class="balance-card">
+                <div class="balance-label">🎰 奖池</div>
+                <div class="balance-value" id="poolDisplay">50000.00</div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-(function(){
-    // 骰子点数映射
-    const diceFaces = {
-        1: '⚀', 2: '⚁', 3: '⚂', 4: '⚃', 5: '⚄', 6: '⚅'
-    };
-    
-    // 用户数据
-    let users = JSON.parse(localStorage.getItem('dice_game_users')) || {};
-    let CURRENT_USER_ID = "player888";
-    if (!users[CURRENT_USER_ID]) {
-        users[CURRENT_USER_ID] = { balance: 1000.00, records: [] };
-        localStorage.setItem('dice_game_users', JSON.stringify(users));
+const diceMap = {1:'⚀',2:'⚁',3:'⚂',4:'⚃',5:'⚄',6:'⚅'};
+const oddsMap = {
+    4:60,5:30,6:18,7:12,8:8,9:7,10:6,11:6,12:7,13:8,14:12,15:18,16:30,17:60,
+    'BIG':2, 'SMALL':2, 'ODD':2, 'EVEN':2
+};
+
+let users = JSON.parse(localStorage.getItem('dice_users')) || {};
+let currentUser = "player888";
+if (!users[currentUser]) users[currentUser] = { balance: 1000, records: [] };
+let adminPwd = "wang000000";
+
+function saveUsers() { localStorage.setItem('dice_users', JSON.stringify(users)); }
+function getBalance(uid) { return users[uid]?.balance || 1000; }
+function setBalance(uid, amt) { if (!users[uid]) users[uid] = { balance: 1000, records: [] }; users[uid].balance = amt; saveUsers(); }
+
+let bets = { 'BIG':0, 'SMALL':0, 'ODD':0, 'EVEN':0, 4:0,5:0,6:0,7:0,8:0,9:0,10:0,11:0,12:0,13:0,14:0,15:0,16:0,17:0 };
+let selectedChip = 0;
+let currentBalance = getBalance(currentUser);
+const diceEl = [document.getElementById('dice1'), document.getElementById('dice2'), document.getElementById('dice3')];
+const totalEl = document.getElementById('totalPoints');
+
+function getResultType(total) {
+    let types = [];
+    if (total >= 11 && total <= 17) types.push('BIG');
+    if (total >= 4 && total <= 10) types.push('SMALL');
+    if (total % 2 === 1) types.push('ODD');
+    if (total % 2 === 0) types.push('EVEN');
+    return types;
+}
+
+function updateBetsDisplay() {
+    document.getElementById('bet_BIG').innerText = bets['BIG'];
+    document.getElementById('bet_SMALL').innerText = bets['SMALL'];
+    document.getElementById('bet_ODD').innerText = bets['ODD'];
+    document.getElementById('bet_EVEN').innerText = bets['EVEN'];
+    for (let i = 4; i <= 17; i++) {
+        const el = document.getElementById(`bet_${i}`);
+        if (el) el.innerText = bets[i];
     }
-    
-    function saveUsers() { localStorage.setItem('dice_game_users', JSON.stringify(users)); }
-    function getBalance(uid) { if (!users[uid]) users[uid] = { balance: 1000.00, records: [] }; return users[uid].balance; }
-    function setBalance(uid, amt) { if (!users[uid]) users[uid] = { balance: 1000.00, records: [] }; users[uid].balance = amt; saveUsers(); }
-    function addBalance(uid, delta) { setBalance(uid, getBalance(uid) + delta); }
-    function generateRandomId() { return "player_" + Math.floor(Math.random() * 1000000); }
+    let total = 0;
+    for (let k in bets) total += bets[k];
+    document.getElementById('totalBet').innerText = total;
+    document.getElementById('balanceDisplay').innerText = currentBalance;
+    document.getElementById('balanceDisplay2').innerText = currentBalance.toFixed(2);
+}
 
-    // 游戏状态
-    let state = {
-        balance: getBalance(CURRENT_USER_ID),
-        selectedPoint: null,
-        betAmount: 0,
-        countdown: 25,
-        countdownInterval: null,
-        isDrawing: false
-    };
-    
-    let isBetLocked = false;
+function addBet(targetType) {
+    if (selectedChip <= 0) { alert("请先选择筹码"); return; }
+    if (selectedChip > currentBalance) { alert("余额不足！当前余额：" + currentBalance); return; }
+    currentBalance -= selectedChip;
+    setBalance(currentUser, currentBalance);
+    bets[targetType] += selectedChip;
+    updateBetsDisplay();
+    highlightSelected(targetType);
+}
 
-    function showModal(msg, btnText) {
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.innerHTML = `<div class="modal-content"><h3>提示</h3><p>${msg}</p><button id="modalCloseBtn">${btnText}</button></div>`;
-        document.body.appendChild(modal);
-        document.getElementById('modalCloseBtn').onclick = () => modal.remove();
+function highlightSelected(targetType) {
+    document.querySelectorAll('.special-card, .point-card').forEach(el => el.classList.remove('selected'));
+    if (typeof targetType === 'string') {
+        document.querySelector(`.special-card[data-type="${targetType}"]`)?.classList.add('selected');
+    } else {
+        document.querySelector(`.point-card[data-point="${targetType}"]`)?.classList.add('selected');
     }
+    setTimeout(() => {
+        document.querySelectorAll('.special-card, .point-card').forEach(el => el.classList.remove('selected'));
+    }, 800);
+}
 
-    function flashButton(btn) {
-        if(!btn) return;
-        btn.classList.add('btn-highlight');
-        setTimeout(() => btn.classList.remove('btn-highlight'), 150);
-        if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(20);
-    }
+function clearAllBets() {
+    let totalBet = 0;
+    for (let k in bets) totalBet += bets[k];
+    currentBalance += totalBet;
+    setBalance(currentUser, currentBalance);
+    for (let k in bets) bets[k] = 0;
+    updateBetsDisplay();
+}
 
-    // 骰子滚动动画
-    let rollingInterval = null;
-    function startDiceRolling(finalDice1, finalDice2, finalDice3, finalTotal, winAmount) {
-        const dice1El = document.getElementById('dice1');
-        const dice2El = document.getElementById('dice2');
-        const dice3El = document.getElementById('dice3');
-        const totalEl = document.getElementById('totalPoints');
-        
-        if (rollingInterval) clearInterval(rollingInterval);
-        
-        dice1El.classList.add('dice-rolling');
-        dice2El.classList.add('dice-rolling');
-        dice3El.classList.add('dice-rolling');
-        totalEl.classList.add('rolling-animation');
-        
-        let step = 0;
-        const totalSteps = 20;
-        
-        rollingInterval = setInterval(() => {
-            step++;
-            // 随机显示点数
-            const random1 = Math.floor(Math.random() * 6) + 1;
-            const random2 = Math.floor(Math.random() * 6) + 1;
-            const random3 = Math.floor(Math.random() * 6) + 1;
-            dice1El.innerText = diceFaces[random1];
-            dice2El.innerText = diceFaces[random2];
-            dice3El.innerText = diceFaces[random3];
-            totalEl.innerText = random1 + random2 + random3;
-            
-            if (step >= totalSteps) {
-                clearInterval(rollingInterval);
-                rollingInterval = null;
-                dice1El.classList.remove('dice-rolling');
-                dice2El.classList.remove('dice-rolling');
-                dice3El.classList.remove('dice-rolling');
-                totalEl.classList.remove('rolling-animation');
-                
-                dice1El.innerText = diceFaces[finalDice1];
-                dice2El.innerText = diceFaces[finalDice2];
-                dice3El.innerText = diceFaces[finalDice3];
-                totalEl.innerText = finalTotal;
-                
-                if (winAmount > 0) {
-                    totalEl.style.color = '#4caf50';
-                    setTimeout(() => totalEl.style.color = '#ffaa44', 2000);
-                } else {
-                    totalEl.style.color = '#f44336';
-                    setTimeout(() => totalEl.style.color = '#ffaa44', 2000);
-                }
-            }
-        }, 80);
-    }
-
-    // 开奖
-    function executeDraw() {
-        if (state.isDrawing) return;
-        state.isDrawing = true;
-        isBetLocked = true;
-        
-        // 随机三个骰子
-        const dice1 = Math.floor(Math.random() * 6) + 1;
-        const dice2 = Math.floor(Math.random() * 6) + 1;
-        const dice3 = Math.floor(Math.random() * 6) + 1;
-        const total = dice1 + dice2 + dice3;
-        
-        let win = 0;
-        let isWin = false;
-        if (state.selectedPoint !== null && state.selectedPoint === total) {
-            // 中奖赔率：点数不同赔率不同
-            let odds = 1;
-            if (total === 4 || total === 17) odds = 60;
-            else if (total === 5 || total === 16) odds = 30;
-            else if (total === 6 || total === 15) odds = 18;
-            else if (total === 7 || total === 14) odds = 12;
-            else if (total === 8 || total === 13) odds = 8;
-            else if (total === 9 || total === 12) odds = 7;
-            else if (total === 10 || total === 11) odds = 6;
-            win = state.betAmount * odds;
-            isWin = true;
-        }
-        
-        // 滚动动画
-        startDiceRolling(dice1, dice2, dice3, total, win);
-        
-        // 更新余额
-        const newBalance = state.balance - state.betAmount + win;
-        setBalance(CURRENT_USER_ID, newBalance);
-        state.balance = newBalance;
-        
-        // 记录历史
-        let recs = users[CURRENT_USER_ID].records || [];
-        recs.unshift({
-            time: new Date().toLocaleTimeString(),
-            betPoint: state.selectedPoint,
-            betAmount: state.betAmount,
-            result: total,
-            win: win,
-            isWin: isWin
-        });
-        if (recs.length > 30) recs.pop();
-        users[CURRENT_USER_ID].records = recs;
-        saveUsers();
-        refreshHistoryDisplay();
-        
-        // 更新UI
-        updateUI();
-        
-        // 震动反馈
-        if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(isWin ? [100, 50, 100] : 100);
-        
-        // 5秒后重置
-        setTimeout(() => {
-            state.selectedPoint = null;
-            state.betAmount = 0;
-            state.isDrawing = false;
-            updateUI();
-            startCountdown(25);
-        }, 5000);
-    }
-
-    // 下注
-    function placeBet() {
-        if (state.isDrawing || isBetLocked) {
-            showModal("开奖中，请等待...", "知道了");
-            return;
-        }
-        if (state.selectedPoint === null) {
-            showModal("请先选择一个点数", "知道了");
-            return;
-        }
-        if (state.betAmount <= 0) {
-            showModal("请先输入下注金额", "知道了");
-            return;
-        }
-        if (state.betAmount > state.balance) {
-            showModal("余额不足！当前余额：" + state.balance.toFixed(2), "知道了");
-            return;
-        }
-        
-        // 锁定下注，开始开奖
-        clearCountdown();
-        executeDraw();
-    }
-
-    function setBetAmount(amount) {
-        if (state.isDrawing || isBetLocked) return;
-        state.betAmount += amount;
-        if (state.betAmount < 0) state.betAmount = 0;
-        updateUI();
-        flashButton(document.querySelector(`.bet-amount-btn[data-amount="${amount}"]`));
-    }
-
-    function selectPoint(point) {
-        if (state.isDrawing || isBetLocked) return;
-        state.selectedPoint = point;
-        updateUI();
-        // 高亮选中的点数卡片
-        document.querySelectorAll('.point-card').forEach(card => {
-            if (parseInt(card.dataset.point) === point) {
-                card.classList.add('selected');
+let rollTimer = null;
+function rollDice(finalVals, finalTotal, winAmounts) {
+    if (rollTimer) clearInterval(rollTimer);
+    diceEl.forEach(d => d.classList.add('dice-shake'));
+    totalEl.classList.add('total-blink');
+    let step = 0, maxStep = 20;
+    rollTimer = setInterval(() => {
+        step++;
+        diceEl.forEach(d => { let r = Math.floor(Math.random() * 6) + 1; d.innerText = diceMap[r]; });
+        let sum = 0;
+        diceEl.forEach(d => { for (let k in diceMap) if (diceMap[k] === d.innerText) sum += parseInt(k); });
+        totalEl.innerText = sum;
+        if (step >= maxStep) {
+            clearInterval(rollTimer);
+            rollTimer = null;
+            diceEl.forEach(d => d.classList.remove('dice-shake'));
+            totalEl.classList.remove('total-blink');
+            diceEl.forEach((d, i) => d.innerText = diceMap[finalVals[i]]);
+            totalEl.innerText = finalTotal;
+            let totalWin = winAmounts.reduce((a,b)=>a+b,0);
+            if (totalWin > 0) {
+                totalEl.style.color = '#4caf50';
+                setTimeout(() => totalEl.style.color = '#ffcc44', 2000);
             } else {
-                card.classList.remove('selected');
+                totalEl.style.color = '#f44336';
+                setTimeout(() => totalEl.style.color = '#ffcc44', 2000);
             }
-        });
-        flashButton(document.querySelector(`.point-card[data-point="${point}"]`));
-    }
-
-    function cancelBet() {
-        if (state.isDrawing || isBetLocked) return;
-        state.selectedPoint = null;
-        state.betAmount = 0;
-        updateUI();
-        document.querySelectorAll('.point-card').forEach(card => card.classList.remove('selected'));
-        flashButton(document.getElementById('cancelBtn'));
-    }
-
-    function refreshBalance() {
-        state.balance = getBalance(CURRENT_USER_ID);
-        updateUI();
-        flashButton(document.getElementById('refreshBtn'));
-    }
-
-    function updateUI() {
-        document.getElementById('balanceDisplay').innerText = state.balance.toFixed(2);
-        document.getElementById('currentBetAmount').innerText = state.betAmount.toFixed(2);
-        document.getElementById('selectedPoint').innerText = state.selectedPoint !== null ? state.selectedPoint : '-';
-        document.getElementById('poolDisplay').innerText = (50000 + Math.random() * 1000).toFixed(2);
-    }
-
-    function refreshHistoryDisplay() {
-        const container = document.getElementById('historyList');
-        if (!container) return;
-        const recs = users[CURRENT_USER_ID]?.records || [];
-        container.innerHTML = '';
-        if (recs.length === 0) {
-            container.innerHTML = '<div style="text-align:center; color:#aaa;">暂无记录</div>';
-            return;
         }
-        recs.slice(0, 15).forEach(r => {
-            const div = document.createElement('div');
-            div.className = 'history-item';
-            div.innerHTML = `<span>${r.time}</span>
-                            <span>押${r.betPoint}点 ${r.betAmount}</span>
-                            <span>开${r.result}点</span>
-                            <span class="${r.isWin ? 'history-win' : 'history-lose'}">${r.isWin ? `+${r.win}` : `-${r.betAmount}`}</span>`;
-            container.appendChild(div);
-        });
+    }, 60);
+}
+
+let isDrawing = false, isBetLocked = false, countdownInterval = null;
+
+function draw() {
+    if (isDrawing) return;
+    let totalBet = 0;
+    for (let k in bets) totalBet += bets[k];
+    if (totalBet === 0) { alert("请先下注"); return; }
+    isDrawing = true;
+    isBetLocked = true;
+    const d1 = Math.floor(Math.random() * 6) + 1;
+    const d2 = Math.floor(Math.random() * 6) + 1;
+    const d3 = Math.floor(Math.random() * 6) + 1;
+    const total = d1 + d2 + d3;
+    const resultTypes = getResultType(total);
+    let winAmounts = [], winDetails = [];
+    if (resultTypes.includes('BIG') && bets['BIG'] > 0) { let win = bets['BIG'] * oddsMap['BIG']; winAmounts.push(win); winDetails.push(`大 +${win}`); }
+    if (resultTypes.includes('SMALL') && bets['SMALL'] > 0) { let win = bets['SMALL'] * oddsMap['SMALL']; winAmounts.push(win); winDetails.push(`小 +${win}`); }
+    if (resultTypes.includes('ODD') && bets['ODD'] > 0) { let win = bets['ODD'] * oddsMap['ODD']; winAmounts.push(win); winDetails.push(`单 +${win}`); }
+    if (resultTypes.includes('EVEN') && bets['EVEN'] > 0) { let win = bets['EVEN'] * oddsMap['EVEN']; winAmounts.push(win); winDetails.push(`双 +${win}`); }
+    if (bets[total] > 0) { let win = bets[total] * oddsMap[total]; winAmounts.push(win); winDetails.push(`${total}点 +${win}`); }
+    let totalWin = winAmounts.reduce((a,b)=>a+b,0);
+    rollDice([d1, d2, d3], total, winAmounts);
+    currentBalance += totalWin;
+    setBalance(currentUser, currentBalance);
+    let betSummary = [];
+    for (let k in bets) if (bets[k] > 0) {
+        if (typeof k === 'string') {
+            let name = k === 'BIG' ? '大' : (k === 'SMALL' ? '小' : (k === 'ODD' ? '单' : '双'));
+            betSummary.push(`${name}${bets[k]}`);
+        } else { betSummary.push(`${k}点${bets[k]}`); }
     }
+    let recs = users[currentUser].records || [];
+    recs.unshift({ time: new Date().toLocaleTimeString(), bets: betSummary.join(' '), result: total, resultType: resultTypes.map(t => t === 'BIG' ? '大' : (t === 'SMALL' ? '小' : (t === 'ODD' ? '单' : '双'))).join(','), win: totalWin, isWin: totalWin > 0 });
+    if (recs.length > 30) recs.pop();
+    users[currentUser].records = recs;
+    saveUsers();
+    updateHistory();
+    for (let k in bets) bets[k] = 0;
+    updateBetsDisplay();
+    if (navigator.vibrate) navigator.vibrate(totalWin > 0 ? [100,50,100] : 80);
+    setTimeout(() => { isDrawing = false; isBetLocked = false; startCountdown(25); }, 5000);
+}
 
-    function startCountdown(sec) {
-        if(state.countdownInterval) clearInterval(state.countdownInterval);
-        state.countdown = sec;
-        const countdownSpan = document.getElementById('countdownNum');
-        countdownSpan.innerText = state.countdown;
-        
-        isBetLocked = false;
-        
-        state.countdownInterval = setInterval(() => {
-            if(state.countdown <= 1){
-                clearInterval(state.countdownInterval);
-                state.countdownInterval = null;
-                isBetLocked = true;
-                if (state.selectedPoint !== null && state.betAmount > 0 && state.betAmount <= state.balance) {
-                    placeBet();
-                } else {
-                    startCountdown(25);
-                }
-            } else {
-                state.countdown--;
-                countdownSpan.innerText = state.countdown;
-            }
-        }, 1000);
-    }
-
-    function clearCountdown() { if(state.countdownInterval){ clearInterval(state.countdownInterval); state.countdownInterval=null; } }
-
-    function switchUser() {
-        if(state.isDrawing) return;
-        const newId = document.getElementById('switchUserIdInput').value.trim();
-        if(!newId) return;
-        CURRENT_USER_ID = newId;
-        if (!users[CURRENT_USER_ID]) { users[CURRENT_USER_ID] = { balance: 1000.00, records: [] }; saveUsers(); }
-        document.getElementById('currentUserId').innerText = CURRENT_USER_ID;
-        state.balance = getBalance(CURRENT_USER_ID);
-        state.selectedPoint = null;
-        state.betAmount = 0;
-        state.isDrawing = false;
-        isBetLocked = false;
-        updateUI();
-        clearCountdown();
-        startCountdown(25);
-        refreshHistoryDisplay();
-        document.querySelectorAll('.point-card').forEach(card => card.classList.remove('selected'));
-    }
-
-    function showMyHistory() {
-        const recs = users[CURRENT_USER_ID]?.records || [];
-        let html = `<div style="max-height:300px; overflow-y:auto; text-align:left;">`;
-        if (recs.length === 0) html += "<p>暂无记录</p>";
-        else {
-            recs.slice(0, 30).forEach(r => {
-                html += `<div style="padding:6px; border-bottom:1px solid #555; display:flex; justify-content:space-between;">
-                            <span>${r.time}</span>
-                            <span>押${r.betPoint}点 ${r.betAmount}</span>
-                            <span>开${r.result}点</span>
-                            <span style="color:${r.isWin?'#4caf50':'#f44336'}">${r.isWin ? `+${r.win}` : `-${r.betAmount}`}</span>
-                         </div>`;
-            });
+function startCountdown(sec) {
+    if (countdownInterval) clearInterval(countdownInterval);
+    let countdown = sec;
+    const cdSpan = document.getElementById('countdownNum');
+    cdSpan.innerText = countdown;
+    cdSpan.classList.remove('countdown-warning');
+    isBetLocked = false;
+    countdownInterval = setInterval(() => {
+        if (countdown <= 1) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+            isBetLocked = true;
+            draw();
+        } else {
+            countdown--;
+            cdSpan.innerText = countdown;
+            if (countdown <= 5) cdSpan.classList.add('countdown-warning');
         }
-        html += `</div><button id="closeHistoryBtn" style="margin-top:12px;">关闭</button>`;
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.innerHTML = `<div class="modal-content"><h3>我的记录</h3>${html}</div>`;
-        document.body.appendChild(modal);
-        document.getElementById('closeHistoryBtn').onclick = () => modal.remove();
-    }
+    }, 1000);
+}
 
-    // 创建点数网格 (4-17点)
-    function createPointsGrid() {
-        const grid = document.getElementById('pointsGrid');
-        grid.innerHTML = '';
-        for (let i = 4; i <= 17; i++) {
-            let odds = 1;
-            if (i === 4 || i === 17) odds = 60;
-            else if (i === 5 || i === 16) odds = 30;
-            else if (i === 6 || i === 15) odds = 18;
-            else if (i === 7 || i === 14) odds = 12;
-            else if (i === 8 || i === 13) odds = 8;
-            else if (i === 9 || i === 12) odds = 7;
-            else if (i === 10 || i === 11) odds = 6;
-            
-            const card = document.createElement('div');
-            card.className = 'point-card';
-            card.dataset.point = i;
-            card.innerHTML = `<div class="point-value">${i}点</div>
-                             <div class="point-amount">赔率 ${odds}倍</div>`;
-            card.onclick = () => selectPoint(i);
-            grid.appendChild(card);
-        }
-    }
+function updateHistory() {
+    const container = document.getElementById('historyList');
+    const recs = users[currentUser]?.records || [];
+    container.innerHTML = '';
+    if (recs.length === 0) { container.innerHTML = '<div style="text-align:center;color:#666">暂无记录</div>'; return; }
+    recs.slice(0, 10).forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `<span>${r.time}</span><span>${r.bets}</span><span>开${r.result}(${r.resultType})</span><span class="${r.isWin ? 'win' : 'lose'}">${r.isWin ? '+' + r.win : ''}</span>`;
+        container.appendChild(div);
+    });
+}
 
-    // 初始化
-    function init() {
-        createPointsGrid();
-        updateUI();
-        refreshHistoryDisplay();
-        startCountdown(25);
-        
-        // 事件绑定
-        document.getElementById('refreshBtn').onclick = refreshBalance;
-        document.getElementById('cancelBtn').onclick = cancelBet;
-        document.getElementById('fightBtn').onclick = placeBet;
-        document.getElementById('switchUserBtn').onclick = switchUser;
-        document.getElementById('myHistoryBtn').onclick = showMyHistory;
-        document.getElementById('newUserBtn').onclick = () => {
-            const newId = generateRandomId();
-            document.getElementById('switchUserIdInput').value = newId;
-            switchUser();
-            showModal(`新账户：${newId}\n初始余额：1000.00 rmb`, "开始");
-        };
-        
-        document.querySelectorAll('.bet-amount-btn').forEach(btn => {
-            btn.onclick = () => {
-                const amount = parseInt(btn.dataset.amount);
-                setBetAmount(amount);
-            };
-        });
-        
-        if (!localStorage.getItem('dice_visited')) {
-            localStorage.setItem('dice_visited', 'true');
-            setTimeout(() => {
-                showModal("🎲 三骰子猜点数\n• 4-17点可选，不同点数赔率不同\n• 4点和17点赔率最高60倍\n• 25秒下注时间\n• 开奖有3D骰子滚动动画", "开始游戏");
-            }, 500);
-        }
+function refreshBalance() { currentBalance = getBalance(currentUser); updateBetsDisplay(); }
+function switchUser() {
+    const newId = document.getElementById('switchId').value.trim();
+    if (!newId) return;
+    currentUser = newId;
+    if (!users[currentUser]) users[currentUser] = { balance: 1000, records: [] };
+    document.getElementById('currentUserId').innerText = currentUser;
+    currentBalance = getBalance(currentUser);
+    for (let k in bets) bets[k] = 0;
+    updateBetsDisplay();
+    if (countdownInterval) clearInterval(countdownInterval);
+    startCountdown(25);
+    updateHistory();
+}
+function showHistoryModal() {
+    const recs = users[currentUser]?.records || [];
+    let html = '<div style="max-height:300px;overflow-y:auto">';
+    if (recs.length === 0) html += '<p>暂无记录</p>';
+    else { recs.forEach(r => { html += `<div style="padding:8px;border-bottom:1px solid #333;display:flex;justify-content:space-between"><span>${r.time}</span><span>${r.bets}</span><span>开${r.result}点</span><span style="color:${r.isWin?'#4caf50':'#f44336'}">${r.isWin ? '+'+r.win : ''}</span></div>`; }); }
+    html += '</div><button id="closeModalBtn" style="background:#ff6600;border:none;border-radius:30px;padding:10px 24px;margin-top:16px;color:#fff">关闭</button>';
+    const modal = document.createElement('div'); modal.className = 'modal'; modal.innerHTML = `<div class="modal-content"><h3>📜 投注记录</h3>${html}</div>`;
+    document.body.appendChild(modal);
+    document.getElementById('closeModalBtn').onclick = () => modal.remove();
+}
+
+let adminPanel = null, adminSelectedUser = currentUser;
+function showAdminPanel() {
+    if (adminPanel) { adminPanel.remove(); adminPanel = null; return; }
+    const panel = document.createElement('div'); panel.className = 'modal';
+    panel.innerHTML = `<div class="modal-content" style="width:90%;max-width:360px"><h3>🔐 管理员</h3><div id="adminUserList" class="admin-user-list"></div><div>当前：<strong id="adminSelectedUser">${adminSelectedUser}</strong></div><input type="number" id="adminAmount" class="admin-input" placeholder="金额" value="0"><div class="admin-btns"><button id="adminAdd" class="admin-btn" style="background:#4caf50;color:#fff">上分</button><button id="adminSub" class="admin-btn" style="background:#f44336;color:#fff">下分</button><button id="adminQuery" class="admin-btn" style="background:#2196f3;color:#fff">查询</button><button id="adminReset" class="admin-btn" style="background:#ff9800;color:#fff">重置</button><button id="adminPwd" class="admin-btn" style="background:#9c27b0;color:#fff">改密</button></div><button id="adminClose" style="background:#ffaa44;color:#1a1a2a;padding:8px 24px;border-radius:25px;border:none;margin-top:12px">关闭</button></div>`;
+    document.body.appendChild(panel); adminPanel = panel;
+    function refreshUserList() {
+        const listDiv = document.getElementById('adminUserList'); const usersArr = Object.keys(users);
+        listDiv.innerHTML = '';
+        usersArr.forEach(uid => { const div = document.createElement('div'); div.className = 'admin-user'; if (uid === adminSelectedUser) div.classList.add('selected'); div.textContent = `${uid} (${getBalance(uid).toFixed(2)})`; div.onclick = () => { adminSelectedUser = uid; document.getElementById('adminSelectedUser').innerText = adminSelectedUser; refreshUserList(); }; listDiv.appendChild(div); });
     }
-    
-    init();
-})();
+    refreshUserList();
+    document.getElementById('adminAdd').onclick = () => { let amt = parseFloat(document.getElementById('adminAmount').value); if (isNaN(amt) || amt <= 0) { alert("请输入正数"); return; } let cur = getBalance(adminSelectedUser); setBalance(adminSelectedUser, cur + amt); refreshUserList(); if (adminSelectedUser === currentUser) { currentBalance = getBalance(currentUser); updateBetsDisplay(); } alert(`给 ${adminSelectedUser} 上分 ${amt}`); };
+    document.getElementById('adminSub').onclick = () => { let amt = parseFloat(document.getElementById('adminAmount').value); if (isNaN(amt) || amt <= 0) { alert("请输入正数"); return; } let cur = getBalance(adminSelectedUser); if (cur < amt) { alert("余额不足"); return; } setBalance(adminSelectedUser, cur - amt); refreshUserList(); if (adminSelectedUser === currentUser) { currentBalance = getBalance(currentUser); updateBetsDisplay(); } alert(`从 ${adminSelectedUser} 下分 ${amt}`); };
+    document.getElementById('adminQuery').onclick = () => { alert(`${adminSelectedUser} 余额: ${getBalance(adminSelectedUser).toFixed(2)}`); };
+    document.getElementById('adminReset').onclick = () => { if (confirm(`重置 ${adminSelectedUser} 余额为1000？`)) { setBalance(adminSelectedUser, 1000); refreshUserList(); if (adminSelectedUser === currentUser) { currentBalance = getBalance(currentUser); updateBetsDisplay(); } alert("重置成功"); } };
+    document.getElementById('adminPwd').onclick = () => { let old = prompt("当前密码:"); if (old !== adminPwd) { alert("密码错误"); return; } let newPwd = prompt("新密码(至少6位):"); if (!newPwd || newPwd.length < 6) { alert("密码至少6位"); return; } adminPwd = newPwd; localStorage.setItem('dice_admin_pwd', newPwd); alert("密码修改成功"); };
+    document.getElementById('adminClose').onclick = () => { panel.remove(); adminPanel = null; };
+}
+
+function createPointsGrid() {
+    const grid = document.getElementById('pointsGrid'); grid.innerHTML = '';
+    for (let i = 4; i <= 17; i++) {
+        const card = document.createElement('div'); card.className = 'point-card'; card.setAttribute('data-point', i);
+        card.innerHTML = `<div class="point-value">${i}点</div><div class="point-odds">赔 ${oddsMap[i]}倍</div><div class="point-bet-amount" id="bet_${i}">0</div>`;
+        card.onclick = () => addBet(i); grid.appendChild(card);
+    }
+}
+
+function init() {
+    createPointsGrid();
+    updateBetsDisplay();
+    updateHistory();
+    startCountdown(25);
+    let saved = localStorage.getItem('dice_admin_pwd'); if (saved) adminPwd = saved;
+    document.querySelectorAll('.chip').forEach(chip => { chip.onclick = () => { selectedChip = parseInt(chip.dataset.val); document.getElementById('selectedChip').innerText = selectedChip; document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected-chip')); chip.classList.add('selected-chip'); }; });
+    document.querySelectorAll('.special-card').forEach(card => { card.onclick = () => addBet(card.dataset.type); });
+    document.getElementById('clearAllBtn').onclick = clearAllBets;
+    document.getElementById('refreshBtn').onclick = refreshBalance;
+    document.getElementById('betBtn').onclick = draw;
+    document.getElementById('switchBtn').onclick = switchUser;
+    document.getElementById('historyBtn').onclick = showHistoryModal;
+    document.getElementById('adminEntry').onclick = () => { let pwd = prompt("管理员密码:"); if (pwd === adminPwd) showAdminPanel(); else if (pwd !== null) alert("密码错误"); };
+    document.getElementById('newUserBtn').onclick = () => { let newId = "player_" + Math.floor(Math.random() * 100000); document.getElementById('switchId').value = newId; switchUser(); alert(`新账户：${newId}\n初始余额：1000`); };
+    diceEl.forEach(d => d.innerText = diceMap[1]); totalEl.innerText = 3;
+}
+init();
 </script>
 </body>
 </html>
-``` 
