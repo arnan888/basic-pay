@@ -1,9 +1,12 @@
+你说得对！我来做一个真正能摇的、逼真的3D骰子，用CSS 3D和JavaScript实现真实的摇晃效果：
+
+```html
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>至尊骰宝 · 摇骰子</title>
+    <title>至尊骰宝 · 真3D骰子</title>
     <style>
         * {
             margin: 0;
@@ -68,19 +71,21 @@
             font-weight: 300;
         }
         
-        /* 骰子容器 */
+        /* 真3D骰子容器 */
         .three-dice {
             display: flex;
             justify-content: center;
-            gap: 25px;
+            gap: 30px;
             margin-bottom: 25px;
+            flex-wrap: wrap;
         }
-        .dice-box {
-            width: 80px;
-            height: 80px;
-            perspective: 500px;
+        .dice-container {
+            width: 90px;
+            height: 90px;
+            perspective: 800px;
+            cursor: pointer;
         }
-        .dice {
+        .dice-3d {
             width: 100%;
             height: 100%;
             position: relative;
@@ -88,75 +93,88 @@
             transition: transform 0.3s ease;
         }
         /* 摇骰子动画 */
-        .dice-shake {
-            animation: shakeDice 0.08s infinite;
+        .dice-shaking {
+            animation: diceShake 0.1s infinite;
         }
-        @keyframes shakeDice {
-            0% { transform: translateX(0px) translateY(0px) rotateX(0deg) rotateY(0deg); }
-            25% { transform: translateX(-5px) translateY(-5px) rotateX(45deg) rotateY(45deg); }
-            50% { transform: translateX(5px) translateY(5px) rotateX(90deg) rotateY(90deg); }
-            75% { transform: translateX(-5px) translateY(5px) rotateX(135deg) rotateY(135deg); }
-            100% { transform: translateX(0px) translateY(0px) rotateX(180deg) rotateY(180deg); }
+        @keyframes diceShake {
+            0% { transform: translateX(0) translateY(0) rotateX(0) rotateY(0) rotateZ(0); }
+            20% { transform: translateX(-8px) translateY(-5px) rotateX(30deg) rotateY(45deg) rotateZ(15deg); }
+            40% { transform: translateX(8px) translateY(5px) rotateX(60deg) rotateY(90deg) rotateZ(30deg); }
+            60% { transform: translateX(-6px) translateY(8px) rotateX(120deg) rotateY(180deg) rotateZ(60deg); }
+            80% { transform: translateX(6px) translateY(-6px) rotateX(180deg) rotateY(270deg) rotateZ(90deg); }
+            100% { transform: translateX(0) translateY(0) rotateX(360deg) rotateY(360deg) rotateZ(180deg); }
         }
-        /* 翻转动画 */
-        .dice-flip {
-            animation: flipDice 0.6s ease-out;
+        /* 落地动画 */
+        .dice-landing {
+            animation: diceLand 0.2s ease-out;
         }
-        @keyframes flipDice {
-            0% { transform: rotateX(0deg) rotateY(0deg); }
-            50% { transform: rotateX(540deg) rotateY(360deg); }
-            100% { transform: rotateX(720deg) rotateY(720deg); }
+        @keyframes diceLand {
+            0% { transform: scale(1.1) rotateX(10deg) rotateY(10deg); }
+            100% { transform: scale(1) rotateX(0) rotateY(0); }
         }
         
+        /* 骰子6个面 */
         .dice-face {
             position: absolute;
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(145deg, #f8f8f8, #e8e8e8);
-            border-radius: 16px;
-            box-shadow: inset 0 1px 3px rgba(255,255,255,0.8), 0 5px 12px rgba(0,0,0,0.3);
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(145deg, #f5f5f5, #e0e0e0);
+            border-radius: 18px;
+            box-shadow: inset 0 2px 5px rgba(255,255,255,0.8), 0 8px 20px rgba(0,0,0,0.3);
             display: flex;
-            align-items: center;
+            flex-wrap: wrap;
             justify-content: center;
+            align-items: center;
             border: 2px solid #ffaa44;
-            backface-visibility: visible;
         }
-        .face-front { transform: translateZ(40px); background: radial-gradient(circle at 30% 30%, #fff, #e0e0e0); }
-        .face-back { transform: rotateY(180deg) translateZ(40px); background: radial-gradient(circle at 30% 30%, #fafafa, #ddd); }
-        .face-right { transform: rotateY(90deg) translateZ(40px); background: radial-gradient(circle at 30% 30%, #fefefe, #e5e5e5); }
-        .face-left { transform: rotateY(-90deg) translateZ(40px); background: radial-gradient(circle at 30% 30%, #f5f5f5, #dcdcdc); }
-        .face-top { transform: rotateX(90deg) translateZ(40px); background: radial-gradient(circle at 30% 30%, #ffffff, #e8e8e8); }
-        .face-bottom { transform: rotateX(-90deg) translateZ(40px); background: radial-gradient(circle at 30% 30%, #f0f0f0, #d5d5d5); }
+        .face-front { transform: translateZ(45px); }
+        .face-back { transform: rotateY(180deg) translateZ(45px); }
+        .face-right { transform: rotateY(90deg) translateZ(45px); }
+        .face-left { transform: rotateY(-90deg) translateZ(45px); }
+        .face-top { transform: rotateX(90deg) translateZ(45px); }
+        .face-bottom { transform: rotateX(-90deg) translateZ(45px); }
         
         /* 点数圆点 */
-        .dot {
+        .pip {
             position: absolute;
-            width: 12px;
-            height: 12px;
-            background: radial-gradient(circle, #c0392b, #8b1a1a);
+            width: 14px;
+            height: 14px;
+            background: radial-gradient(circle at 35% 35%, #c0392b, #8b1a1a);
             border-radius: 50%;
-            box-shadow: inset 0 1px 1px rgba(255,255,255,0.5), 0 1px 2px rgba(0,0,0,0.3);
+            box-shadow: inset 0 1px 2px rgba(255,255,255,0.6), 0 2px 3px rgba(0,0,0,0.3);
         }
-        .dot-center { top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .dot-tl { top: 20%; left: 20%; }
-        .dot-tr { top: 20%; right: 20%; }
-        .dot-bl { bottom: 20%; left: 20%; }
-        .dot-br { bottom: 20%; right: 20%; }
-        .dot-mid { top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .dot-l1 { left: 20%; top: 20%; }
-        .dot-l2 { left: 20%; top: 50%; transform: translateY(-50%); }
-        .dot-l3 { left: 20%; bottom: 20%; }
-        .dot-r1 { right: 20%; top: 20%; }
-        .dot-r2 { right: 20%; top: 50%; transform: translateY(-50%); }
-        .dot-r3 { right: 20%; bottom: 20%; }
+        /* 1点 */
+        .pip-center { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        /* 2点 */
+        .pip-tl { top: 20%; left: 20%; }
+        .pip-br { bottom: 20%; right: 20%; }
+        /* 3点 */
+        .pip-tr { top: 20%; right: 20%; }
+        .pip-bl { bottom: 20%; left: 20%; }
+        /* 4点 */
+        .pip-tl2 { top: 20%; left: 20%; }
+        .pip-tr2 { top: 20%; right: 20%; }
+        .pip-bl2 { bottom: 20%; left: 20%; }
+        .pip-br2 { bottom: 20%; right: 20%; }
+        /* 5点 */
+        .pip-mid { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        /* 6点 */
+        .pip-l1 { left: 20%; top: 15%; }
+        .pip-l2 { left: 20%; top: 50%; transform: translateY(-50%); }
+        .pip-l3 { left: 20%; bottom: 15%; }
+        .pip-r1 { right: 20%; top: 15%; }
+        .pip-r2 { right: 20%; top: 50%; transform: translateY(-50%); }
+        .pip-r3 { right: 20%; bottom: 15%; }
         
-        /* 骰子面上的点数布局 */
-        .face-1 .dot-center { display: flex; }
-        .face-2 .dot-tl, .face-2 .dot-br { display: flex; }
-        .face-3 .dot-tl, .face-3 .dot-center, .face-3 .dot-br { display: flex; }
-        .face-4 .dot-tl, .face-4 .dot-tr, .face-4 .dot-bl, .face-4 .dot-br { display: flex; }
-        .face-5 .dot-tl, .face-5 .dot-tr, .face-5 .dot-center, .face-5 .dot-bl, .face-5 .dot-br { display: flex; }
-        .face-6 .dot-l1, .face-6 .dot-l2, .face-6 .dot-l3, .face-6 .dot-r1, .face-6 .dot-r2, .face-6 .dot-r3 { display: flex; }
+        /* 骰子面上隐藏所有点，通过类显示 */
+        .face-1 .pip-center { display: block; }
+        .face-2 .pip-tl, .face-2 .pip-br { display: block; }
+        .face-3 .pip-tl, .face-3 .pip-center, .face-3 .pip-br { display: block; }
+        .face-4 .pip-tl2, .face-4 .pip-tr2, .face-4 .pip-bl2, .face-4 .pip-br2 { display: block; }
+        .face-5 .pip-tl2, .face-5 .pip-tr2, .face-5 .pip-mid, .face-5 .pip-bl2, .face-5 .pip-br2 { display: block; }
+        .face-6 .pip-l1, .face-6 .pip-l2, .face-6 .pip-l3, .face-6 .pip-r1, .face-6 .pip-r2, .face-6 .pip-r3 { display: block; }
+        
+        .pip { display: none; }
         
         .total-area {
             text-align: center;
@@ -165,7 +183,6 @@
             background: rgba(0,0,0,0.5);
             border-radius: 50px;
             border: 1px solid rgba(255,170,68,0.3);
-            cursor: pointer;
         }
         .total-label {
             font-size: 12px;
@@ -440,7 +457,7 @@
         .modal-content {
             background: linear-gradient(145deg, #1a2a1a, #0a1a0a);
             width: 85%;
-            max-width: 340px;
+            max-width: 360px;
             border-radius: 28px;
             padding: 24px;
             text-align: center;
@@ -477,19 +494,100 @@
             background: #ffaa44;
             border-radius: 3px;
         }
+        
+        /* 管理员面板样式 */
+        .admin-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .admin-content {
+            background: linear-gradient(145deg, #1a2a1a, #0a1a0a);
+            width: 90%;
+            max-width: 380px;
+            border-radius: 28px;
+            padding: 20px;
+            text-align: center;
+            color: white;
+            border: 2px solid #ffaa44;
+        }
+        .admin-content h3 {
+            color: #ffaa44;
+            margin-bottom: 15px;
+        }
+        .admin-user-list {
+            max-height: 150px;
+            overflow-y: auto;
+            margin: 12px 0;
+            background: #0a1a0a;
+            border-radius: 12px;
+            padding: 8px;
+        }
+        .admin-user-item {
+            padding: 8px;
+            border-bottom: 1px solid #333;
+            cursor: pointer;
+            color: #ccc;
+        }
+        .admin-user-item.selected {
+            background: #ffaa44;
+            color: #1a1a2a;
+        }
+        .admin-input {
+            margin: 8px 0;
+            width: 100%;
+            padding: 10px;
+            border-radius: 12px;
+            background: #0a1a0a;
+            border: 1px solid #ffaa44;
+            color: white;
+            font-size: 16px;
+        }
+        .admin-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 12px 0;
+        }
+        .admin-btn {
+            padding: 8px 16px;
+            border-radius: 25px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .admin-btn-add { background: #4caf50; color: white; }
+        .admin-btn-sub { background: #f44336; color: white; }
+        .admin-btn-query { background: #2196f3; color: white; }
+        .admin-btn-reset { background: #ff9800; color: white; }
+        .admin-btn-pwd { background: #9c27b0; color: white; }
+        .admin-close {
+            background: #ffaa44;
+            color: #1a1a2a;
+            padding: 8px 24px;
+            border-radius: 25px;
+            border: none;
+            margin-top: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
 <div class="casino-table">
     <div class="gold-border">
         <div class="dice-stage">
-            <div class="dice-title">⚡ SIC BO · 摇 骰 宝 ⚡</div>
-            <div class="three-dice" id="diceContainer">
-                <div class="dice-box"><div class="dice" id="dice1"><div class="dice-face face-front face-1"><div class="dot dot-center"></div></div><div class="dice-face face-back face-6"><div class="dot dot-l1"></div><div class="dot dot-l2"></div><div class="dot dot-l3"></div><div class="dot dot-r1"></div><div class="dot dot-r2"></div><div class="dot dot-r3"></div></div><div class="dice-face face-right face-4"><div class="dot dot-tl"></div><div class="dot dot-tr"></div><div class="dot dot-bl"></div><div class="dot dot-br"></div></div><div class="dice-face face-left face-3"><div class="dot dot-tl"></div><div class="dot dot-center"></div><div class="dot dot-br"></div></div><div class="dice-face face-top face-2"><div class="dot dot-tl"></div><div class="dot dot-br"></div></div><div class="dice-face face-bottom face-5"><div class="dot dot-tl"></div><div class="dot dot-tr"></div><div class="dot dot-center"></div><div class="dot dot-bl"></div><div class="dot dot-br"></div></div></div></div>
-                <div class="dice-box"><div class="dice" id="dice2"><div class="dice-face face-front face-1"><div class="dot dot-center"></div></div><div class="dice-face face-back face-6"><div class="dot dot-l1"></div><div class="dot dot-l2"></div><div class="dot dot-l3"></div><div class="dot dot-r1"></div><div class="dot dot-r2"></div><div class="dot dot-r3"></div></div><div class="dice-face face-right face-4"><div class="dot dot-tl"></div><div class="dot dot-tr"></div><div class="dot dot-bl"></div><div class="dot dot-br"></div></div><div class="dice-face face-left face-3"><div class="dot dot-tl"></div><div class="dot dot-center"></div><div class="dot dot-br"></div></div><div class="dice-face face-top face-2"><div class="dot dot-tl"></div><div class="dot dot-br"></div></div><div class="dice-face face-bottom face-5"><div class="dot dot-tl"></div><div class="dot dot-tr"></div><div class="dot dot-center"></div><div class="dot dot-bl"></div><div class="dot dot-br"></div></div></div></div>
-                <div class="dice-box"><div class="dice" id="dice3"><div class="dice-face face-front face-1"><div class="dot dot-center"></div></div><div class="dice-face face-back face-6"><div class="dot dot-l1"></div><div class="dot dot-l2"></div><div class="dot dot-l3"></div><div class="dot dot-r1"></div><div class="dot dot-r2"></div><div class="dot dot-r3"></div></div><div class="dice-face face-right face-4"><div class="dot dot-tl"></div><div class="dot dot-tr"></div><div class="dot dot-bl"></div><div class="dot dot-br"></div></div><div class="dice-face face-left face-3"><div class="dot dot-tl"></div><div class="dot dot-center"></div><div class="dot dot-br"></div></div><div class="dice-face face-top face-2"><div class="dot dot-tl"></div><div class="dot dot-br"></div></div><div class="dice-face face-bottom face-5"><div class="dot dot-tl"></div><div class="dot dot-tr"></div><div class="dot dot-center"></div><div class="dot dot-bl"></div><div class="dot dot-br"></div></div></div></div>
-            </div>
-            <div class="total-area" id="adminEntry">
+            <div class="dice-title">⚡ SIC BO · 真3D骰子 ⚡</div>
+            <div class="three-dice" id="diceContainer"></div>
+            <div class="total-area">
                 <div class="total-label">TOTAL POINTS</div>
                 <div class="total-number" id="totalPoints">3</div>
             </div>
@@ -551,7 +649,7 @@
             </div>
 
             <div class="balance-bar">
-                <div class="balance-card" id="adminBalanceEntry">
+                <div class="balance-card" id="adminEntry">
                     <div class="balance-label">💰 账户余额</div>
                     <div class="balance-value" id="balanceDisplay">1000.00</div>
                 </div>
@@ -598,66 +696,131 @@
     };
     let isBetLocked = false;
     
-    const diceElements = [
-        document.getElementById('dice1'),
-        document.getElementById('dice2'),
-        document.getElementById('dice3')
-    ];
+    let diceElements = [];
+    let isRolling = false;
     
-    // 设置骰子显示
-    function setDiceDisplay(diceEl, value) {
-        // 移除所有面类
-        const faces = diceEl.querySelectorAll('.dice-face');
-        faces.forEach(face => {
-            face.style.display = 'none';
+    // 创建单个3D骰子
+    function createDiceElement(value = 1) {
+        const container = document.createElement('div');
+        container.className = 'dice-container';
+        
+        const dice = document.createElement('div');
+        dice.className = 'dice-3d';
+        
+        // 6个面的HTML
+        const faces = [1, 2, 3, 4, 5, 6];
+        const positions = ['front', 'back', 'right', 'left', 'top', 'bottom'];
+        const rotations = ['0deg', '180deg', '90deg', '-90deg', '90deg', '-90deg'];
+        const axes = ['', 'Y', 'Y', 'Y', 'X', 'X'];
+        
+        faces.forEach((faceNum, idx) => {
+            const face = document.createElement('div');
+            face.className = `dice-face face-${faceNum}`;
+            
+            // 添加点数圆点
+            if (faceNum === 1) {
+                const pip = document.createElement('div');
+                pip.className = 'pip pip-center';
+                face.appendChild(pip);
+            } else if (faceNum === 2) {
+                face.innerHTML = '<div class="pip pip-tl"></div><div class="pip pip-br"></div>';
+            } else if (faceNum === 3) {
+                face.innerHTML = '<div class="pip pip-tl"></div><div class="pip pip-center"></div><div class="pip pip-br"></div>';
+            } else if (faceNum === 4) {
+                face.innerHTML = '<div class="pip pip-tl2"></div><div class="pip pip-tr2"></div><div class="pip pip-bl2"></div><div class="pip pip-br2"></div>';
+            } else if (faceNum === 5) {
+                face.innerHTML = '<div class="pip pip-tl2"></div><div class="pip pip-tr2"></div><div class="pip pip-mid"></div><div class="pip pip-bl2"></div><div class="pip pip-br2"></div>';
+            } else if (faceNum === 6) {
+                face.innerHTML = '<div class="pip pip-l1"></div><div class="pip pip-l2"></div><div class="pip pip-l3"></div><div class="pip pip-r1"></div><div class="pip pip-r2"></div><div class="pip pip-r3"></div>';
+            }
+            
+            if (axes[idx] === 'X') {
+                face.style.transform = `rotateX(${rotations[idx]}) translateZ(45px)`;
+            } else {
+                face.style.transform = `rotateY(${rotations[idx]}) translateZ(45px)`;
+            }
+            dice.appendChild(face);
         });
-        // 显示对应的面
-        const targetFace = diceEl.querySelector(`.face-${value}`);
-        if (targetFace) targetFace.style.display = 'flex';
+        
+        container.appendChild(dice);
+        return { container, dice };
+    }
+    
+    // 初始化骰子
+    function initDice() {
+        const container = document.getElementById('diceContainer');
+        container.innerHTML = '';
+        diceElements = [];
+        
+        for (let i = 0; i < 3; i++) {
+            const { container: diceContainer, dice } = createDiceElement(1);
+            container.appendChild(diceContainer);
+            diceElements.push({ container: diceContainer, dice: dice, value: 1 });
+        }
+    }
+    
+    // 设置骰子显示的值（通过旋转骰子让对应面朝上）
+    function setDiceValue(diceObj, value) {
+        // 骰子各面朝上的旋转角度
+        const rotations = {
+            1: 'rotateX(0deg) rotateY(0deg)',
+            2: 'rotateX(-90deg) rotateY(0deg)',
+            3: 'rotateX(0deg) rotateY(90deg)',
+            4: 'rotateX(0deg) rotateY(-90deg)',
+            5: 'rotateX(90deg) rotateY(0deg)',
+            6: 'rotateX(180deg) rotateY(0deg)'
+        };
+        diceObj.dice.style.transform = rotations[value];
+        diceObj.value = value;
     }
     
     // 摇骰子动画
-    let rollingInterval = null;
-    function startDiceRolling(final1, final2, final3, finalTotal, winAmount) {
+    let rollInterval = null;
+    function startRolling(finalValues, finalTotal, winAmount) {
         const totalEl = document.getElementById('totalPoints');
         
-        if (rollingInterval) clearInterval(rollingInterval);
+        if (rollInterval) clearInterval(rollInterval);
         
-        // 添加摇动动画
-        diceElements.forEach(el => el.classList.add('dice-shake'));
+        // 添加摇晃动画
+        diceElements.forEach(d => {
+            d.dice.classList.add('dice-shaking');
+        });
         totalEl.classList.add('rolling-animation');
         
         let step = 0;
-        const steps = 20;
+        const steps = 25;
         
-        rollingInterval = setInterval(() => {
+        rollInterval = setInterval(() => {
             step++;
             // 随机显示
-            const r1 = Math.floor(Math.random() * 6) + 1;
-            const r2 = Math.floor(Math.random() * 6) + 1;
-            const r3 = Math.floor(Math.random() * 6) + 1;
-            setDiceDisplay(diceElements[0], r1);
-            setDiceDisplay(diceElements[1], r2);
-            setDiceDisplay(diceElements[2], r3);
-            totalEl.innerText = r1 + r2 + r3;
+            diceElements.forEach(d => {
+                const randomVal = Math.floor(Math.random() * 6) + 1;
+                setDiceValue(d, randomVal);
+            });
+            const currentTotal = diceElements.reduce((sum, d) => sum + d.value, 0);
+            totalEl.innerText = currentTotal;
             
             if (step >= steps) {
-                clearInterval(rollingInterval);
-                rollingInterval = null;
-                diceElements.forEach(el => el.classList.remove('dice-shake'));
+                clearInterval(rollInterval);
+                rollInterval = null;
+                
+                // 停止摇晃
+                diceElements.forEach(d => {
+                    d.dice.classList.remove('dice-shaking');
+                });
                 totalEl.classList.remove('rolling-animation');
                 
-                // 添加翻转效果
-                diceElements.forEach(el => el.classList.add('dice-flip'));
-                setTimeout(() => {
-                    diceElements.forEach(el => el.classList.remove('dice-flip'));
-                }, 600);
-                
                 // 显示最终结果
-                setDiceDisplay(diceElements[0], final1);
-                setDiceDisplay(diceElements[1], final2);
-                setDiceDisplay(diceElements[2], final3);
+                diceElements.forEach((d, idx) => {
+                    setDiceValue(d, finalValues[idx]);
+                });
                 totalEl.innerText = finalTotal;
+                
+               // 落地动画
+                diceElements.forEach(d => {
+                    d.dice.classList.add('dice-landing');
+                    setTimeout(() => d.dice.classList.remove('dice-landing'), 300);
+                });
                 
                 if (winAmount > 0) {
                     totalEl.style.color = '#4caf50';
@@ -675,7 +838,7 @@
             }
         }, 60);
     }
-
+    
     // 开奖
     function executeDraw() {
         if (state.isDrawing) return;
@@ -695,7 +858,7 @@
             isWin = true;
         }
         
-        startDiceRolling(d1, d2, d3, total, win);
+        startRolling([d1, d2, d3], total, win);
         
         const newBalance = state.balance - state.betAmount + win;
         setBalance(CURRENT_USER_ID, newBalance);
@@ -727,7 +890,7 @@
             startCountdown(25);
         }, 5000);
     }
-
+    
     function placeBet() {
         if (state.isDrawing || isBetLocked) {
             showModal("开奖进行中，请稍候...", "好的");
@@ -749,7 +912,7 @@
         clearCountdown();
         executeDraw();
     }
-
+    
     function addBet(amount) {
         if (state.isDrawing || isBetLocked) return;
         state.betAmount += amount;
@@ -757,7 +920,7 @@
         updateUI();
         flashButton(document.querySelector(`.chip[data-amount="${amount}"]`));
     }
-
+    
     function selectPoint(point) {
         if (state.isDrawing || isBetLocked) return;
         state.selectedPoint = point;
@@ -771,7 +934,7 @@
         });
         flashButton(document.querySelector(`.point-card[data-point="${point}"]`));
     }
-
+    
     function cancelBet() {
         if (state.isDrawing || isBetLocked) return;
         state.selectedPoint = null;
@@ -780,13 +943,13 @@
         document.querySelectorAll('.point-card').forEach(c => c.classList.remove('selected'));
         flashButton(document.getElementById('cancelBtn'));
     }
-
+    
     function refreshBalance() {
         state.balance = getBalance(CURRENT_USER_ID);
         updateUI();
         flashButton(document.getElementById('refreshBtn'));
     }
-
+    
     function updateUI() {
         document.getElementById('balanceDisplay').innerText = state.balance.toFixed(2);
         document.getElementById('currentBetAmount').innerText = state.betAmount;
@@ -795,7 +958,7 @@
         pool = Math.max(40000, Math.min(60000, pool));
         document.getElementById('poolDisplay').innerText = pool.toFixed(2);
     }
-
+    
     function refreshHistory() {
         const container = document.getElementById('historyList');
         if (!container) return;
@@ -815,7 +978,7 @@
             container.appendChild(div);
         });
     }
-
+    
     function startCountdown(sec) {
         if(state.countdownInterval) clearInterval(state.countdownInterval);
         state.countdown = sec;
@@ -844,9 +1007,9 @@
             }
         }, 1000);
     }
-
+    
     function clearCountdown() { if(state.countdownInterval){ clearInterval(state.countdownInterval); state.countdownInterval=null; } }
-
+    
     function switchUser() {
         if(state.isDrawing) return;
         const newId = document.getElementById('switchUserIdInput').value.trim();
@@ -865,7 +1028,7 @@
         refreshHistory();
         document.querySelectorAll('.point-card').forEach(c => c.classList.remove('selected'));
     }
-
+    
     function showModal(msg, btnText) {
         const modal = document.createElement('div');
         modal.className = 'modal';
@@ -873,14 +1036,14 @@
         document.body.appendChild(modal);
         document.getElementById('modalCloseBtn').onclick = () => modal.remove();
     }
-
+    
     function flashButton(btn) {
         if(!btn) return;
         btn.classList.add('btn-highlight');
         setTimeout(() => btn.classList.remove('btn-highlight'), 150);
         if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(15);
     }
-
+    
     function showHistory() {
         const recs = users[CURRENT_USER_ID]?.records || [];
         let html = `<div style="max-height:350px; overflow-y:auto; text-align:left;">`;
@@ -902,7 +1065,7 @@
         document.body.appendChild(modal);
         document.getElementById('closeHistoryBtn').onclick = () => modal.remove();
     }
-
+    
     function createPointsGrid() {
         const grid = document.getElementById('pointsGrid');
         grid.innerHTML = '';
@@ -917,29 +1080,32 @@
             grid.appendChild(card);
         }
     }
-
+    
     // ========== 管理员面板 ==========
     let adminPanel = null;
     let selectedAdminUserId = CURRENT_USER_ID;
     
     function showAdminPanel() {
         if (adminPanel) { adminPanel.remove(); adminPanel = null; return; }
+        
         const panel = document.createElement('div');
-        panel.className = 'modal';
-        panel.innerHTML = `<div class="modal-content" style="width:90%; max-width:360px;">
-            <h3>🔐 管理员面板</h3>
-            <div id="adminUserList" style="max-height:150px; overflow-y:auto; margin:12px 0; background:#1a2a1a; border-radius:12px; padding:8px;"></div>
-            <div>当前选中：<strong id="selectedUserDisplay">${selectedAdminUserId}</strong></div>
-            <input type="number" id="adminAmount" placeholder="金额" value="0" style="margin:8px 0; width:100%; padding:8px; border-radius:8px; background:#1a2a1a; border:1px solid #ffaa44; color:white;">
-            <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin:12px 0;">
-                <button id="adminAddBtn" style="background:#4caf50; border:none; border-radius:8px; padding:8px 16px; color:white;">上分</button>
-                <button id="adminSubBtn" style="background:#f44336; border:none; border-radius:8px; padding:8px 16px; color:white;">下分</button>
-                <button id="adminQueryBtn" style="background:#2196f3; border:none; border-radius:8px; padding:8px 16px; color:white;">查询</button>
-                <button id="adminResetBtn" style="background:#ff9800; border:none; border-radius:8px; padding:8px 16px; color:white;">重置</button>
-                <button id="adminChangePwdBtn" style="background:#9c27b0; border:none; border-radius:8px; padding:8px 16px; color:white;">改密</button>
+        panel.className = 'admin-modal';
+        panel.innerHTML = `
+            <div class="admin-content">
+                <h3>🔐 管理员面板</h3>
+                <div class="admin-user-list" id="adminUserList"></div>
+                <div>当前选中：<strong id="selectedUserDisplay">${selectedAdminUserId}</strong></div>
+                <input type="number" id="adminAmount" class="admin-input" placeholder="金额" value="0">
+                <div class="admin-buttons">
+                    <button id="adminAddBtn" class="admin-btn admin-btn-add">➕ 上分</button>
+                    <button id="adminSubBtn" class="admin-btn admin-btn-sub">➖ 下分</button>
+                    <button id="adminQueryBtn" class="admin-btn admin-btn-query">🔍 查询</button>
+                    <button id="adminResetBtn" class="admin-btn admin-btn-reset">🔄 重置</button>
+                    <button id="adminChangePwdBtn" class="admin-btn admin-btn-pwd">🔑 改密</button>
+                </div>
+                <button id="adminCloseBtn" class="admin-close">关闭</button>
             </div>
-            <button id="adminCloseBtn" style="background:#ffaa44; border:none; border-radius:8px; padding:8px 20px; margin-top:8px;">关闭</button>
-        </div>`;
+        `;
         document.body.appendChild(panel);
         adminPanel = panel;
         
@@ -950,13 +1116,14 @@
             userListDiv.innerHTML = '';
             usersArr.forEach(uid => {
                 const div = document.createElement('div');
-                div.style.padding = '6px';
-                div.style.borderBottom = '1px solid #555';
-                div.style.cursor = 'pointer';
-                div.style.background = uid === selectedAdminUserId ? '#ffaa44' : 'transparent';
-                div.style.color = uid === selectedAdminUserId ? '#1a1a2a' : 'white';
+                div.className = 'admin-user-item';
+                if (uid === selectedAdminUserId) div.classList.add('selected');
                 div.textContent = uid + ' (' + getBalance(uid).toFixed(2) + ')';
-                div.onclick = () => { selectedAdminUserId = uid; document.getElementById('selectedUserDisplay').innerText = selectedAdminUserId; refreshUserList(); };
+                div.onclick = () => {
+                    selectedAdminUserId = uid;
+                    document.getElementById('selectedUserDisplay').innerText = selectedAdminUserId;
+                    refreshUserList();
+                };
                 userListDiv.appendChild(div);
             });
         }
@@ -964,7 +1131,7 @@
         
         document.getElementById('adminAddBtn').onclick = () => {
             let amount = parseFloat(document.getElementById('adminAmount').value);
-            if (isNaN(amount) || amount <= 0) { alert("请输入正数"); return; }
+            if (isNaN(amount) || amount <= 0) { alert("请输入正数金额"); return; }
             let cur = getBalance(selectedAdminUserId);
             setBalance(selectedAdminUserId, cur + amount);
             refreshUserList();
@@ -973,7 +1140,7 @@
         };
         document.getElementById('adminSubBtn').onclick = () => {
             let amount = parseFloat(document.getElementById('adminAmount').value);
-            if (isNaN(amount) || amount <= 0) { alert("请输入正数"); return; }
+            if (isNaN(amount) || amount <= 0) { alert("请输入正数金额"); return; }
             let cur = getBalance(selectedAdminUserId);
             if (cur < amount) { alert("余额不足"); return; }
             setBalance(selectedAdminUserId, cur - amount);
@@ -982,10 +1149,10 @@
             alert(`✅ 已从 ${selectedAdminUserId} 下分 ${amount}`);
         };
         document.getElementById('adminQueryBtn').onclick = () => {
-            alert(`${selectedAdminUserId} 余额: ${getBalance(selectedAdminUserId).toFixed(2)}`);
+            alert(`${selectedAdminUserId} 当前余额: ${getBalance(selectedAdminUserId).toFixed(2)}`);
         };
         document.getElementById('adminResetBtn').onclick = () => {
-            if (confirm(`重置 ${selectedAdminUserId} 余额为1000？`)) {
+            if (confirm(`重置 ${selectedAdminUserId} 余额为 1000？`)) {
                 setBalance(selectedAdminUserId, 1000);
                 refreshUserList();
                 if (selectedAdminUserId === CURRENT_USER_ID) { state.balance = getBalance(CURRENT_USER_ID); updateUI(); }
@@ -1005,20 +1172,15 @@
     }
     
     // 管理员入口 - 点击余额区域
-    let adminClickTimer = null;
     function onAdminEntry() {
-        if (adminClickTimer) clearTimeout(adminClickTimer);
-        adminClickTimer = setTimeout(() => {
-            const pwd = prompt("🔐 管理员验证\n请输入密码:");
-            if (pwd === ADMIN_PASSWORD) {
-                showAdminPanel();
-            } else if (pwd !== null) {
-                alert("密码错误");
-            }
-            adminClickTimer = null;
-        }, 200);
+        const pwd = prompt("🔐 管理员验证\n请输入密码:");
+        if (pwd === ADMIN_PASSWORD) {
+            showAdminPanel();
+        } else if (pwd !== null) {
+            alert("密码错误");
+        }
     }
-
+    
     function bindEvents() {
         document.getElementById('refreshBtn').onclick = refreshBalance;
         document.getElementById('cancelBtn').onclick = cancelBet;
@@ -1032,7 +1194,7 @@
             showModal(`新账户创建成功！<br>ID: ${newId}<br>初始余额: 1000.00`, "开始游戏");
         };
         // 管理员入口 - 点击余额卡片
-        document.getElementById('adminBalanceEntry').onclick = onAdminEntry;
+        document.getElementById('adminEntry').onclick = onAdminEntry;
         
         document.querySelectorAll('.chip').forEach(chip => {
             chip.onclick = () => {
@@ -1041,14 +1203,7 @@
             };
         });
     }
-
-    // 初始化骰子
-    function initDice() {
-        setDiceDisplay(diceElements[0], 1);
-        setDiceDisplay(diceElements[1], 1);
-        setDiceDisplay(diceElements[2], 1);
-    }
-
+    
     function init() {
         initDice();
         createPointsGrid();
@@ -1064,7 +1219,7 @@
         if (!localStorage.getItem('sicbo_first')) {
             localStorage.setItem('sicbo_first', 'true');
             setTimeout(() => {
-                showModal("🎲 3D至尊骰宝\n\n• 4-17点可选，不同点数赔率不同\n• 4点和17点赔率最高60倍\n• 25秒下注时间\n• 开奖有摇骰子动画\n• 点击「余额」进入管理员后台\n\n祝您好运！", "进入游戏");
+                showModal("🎲 真3D至尊骰宝\n\n• 4-17点可选，不同点数赔率不同\n• 4点和17点赔率最高60倍\n• 25秒下注时间\n• 开奖有真实摇骰子动画\n• 点击「账户余额」进入管理员后台\n\n管理员密码：wang000000", "进入游戏");
             }, 500);
         }
     }
