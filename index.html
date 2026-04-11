@@ -1,1 +1,1250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>龙虎斗 · 尊享版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+            padding: 12px;
+        }
+        .container-outer {
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #1a1a2e, #0f0f1a);
+            border-radius: 32px;
+            padding: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+        .container {
+            background: linear-gradient(135deg, #1e1e2e, #151520);
+            border-radius: 24px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 战斗场景 */
+        .battle-scene {
+            position: relative;
+            margin: 16px;
+            border-radius: 24px;
+            overflow: hidden;
+            background: #0a0a0a;
+            height: 300px;
+            flex-shrink: 0;
+            box-shadow: 0 0 30px rgba(255,51,0,0.2), inset 0 0 50px rgba(0,0,0,0.5);
+        }
+        .scene-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #1a1a2a, #0a0a0a);
+            background-size: cover;
+            background-position: center;
+            z-index: 1;
+        }
+
+        /* ========== 高端转盘样式 ========== */
+        .wheel-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 240px;
+            height: 240px;
+            z-index: 15;
+        }
+        .wheel-outer-ring {
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            right: -8px;
+            bottom: -8px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #c9a03d, #8b6914);
+            z-index: 14;
+            box-shadow: 0 0 0 2px rgba(255,215,0,0.3), 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .wheel-outer-ring::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #ffdd77, #b8860b);
+        }
+        .wheel-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            z-index: 15;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+        }
+        .wheel-pointer {
+            position: absolute;
+            top: -32px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 48px solid #ffcc44;
+            filter: drop-shadow(0 6px 10px rgba(0,0,0,0.4));
+            z-index: 20;
+        }
+        .wheel-pointer::before {
+            content: '';
+            position: absolute;
+            top: -52px;
+            left: -16px;
+            width: 32px;
+            height: 32px;
+            background: radial-gradient(circle, #ffdd88, #ffaa22);
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255,200,0,0.8);
+        }
+        .wheel-pointer::after {
+            content: '⚡';
+            position: absolute;
+            top: -48px;
+            left: -8px;
+            font-size: 22px;
+            color: #fff;
+            text-shadow: 0 0 5px #ff3300;
+        }
+        .wheel-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 48px;
+            height: 48px;
+            background: radial-gradient(circle, #ffdd88, #cc9900);
+            border-radius: 50%;
+            z-index: 18;
+            box-shadow: 0 0 15px rgba(255,200,0,0.8), inset 0 2px 5px rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #8b4513;
+        }
+        .wheel-spin-btn {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ff6600, #cc3300);
+            border: none;
+            border-radius: 30px;
+            padding: 8px 24px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+            cursor: pointer;
+            z-index: 20;
+            box-shadow: 0 6px 15px rgba(255,51,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+            letter-spacing: 2px;
+            transition: all 0.1s;
+        }
+        .wheel-spin-btn:active {
+            transform: translateX(-50%) scale(0.96);
+            box-shadow: 0 2px 8px rgba(255,51,0,0.4);
+        }
+        .wheel-toast {
+            position: absolute;
+            bottom: -85px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(15px);
+            padding: 6px 20px;
+            border-radius: 30px;
+            color: #ffaa44;
+            font-weight: bold;
+            font-size: 13px;
+            white-space: nowrap;
+            z-index: 20;
+            opacity: 0;
+            transition: 0.2s;
+            border: 1px solid rgba(255,170,68,0.5);
+            box-shadow: 0 0 15px rgba(255,170,68,0.3);
+        }
+        .wheel-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,51,0,0.15), transparent 70%);
+            pointer-events: none;
+            z-index: 12;
+            animation: glowPulse 2s ease-in-out infinite;
+        }
+        @keyframes glowPulse {
+            0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+        }
+        
+        .dragon-word, .tiger-word {
+            position: absolute;
+            bottom: 15px;
+            font-size: 38px;
+            font-weight: 900;
+            text-shadow: 0 0 20px currentColor, 2px 2px 0 rgba(0,0,0,0.5);
+            z-index: 10;
+            transition: all 0.2s ease;
+        }
+        .dragon-word { left: 15px; color: #ff4444; text-shadow: 0 0 20px #ff0000; }
+        .tiger-word { right: 15px; color: #4488ff; text-shadow: 0 0 20px #0088ff; }
+        .highlight-win {
+            transform: scale(1.2);
+            text-shadow: 0 0 35px currentColor, 0 0 15px white;
+        }
+        .battle-result {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(10px);
+            padding: 5px 18px;
+            border-radius: 25px;
+            color: #ffaa44;
+            font-weight: bold;
+            font-size: 14px;
+            z-index: 20;
+            white-space: nowrap;
+            border: 1px solid #ff6600;
+            box-shadow: 0 0 12px rgba(255,102,0,0.4);
+        }
+
+        /* 中奖滚动数字区域 */
+        .rolling-win-section {
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1a);
+            margin: 0 16px 12px 16px;
+            border-radius: 20px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            border: 1px solid rgba(255,170,68,0.2);
+        }
+        .rolling-label {
+            font-size: 14px;
+            color: #ffaa44;
+            letter-spacing: 2px;
+        }
+        .rolling-number {
+            font-size: 42px;
+            font-weight: 900;
+            color: #ffaa44;
+            text-shadow: 0 0 10px #ff6600;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+        }
+        .rolling-animation {
+            animation: numberGlow 0.05s step-end infinite;
+        }
+        @keyframes numberGlow {
+            0% { text-shadow: 0 0 5px #ffaa44; }
+            50% { text-shadow: 0 0 20px #ff6600; color: #ffdd88; }
+            100% { text-shadow: 0 0 5px #ffaa44; }
+        }
+
+        /* 下注区域 */
+        .bet-section {
+            background: rgba(0,90,50,0.3);
+            margin: 0 16px 16px 16px;
+            border-radius: 20px;
+            padding: 16px;
+            backdrop-filter: blur(10px);
+            max-height: calc(100vh - 450px);
+            overflow-y: auto;
+        }
+        .account-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,90,50,0.5);
+            border-radius: 12px;
+            padding: 8px 12px;
+            margin-bottom: 16px;
+        }
+        .account-info { font-size: 13px; color: #ffaa44; }
+        .btn-group { display: flex; gap: 8px; }
+        .btn-sm {
+            background: #1e1e2e;
+            border: none;
+            border-radius: 8px;
+            padding: 5px 14px;
+            color: #ffaa44;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        .multi-bet-item {
+            background: rgba(0,90,50,0.5);
+            border-radius: 16px;
+            padding: 14px 12px;
+            text-align: center;
+            margin-bottom: 14px;
+            transition: all 0.05s;
+        }
+        .multi-bet-item.selected { background: rgba(255,51,0,0.6); transform: scale(0.98); }
+        .multi-bet-name { font-size: 22px; font-weight: bold; margin-bottom: 6px; }
+        .multi-bet-name.dragon { color: #ff5555; }
+        .multi-bet-name.tiger { color: #55aaff; }
+        .multi-bet-name.tie { color: #aa66ff; }
+        .bet-amount-wrapper {
+            background: rgba(0,0,0,0.5);
+            margin: 6px 0;
+            padding: 8px;
+            border-radius: 10px;
+        }
+        .multi-bet-amount { font-size: 28px; font-weight: 900; color: #ffaa44; }
+        .quick-bet-row { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; }
+        .quick-bet { background: #1e1e2e; border: none; border-radius: 8px; padding: 4px 10px; color: #ffaa44; font-size: 12px; cursor: pointer; transition: all 0.05s; }
+        .quick-bet:active { transform: scale(0.95); }
+        .quick-bet:disabled, .clear-bet:disabled, #fightBtn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .multi-bet-control { margin-top: 8px; }
+        .multi-bet-control button { background: #1e1e2e; border: none; border-radius: 8px; padding: 5px 12px; color: #ffaa44; cursor: pointer; }
+        .data-stack { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+        .data-item { background: rgba(0,90,50,0.5); border-radius: 12px; padding: 10px; text-align: center; }
+        .data-item label { font-size: 12px; color: #ffaa44; }
+        .data-item value { font-size: 24px; font-weight: bold; color: #ffaa44; display: block; }
+        .timer-text { text-align: center; font-size: 18px; color: #ffaa44; margin: 10px 0; font-weight: bold; }
+        .history-area { background: rgba(0,90,50,0.5); border-radius: 12px; padding: 12px; margin: 12px 0; }
+        .history-title { font-size: 12px; color: #ffaa44; text-align: center; margin-bottom: 10px; }
+        .history-grid { display: grid; grid-template-columns: repeat(10, 30px); gap: 5px; justify-content: center; margin-bottom: 12px; }
+        .history-cell { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; background: #1e1e2e; }
+        .history-cell.dragon { background: #ff3300; }
+        .history-cell.tiger { background: #005a32; }
+        .history-cell.tie { background: #aa66ff; }
+        .record-list { max-height: 100px; overflow-y: auto; font-size: 11px; }
+        .record-item { display: flex; justify-content: space-between; padding: 4px 10px; border-bottom: 1px solid rgba(255,255,255,0.1); color: #ddd; }
+        .record-win { color: #4caf50; }
+        .record-lose { color: #f44336; }
+        .exec-row { display: flex; gap: 10px; margin-top: 12px; }
+        .exec-btn { flex: 1; padding: 10px; border-radius: 12px; font-weight: bold; text-align: center; cursor: pointer; background: #1e1e2e; color: #ffaa44; border: none; transition: all 0.05s; }
+        .exec-btn:active { transform: scale(0.97); }
+        .main-go { background: linear-gradient(135deg, #ff3300, #cc2200); color: white; }
+        .bottom-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        .stat-card { background: rgba(0,90,50,0.5); border-radius: 12px; padding: 10px; text-align: center; }
+        .stat-card span:first-child { display: block; font-size: 11px; color: #ffaa44; }
+        .stat-card span:last-child { font-size: 22px; font-weight: bold; color: #ffaa44; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: #1e1e2e; width: 85%; max-width: 340px; border-radius: 20px; padding: 20px; text-align: center; color: white; }
+        .modal-content button { background: #ffaa44; border: none; border-radius: 8px; padding: 8px 20px; margin-top: 12px; cursor: pointer; }
+        .btn-highlight { animation: btnFlash 0.1s ease-out; }
+        @keyframes btnFlash { 0% { transform: scale(1); } 50% { transform: scale(0.92); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+<div class="container-outer">
+    <div class="container">
+        <!-- 战斗场景 -->
+        <div class="battle-scene" id="battleScene">
+            <div class="scene-bg" id="sceneBg"></div>
+            
+            <!-- 高端转盘 -->
+            <div class="wheel-wrapper" id="wheelWrapper">
+                <div class="wheel-outer-ring"></div>
+                <canvas id="wheelCanvas" class="wheel-canvas" width="500" height="500"></canvas>
+                <div class="wheel-pointer"></div>
+                <div class="wheel-center">龍</div>
+                <button class="wheel-spin-btn" id="wheelSpinBtn">⚡ 开 奖 ⚡</button>
+                <div class="wheel-toast" id="wheelToast">✨</div>
+            </div>
+            <div class="wheel-glow"></div>
+            
+            <div class="dragon-word" id="dragonWord">龍</div>
+            <div class="tiger-word" id="tigerWord">虎</div>
+            <div class="battle-result" id="battleResult">⚔️ 龙争虎斗 ⚔️</div>
+        </div>
+
+        <!-- 中奖滚动数字 -->
+        <div class="rolling-win-section">
+            <div class="rolling-label">🏆 本 期 中 奖</div>
+            <div class="rolling-number" id="rollingWinNumber">0.00</div>
+        </div>
+
+        <!-- 下注区域 -->
+        <div class="bet-section">
+            <div class="account-bar">
+                <div class="account-info">👤 <span id="currentUserId">wang8888</span></div>
+                <div class="btn-group">
+                    <button id="myHistoryBtn" class="btn-sm">记录</button>
+                    <button id="newUserBtn" class="btn-sm">新用户</button>
+                </div>
+            </div>
+            <div class="account-bar" style="margin-top: 0;">
+                <div style="display: flex; gap: 8px; width:100%;">
+                    <input type="text" id="switchUserIdInput" placeholder="登录ID" style="flex:2; background:#1e1e2e; border:1px solid #ffaa44; border-radius:8px; padding:6px 12px; color:white; font-size:12px;">
+                    <button id="switchUserBtn" class="btn-sm">登录</button>
+                </div>
+            </div>
+            
+            <!-- 龙 -->
+            <div class="multi-bet-item" data-type="DRAGON">
+                <div class="multi-bet-name dragon">🐉 龙</div>
+                <div class="bet-amount-wrapper"><div class="multi-bet-amount" id="betDragonAmount">0 rmb</div></div>
+                <div class="quick-bet-row">
+                    <button class="quick-bet" data-type="DRAGON" data-amount="10">+10</button>
+                    <button class="quick-bet" data-type="DRAGON" data-amount="20">+20</button>
+                    <button class="quick-bet" data-type="DRAGON" data-amount="50">+50</button>
+                    <button class="quick-bet" data-type="DRAGON" data-amount="100">+100</button>
+                    <button class="quick-bet" data-type="DRAGON" data-amount="500">+500</button>
+                    <button class="quick-bet" data-type="DRAGON" data-amount="1000">+1000</button>
+                </div>
+                <div class="multi-bet-control"><button class="clear-bet" data-type="DRAGON">清空</button></div>
+            </div>
+            
+            <!-- 和 -->
+            <div class="multi-bet-item" data-type="TIE">
+                <div class="multi-bet-name tie">⚖️ 和</div>
+                <div class="bet-amount-wrapper"><div class="multi-bet-amount" id="betTieAmount">0 rmb</div></div>
+                <div class="quick-bet-row">
+                    <button class="quick-bet" data-type="TIE" data-amount="10">+10</button>
+                    <button class="quick-bet" data-type="TIE" data-amount="20">+20</button>
+                    <button class="quick-bet" data-type="TIE" data-amount="50">+50</button>
+                    <button class="quick-bet" data-type="TIE" data-amount="100">+100</button>
+                    <button class="quick-bet" data-type="TIE" data-amount="500">+500</button>
+                    <button class="quick-bet" data-type="TIE" data-amount="1000">+1000</button>
+                </div>
+                <div class="multi-bet-control"><button class="clear-bet" data-type="TIE">清空</button></div>
+            </div>
+            
+            <!-- 虎 -->
+            <div class="multi-bet-item" data-type="TIGER">
+                <div class="multi-bet-name tiger">🐯 虎</div>
+                <div class="bet-amount-wrapper"><div class="multi-bet-amount" id="betTigerAmount">0 rmb</div></div>
+                <div class="quick-bet-row">
+                    <button class="quick-bet" data-type="TIGER" data-amount="10">+10</button>
+                    <button class="quick-bet" data-type="TIGER" data-amount="20">+20</button>
+                    <button class="quick-bet" data-type="TIGER" data-amount="50">+50</button>
+                    <button class="quick-bet" data-type="TIGER" data-amount="100">+100</button>
+                    <button class="quick-bet" data-type="TIGER" data-amount="500">+500</button>
+                    <button class="quick-bet" data-type="TIGER" data-amount="1000">+1000</button>
+                </div>
+                <div class="multi-bet-control"><button class="clear-bet" data-type="TIGER">清空</button></div>
+            </div>
+            
+            <!-- 数据 -->
+            <div class="data-stack">
+                <div class="data-item"><label>总押注</label><value id="totalBetAmount">0.00</value></div>
+                <div class="data-item"><label>预计奖金</label><value id="valWin">0.00</value></div>
+            </div>
+            
+            <!-- 倒计时 -->
+            <div class="timer-text">⏱️ 下注时间: <span id="countdownNum">25</span> 秒</div>
+            
+            <!-- 历史 -->
+            <div class="history-area">
+                <div class="history-title">最近10局</div>
+                <div class="history-grid" id="historyGrid"></div>
+                <div class="history-title">开奖记录</div>
+                <div class="record-list" id="recordList"></div>
+            </div>
+            
+            <!-- 按钮 -->
+            <div class="exec-row">
+                <button class="exec-btn" id="refreshBtn">刷新</button>
+                <button class="exec-btn" id="repeatBtn">续押</button>
+                <button class="exec-btn" id="cancelBtn">取消</button>
+                <button class="exec-btn main-go" id="fightBtn">投注</button>
+            </div>
+            
+            <!-- 余额 -->
+            <div class="bottom-stats">
+                <div class="stat-card"><span>余额</span><span id="balanceDisplay">0.00</span></div>
+                <div class="stat-card"><span>彩金池</span><span id="poolDisplay">50000.00</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function(){
+    // 语音
+    let speechEnabled = false;
+    function enableSpeech() { if (!speechEnabled) speechEnabled = true; }
+    document.body.addEventListener('click', enableSpeech, { once: true });
+    function speak(text) {
+        if (speechEnabled && window.speechSynthesis) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-CN';
+            utterance.rate = 1.0;
+            speechSynthesis.cancel();
+            speechSynthesis.speak(utterance);
+        }
+    }
+
+    // 用户数据
+    let users = JSON.parse(localStorage.getItem('dragon_tiger_users')) || {};
+    let CURRENT_USER_ID = "wang8888";
+    if (!users[CURRENT_USER_ID]) {
+        users[CURRENT_USER_ID] = { balance: 0.00, records: [], resultHistory: [] };
+        localStorage.setItem('dragon_tiger_users', JSON.stringify(users));
+    }
+    let ADMIN_PASSWORD = localStorage.getItem('dragon_tiger_password') || "wang000000";
+    
+    function saveUsers() { localStorage.setItem('dragon_tiger_users', JSON.stringify(users)); }
+    function getBalance(uid) { if (!users[uid]) users[uid] = { balance: 0.00, records: [], resultHistory: [] }; return users[uid].balance; }
+    function setBalance(uid, amt) { if (!users[uid]) users[uid] = { balance: 0.00, records: [], resultHistory: [] }; users[uid].balance = amt; saveUsers(); }
+    function addBalance(uid, delta) { setBalance(uid, getBalance(uid) + delta); }
+    function getUserList() { return Object.keys(users); }
+    function generateRandomId() { return "user_" + Math.floor(Math.random() * 1000000); }
+
+    function showModal(msg, btnText) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `<div class="modal-content"><h3>提示</h3><p>${msg}</p><button id="modalCloseBtn">${btnText}</button></div>`;
+        document.body.appendChild(modal);
+        document.getElementById('modalCloseBtn').onclick = () => modal.remove();
+    }
+
+    function showMyHistory() {
+        const recs = users[CURRENT_USER_ID]?.records || [];
+        let html = `<div style="max-height:300px; overflow-y:auto; text-align:left;">`;
+        if (recs.length === 0) html += "<p>暂无记录</p>";
+        else {
+            recs.slice(0, 30).forEach(r => {
+                const isWin = r.win > 0;
+                html += `<div style="padding:6px; border-bottom:1px solid #555; display:flex; justify-content:space-between;">
+                            <span>${r.time}</span>
+                            <span>${r.bet} → ${r.result}</span>
+                            <span style="color:${isWin?'#4caf50':'#f44336'}">${isWin ? `+${r.win}` : `-${r.amount}`}</span>
+                         </div>`;
+            });
+        }
+        html += `</div><button id="closeHistoryBtn" style="margin-top:12px;">关闭</button>`;
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `<div class="modal-content"><h3>我的记录</h3>${html}</div>`;
+        document.body.appendChild(modal);
+        document.getElementById('closeHistoryBtn').onclick = () => modal.remove();
+    }
+    document.getElementById('myHistoryBtn').onclick = showMyHistory;
+    document.getElementById('newUserBtn').onclick = () => {
+        const newId = generateRandomId();
+        document.getElementById('switchUserIdInput').value = newId;
+        switchUser();
+        showModal(`新账户：${newId}\n初始余额：0.00 rmb`, "开始");
+    };
+
+    function getResultHistory(uid) { return users[uid]?.resultHistory || []; }
+    function pushResult(uid, res) {
+        if (!users[uid]) users[uid] = { balance: 0.00, records: [], resultHistory: [] };
+        let arr = users[uid].resultHistory || [];
+        arr.unshift(res);
+        if (arr.length > 10) arr.pop();
+        users[uid].resultHistory = arr;
+        saveUsers();
+        if (uid === CURRENT_USER_ID) updateHistoryGrid();
+    }
+    
+    function updateHistoryGrid() {
+        const grid = document.getElementById('historyGrid');
+        if (!grid) return;
+        const hist = getResultHistory(CURRENT_USER_ID);
+        grid.innerHTML = '';
+        for (let i = 0; i < 10; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'history-cell';
+            if (i < hist.length) {
+                const r = hist[i];
+                cell.classList.add(r === '龙' ? 'dragon' : (r === '虎' ? 'tiger' : 'tie'));
+                cell.textContent = r === '龙' ? '龙' : (r === '虎' ? '虎' : '和');
+            } else {
+                cell.textContent = '?';
+            }
+            grid.appendChild(cell);
+        }
+    }
+
+    function addRecord(uid, betType, result, win, betAmt) {
+        if (!users[uid]) users[uid] = { balance: 0.00, records: [], resultHistory: [] };
+        let recs = users[uid].records || [];
+        recs.unshift({ time: new Date().toLocaleTimeString(), bet: betType, result: result, win: win, amount: betAmt });
+        if (recs.length > 50) recs.pop();
+        users[uid].records = recs;
+        saveUsers();
+        if (uid === CURRENT_USER_ID) refreshRecordDisplay();
+    }
+    
+    function refreshRecordDisplay() {
+        const container = document.getElementById('recordList');
+        if (!container) return;
+        const recs = users[CURRENT_USER_ID]?.records || [];
+        container.innerHTML = '';
+        if (recs.length === 0) { container.innerHTML = '<div style="text-align:center; color:#aaa;">暂无记录</div>'; return; }
+        recs.slice(0, 10).forEach(r => {
+            const div = document.createElement('div');
+            div.className = 'record-item';
+            const isWin = r.win > 0;
+            div.innerHTML = `<span>${r.time}</span><span>${r.bet} → ${r.result}</span><span class="${isWin ? 'record-win' : 'record-lose'}">${isWin ? `+${r.win}` : `-${r.amount}`}</span>`;
+            container.appendChild(div);
+        });
+    }
+
+    function flashButton(btn) {
+        if(!btn) return;
+        btn.classList.add('btn-highlight');
+        setTimeout(() => btn.classList.remove('btn-highlight'), 150);
+        if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(20);
+    }
+
+     // ========== 游戏状态 ==========
+    let state = {
+        balance: getBalance(CURRENT_USER_ID),
+        bets: { DRAGON: 0, TIGER: 0, TIE: 0 },
+        pool: 50000,
+        countdown: 25,
+        countdownInterval: null,
+        isDrawing: false
+    };
+    let lastBet = null;
+    let isBetLocked = false;
+
+    // 5秒滚动数字动画
+    let rollingAnimationId = null;
+    function startRollingNumber(finalAmount) {
+        const rollingDiv = document.getElementById('rollingWinNumber');
+        if (!rollingDiv) return;
+        if (rollingAnimationId) cancelAnimationFrame(rollingAnimationId);
+        
+        const duration = 5000;
+        const startTime = performance.now();
+        const startValue = 0.01;
+        
+        rollingDiv.classList.add('rolling-animation');
+        
+        function updateRolling(now) {
+            const elapsed = now - startTime;
+            const progress = Math.min(1, elapsed / duration);
+            const easeOut = 1 - Math.pow(1 - progress, 2);
+            let currentValue = startValue + (finalAmount - startValue) * easeOut;
+            
+            if (progress >= 1) {
+                rollingDiv.classList.remove('rolling-animation');
+                rollingDiv.innerText = finalAmount.toFixed(2);
+                rollingAnimationId = null;
+            } else {
+                rollingDiv.innerText = currentValue.toFixed(2);
+                rollingAnimationId = requestAnimationFrame(updateRolling);
+            }
+        }
+        
+        rollingAnimationId = requestAnimationFrame(updateRolling);
+    }
+
+    function syncBalance() { state.balance = getBalance(CURRENT_USER_ID); updateUI(); }
+    
+    function enableBetButtons(enabled) {
+        const btns = document.querySelectorAll('.quick-bet, .clear-bet, #fightBtn');
+        btns.forEach(btn => {
+            btn.disabled = !enabled;
+            btn.style.opacity = enabled ? '1' : '0.5';
+        });
+    }
+
+    // 转盘同步回调
+    let wheelSpinCallback = null;
+    function setWheelCallback(cb) { wheelSpinCallback = cb; }
+    
+    function executeDraw() {
+        if (state.isDrawing) return;
+        state.isDrawing = true;
+        isBetLocked = true;
+        enableBetButtons(false);
+        
+        const outcomes = ['龙', '虎', '和'];
+        const result = outcomes[Math.floor(Math.random() * 3)];
+        
+        let totalWin = 0;
+        if (result === '龙' && state.bets.DRAGON > 0) totalWin = state.bets.DRAGON * 2;
+        if (result === '虎' && state.bets.TIGER > 0) totalWin = state.bets.TIGER * 2;
+        if (result === '和' && state.bets.TIE > 0) totalWin = state.bets.TIE * 8;
+        
+        startRollingNumber(totalWin);
+        
+        if (wheelSpinCallback) wheelSpinCallback(result);
+        
+        const newBalance = state.balance + totalWin;
+        setBalance(CURRENT_USER_ID, newBalance);
+        state.balance = newBalance;
+        
+        let betTypes = [];
+        if (state.bets.DRAGON > 0) betTypes.push(`龙${state.bets.DRAGON}`);
+        if (state.bets.TIGER > 0) betTypes.push(`虎${state.bets.TIGER}`);
+        if (state.bets.TIE > 0) betTypes.push(`和${state.bets.TIE}`);
+        addRecord(CURRENT_USER_ID, betTypes.join(' '), result, totalWin, state.bets.DRAGON + state.bets.TIGER + state.bets.TIE);
+        pushResult(CURRENT_USER_ID, result);
+        
+        highlightWord(result);
+        
+        const resultMsg = totalWin > 0 ? `${result} +${totalWin}` : result;
+        document.getElementById('battleResult').innerHTML = `🎲 ${resultMsg}`;
+        
+        speak(result);
+        if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(100);
+        
+        setTimeout(() => {
+            state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
+            updateUI();
+            state.isDrawing = false;
+            startCountdown(25);
+        }, 5000);
+    }
+
+    function startCountdown(sec) {
+        if(state.countdownInterval) clearInterval(state.countdownInterval);
+        state.countdown = sec;
+        const countdownSpan = document.getElementById('countdownNum');
+        countdownSpan.innerText = state.countdown;
+        
+        isBetLocked = false;
+        enableBetButtons(true);
+        
+        state.countdownInterval = setInterval(() => {
+            if(state.countdown <= 1){
+                clearInterval(state.countdownInterval);
+                state.countdownInterval = null;
+                isBetLocked = true;
+                enableBetButtons(false);
+                executeDraw();
+            } else {
+                state.countdown--;
+                countdownSpan.innerText = state.countdown;
+            }
+        }, 1000);
+    }
+
+    function clearCountdown() { if(state.countdownInterval){ clearInterval(state.countdownInterval); state.countdownInterval=null; } }
+    
+    function updateUI() {
+        document.getElementById('balanceDisplay').innerText = state.balance.toFixed(2);
+        document.getElementById('poolDisplay').innerText = state.pool.toFixed(2);
+        document.getElementById('betDragonAmount').innerHTML = state.bets.DRAGON + " rmb";
+        document.getElementById('betTigerAmount').innerHTML = state.bets.TIGER + " rmb";
+        document.getElementById('betTieAmount').innerHTML = state.bets.TIE + " rmb";
+        const total = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
+        document.getElementById('totalBetAmount').innerText = total.toFixed(2);
+        let maxWin = 0;
+        if (state.bets.DRAGON > 0) maxWin = Math.max(maxWin, state.bets.DRAGON * 2);
+        if (state.bets.TIGER > 0) maxWin = Math.max(maxWin, state.bets.TIGER * 2);
+        if (state.bets.TIE > 0) maxWin = Math.max(maxWin, state.bets.TIE * 8);
+        document.getElementById('valWin').innerText = maxWin.toFixed(2);
+        document.querySelectorAll('.multi-bet-item').forEach(el => { 
+            const type = el.dataset.type; 
+            if (state.bets[type] > 0) el.classList.add('selected'); 
+            else el.classList.remove('selected'); 
+        });
+    }
+
+    function addBetAmount(type, amount) {
+        if(state.isDrawing || isBetLocked) {
+            showModal("开奖中，请等待...", "知道了");
+            return;
+        }
+        let newVal = state.bets[type] + amount;
+        if (newVal > state.balance) {
+            showModal("余额不足！", "知道了");
+            return;
+        }
+        state.bets[type] = newVal;
+        updateUI();
+        flashButton(document.querySelector(`.quick-bet[data-type="${type}"][data-amount="${amount}"]`));
+    }
+
+    function clearBet(type) {
+        if(state.isDrawing || isBetLocked) return;
+        let amount = state.bets[type];
+        if (amount > 0) {
+            state.balance += amount;
+            setBalance(CURRENT_USER_ID, state.balance);
+        }
+        state.bets[type] = 0;
+        updateUI();
+        flashButton(document.querySelector(`.clear-bet[data-type="${type}"]`));
+    }
+
+    function executeBet() {
+        if(state.isDrawing || isBetLocked) {
+            showModal("开奖中，请等待...", "知道了");
+            return;
+        }
+        let totalBet = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
+        if (totalBet === 0) {
+            showModal("请先下注", "知道了");
+            return;
+        }
+        if (totalBet > state.balance) {
+            showModal("余额不足", "知道了");
+            return;
+        }
+        lastBet = { ...state.bets };
+        state.balance -= totalBet;
+        setBalance(CURRENT_USER_ID, state.balance);
+        updateUI();
+        clearCountdown();
+        executeDraw();
+    }
+
+    function repeatLastBet() {
+        if(state.isDrawing || isBetLocked) {
+            showModal("开奖中，请等待...", "知道了");
+            return;
+        }
+        if(lastBet) {
+            let total = (lastBet.DRAGON||0) + (lastBet.TIGER||0) + (lastBet.TIE||0);
+            if (total > state.balance) {
+                showModal("余额不足", "知道了");
+                return;
+            }
+            state.bets = { ...lastBet };
+            state.balance -= total;
+            setBalance(CURRENT_USER_ID, state.balance);
+            updateUI();
+            flashButton(document.getElementById('repeatBtn'));
+        }
+    }
+    
+    function cancelAllBets() {
+        if(state.isDrawing || isBetLocked) return;
+        let total = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
+        if (total > 0) {
+            state.balance += total;
+            setBalance(CURRENT_USER_ID, state.balance);
+        }
+        state.bets = { DRAGON:0, TIGER:0, TIE:0 };
+        updateUI();
+        flashButton(document.getElementById('cancelBtn'));
+    }
+
+    function refreshBalance() { syncBalance(); flashButton(document.getElementById('refreshBtn')); }
+    
+    function switchUser() {
+        if(state.isDrawing) return;
+        const newId = document.getElementById('switchUserIdInput').value.trim();
+        if(!newId) return;
+        CURRENT_USER_ID = newId;
+        if (!users[CURRENT_USER_ID]) { users[CURRENT_USER_ID] = { balance: 0.00, records: [], resultHistory: [] }; saveUsers(); }
+        document.getElementById('currentUserId').innerText = CURRENT_USER_ID;
+        state.bets = { DRAGON:0, TIGER:0, TIE:0 };
+        state.isDrawing = false;
+        isBetLocked = false;
+        syncBalance(); updateUI(); clearCountdown(); startCountdown(25);
+        refreshRecordDisplay();
+        updateHistoryGrid();
+    }
+
+    function highlightWord(result) {
+        const dragon = document.getElementById('dragonWord');
+        const tiger = document.getElementById('tigerWord');
+        dragon.classList.remove('highlight-win');
+        tiger.classList.remove('highlight-win');
+        if (result === '龙') {
+            dragon.classList.add('highlight-win');
+            setTimeout(() => dragon.classList.remove('highlight-win'), 800);
+        } else if (result === '虎') {
+            tiger.classList.add('highlight-win');
+            setTimeout(() => tiger.classList.remove('highlight-win'), 800);
+        } else if (result === '和') {
+            dragon.classList.add('highlight-win');
+            tiger.classList.add('highlight-win');
+            setTimeout(() => {
+                dragon.classList.remove('highlight-win');
+                tiger.classList.remove('highlight-win');
+            }, 800);
+        }
+    }
+
+    function startPoolFluctuation() { 
+        setInterval(() => { 
+            let change = Math.floor(Math.random()*61)-30; 
+            let newPool = state.pool+change; 
+            if(newPool<10000) newPool=10000; 
+            if(newPool>100000) newPool=100000; 
+            state.pool=newPool; 
+            document.getElementById('poolDisplay').innerText=state.pool.toFixed(2); 
+        }, 1000); 
+    }
+
+    // ========== 管理员面板 ==========
+    let adminPanel = null;
+    let selectedAdminUserId = CURRENT_USER_ID;
+    function showAdminPanel() {
+        if (adminPanel) { adminPanel.remove(); adminPanel = null; return; }
+        const panel = document.createElement('div');
+        panel.className = 'modal';
+        panel.innerHTML = '<div class="modal-content">' +
+            '<h3>管理员面板</h3>' +
+            '<div id="adminUserList" style="max-height:150px; overflow-y:auto; margin:12px 0; background:#1e2a2e; border-radius:8px; padding:8px;"></div>' +
+            '<div>当前：<strong id="selectedUserDisplay">' + selectedAdminUserId + '</strong></div>' +
+            '<input type="number" id="adminAmount" placeholder="金额" value="0" style="margin:8px 0; width:100%; padding:6px; border-radius:6px;">' +
+            '<div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:center;">' +
+                '<button id="adminAddBtn">上分</button>' +
+                '<button id="adminSubBtn">下分</button>' +
+                '<button id="adminQueryBtn">查询</button>' +
+                '<button id="adminResetBtn">重置</button>' +
+                '<button id="adminChangePwdBtn">改密</button>' +
+            '</div>' +
+            '<button id="adminCloseBtn" style="margin-top:12px;">关闭</button>' +
+        '</div>';
+        document.body.appendChild(panel);
+        adminPanel = panel;
+        function refreshUserList() {
+            const userListDiv = document.getElementById('adminUserList');
+            if (!userListDiv) return;
+            const usersArr = getUserList();
+            userListDiv.innerHTML = '';
+            usersArr.forEach(uid => {
+                const div = document.createElement('div');
+                div.style.padding = '5px';
+                div.style.borderBottom = '1px solid #555';
+                div.style.cursor = 'pointer';
+                div.style.background = uid === selectedAdminUserId ? '#ffaa44' : 'transparent';
+                div.style.color = uid === selectedAdminUserId ? '#1a1a2a' : 'white';
+                div.textContent = uid + ' (' + getBalance(uid).toFixed(2) + ')';
+                div.onclick = () => { selectedAdminUserId = uid; document.getElementById('selectedUserDisplay').innerText = selectedAdminUserId; refreshUserList(); };
+                userListDiv.appendChild(div);
+            });
+        }
+        refreshUserList();
+        document.getElementById('adminAddBtn').onclick = () => {
+            let amount = parseFloat(document.getElementById('adminAmount').value);
+            if (isNaN(amount) || amount <= 0) { alert("请输入正数"); return; }
+            addBalance(selectedAdminUserId, amount);
+            refreshUserList();
+            if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
+            alert(`已给 ${selectedAdminUserId} 上分 ${amount} rmb`);
+        };
+        document.getElementById('adminSubBtn').onclick = () => {
+            let amount = parseFloat(document.getElementById('adminAmount').value);
+            if (isNaN(amount) || amount <= 0) { alert("请输入正数"); return; }
+            let cur = getBalance(selectedAdminUserId);
+            if (cur < amount) { alert("余额不足"); return; }
+            addBalance(selectedAdminUserId, -amount);
+            refreshUserList();
+            if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
+            alert(`已从 ${selectedAdminUserId} 下分 ${amount} rmb`);
+        };
+        document.getElementById('adminQueryBtn').onclick = () => {
+            alert(`${selectedAdminUserId} 余额: ${getBalance(selectedAdminUserId).toFixed(2)} rmb`);
+        };
+        document.getElementById('adminResetBtn').onclick = () => {
+            if (confirm(`重置 ${selectedAdminUserId} 余额为0？`)) {
+                setBalance(selectedAdminUserId, 0);
+                refreshUserList();
+                if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
+                alert("重置成功");
+            }
+        };
+        document.getElementById('adminChangePwdBtn').onclick = () => {
+            let old = prompt("当前密码:");
+            if (old !== ADMIN_PASSWORD) { alert("密码错误"); return; }
+            let newPwd = prompt("新密码(至少6位):");
+            if (!newPwd || newPwd.length < 6) { alert("密码至少6位"); return; }
+            ADMIN_PASSWORD = newPwd;
+            localStorage.setItem('dragon_tiger_password', newPwd);
+            alert("密码修改成功");
+        };
+        document.getElementById('adminCloseBtn').onclick = () => { panel.remove(); adminPanel = null; };
+    }
+
+    let longPressTimer = null, activeMenu = null;
+    function showSecretMenu() {
+        if(activeMenu) { activeMenu.remove(); activeMenu=null; return; }
+        const menu = document.createElement('div');
+        menu.style.position = 'fixed';
+        menu.style.bottom = '70px';
+        menu.style.right = '12px';
+        menu.style.background = '#1e2a2e';
+        menu.style.border = '2px solid #ffaa44';
+        menu.style.borderRadius = '12px';
+        menu.style.padding = '10px';
+        menu.style.zIndex = '10000';
+        menu.innerHTML = `<button id="secretAdmin" style="background:#2c3e2f; border:none; border-radius:8px; padding:6px 16px; color:#ffaa44; cursor:pointer;">管理员</button>`;
+        document.body.appendChild(menu);
+        activeMenu = menu;
+        const closeHandler = (e) => { if(!menu.contains(e.target)){ menu.remove(); activeMenu=null; document.removeEventListener('click', closeHandler); } };
+        setTimeout(()=>document.addEventListener('click', closeHandler), 20);
+        document.getElementById('secretAdmin').onclick = () => {
+            if(activeMenu) activeMenu.remove(); activeMenu=null;
+            let pwd = prompt("管理员密码:");
+            if(pwd === ADMIN_PASSWORD) showAdminPanel();
+            else alert("密码错误");
+        };
+    }
+    function onLongPress() {
+        let pwd = prompt("管理员验证（长按续押3秒）\n请输入密码:");
+        if(pwd === ADMIN_PASSWORD) showSecretMenu();
+        else if(pwd !== null) alert("密码错误");
+    }
+
+    // ========== 高端转盘绘制 ==========
+    const wheelCanvas = document.getElementById('wheelCanvas');
+    if (wheelCanvas) {
+        const size = 500;
+        wheelCanvas.width = size;
+        wheelCanvas.height = size;
+        wheelCanvas.style.width = '100%';
+        wheelCanvas.style.height = '100%';
+        
+        const ctx = wheelCanvas.getContext('2d');
+        const centerX = size / 2;
+        const centerY = size / 2;
+        const radius = size / 2 - 15;
+        const PI = Math.PI;
+        const TAU = PI * 2;
+        
+        const SEGMENTS = [
+            { name: '龙', color: '#dc2626', color2: '#991b1b', chn: '龙' },
+            { name: '和', color: '#8b5cf6', color2: '#6d28d9', chn: '和' },
+            { name: '虎', color: '#3b82f6', color2: '#1d4ed8', chn: '虎' }
+        ];
+        
+        let currentRotation = 0;
+        let isSpinning = false;
+        
+        function drawSegment(start, end, color, color2, label) {
+            const grad = ctx.createLinearGradient(
+                centerX + Math.cos(start) * radius * 0.3,
+                centerY + Math.sin(start) * radius * 0.3,
+                centerX + Math.cos(end) * radius * 0.8,
+                centerY + Math.sin(end) * radius * 0.8
+            );
+            grad.addColorStop(0, color);
+            grad.addColorStop(1, color2);
+            
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, start, end);
+            ctx.closePath();
+            ctx.fillStyle = grad;
+            ctx.fill();
+            
+            ctx.strokeStyle = 'rgba(255,215,0,0.4)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            const mid = start + (end - start) / 2;
+            const textR = radius * 0.7;
+            const x = centerX + Math.cos(mid) * textR;
+            const y = centerY + Math.sin(mid) * textR;
+            
+            ctx.font = `bold ${Math.floor(radius * 0.18)}px "PingFang SC"`;
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.fillText(label, x, y);
+        }
+        
+        function drawWheel(rot = 0) {
+            ctx.clearRect(0, 0, size, size);
+            const anglePer = TAU / SEGMENTS.length;
+            for (let i = 0; i < SEGMENTS.length; i++) {
+                const s = i * anglePer + rot;
+                const e = (i + 1) * anglePer + rot;
+                drawSegment(s, e, SEGMENTS[i].color, SEGMENTS[i].color2, SEGMENTS[i].name);
+            }
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius * 0.2, 0, TAU);
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fill();
+            ctx.strokeStyle = '#ffcc44';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+        
+        function spinToResult(targetChn, callback) {
+            if (isSpinning) return;
+            isSpinning = true;
+            
+            const spinBtn = document.getElementById('wheelSpinBtn');
+            if (spinBtn) spinBtn.disabled = true;
+            
+            const targetIndex = targetChn === '龙' ? 0 : (targetChn === '和' ? 1 : 2);
+            const anglePer = TAU / SEGMENTS.length;
+            const pointerAngle = -PI / 2;
+            
+            let currentHit = (pointerAngle - currentRotation + TAU * 4) % TAU;
+            let currentIdx = Math.floor(currentHit / anglePer) % SEGMENTS.length;
+            let delta = (targetIndex - currentIdx + SEGMENTS.length) % SEGMENTS.length;
+            let targetRot = currentRotation + delta * anglePer;
+            
+            if (Math.abs(targetRot - currentRotation) > PI) {
+                targetRot = currentRotation - (SEGMENTS.length - delta) * anglePer;
+            }
+            
+            const spins = 5 + Math.random() * 6;
+            const finalRot = currentRotation + (spins * TAU) + (targetRot - currentRotation) % TAU;
+            const startRot = currentRotation;
+            const duration = 1500;
+            const startTime = performance.now();
+            
+            function animate(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(1, elapsed / duration);
+                const ease = 1 - Math.pow(1 - progress, 3);
+                currentRotation = startRot + (finalRot - startRot) * ease;
+                drawWheel(currentRotation);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    currentRotation = finalRot % TAU;
+                    drawWheel(currentRotation);
+                    isSpinning = false;
+                    if (spinBtn) spinBtn.disabled = false;
+                    if (callback) callback();
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+        
+        function randomSpin() {
+            if (isSpinning) return;
+            isSpinning = true;
+            
+            const spinBtn = document.getElementById('wheelSpinBtn');
+            if (spinBtn) spinBtn.disabled = true;
+            if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(50);
+            
+            const spins = 8 + Math.random() * 10;
+            const randomAngle = Math.random() * TAU;
+            const finalRot = currentRotation + (spins * TAU) + randomAngle;
+            const startRot = currentRotation;
+            const duration = 1500;
+            const startTime = performance.now();
+            
+            function animate(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(1, elapsed / duration);
+                const ease = 1 - Math.pow(1 - progress, 3);
+                currentRotation = startRot + (finalRot - startRot) * ease;
+                drawWheel(currentRotation);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    currentRotation = finalRot % TAU;
+                    drawWheel(currentRotation);
+                    
+                    const pointerAngle = -PI / 2;
+                    const anglePer = TAU / SEGMENTS.length;
+                    let hit = (pointerAngle - currentRotation + TAU * 4) % TAU;
+                    let idx = Math.floor(hit / anglePer) % SEGMENTS.length;
+                    const result = SEGMENTS[idx].chn;
+                    
+                    const toast = document.getElementById('wheelToast');
+                    if (toast) {
+                        toast.textContent = `✨ ${result} ✨`;
+                        toast.style.opacity = '1';
+                        setTimeout(() => toast.style.opacity = '0', 1500);
+                    }
+                    document.getElementById('battleResult').innerHTML = `🎡 ${result}`;
+                    highlightWord(result);
+                    speak(result);
+                    
+                    isSpinning = false;
+                    if (spinBtn) spinBtn.disabled = false;
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+        
+        drawWheel(0);
+        setWheelCallback((result) => { spinToResult(result, () => {}); });
+        
+        document.getElementById('wheelSpinBtn').onclick = (e) => {
+            e.stopPropagation();
+            randomSpin();
+        };
+        document.getElementById('wheelWrapper').onclick = (e) => {
+            if (e.target === document.getElementById('wheelSpinBtn')) return;
+            if (!isSpinning) randomSpin();
+        };
+    }
+
+    // ========== 事件绑定 ==========
+    function bindEvents() {
+        document.getElementById('refreshBtn').onclick = refreshBalance;
+        const repeatBtn = document.getElementById('repeatBtn');
+        repeatBtn.onclick = null;
+        repeatBtn.addEventListener('click', (e) => { if(longPressTimer) clearTimeout(longPressTimer); repeatLastBet(); });
+        repeatBtn.addEventListener('touchstart', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
+        repeatBtn.addEventListener('touchend', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+        repeatBtn.addEventListener('touchcancel', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+        repeatBtn.addEventListener('mousedown', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
+        repeatBtn.addEventListener('mouseup', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+        document.getElementById('cancelBtn').onclick = cancelAllBets;
+        document.getElementById('fightBtn').onclick = executeBet;
+        document.getElementById('switchUserBtn').onclick = switchUser;
+        
+        document.querySelectorAll('.quick-bet').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const type = btn.dataset.type;
+                const amount = parseInt(btn.dataset.amount);
+                addBetAmount(type, amount);
+            };
+        });
+        
+        document.querySelectorAll('.clear-bet').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const type = btn.dataset.type;
+                clearBet(type);
+            };
+        });
+    }
+
+    // ========== 初始化 ==========
+    function init() {
+        bindEvents();
+        syncBalance();
+        startPoolFluctuation();
+        updateUI();
+        startCountdown(25);
+        refreshRecordDisplay();
+        updateHistoryGrid();
+        if (!localStorage.getItem('visited_before')) {
+            localStorage.setItem('visited_before', 'true');
+            setTimeout(() => {
+                showModal("龙虎斗尊享版\n• 初始余额：0 rmb\n• 25秒下注时间\n• 5秒开奖滚动\n• 长按「续押」3秒进入后台", "开始");
+            }, 500);
+        }
+    }
+    
+    init();
+})();
+</script>
+</body>
+</html>
  
