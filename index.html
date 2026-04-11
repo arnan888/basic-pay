@@ -1653,258 +1653,351 @@ ctx.restore();
             setSpeed(1);
             updateUI();
             startCountdown(getCountdownSec());
+   
+        /* ========== 赛博转盘样式 ========== */
+        .wheel-wrapper {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            margin: 0 auto;
+            cursor: pointer;
+        }
+        
+        /* 光晕效果 */
+        .wheel-wrapper::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff3300, #ffaa44, #ff3300);
+            opacity: 0.4;
+            filter: blur(25px);
+            z-index: -1;
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.05); }
+        }
+        
+        /* 转盘画布 */
+        .wheel-canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 0 30px rgba(255,51,0,0.5), inset 0 0 20px rgba(0,0,0,0.3);
+            transition: box-shadow 0.3s;
+        }
+        
+        .wheel-wrapper:hover .wheel-canvas {
+            box-shadow: 0 0 45px rgba(255,51,0,0.8);
+        }
+        
+        /* 3D指针 */
+        .wheel-pointer {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 18px solid transparent;
+            border-right: 18px solid transparent;
+            border-top: 45px solid #ffcc44;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+            z-index: 10;
+        }
+        
+        .wheel-pointer::after {
+            content: '⚡';
+            position: absolute;
+            top: -42px;
+            left: -12px;
+            font-size: 24px;
+            color: #ffaa44;
+            text-shadow: 0 0 10px #ff3300;
+        }
+        
+        /* 中心钻石 */
+        .wheel-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 55px;
+            height: 55px;
+            background: radial-gradient(circle, #ffcc44, #ff8800);
+            border-radius: 50%;
+            z-index: 11;
+            box-shadow: 0 0 20px rgba(255,204,68,0.8), inset 0 2px 4px rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            animation: centerPulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes centerPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.08); }
+        }
+        
+        /* 炫酷按钮 */
+        .wheel-spin-btn {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ff3300, #cc2200);
+            border: none;
+            border-radius: 40px;
+            padding: 10px 28px;
+            font-size: 15px;
+            font-weight: bold;
+            color: #fff;
+            cursor: pointer;
+            z-index: 12;
+            box-shadow: 0 8px 20px rgba(255,51,0,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+            transition: all 0.2s;
+            letter-spacing: 2px;
+            white-space: nowrap;
+        }
+        
+        .wheel-spin-btn:active {
+            transform: translateX(-50%) scale(0.95);
+        }
+        
+        /* 结果提示 */
+        .wheel-toast {
+            position: absolute;
+            bottom: -80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(12px);
+            padding: 8px 24px;
+            border-radius: 40px;
+            color: #ffaa44;
+            font-weight: bold;
+            font-size: 14px;
+            white-space: nowrap;
+            z-index: 13;
+            opacity: 0;
+            transition: 0.3s;
+            border: 1px solid rgba(255,170,68,0.5);
+            box-shadow: 0 0 20px rgba(255,170,68,0.3);
+        }
+        
+        /* 能量环 */
+        .energy-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 360px;
+            height: 360px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,51,0,0.3);
+            pointer-events: none;
+            z-index: 8;
+            animation: rotateRing 10s linear infinite;
+        }
+        
+        @keyframes rotateRing {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div style="position: relative; width: 380px; margin: 50px auto;">
+        <div class="wheel-wrapper" id="wheelWrapper">
+            <canvas id="wheelCanvas" class="wheel-canvas" width="500" height="500"></canvas>
+            <div class="wheel-pointer"></div>
+            <div class="wheel-center">⚡</div>
+            <button class="wheel-spin-btn" id="spinBtn">🎡 灵龙转盘</button>
+            <div class="wheel-toast" id="wheelToast">✨</div>
+        </div>
+        <div class="energy-ring"></div>
+        <div class="energy-ring" style="width: 400px; height: 400px; animation-duration: 15s; opacity: 0.5;"></div>
+    </div>
 
-// ========== 彻底解决偏移的转盘代码开始 ==========
-            const wheelCanvas = document.getElementById('wheelCanvas');
-            if (wheelCanvas) {
-                // ========== 第一步：强制容器居中且尺寸固定 ==========
-                // 先给canvas外面包个容器（如果没有的话，动态创建）
-                let wheelContainer = wheelCanvas.parentNode;
-                if(!wheelContainer || wheelContainer.tagName !== 'DIV'){
-                    wheelContainer = document.createElement('div');
-                    wheelCanvas.parentNode.insertBefore(wheelContainer, wheelCanvas);
-                    wheelContainer.appendChild(wheelCanvas);
-                }
-                // 容器样式：固定宽高，绝对居中
-                wheelContainer.style.width = '400px';
-                wheelContainer.style.height = '400px';
-                wheelContainer.style.margin = '0 auto';
-                wheelContainer.style.position = 'relative';
-                wheelContainer.style.overflow = 'hidden';
-                // canvas本身样式：填满容器，无偏移
-                wheelCanvas.style.width = '100%';
-                wheelCanvas.style.height = '100%';
-                wheelCanvas.style.position = 'absolute';
-                wheelCanvas.style.left = '0';
-                wheelCanvas.style.top = '0';
+    <script>
+        (function() {
+            // ========== 转盘配置 ==========
+            const SEGMENTS = [
+                { name: '🐉 龙', color1: '#ff4444', color2: '#cc0000', value: 'dragon' },
+                { name: '🐯 虎', color1: '#4488ff', color2: '#0066cc', value: 'tiger' },
+                { name: '⚖️ 和', color1: '#aa66ff', color2: '#8844cc', value: 'tie' }
+            ];
+            
+            const canvas = document.getElementById('wheelCanvas');
+            const size = 500;
+            canvas.width = size;
+            canvas.height = size;
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            
+            const ctx = canvas.getContext('2d');
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const radius = size / 2 - 10;
+            const PI = Math.PI;
+            const TAU = PI * 2;
+            
+            let currentRotation = 0;
+            let isSpinning = false;
+            
+            // 绘制扇形
+            function drawSegment(startAngle, endAngle, color1, color2, label) {
+                const gradient = ctx.createLinearGradient(
+                    centerX + Math.cos(startAngle) * radius * 0.3,
+                    centerY + Math.sin(startAngle) * radius * 0.3,
+                    centerX + Math.cos(endAngle) * radius * 0.8,
+                    centerY + Math.sin(endAngle) * radius * 0.8
+                );
+                gradient.addColorStop(0, color1);
+                gradient.addColorStop(1, color2);
                 
-                // ========== 第二步：精确设置画布像素 ==========
-                const dpr = window.devicePixelRatio || 1;
-                const actualSize = 400 * dpr; // 实际渲染像素
-                wheelCanvas.width = actualSize;
-                wheelCanvas.height = actualSize;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = gradient;
+                ctx.fill();
                 
-                const ctx = wheelCanvas.getContext('2d');
-                // 重置所有变换，从零开始
-                ctx.setTransform(1, 0, 0, 1, 0, 0);
-                // 仅在绘制前缩放，避免坐标混乱
-                const scale = dpr;
+                // 描边
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
                 
-                // 全局渲染优化
-                ctx.imageSmoothingEnabled = true;
-                ctx.webkitImageSmoothingEnabled = true;
-                ctx.mozImageSmoothingEnabled = true;
-                ctx.textRendering = 'optimizeLegibility';
+                // 绘制文字
+                const midAngle = startAngle + (endAngle - startAngle) / 2;
+                const textRadius = radius * 0.65;
+                const x = centerX + Math.cos(midAngle) * textRadius;
+                const y = centerY + Math.sin(midAngle) * textRadius;
                 
-                const spinBtn = document.getElementById('spinWheelBtn');
-                const wheelToast = document.getElementById('wheelToast');
-                const SEGMENTS = 15;
-                const SEG_ANGLE = (Math.PI * 2) / SEGMENTS;
-                let currentRotation = 0;
-                let isSpinning = false;
-                const prizes = Array.from({length: SEGMENTS}, (_, i) => (i+1).toString());
-                
-                // ========== 第三步：所有绘制基于绝对中心坐标 ==========
-                function drawWheel(rotation) {
-                    // 清空整个画布
-                    ctx.clearRect(0, 0, actualSize, actualSize);
-                    
-                    // 核心尺寸：基于实际像素计算，100%精准
-                    const centerX = actualSize / 2;
-                    const centerY = actualSize / 2;
-                    const radius = (actualSize / 2) - (4 * scale); // 边距也按比例缩放
-                    
-                    // 绘制底圈：绝对居中
-                    ctx.beginPath();
-                    ctx.arc(centerX, centerY, radius + (2 * scale), 0, 2 * Math.PI);
-                    ctx.fillStyle = '#FFFFFF';
-                    ctx.fill();
-                    
-                    const colorList = [
-                        '#FF5555', '#FF5555', '#5555FF', '#5555FF',
-                        '#FFFF55', '#FFFF55', '#55FF55', '#55FF55',
-                        '#55FFFF', '#55FFFF', '#FFAA55', '#FFAA55',
-                        '#CC55FF', '#CC55FF'
-                    ];
-                    const textList = [
-                        '龍', '虎', '龍', '虎', '龍', '虎',
-                        '龍', '虎', '龍', '虎', '龍', '虎',
-                        '龍', '虎', '王'
-                    ];
-                    
-                    for (let i = 0; i < SEGMENTS; i++) {
-                        const start = i * SEG_ANGLE + rotation;
-                        const end = (i + 1) * SEG_ANGLE + rotation;
-                        
-                        // 绘制扇形：路径坐标100%精准
-                        ctx.beginPath();
-                        ctx.moveTo(centerX, centerY);
-                        ctx.arc(centerX, centerY, radius, start, end);
-                        ctx.closePath();
-                        
-                        if (i === 14) {
-                            const grad = ctx.createLinearGradient(centerX - radius, centerY, centerX + radius, centerY);
-                            grad.addColorStop(0, '#FF3333');
-                            grad.addColorStop(0.17, '#FF9933');
-                            grad.addColorStop(0.33, '#FFFF33');
-                            grad.addColorStop(0.5, '#33FF33');
-                            grad.addColorStop(0.67, '#33FFFF');
-                            grad.addColorStop(0.83, '#3333FF');
-                            grad.addColorStop(1, '#CC33FF');
-                            ctx.fillStyle = grad;
-                            ctx.strokeStyle = '#FFFFFF';
-                            ctx.lineWidth = 1 * scale;
-                            ctx.stroke();
-                        } else {
-                            ctx.fillStyle = colorList[i];
-                            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-                            ctx.lineWidth = 0.8 * scale;
-                            ctx.stroke();
-                        }
-                        ctx.fill();
-                        
-                        ctx.shadowBlur = 8 * scale;
-                        ctx.shadowColor = colorList[i] || '#FFFFFF';
-                        
-// --- 文字绝对居中，绝不偏移 ---
-ctx.save();
-// 完全重置变换，从头开始设置
-ctx.setTransform(1, 0, 0, 1, 0, 0);
-// 移动到画布正中心
-ctx.translate(centerX, centerY);
-// 旋转到扇形正中间
-ctx.rotate(start + SEG_ANGLE / 2);
-// 文字样式按比例缩放
-let targetColor, shadowColor, fontSize;
-if (textList[i] === '龍') {
-    targetColor = '#FFFFFF';
-    shadowColor = 'rgba(0,0,0,0.3)';
-    fontSize = 34 * scale;
-} else if (textList[i] === '虎') {
-    targetColor = '#FFFFFF';
-    shadowColor = 'rgba(0,0,0,0.3)';
-    fontSize = 34 * scale;
-} else {
-    targetColor = '#FFFFFF';
-    shadowColor = 'rgba(255,204,68,0.8)';
-    fontSize = 30 * scale;
-}
-
-ctx.font = `bold ${fontSize}px 'PingFang SC', 'Microsoft Yahei', sans-serif`;
-ctx.fillStyle = targetColor;
-ctx.textAlign = 'center';
-ctx.textBaseline = 'middle';
-ctx.shadowColor = shadowColor;
-ctx.shadowBlur = 5 * scale;
-ctx.shadowOffsetX = 0;
-ctx.shadowOffsetY = 0;
-
-// 文字位置精准计算，无误差
-const textRadius = radius * 0.58;
-ctx.fillText(textList[i], textRadius, 0);
-ctx.strokeStyle = 'rgba(0,0,0,0.4)';
-ctx.lineWidth = 0.8 * scale;
-ctx.strokeText(textList[i], textRadius, 0);
-
-ctx.restore();
-// --- 文字绘制结束 ---
-
-                    }
-                    
-                    // 中心按钮绝对居中
-                    ctx.beginPath();
-                    ctx.arc(centerX, centerY, 24 * scale, 0, 2 * Math.PI);
-                    ctx.fillStyle = '#FFCC55';
-                    ctx.strokeStyle = '#FFFFFF';
-                    ctx.lineWidth = 2 * scale;
-                    ctx.stroke();
-                    ctx.shadowBlur = 12 * scale;
-                    ctx.shadowColor = '#FFCC55';
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
-                    
-                    // 中心文字精准定位
-                    ctx.setTransform(1, 0, 0, 1, 0, 0);
-                    ctx.font = `bold ${24 * scale}px 'PingFang SC', 'Microsoft Yahei', sans-serif`;
-                    ctx.fillStyle = '#222222';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('转', centerX, centerY);
-                    
-                    // 顶部指针绝对居中
-                    ctx.beginPath();
-                    ctx.moveTo(centerX, centerY - radius - (8 * scale));
-                    ctx.lineTo(centerX - (8 * scale), centerY - radius);
-                    ctx.lineTo(centerX + (8 * scale), centerY - radius);
-                    ctx.closePath();
-                    ctx.fillStyle = '#FF5555';
-                    ctx.fill();
-                }
-                
-                function spinWheel() {
-                    if (isSpinning) return;
-                    isSpinning = true;
-                    const spinAngle = Math.random() * 2 * Math.PI + 12 * Math.PI;
-                    const duration = 2500;
-                    const startTime = performance.now();
-                    const startRotation = currentRotation;
-                    function animateSpin(now) {
-                        const elapsed = now - startTime;
-                        let t = Math.min(1, elapsed / duration);
-                        const easeOut = 1 - Math.pow(1 - t, 4);
-                        currentRotation = startRotation + spinAngle * easeOut;
-                        drawWheel(currentRotation);
-                        if (t < 1) {
-                            requestAnimationFrame(animateSpin);
-                        } else {
-                            const finalRotation = currentRotation % (Math.PI * 2);
-                            let pointerAngle = -Math.PI / 2;
-                            let angleDiff = (pointerAngle - finalRotation + 2 * Math.PI) % (2 * Math.PI);
-                            let idx = Math.floor(angleDiff / SEG_ANGLE) % SEGMENTS;
-                            const prize = prizes[idx];
-                            wheelToast.innerText = `🎉 转盘结果：${textList[idx]}(${prize}区) 🎉`;
-                            wheelToast.style.opacity = '1';
-                            wheelToast.style.position = 'relative';
-                            wheelToast.style.margin = '10px auto';
-                            wheelToast.style.width = '300px';
-                            wheelToast.style.textAlign = 'center';
-                            wheelToast.style.backgroundColor = 'rgba(255,255,255,0.9)';
-                            wheelToast.style.color = '#222222';
-                            wheelToast.style.border = '2px solid #FFCC55';
-                            wheelToast.style.borderRadius = '8px';
-                            wheelToast.style.padding = '10px';
-                            setTimeout(() => { wheelToast.style.opacity = '0'; }, 2500);
-                            isSpinning = false;
-                        }
-                    }
-                    requestAnimationFrame(animateSpin);
-                }
-                
-                // 按钮也强制居中
-                if (spinBtn) {
-                    spinBtn.addEventListener('click', spinWheel);
-                    spinBtn.style.display = 'block';
-                    spinBtn.style.margin = '15px auto';
-                    spinBtn.style.padding = '10px 20px';
-                    spinBtn.style.backgroundColor = '#FFCC55';
-                    spinBtn.style.color = '#222222';
-                    spinBtn.style.border = 'none';
-                    spinBtn.style.borderRadius = '8px';
-                    spinBtn.style.fontWeight = 'bold';
-                    spinBtn.style.cursor = 'pointer';
-                }
-                
-                // 初始绘制前再校准一次
-                currentRotation = 0;
-                drawWheel(currentRotation);
+                ctx.font = `bold ${Math.floor(radius * 0.16)}px "PingFang SC"`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#ffffff';
+                ctx.shadowBlur = 4;
+                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                ctx.fillText(label, x, y);
             }
-            // ========== 彻底解决偏移的转盘代码结束 ==========                        
-            refreshRecordDisplay();            
-            updateHistoryGrid();
-            if (!localStorage.getItem('visited_before')) {
-                localStorage.setItem('visited_before', 'true');
-                setTimeout(() => {
-                    showModal("🎉 欢迎！\n• 初始余额：0.00 rmb\n• 押注金额在亮色背景上清晰显示\n• 点击 +10/+20 等快捷增加押注\n• 点击「清空」可单独取消该选项\n• 长按「续押」1.5秒进入管理后台\n• 上传背景功能已修复（支持图片/视频）", "开始游戏");
+            
+            // 绘制转盘
+            function drawWheel(rotation = 0) {
+                ctx.clearRect(0, 0, size, size);
+                const anglePer = TAU / SEGMENTS.length;
+                
+                for (let i = 0; i < SEGMENTS.length; i++) {
+                    const seg = SEGMENTS[i];
+                    const start = i * anglePer + rotation;
+                    const end = (i + 1) * anglePer + rotation;
+                    drawSegment(start, end, seg.color1, seg.color2, seg.name);
+                }
+                
+                // 内圈装饰
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius * 0.18, 0, TAU);
+                ctx.fillStyle = '#1a1a2e';
+                ctx.fill();
+                ctx.strokeStyle = '#ffaa44';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+            
+            // 获取结果
+            function getResult() {
+                const pointerAngle = -PI / 2;
+                const anglePer = TAU / SEGMENTS.length;
+                let hitAngle = (pointerAngle - currentRotation + TAU * 4) % TAU;
+                let idx = Math.floor(hitAngle / anglePer) % SEGMENTS.length;
+                return SEGMENTS[idx];
+            }
+            
+            // 开奖动画
+            function spin() {
+                if (isSpinning) return;
+                isSpinning = true;
+                
+                const btn = document.getElementById('spinBtn');
+                if (btn) btn.disabled = true;
+                
+                // 振动反馈
+                if (navigator.vibrate) navigator.vibrate(100);
+                
+                const spins = 8 + Math.random() * 12;
+                const randomAngle = Math.random() * TAU;
+                const finalRot = currentRotation + (spins * TAU) + randomAngle;
+                const startRot = currentRotation;
+                const duration = 2000;
+                const startTime = performance.now();
+                
+                function animate(now) {
+                    const elapsed = now - startTime;
+                    const progress = Math.min(1, elapsed / duration);
+                    const ease = 1 - Math.pow(1 - progress, 3);
+                    currentRotation = startRot + (finalRot - startRot) * ease;
+                    drawWheel(currentRotation);
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        currentRotation = finalRot % TAU;
+                        drawWheel(currentRotation);
+                        
+                        const result = getResult();
+                        const resultText = result.name;
+                        
+                        // 显示结果
+                        const toast = document.getElementById('wheelToast');
+                        if (toast) {
+                            toast.textContent = `✨ ${resultText} 开奖 ✨`;
+                            toast.style.opacity = '1';
+                            setTimeout(() => toast.style.opacity = '0', 2500);
+                        }
+                        
+                        // 回调结果
+                        if (window.onWheelResult) {
+                            window.onWheelResult(result.value, resultText);
+                        }
+                        
+                        // 语音
+                        if (window.speechSynthesis) {
+                            const utter = new SpeechSynthesisUtterance(resultText);
+                            utter.lang = 'zh-CN';
+                            speechSynthesis.cancel();
+                            speechSynthesis.speak(utter);
+                        }
+                        
+                        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                        
+                        isSpinning = false;
+                        if (btn) btn.disabled = false;
+                    }
+                }
+                
+                requestAnimationFrame(animate);
+            }
+            
+            // 绑定事件
+            document.getElementById('spinBtn').onclick = (e) => {
+                e.stopPropagation();
+                spin();
+            };
+            
+            document.getElementById('wheelWrapper').onclick = (e) => {
+                if (e.target === document.getElementById('spinBtn')) return;
+                if (!isSpinning) spin();
+           
+
+                 showModal("🎉 欢迎！\n• 初始余额：0.00 rmb\n• 押注金额在亮色背景上清晰显示\n• 点击 +10/+20 等快捷增加押注\n• 点击「清空」可单独取消该选项\n• 长按「续押」1.5秒进入管理后台\n• 上传背景功能已修复（支持图片/视频）", "开始游戏");
                 }, 500);
             }
         }
