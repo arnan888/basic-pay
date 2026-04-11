@@ -637,3 +637,558 @@
             setTimeout(() => {
                 dragon.classList.remove('highlight-win');
             
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+state.autoMode) {
+                clearCountdown();
+                startCountdown(30);
+            }
+        });
+        state.betRolling = false;
+        return true;
+    }
+
+    function executeBet() {
+        if (state.betRolling || isAnimating) return;
+        let selectedType = null, selectedAmount = 0;
+        if (state.bets.DRAGON > selectedAmount) { selectedType = "DRAGON"; selectedAmount = state.bets.DRAGON; }
+        if (state.bets.TIGER > selectedAmount) { selectedType = "TIGER"; selectedAmount = state.bets.TIGER; }
+        if (state.bets.TIE > selectedAmount) { selectedType = "TIE"; selectedAmount = state.bets.TIE; }
+        if (!selectedType) return;
+        const betType = { DRAGON:"龙", TIGER:"虎", TIE:"和" }[selectedType];
+        lastBet = { type: betType, amount: selectedAmount };
+        clearCountdown();
+        placeBet(betType, selectedAmount);
+        state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
+        updateUI();
+    }
+
+    function repeatLastBet() { 
+        if(lastBet && !state.betRolling && !isAnimating && !isBetLocked) {
+            placeBet(lastBet.type, lastBet.amount);
+        } else if(isBetLocked) {
+            showModal("⏰ 最后3秒禁止下注！请等待开奖", "知道了");
+        }
+    }
+    
+    function cancelAllBets() { 
+        if(!state.betRolling && !isAnimating && !isBetLocked){ 
+            state.bets = { DRAGON:0, TIGER:0, TIE:0 }; 
+            updateUI(); 
+        } else if(isBetLocked) {
+            showModal("⏰ 最后3秒禁止下注！请等待开奖", "知道了");
+        }
+    }
+
+    function updateUI() {
+        document.getElementById('balanceDisplay').innerText = state.balance.toFixed(2);
+        document.getElementById('poolDisplay').innerText = state.pool.toFixed(2);
+        document.getElementById('betDragonAmount').innerHTML = state.bets.DRAGON + " TRX";
+        document.getElementById('betTigerAmount').innerHTML = state.bets.TIGER + " TRX";
+        document.getElementById('betTieAmount').innerHTML = state.bets.TIE + " TRX";
+        const total = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE;
+        document.getElementById('totalBetAmount').innerText = total.toFixed(2);
+        let maxWin = 0;
+        if (state.bets.DRAGON > 0) maxWin = Math.max(maxWin, state.bets.DRAGON * 2);
+        if (state.bets.TIGER > 0) maxWin = Math.max(maxWin, state.bets.TIGER * 2);
+        if (state.bets.TIE > 0) maxWin = Math.max(maxWin, state.bets.TIE * 8);
+        document.getElementById('valWin').innerText = maxWin.toFixed(2);
+        document.querySelectorAll('.multi-bet-item').forEach(el => { const type = el.dataset.type; if (state.bets[type] > 0) el.classList.add('selected'); else el.classList.remove('selected'); });
+    }
+
+    function addBetAmount(type, amount) {
+        if(state.betRolling || isAnimating || isBetLocked) {
+            if(isBetLocked) showModal("⏰ 最后3秒禁止下注！请等待开奖", "知道了");
+            return;
+        }
+        let newVal = state.bets[type] + amount;
+        if (newVal > state.balance) {
+            if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(200);
+            showModal("❌ 余额不足！当前余额：" + state.balance.toFixed(2) + " TRX", "知道了");
+            return;
+        }
+        if(newVal < 0) newVal = 0;
+        state.bets[type] = newVal;
+        updateUI();
+    }
+
+    function clearBet(type) {
+        if(state.betRolling || isAnimating || isBetLocked) {
+            if(isBetLocked) showModal("⏰ 最后3秒禁止下注！请等待开奖", "知道了");
+            return;
+        }
+        state.bets[type] = 0;
+        updateUI();
+        if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(50);
+    }
+
+    function startPoolFluctuation() { 
+        setInterval(() => { 
+            let change = Math.floor(Math.random()*61)-30; 
+            let newPool = state.pool+change; 
+            if(newPool<10000) newPool=10000; 
+            if(newPool>100000) newPool=100000; 
+            state.pool=newPool; 
+            document.getElementById('poolDisplay').innerText=state.pool.toFixed(2); 
+        }, 1000); 
+    }
+
+    function startCountdown(sec) {
+        if(state.countdownInterval) clearInterval(state.countdownInterval);
+        state.countdown = sec;
+        const countdownSpan = document.getElementById('countdownNum');
+        countdownSpan.innerText = state.countdown;
+        countdownSpan.classList.remove('countdown-warning');
+        
+        isBetLocked = false;
+        enableBetButtons(true);
+        
+        state.countdownInterval = setInterval(() => {
+            if(state.countdown <= 1){
+                clearInterval(state.countdownInterval);
+                state.countdownInterval = null;
+                isBetLocked = true;
+                enableBetButtons(false);
+                if(state.bets.DRAGON+state.bets.TIGER+state.bets.TIE > 0) executeBet();
+                else startCountdown(30);
+            } else {
+                state.countdown--;
+                countdownSpan.innerText = state.countdown;
+                
+                if(state.countdown <= 3 && !isBetLocked) {
+                    isBetLocked = true;
+                    enableBetButtons(false);
+                    countdownSpan.classList.add('countdown-warning');
+                    showModal("⏰ 最后3秒！禁止下注，等待开奖...", "知道了");
+                }
+            }
+        }, 1000);
+    }
+
+    function clearCountdown() { if(state.countdownInterval){ clearInterval(state.countdownInterval); state.countdownInterval=null; } }
+    function refreshBalance() { syncBalance(); }
+
+    function setSpeed(speed) {
+        if(isAnimating) return;
+        state.speed = speed;
+        document.querySelectorAll('.speed-btn').forEach(btn => { 
+            if(parseInt(btn.dataset.speed)===speed) btn.classList.add('active'); 
+            else btn.classList.remove('active'); 
+        });
+    }
+
+    function switchUser() {
+        if(isAnimating) return;
+        const newId = document.getElementById('switchUserIdInput').value.trim();
+        if(!newId) return;
+        CURRENT_USER_ID = newId;
+        if (!users[CURRENT_USER_ID]) { users[CURRENT_USER_ID] = { balance: 1000.00, records: [], resultHistory: [] }; saveUsers(); }
+        document.getElementById('currentUserId').innerText = CURRENT_USER_ID;
+        state.bets = { DRAGON:0, TIGER:0, TIE:0 };
+        lastBet = null;
+        isBetLocked = false;
+        syncBalance(); updateUI(); clearCountdown(); startCountdown(30);
+        refreshRecordDisplay();
+        updateHistoryGrid();
+    }
+
+    // ========== 管理员 ==========
+    let adminPanel = null;
+    let selectedAdminUserId = CURRENT_USER_ID;
+    function showAdminPanel() {
+        if (adminPanel) { adminPanel.remove(); adminPanel = null; return; }
+        const panel = document.createElement('div');
+        panel.className = 'modal';
+        panel.innerHTML = '<div class="modal-content" style="width:90%; max-width:360px;">' +
+            '<h3>🔐 管理员面板</h3>' +
+            '<div id="adminUserList" style="max-height:150px; overflow-y:auto; margin:12px 0; background:#1e2a2e; border-radius:8px; padding:8px;"></div>' +
+            '<div>当前选中：<strong id="selectedUserDisplay">' + selectedAdminUserId + '</strong></div>' +
+            '<input type="number" id="adminAmount" placeholder="金额" value="0.00" style="margin:8px 0; width:100%; padding:8px; border-radius:6px;">' +
+            '<div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">' +
+                '<button id="adminAddBtn">➕ 上分</button>' +
+                '<button id="adminSubBtn">➖ 下分</button>' +
+                '<button id="adminQueryBtn">🔍 查询</button>' +
+                '<button id="adminResetBtn">🔄 重置</button>' +
+                '<button id="adminChangePwdBtn">🔑 改密码</button>' +
+            '</div>' +
+            '<button id="adminCloseBtn" style="margin-top:16px;">关闭</button>' +
+        '</div>';
+        document.body.appendChild(panel);
+        adminPanel = panel;
+        function refreshUserList() {
+            const userListDiv = document.getElementById('adminUserList');
+            if (!userListDiv) return;
+            const usersArr = getUserList();
+            userListDiv.innerHTML = '';
+            usersArr.forEach(uid => {
+                const div = document.createElement('div');
+                div.style.padding = '6px';
+                div.style.borderBottom = '1px solid #555';
+                div.style.cursor = 'pointer';
+                div.style.background = uid === selectedAdminUserId ? '#ffaa44' : 'transparent';
+                div.style.color = uid === selectedAdminUserId ? '#1a1a2a' : 'white';
+                div.textContent = uid + ' (余额: ' + getBalance(uid).toFixed(2) + ')';
+                div.onclick = () => { selectedAdminUserId = uid; document.getElementById('selectedUserDisplay').innerText = selectedAdminUserId; refreshUserList(); };
+                userListDiv.appendChild(div);
+            });
+        }
+        refreshUserList();
+        document.getElementById('adminAddBtn').onclick = () => {
+            const amount = parseFloat(document.getElementById('adminAmount').value);
+            if (isNaN(amount) || amount <= 0) { alert("请输入正数金额"); return; }
+            addBalance(selectedAdminUserId, amount);
+            refreshUserList();
+            if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
+            alert('✅ 已给 ' + selectedAdminUserId + ' 上分 ' + amount + ' TRX');
+        };
+        document.getElementById('adminSubBtn').onclick = () => {
+            const amount = parseFloat(document.getElementById('adminAmount').value);
+            if (isNaN(amount) || amount <= 0) { alert("请输入正数金额"); return; }
+            const cur = getBalance(selectedAdminUserId);
+            if (cur < amount) { alert("余额不足"); return; }
+            addBalance(selectedAdminUserId, -amount);
+            refreshUserList();
+            if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
+            alert('✅ 已从 ' + selectedAdminUserId + ' 下分 ' + amount + ' TRX');
+        };
+        document.getElementById('adminQueryBtn').onclick = () => {
+            alert('用户 ' + selectedAdminUserId + ' 余额: ' + getBalance(selectedAdminUserId).toFixed(2) + ' TRX');
+        };
+        document.getElementById('adminResetBtn').onclick = () => {
+            if (confirm('重置 ' + selectedAdminUserId + ' 余额为 1000.00 TRX？')) {
+                setBalance(selectedAdminUserId, 1000);
+                refreshUserList();
+                if (selectedAdminUserId === CURRENT_USER_ID) syncBalance();
+                alert("重置成功");
+            }
+        };
+        document.getElementById('adminChangePwdBtn').onclick = () => {
+            const old = prompt("当前密码:");
+            if (old !== ADMIN_PASSWORD) { alert("密码错误"); return; }
+            const newPwd = prompt("新密码(至少6位):");
+            if (!newPwd || newPwd.length < 6) { alert("密码至少6位"); return; }
+            ADMIN_PASSWORD = newPwd;
+            localStorage.setItem('dragon_tiger_password', newPwd);
+            alert("密码修改成功");
+        };
+        document.getElementById('adminCloseBtn').onclick = () => { panel.remove(); adminPanel = null; };
+    }
+
+    let longPressTimer = null, activeMenu = null;
+    function showSecretMenu() {
+        if(activeMenu) { activeMenu.remove(); activeMenu=null; return; }
+        const menu = document.createElement('div');
+        menu.style.position = 'fixed';
+        menu.style.bottom = '80px';
+        menu.style.right = '12px';
+        menu.style.background = '#1e2a2e';
+        menu.style.border = '2px solid #ffaa44';
+        menu.style.borderRadius = '12px';
+        menu.style.padding = '12px';
+        menu.style.display = 'flex';
+        menu.style.flexDirection = 'column';
+        menu.style.gap = '8px';
+        menu.style.backdropFilter = 'blur(20px)';
+        menu.style.zIndex = '10000';
+        menu.innerHTML = `<button id="secretAdmin" style="background:#2c3e2f; border:none; border-radius:8px; padding:8px 20px; color:#ffaa44; cursor:pointer;">👑 管理员面板</button>`;
+        document.body.appendChild(menu);
+        activeMenu = menu;
+        const closeHandler = (e) => { if(!menu.contains(e.target)){ menu.remove(); activeMenu=null; document.removeEventListener('click', closeHandler); } };
+        setTimeout(()=>document.addEventListener('click', closeHandler), 20);
+        document.getElementById('secretAdmin').onclick = () => {
+            if(activeMenu) activeMenu.remove(); activeMenu=null;
+            const pwd = prompt("管理员密码:", "");
+            if(pwd === ADMIN_PASSWORD) showAdminPanel();
+            else alert("密码错误");
+        };
+    }
+    function onLongPress() {
+        const pwd = prompt("🔐 管理员验证（长按续押3秒）\n请输入管理密码:", "");
+        if(pwd === ADMIN_PASSWORD) showSecretMenu();
+        else if(pwd !== null) alert("密码错误");
+    }
+
+    // ========== 事件绑定 ==========
+    function bindEvents() {
+        document.getElementById('refreshBtn').onclick = refreshBalance;
+        const repeatBtn = document.getElementById('repeatBtn');
+        repeatBtn.onclick = null;
+        repeatBtn.addEventListener('click', (e) => { if(longPressTimer) clearTimeout(longPressTimer); repeatLastBet(); });
+        repeatBtn.addEventListener('touchstart', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
+        repeatBtn.addEventListener('touchend', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+        repeatBtn.addEventListener('touchcancel', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+        repeatBtn.addEventListener('mousedown', (e) => { longPressTimer = setTimeout(() => { onLongPress(); longPressTimer = null; }, 3000); });
+        repeatBtn.addEventListener('mouseup', () => { if(longPressTimer) clearTimeout(longPressTimer); });
+        document.getElementById('cancelBtn').onclick = cancelAllBets;
+        document.getElementById('fightBtn').onclick = executeBet;
+        document.getElementById('switchUserBtn').onclick = switchUser;
+        document.querySelectorAll('.speed-btn').forEach(btn => btn.onclick = () => setSpeed(parseInt(btn.dataset.speed)));
+
+        document.querySelectorAll('.quick-bet').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const type = btn.dataset.type;
+                const amount = parseInt(btn.dataset.amount);
+                addBetAmount(type, amount);
+            };
+        });
+
+        document.querySelectorAll('.clear-bet').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const type = btn.dataset.type;
+                clearBet(type);
+            };
+        });
+    }
+
+    // ========== 转盘（支持同步开奖） ==========
+    const SEGMENTS = [
+        { name: '🐉 龙', color1: '#ff4444', color2: '#cc0000', value: 'dragon', chn: '龙' },
+        { name: '🐯 虎', color1: '#4488ff', color2: '#0066cc', value: 'tiger', chn: '虎' },
+        { name: '⚖️ 和', color1: '#aa66ff', color2: '#8844cc', value: 'tie', chn: '和' }
+    ];
+    
+    const wheelCanvas = document.getElementById('premiumWheelCanvas');
+    if (wheelCanvas) {
+        const size = 500;
+        wheelCanvas.width = size;
+        wheelCanvas.height = size;
+        wheelCanvas.style.width = '100%';
+        wheelCanvas.style.height = '100%';
+        
+        const ctx = wheelCanvas.getContext('2d');
+        const centerX = size / 2;
+        const centerY = size / 2;
+        const radius = size / 2 - 10;
+        const TAU = Math.PI * 2;
+        let currentRotation = 0;
+        let isWheelSpinning = false;
+        
+        function drawSegment(startAngle, endAngle, color1, color2, label) {
+            const gradient = ctx.createLinearGradient(
+                centerX + Math.cos(startAngle) * radius * 0.3,
+                centerY + Math.sin(startAngle) * radius * 0.3,
+                centerX + Math.cos(endAngle) * radius * 0.8,
+                centerY + Math.sin(endAngle) * radius * 0.8
+            );
+            gradient.addColorStop(0, color1);
+            gradient.addColorStop(1, color2);
+            
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            const midAngle = startAngle + (endAngle - startAngle) / 2;
+            const textRadius = radius * 0.65;
+            const x = centerX + Math.cos(midAngle) * textRadius;
+            const y = centerY + Math.sin(midAngle) * textRadius;
+            
+            ctx.font = `bold ${Math.floor(radius * 0.16)}px "PingFang SC"`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 4;
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.fillText(label, x, y);
+        }
+        
+        function drawWheel(rotation = 0) {
+            ctx.clearRect(0, 0, size, size);
+            const anglePer = TAU / SEGMENTS.length;
+            for (let i = 0; i < SEGMENTS.length; i++) {
+                const seg = SEGMENTS[i];
+                const start = i * anglePer + rotation;
+                const end = (i + 1) * anglePer + rotation;
+                drawSegment(start, end, seg.color1, seg.color2, seg.name);
+            }
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius * 0.18, 0, TAU);
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fill();
+            ctx.strokeStyle = '#ffaa44';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+        
+        // 转盘同步开奖（转到指定结果）
+        function syncWheelToResult(resultChn) {
+            if (isWheelSpinning) return;
+            isWheelSpinning = true;
+            
+            const spinBtn = document.getElementById('premiumSpinBtn');
+            if (spinBtn) spinBtn.disabled = true;
+            if (navigator.vibrate) navigator.vibrate(100);
+            
+            // 目标索引
+            let targetIndex = 0;
+            if (resultChn === '龙') targetIndex = 0;
+            else if (resultChn === '虎') targetIndex = 1;
+            else if (resultChn === '和') targetIndex = 2;
+            
+            const anglePer = TAU / SEGMENTS.length;
+            const pointerAngle = -Math.PI / 2;
+            
+            let currentHitAngle = (pointerAngle - currentRotation + TAU * 4) % TAU;
+            let currentIndex = Math.floor(currentHitAngle / anglePer) % SEGMENTS.length;
+            
+            let deltaIndex = (targetIndex - currentIndex + SEGMENTS.length) % SEGMENTS.length;
+            let targetRotation = currentRotation + deltaIndex * anglePer;
+            
+            if (Math.abs(targetRotation - currentRotation) > Math.PI) {
+                targetRotation = currentRotation - (SEGMENTS.length - deltaIndex) * anglePer;
+            }
+            
+            const spins = 5 + Math.random() * 5;
+            const finalRot = currentRotation + (spins * TAU) + (targetRotation - currentRotation) % TAU;
+            const startRot = currentRotation;
+            const duration = 2000;
+            const startTime = performance.now();
+            
+            function animate(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(1, elapsed / duration);
+                const ease = 1 - Math.pow(1 - progress, 3);
+                currentRotation = startRot + (finalRot - startRot) * ease;
+                drawWheel(currentRotation);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    currentRotation = finalRot % TAU;
+                    drawWheel(currentRotation);
+                    
+                    const toast = document.getElementById('premiumWheelToast');
+                    if (toast) {
+                        toast.textContent = `✨ ${resultChn} 开奖 ✨`;
+                        toast.style.opacity = '1';
+                        setTimeout(() => toast.style.opacity = '0', 2000);
+                    }
+                    
+                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                    isWheelSpinning = false;
+                    if (spinBtn) spinBtn.disabled = false;
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+        
+        // 独立转盘开奖（随机）
+        function spinWheelRandom() {
+            if (isWheelSpinning) return;
+            isWheelSpinning = true;
+            
+            const spinBtn = document.getElementById('premiumSpinBtn');
+            if (spinBtn) spinBtn.disabled = true;
+            if (navigator.vibrate) navigator.vibrate(100);
+            
+            const spins = 8 + Math.random() * 12;
+            const randomAngle = Math.random() * TAU;
+            const finalRot = currentRotation + (spins * TAU) + randomAngle;
+            const startRot = currentRotation;
+            const duration = 2000;
+            const startTime = performance.now();
+            
+            function animate(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(1, elapsed / duration);
+                const ease = 1 - Math.pow(1 - progress, 3);
+                currentRotation = startRot + (finalRot - startRot) * ease;
+                drawWheel(currentRotation);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    currentRotation = finalRot % TAU;
+                    drawWheel(currentRotation);
+                    
+                    const pointerAngle = -Math.PI / 2;
+                    const anglePer = TAU / SEGMENTS.length;
+                    let hitAngle = (pointerAngle - currentRotation + TAU * 4) % TAU;
+                    let idx = Math.floor(hitAngle / anglePer) % SEGMENTS.length;
+                    const result = SEGMENTS[idx].chn;
+                    
+                    const toast = document.getElementById('premiumWheelToast');
+                    if (toast) {
+                        toast.textContent = `✨ ${result} 开奖 ✨`;
+                        toast.style.opacity = '1';
+                        setTimeout(() => toast.style.opacity = '0', 2000);
+                    }
+                    
+                    document.getElementById('battleResult').innerHTML = `🎡 转盘: ${result} 🎡`;
+                    highlightWord(result);
+                    
+                    if (window.speechSynthesis) {
+                        const utter = new SpeechSynthesisUtterance(result);
+                        utter.lang = 'zh-CN';
+                        speechSynthesis.cancel();
+                        speechSynthesis.speak(utter);
+                    }
+                    
+                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                    isWheelSpinning = false;
+                    if (spinBtn) spinBtn.disabled = false;
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+        
+        drawWheel(0);
+        
+        // 注册同步函数
+        syncWheelToResultFunc = syncWheelToResult;
+        
+        document.getElementById('premiumSpinBtn').onclick = (e) => { 
+            e.stopPropagation(); 
+            spinWheelRandom(); 
+        };
+        document.getElementById('premiumWheelContainer').onclick = (e) => {
+            if (e.target === document.getElementById('premiumSpinBtn')) return;
+            if (!isWheelSpinning) spinWheelRandom();
+        };
+    }
+
+    // ========== 初始化 ==========
+    function init() {
+        bindEvents();
+        syncBalance();
+        startPoolFluctuation();
+        setSpeed(1);
+        updateUI();
+        startCountdown(30);
+        refreshRecordDisplay();
+        updateHistoryGrid();
+        if (!localStorage.getItem('visited_before')) {
+            localStorage.setItem('visited_before', 'true');
+            setTimeout(() => {
+                showModal("🎉 欢迎来到龙虎斗至尊版！\n• 初始余额：1000 TRX\n• 每局30秒倒计时\n• 最后3秒禁止下注\n• 下注后转盘会同步开奖结果\n• 长按「续押」3秒进入管理后台", "开始游戏");
+            }, 500);
+        }
+    }
+    
+    init();
+})();
+</script>
+</body>
+</html>
+```
