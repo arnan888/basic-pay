@@ -1,3 +1,780 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>潮汕葫芦鱼 · 三般骰宝 | 闲玩经典</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: #1e1a15;
+            background-image: radial-gradient(circle at 25% 40%, rgba(210, 150, 75, 0.15) 2%, transparent 2.5%);
+            background-size: 32px 32px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif;
+            padding: 16px;
+        }
+
+        /* 主游戏卡牌 */
+        .game-container {
+            max-width: 1200px;
+            width: 100%;
+            background: #2f241b;
+            background: linear-gradient(145deg, #3a2c21 0%, #2a1f17 100%);
+            border-radius: 64px 64px 48px 48px;
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 215, 150, 0.3);
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        /* 头部（传统牌楼风格） */
+        .game-header {
+            background: #8b3c1c;
+            background: linear-gradient(135deg, #ac4f2a, #7a3116);
+            padding: 18px 20px 14px 20px;
+            text-align: center;
+            border-bottom: 4px solid #f7bc6c;
+            position: relative;
+        }
+
+        .game-header h1 {
+            font-size: 1.9rem;
+            font-weight: 800;
+            letter-spacing: 4px;
+            color: #ffefcf;
+            text-shadow: 3px 3px 0 #56200c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .game-header h1 span {
+            font-size: 2rem;
+        }
+
+        .sub {
+            font-size: 0.8rem;
+            color: #ffdd99;
+            background: #4e2613b3;
+            display: inline-block;
+            padding: 4px 16px;
+            border-radius: 40px;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        /* 状态栏 (余额 / 总注 / 庄区模拟) */
+        .stats-panel {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 16px 24px;
+            background: #231b14;
+            border-bottom: 1px solid #644a33;
+        }
+
+        .stat-card {
+            background: #1f1711;
+            border-radius: 48px;
+            padding: 8px 20px;
+            box-shadow: inset 0 1px 3px #00000033, 0 4px 8px #0000001f;
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #e2bc89;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: #f9d792;
+            line-height: 1;
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+
+        .stat-value.small {
+            font-size: 1.4rem;
+        }
+
+        .badge-king {
+            background: #58432e;
+            color: #ffd966;
+        }
+
+        /* 骰子区域 (葫芦鱼结果) */
+        .dice-area {
+            background: #2d241c;
+            margin: 20px 24px;
+            border-radius: 60px;
+            padding: 24px 16px;
+            text-align: center;
+            box-shadow: inset 0 0 0 2px #5e4230, 0 8px 18px black;
+        }
+
+        .dice-title {
+            font-size: 0.9rem;
+            color: #f5c28e;
+            margin-bottom: 12px;
+            font-weight: bold;
+        }
+
+        .dice-box {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .dice {
+            background: #fef0cf;
+            width: 85px;
+            height: 85px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.4rem;
+            box-shadow: 0 8px 0 #926b42;
+            transition: all 0.1s ease;
+            background: #fff2df;
+            border: 2px solid #e5b874;
+        }
+
+        /* 押注网格 (六门) */
+        .bet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 18px;
+            padding: 10px 24px 24px 24px;
+        }
+
+        .bet-card {
+            background: #1f1712;
+            border-radius: 36px;
+            text-align: center;
+            padding: 16px 8px 12px;
+            transition: 0.1s;
+            box-shadow: 0 6px 0 #0a0705;
+            cursor: pointer;
+            border: 1px solid #6f4f34;
+        }
+
+        .bet-card.active-tap {
+            transform: scale(0.98);
+        }
+
+        .bet-icon {
+            font-size: 3rem;
+            background: #302419;
+            width: 70px;
+            height: 70px;
+            line-height: 70px;
+            margin: 0 auto 8px;
+            border-radius: 50%;
+            box-shadow: inset 0 1px 3px #ffd58c, 0 4px 8px black;
+        }
+
+        .bet-name {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #ffddb0;
+            letter-spacing: 1px;
+        }
+
+        .bet-odds {
+            font-size: 0.7rem;
+            color: #dba959;
+            margin: 4px 0;
+        }
+
+        .bet-amount {
+            background: #0c0907;
+            border-radius: 60px;
+            padding: 5px 8px;
+            margin: 8px 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .bet-amount span {
+            color: #ffbc6e;
+            font-weight: bold;
+            font-size: 1.1rem;
+            background: #2a1c12;
+            padding: 4px 10px;
+            border-radius: 30px;
+            min-width: 55px;
+        }
+
+        .btn-chip {
+            background: #523b26;
+            border: none;
+            color: #fce2b4;
+            font-size: 1.2rem;
+            font-weight: bold;
+            width: 36px;
+            height: 36px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.1s;
+            box-shadow: 0 2px 4px black;
+        }
+
+        .btn-chip:active {
+            transform: scale(0.9);
+            background: #7b5538;
+        }
+
+        /* 筹码快捷栏 */
+        .chip-bar {
+            background: #2a1f16;
+            margin: 0 24px 16px 24px;
+            padding: 12px 16px;
+            border-radius: 60px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            background: #ebbc7e;
+            color: #3a240f;
+            font-weight: bold;
+            font-size: 1.1rem;
+            padding: 6px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #8b5a2e;
+            transition: 0.05s linear;
+            font-family: monospace;
+        }
+
+        .chip:active {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+
+        .chip.selected {
+            background: #f7c56e;
+            box-shadow: 0 0 0 2px #ffefb0, 0 3px 0 #7a4b22;
+            color: #2f1c0a;
+        }
+
+        /* 操作栏 */
+        .action-bar {
+            display: flex;
+            justify-content: center;
+            gap: 18px;
+            padding: 8px 24px 28px 24px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background: #734c2e;
+            border: none;
+            padding: 10px 28px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50px;
+            color: #ffe3b3;
+            box-shadow: 0 4px 0 #3f2a1a;
+            cursor: pointer;
+            transition: 0.05s linear;
+            min-width: 110px;
+        }
+
+        .action-btn.primary {
+            background: #c47c3a;
+            color: #2f1b0a;
+            box-shadow: 0 4px 0 #764e26;
+        }
+
+        .action-btn:active {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+
+        .message-area {
+            background: #1c140e;
+            margin: 0 24px 24px 24px;
+            border-radius: 40px;
+            padding: 12px 18px;
+            font-size: 0.85rem;
+            color: #dbbc8c;
+            text-align: center;
+            font-weight: 500;
+            letter-spacing: 1px;
+            min-height: 68px;
+        }
+
+        footer {
+            font-size: 0.65rem;
+            text-align: center;
+            padding: 12px;
+            color: #aa8259;
+            background: #1f1712;
+        }
+
+        @media (max-width: 650px) {
+            .dice {
+                width: 70px;
+                height: 70px;
+                font-size: 2.8rem;
+            }
+            .bet-icon {
+                width: 55px;
+                height: 55px;
+                line-height: 55px;
+                font-size: 2rem;
+            }
+            .stat-value {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <div class="game-header">
+        <h1>
+            <span>🎲</span> 潮汕葫芦鱼 · 三般骰宝 <span>🐟</span>
+        </h1>
+        <div class="sub">🐉 三骰定乾坤 · 押注赢彩头 🦐</div>
+    </div>
+
+    <div class="stats-panel">
+        <div class="stat-card">
+            <div class="stat-label">💰 钱庄余额</div>
+            <div class="stat-value" id="balanceValue">5000</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">🎲 总押注额</div>
+            <div class="stat-value small" id="totalBetValue">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">🏆 上局赢金</div>
+            <div class="stat-value small" id="lastWin">0</div>
+        </div>
+    </div>
+
+    <!-- 骰子区域 -->
+    <div class="dice-area">
+        <div class="dice-title">⚡ 葫芦鱼开骰结果 ⚡</div>
+        <div class="dice-box" id="diceContainer">
+            <div class="dice">🎲</div>
+            <div class="dice">🎲</div>
+            <div class="dice">🎲</div>
+        </div>
+    </div>
+
+    <!-- 押注项目 鱼虾蟹葫芦铜钱鸡 -->
+    <div class="bet-grid" id="betGrid"></div>
+
+    <!-- 快捷筹码 -->
+    <div class="chip-bar" id="chipBar">
+        <div class="chip" data-chip="20">💰 20</div>
+        <div class="chip" data-chip="50">💰 50</div>
+        <div class="chip" data-chip="100">💰 100</div>
+        <div class="chip" data-chip="500">💰 500</div>
+        <div class="chip" data-chip="1000">💰 1000</div>
+    </div>
+
+    <div class="action-bar">
+        <button class="action-btn" id="rollBtn">🎲 开骰！</button>
+        <button class="action-btn" id="resetBetBtn">🧹 清空下注</button>
+        <button class="action-btn" id="sitDownBtn">💺 坐下 / 重置</button>
+        <button class="action-btn" id="serviceBtn">🎫 客服</button>
+    </div>
+
+    <div class="message-area" id="msgArea">
+        欢迎光临 · 押中葫芦鱼，好运挡不住！
+    </div>
+    <footer>
+        ⚡ 纯娱乐游戏 · 每局扣除总注额，中奖按出现次数赔付 (1个→1倍净利，2个→2倍，3个→3倍)  🎯
+    </footer>
+</div>
+
+<script>
+    // ----- 游戏配置 ------
+    const INIT_BALANCE = 5000;
+    // 六门  (图案, 名称, 图标)
+    const ITEMS = [
+        { id: "fish", name: "鱼", icon: "🐟", oddsDesc: "1~3倍" },
+        { id: "shrimp", name: "虾", icon: "🦐", oddsDesc: "1~3倍" },
+        { id: "crab", name: "蟹", icon: "🦀", oddsDesc: "1~3倍" },
+        { id: "calabash", name: "葫芦", icon: "🏺", oddsDesc: "1~3倍" },
+        { id: "coin", name: "铜钱", icon: "💰", oddsDesc: "1~3倍" },
+        { id: "chicken", name: "鸡", icon: "🐔", oddsDesc: "1~3倍" }
+    ];
+
+    // 映射ID -> 中文名称
+    const idToName = {
+        fish: "鱼", shrimp: "虾", crab: "蟹", calabash: "葫芦", coin: "铜钱", chicken: "鸡"
+    };
+    const nameToId = {
+        "鱼": "fish", "虾": "shrimp", "蟹": "crab", "葫芦": "calabash", "铜钱": "coin", "鸡": "chicken"
+    };
+
+    // 状态变量
+    let balance = INIT_BALANCE;          // 当前余额
+    let bets = {                         // 每个ID对应的下注额
+        fish: 0, shrimp: 0, crab: 0, calabash: 0, coin: 0, chicken: 0
+    };
+    let currentChip = 100;              // 默认筹码100
+    let lastWinAmount = 0;
+
+    // DOM 元素
+    const balanceEl = document.getElementById("balanceValue");
+    const totalBetEl = document.getElementById("totalBetValue");
+    const lastWinEl = document.getElementById("lastWin");
+    const diceContainer = document.getElementById("diceContainer");
+    const betGrid = document.getElementById("betGrid");
+    const msgArea = document.getElementById("msgArea");
+    const rollBtn = document.getElementById("rollBtn");
+    const resetBetBtn = document.getElementById("resetBetBtn");
+    const sitDownBtn = document.getElementById("sitDownBtn");
+    const serviceBtn = document.getElementById("serviceBtn");
+
+    // 辅助函数: 更新UI余额/总押注
+    function updateStatsUI() {
+        balanceEl.innerText = Math.floor(balance);
+        let total = Object.values(bets).reduce((a,b) => a + b, 0);
+        totalBetEl.innerText = total;
+        lastWinEl.innerText = lastWinAmount;
+    }
+
+    // 更新单个押注项的显示数字
+    function updateBetUI() {
+        for (let id of Object.keys(bets)) {
+            const amountSpan = document.getElementById(`bet_${id}`);
+            if (amountSpan) amountSpan.innerText = bets[id];
+        }
+        updateStatsUI();
+    }
+
+    // 增加下注 (会校验余额是否足够)
+    function addBet(itemId, chipValue) {
+        let totalNow = Object.values(bets).reduce((a,b) => a+b, 0);
+        let newTotal = totalNow + chipValue;
+        if (newTotal > balance) {
+            showTemporaryMsg("💰 余额不足，无法增加下注！", 1500);
+            return false;
+        }
+        bets[itemId] += chipValue;
+        updateBetUI();
+        showTemporaryMsg(`➕ 在「${idToName[itemId]}」上加注 ${chipValue}`, 800);
+        return true;
+    }
+
+    // 减少下注 (不能小于0)
+    function subBet(itemId, chipValue) {
+        let oldVal = bets[itemId];
+        let newVal = Math.max(0, oldVal - chipValue);
+        if (oldVal !== newVal) {
+            bets[itemId] = newVal;
+            updateBetUI();
+            showTemporaryMsg(`➖ 「${idToName[itemId]}」减注 ${chipValue}`, 800);
+        } else {
+            showTemporaryMsg(`⚠️ 没有足够下注额可减`, 600);
+        }
+    }
+
+    // 清空所有下注
+    function clearAllBets() {
+        for (let id of Object.keys(bets)) {
+            bets[id] = 0;
+        }
+        updateBetUI();
+        showTemporaryMsg("🧹 已清空所有下注筹码", 1000);
+    }
+
+    // 重置游戏 (坐下/重置)
+    function resetGame() {
+        balance = INIT_BALANCE;
+        clearAllBets();
+        lastWinAmount = 0;
+        updateStatsUI();
+        // 重置骰子显示为初始问号
+        const diceDivs = document.querySelectorAll(".dice");
+        if (diceDivs.length === 3) {
+            diceDivs[0].innerHTML = "🎲";
+            diceDivs[1].innerHTML = "🎲";
+            diceDivs[2].innerHTML = "🎲";
+        }
+        showTemporaryMsg("🍵 庄家换位，你已坐下，本金重置 5000 文。", 1800);
+    }
+
+    // 临时消息（自动消失）
+    let msgTimeout = null;
+    function showTemporaryMsg(msg, duration = 2000) {
+        if (msgTimeout) clearTimeout(msgTimeout);
+        msgArea.style.opacity = "1";
+        msgArea.innerText = msg;
+        msgTimeout = setTimeout(() => {
+            if (msgArea) msgArea.innerText = "🎲 点击「开骰」一决胜负，祝你好运！";
+            msgTimeout = null;
+        }, duration);
+    }
+
+    function setMessagePersist(msg) {
+        if (msgTimeout) clearTimeout(msgTimeout);
+        msgArea.innerText = msg;
+        msgTimeout = setTimeout(() => {
+            if (msgArea && msgArea.innerText === msg) {
+                msgArea.innerText = "🎲 点击「开骰」一决胜负，祝你好运！";
+            }
+        }, 3000);
+    }
+
+    // 随机产生三个骰子结果 (返回图案名称数组)
+    function rollDiceResults() {
+        const keys = ["鱼", "虾", "蟹", "葫芦", "铜钱", "鸡"];
+        return [keys[Math.floor(Math.random() * 6)], keys[Math.floor(Math.random() * 6)], keys[Math.floor(Math.random() * 6)]];
+    }
+
+    // 动画开骰
+    async function animateRoll(finalResults) {
+        const diceElements = document.querySelectorAll(".dice");
+        const iconMap = {
+            "鱼": "🐟", "虾": "🦐", "蟹": "🦀", "葫芦": "🏺", "铜钱": "💰", "鸡": "🐔"
+        };
+        // 简单闪烁动画，共8次变化
+        for (let step = 0; step < 8; step++) {
+            await new Promise(r => setTimeout(r, 70));
+            for (let i = 0; i < 3; i++) {
+                const randIdx = Math.floor(Math.random() * 6);
+                const randName = ["鱼", "虾", "蟹", "葫芦", "铜钱", "鸡"][randIdx];
+                diceElements[i].innerHTML = iconMap[randName] || "🎲";
+            }
+        }
+        // 显示最终结果
+        for (let i = 0; i < 3; i++) {
+            diceElements[i].innerHTML = iconMap[finalResults[i]] || "🎲";
+        }
+    }
+
+    // 结算游戏 (扣除总下注，然后计算赢金)
+    function settleGame(diceNames) {
+        let totalBet = Object.values(bets).reduce((a,b) => a+b, 0);
+        if (totalBet === 0) {
+            setMessagePersist("❓ 尚未下注，请先押注鱼虾蟹等门类！");
+            return false;
+        }
+        if (totalBet > balance) {
+            setMessagePersist("⚠️ 余额不足当前下注总额，请清空或减少下注！");
+            return false;
+        }
+
+        // 扣除总下注
+        balance -= totalBet;
+        // 统计每个结果出现的次数
+        let countMap = { "鱼":0, "虾":0, "蟹":0, "葫芦":0, "铜钱":0, "鸡":0 };
+        for (let d of diceNames) {
+            countMap[d]++;
+        }
+
+        let winAmount = 0;
+        let winDetails = [];
+
+        // 遍历玩家下注项
+        for (let [itemId, betAmount] of Object.entries(bets)) {
+            if (betAmount === 0) continue;
+            let chnName = idToName[itemId];
+            let occur = countMap[chnName] || 0;
+            if (occur > 0) {
+                // 赔付公式: 下注额 * (出现次数+1)  (因为本金已扣，加回本金+利润)
+                let prize = betAmount * (occur + 1);
+                winAmount += prize;
+                winDetails.push(`${chnName} x${occur} 得 ${prize}`);
+            }
+        }
+
+        // 更新余额
+        let netChange = winAmount - totalBet;
+        balance += winAmount;   // winAmount已经包含了返还本金+利润，之前扣除了总注，所以最终余额+winAmount正确
+        lastWinAmount = netChange;
+        updateStatsUI();
+
+        // 显示开彩信息
+        let diceShow = diceNames.join("、");
+        if (winAmount > 0) {
+            setMessagePersist(`🎉 骰子: ${diceShow}  | 恭喜中奖！净赢 +${netChange} 文 | ${winDetails.join(' ; ')}`);
+        } else {
+            setMessagePersist(`😭 骰子: ${diceShow}  | 未押中，亏损 ${totalBet} 文，下次好运！`);
+        }
+
+        // 清空所有下注 (新的一局重新押注)
+        clearAllBets();
+        return true;
+    }
+
+    // 主开骰流程
+    async function onRoll() {
+        // 防止连点, 简单禁用按钮一小段时间
+        rollBtn.disabled = true;
+        resetBetBtn.disabled = true;
+        sitDownBtn.disabled = true;
+        
+        let totalNow = Object.values(bets).reduce((a,b) => a+b, 0);
+        if (totalNow === 0) {
+            setMessagePersist("尚未下注，请先押注！");
+            rollBtn.disabled = false;
+            resetBetBtn.disabled = false;
+            sitDownBtn.disabled = false;
+            return;
+        }
+        if (totalNow > balance) {
+            setMessagePersist("下注总额超过余额，请减少下注或清空！");
+            rollBtn.disabled = false;
+            resetBetBtn.disabled = false;
+            sitDownBtn.disabled = false;
+            return;
+        }
+
+        // 随机真实结果
+        const finalResults = rollDiceResults();
+        // 动画展示
+        await animateRoll(finalResults);
+        // 结算
+        settleGame(finalResults);
+        
+        // 恢复按钮
+        rollBtn.disabled = false;
+        resetBetBtn.disabled = false;
+        sitDownBtn.disabled = false;
+    }
+
+    // 构建押注网格
+    function buildBetGrid() {
+        betGrid.innerHTML = "";
+        for (let item of ITEMS) {
+            const card = document.createElement("div");
+            card.className = "bet-card";
+            card.setAttribute("data-id", item.id);
+            // 内部结构
+            card.innerHTML = `
+                <div class="bet-icon">${item.icon}</div>
+                <div class="bet-name">${item.name}</div>
+                <div class="bet-odds">赔率: ${item.oddsDesc}</div>
+                <div class="bet-amount">
+                    <button class="btn-chip sub-btn" data-id="${item.id}">-</button>
+                    <span id="bet_${item.id}">0</span>
+                    <button class="btn-chip add-btn" data-id="${item.id}">+</button>
+                </div>
+            `;
+            betGrid.appendChild(card);
+        }
+
+        // 绑定加减事件 (委托)
+        betGrid.addEventListener("click", (e) => {
+            const btn = e.target;
+            if (btn.classList.contains("add-btn")) {
+                const id = btn.getAttribute("data-id");
+                if (id && bets[id] !== undefined) {
+                    addBet(id, currentChip);
+                }
+                e.stopPropagation();
+            } else if (btn.classList.contains("sub-btn")) {
+                const id = btn.getAttribute("data-id");
+                if (id && bets[id] !== undefined) {
+                    subBet(id, currentChip);
+                }
+                e.stopPropagation();
+            }
+        });
+    }
+
+    // 筹码栏高亮及切换
+    function initChipBar() {
+        const chips = document.querySelectorAll(".chip");
+        chips.forEach(chip => {
+            chip.addEventListener("click", (e) => {
+                const val = parseInt(chip.getAttribute("data-chip"));
+                if (!isNaN(val)) {
+                    currentChip = val;
+                    chips.forEach(c => c.classList.remove("selected"));
+                    chip.classList.add("selected");
+                    showTemporaryMsg(`🍂 当前筹码: ${currentChip} 文`, 600);
+                }
+                e.stopPropagation();
+            });
+        });
+        // 默认高亮100筹码
+        const defaultChip = Array.from(chips).find(c => parseInt(c.getAttribute("data-chip")) === 100);
+        if (defaultChip) defaultChip.classList.add("selected");
+        currentChip = 100;
+    }
+
+    // 客服模拟
+    function serviceHandler() {
+        setMessagePersist("🎎 客服小闲: 潮汕葫芦鱼纯娱乐，祝君把把红！ 充值提现请咨询线下(演示功能)");
+    }
+
+    // 绑定主按钮
+    function bindActions() {
+        rollBtn.addEventListener("click", onRoll);
+        resetBetBtn.addEventListener("click", () => {
+            clearAllBets();
+        });
+        sitDownBtn.addEventListener("click", () => {
+            resetGame();
+        });
+        serviceBtn.addEventListener("click", serviceHandler);
+    }
+
+    // 初始化游戏数据 & UI
+    function initGame() {
+        buildBetGrid();
+        initChipBar();
+        bindActions();
+        updateStatsUI();
+        clearAllBets();
+        // 初始骰子样式重置
+        const dices = document.querySelectorAll(".dice");
+        if (dices.length) {
+            dices[0].innerHTML = "🎲";
+            dices[1].innerHTML = "🎲";
+            dices[2].innerHTML = "🎲";
+        }
+        setMessagePersist("🐟 潮汕葫芦鱼开张！选筹码，押鱼虾蟹，开骰赢彩头！");
+    }
+
+    initGame();
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
