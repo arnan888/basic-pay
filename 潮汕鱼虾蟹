@@ -1,3 +1,803 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>潮汕葫芦鱼·二十人骰宝房 | 手机管理全功能</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: #1a120c;
+            background-image: radial-gradient(circle at 20% 30%, rgba(200, 140, 70, 0.15) 2%, transparent 2.5%);
+            background-size: 28px 28px;
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif;
+            padding: 12px;
+        }
+
+        /* 主容器垂直布局 */
+        .app {
+            max-width: 550px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        /* 游戏主卡片 */
+        .game-card {
+            background: linear-gradient(145deg, #362a1f 0%, #251e16 100%);
+            border-radius: 48px;
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 210, 120, 0.2);
+            overflow: hidden;
+        }
+
+        /* 头部 */
+        .game-header {
+            background: linear-gradient(135deg, #b85a2e, #7a3116);
+            padding: 12px 16px;
+            text-align: center;
+            border-bottom: 3px solid #f7bc6c;
+        }
+        .game-header h1 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #ffefcf;
+            text-shadow: 2px 2px 0 #56200c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .sub {
+            font-size: 0.6rem;
+            color: #ffdd99;
+            background: #4e2613b3;
+            display: inline-block;
+            padding: 2px 12px;
+            border-radius: 40px;
+            margin-top: 4px;
+        }
+
+        /* 状态栏 */
+        .stats-panel {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 10px 16px;
+            background: #1f1711;
+            border-bottom: 1px solid #644a33;
+        }
+        .stat-card {
+            background: #1a130d;
+            border-radius: 40px;
+            padding: 4px 10px;
+            flex: 1;
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 0.6rem;
+            color: #e2bc89;
+        }
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #f9d792;
+            line-height: 1.2;
+            font-family: monospace;
+        }
+
+        /* 骰子区 */
+        .dice-area {
+            background: #2a211a;
+            margin: 12px 16px;
+            border-radius: 50px;
+            padding: 12px;
+            text-align: center;
+            box-shadow: inset 0 0 0 2px #5e4230, 0 6px 12px black;
+        }
+        .dice-title {
+            font-size: 0.7rem;
+            color: #f5c28e;
+            margin-bottom: 8px;
+        }
+        .dice-box {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+        .dice {
+            background: #fff2df;
+            width: 65px;
+            height: 65px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.6rem;
+            box-shadow: 0 5px 0 #926b42;
+            border: 1px solid #e5b874;
+        }
+
+        /* 投注区网格 - 紧凑 */
+        .bet-sections {
+            padding: 0 12px 8px 12px;
+        }
+        .section-title {
+            font-size: 0.75rem;
+            color: #ffd49f;
+            margin: 8px 0 6px 4px;
+            border-left: 4px solid #f7b05e;
+            padding-left: 8px;
+        }
+        .bet-grid, .special-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .bet-card {
+            background: #1f1712;
+            border-radius: 28px;
+            padding: 6px 4px;
+            text-align: center;
+            box-shadow: 0 3px 0 #0a0705;
+            border: 1px solid #6f4f34;
+        }
+        .bet-icon {
+            font-size: 1.8rem;
+            background: #2f231c;
+            width: 45px;
+            height: 45px;
+            line-height: 45px;
+            margin: 0 auto 4px;
+            border-radius: 50%;
+        }
+        .bet-name {
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #ffddb0;
+        }
+        .bet-odds {
+            font-size: 0.55rem;
+            color: #dba959;
+        }
+        .bet-amount {
+            background: #0c0907;
+            border-radius: 40px;
+            padding: 2px 4px;
+            margin: 5px 4px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2px;
+        }
+        .bet-amount span {
+            color: #ffbc6e;
+            font-size: 0.75rem;
+            background: #2a1c12;
+            padding: 2px 5px;
+            border-radius: 30px;
+            min-width: 35px;
+        }
+        .btn-chip {
+            background: #523b26;
+            border: none;
+            color: #fce2b4;
+            font-weight: bold;
+            width: 28px;
+            height: 28px;
+            border-radius: 30px;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 1px 2px black;
+        }
+        .btn-chip:active { transform: scale(0.92); }
+
+        /* 筹码栏 */
+        .chip-bar {
+            background: #2a1f16;
+            margin: 6px 16px 12px;
+            padding: 8px 10px;
+            border-radius: 50px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .chip {
+            background: #ebbc7e;
+            color: #3a240f;
+            font-weight: bold;
+            font-size: 0.75rem;
+            padding: 4px 12px;
+            border-radius: 40px;
+            cursor: pointer;
+            box-shadow: 0 2px 0 #8b5a2e;
+        }
+        .chip:active { transform: translateY(2px); box-shadow: none; }
+        .chip.selected { background: #f7c56e; box-shadow: 0 0 0 1px #ffefb0, 0 2px 0 #7a4b22; }
+
+        .action-bar {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 8px 16px 18px;
+            flex-wrap: wrap;
+        }
+        .action-btn {
+            background: #734c2e;
+            border: none;
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            border-radius: 40px;
+            color: #ffe3b3;
+            box-shadow: 0 3px 0 #3f2a1a;
+            cursor: pointer;
+        }
+        .action-btn.primary { background: #c47c3a; color: #2f1b0a; box-shadow: 0 3px 0 #764e26; }
+        .action-btn:active { transform: translateY(2px); box-shadow: none; }
+
+        .message-area {
+            background: #1c140e;
+            margin: 0 16px 16px;
+            border-radius: 40px;
+            padding: 8px 12px;
+            font-size: 0.7rem;
+            color: #dbbc8c;
+            text-align: center;
+            min-height: 55px;
+        }
+
+        /* ========= 管理面板 (紧凑手机版) ========= */
+        .admin-card {
+            background: #1e1813;
+            border-radius: 48px;
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+        .admin-header {
+            background: #4a3322;
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        .admin-header h3 {
+            color: #ffefcf;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .toggle-btn {
+            background: #7a5a3e;
+            border: none;
+            color: white;
+            padding: 3px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+        }
+        .admin-content {
+            padding: 12px;
+            transition: 0.2s;
+        }
+        .admin-content.collapsed {
+            display: none;
+        }
+        .capacity-row {
+            background: #1f1712;
+            border-radius: 40px;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .capacity-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .capacity-control label {
+            font-size: 0.7rem;
+            color: #f5cf9b;
+        }
+        #maxSeatsInput {
+            width: 55px;
+            padding: 4px;
+            border-radius: 30px;
+            background: #35281d;
+            color: #ffdfb3;
+            text-align: center;
+            border: none;
+            font-size: 0.8rem;
+        }
+        .stat-badge {
+            background: #00000066;
+            padding: 3px 10px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            color: #ffd68a;
+        }
+        .seats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin: 12px 0;
+        }
+        .seat-card {
+            background: #1a130d;
+            border-radius: 20px;
+            padding: 6px 3px;
+            text-align: center;
+            border: 1px solid #6f4f34;
+        }
+        .seat-card.occupied {
+            background: #2f4127;
+            border-color: #b9a06a;
+        }
+        .seat-number {
+            font-size: 0.6rem;
+            color: #dba24b;
+            background: #00000055;
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 20px;
+        }
+        .player-name {
+            font-weight: bold;
+            font-size: 0.7rem;
+            margin: 4px 0;
+            color: #ffefcf;
+            white-space: nowrap;
+            overflow-x: hidden;
+            text-overflow: ellipsis;
+        }
+        .seat-action {
+            background: #5f3e28;
+            border: none;
+            color: #ffddb0;
+            padding: 3px 8px;
+            border-radius: 30px;
+            font-size: 0.6rem;
+            cursor: pointer;
+            margin-top: 2px;
+        }
+        .empty-seat .seat-action {
+            background: #3f2c1d;
+        }
+        .admin-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .admin-btn {
+            background: #5f462f;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 40px;
+            color: #ffe3b3;
+            font-size: 0.7rem;
+            font-weight: bold;
+            flex: 1;
+            text-align: center;
+        }
+        footer {
+            font-size: 0.55rem;
+            text-align: center;
+            padding: 8px;
+            color: #aa8259;
+        }
+        @media (max-width: 480px) {
+            .dice { width: 55px; height: 55px; font-size: 2rem; }
+            .bet-icon { width: 38px; height: 38px; line-height: 38px; font-size: 1.5rem; }
+            .btn-chip { width: 26px; height: 26px; font-size: 0.8rem; }
+            .seats-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <!-- 游戏主面板 -->
+    <div class="game-card">
+        <div class="game-header">
+            <h1><span>🎲</span> 潮汕葫芦鱼 · 二十人房 <span>🦐</span></h1>
+            <div class="sub">六门 | 大小单双 | 全围24倍</div>
+        </div>
+        <div class="stats-panel">
+            <div class="stat-card"><div class="stat-label">💰 庄家余额</div><div class="stat-value" id="balanceValue">10000</div></div>
+            <div class="stat-card"><div class="stat-label">🎲 总押注</div><div class="stat-value" id="totalBetValue">0</div></div>
+            <div class="stat-card"><div class="stat-label">🏆 上局净利</div><div class="stat-value" id="lastWin">0</div></div>
+        </div>
+        <div class="dice-area">
+            <div class="dice-title">⚡ 三骰开彩 · 鱼虾蟹葫芦金钱鸡 ⚡</div>
+            <div class="dice-box" id="diceContainer">
+                <div class="dice">🎲</div><div class="dice">🎲</div><div class="dice">🎲</div>
+            </div>
+        </div>
+        <div class="bet-sections">
+            <div class="section-title">🐟 六门押注 (按次数赔)</div>
+            <div class="bet-grid" id="patternGrid"></div>
+            <div class="section-title">🎯 特殊投注</div>
+            <div class="special-grid" id="specialGrid"></div>
+        </div>
+        <div class="chip-bar" id="chipBar">
+            <div class="chip" data-chip="20">20</div>
+            <div class="chip" data-chip="50">50</div>
+            <div class="chip" data-chip="100">100</div>
+            <div class="chip" data-chip="500">500</div>
+            <div class="chip" data-chip="1000">1k</div>
+        </div>
+        <div class="action-bar">
+            <button class="action-btn primary" id="rollBtn">🎲 开骰！</button>
+            <button class="action-btn" id="resetBetBtn">🧹 清空下注</button>
+            <button class="action-btn" id="resetGameBtn">💺 重置庄家</button>
+        </div>
+        <div class="message-area" id="msgArea">庄家坐镇 | 右侧管理二十人座位</div>
+    </div>
+
+    <!-- 管理面板：二十人房间 + 座位管理 (手机紧凑) -->
+    <div class="admin-card">
+        <div class="admin-header" id="adminHeader">
+            <h3>🎛️ 二十人座席管理</h3>
+            <button class="toggle-btn" id="toggleAdminBtn">▼ 收起</button>
+        </div>
+        <div class="admin-content" id="adminContent">
+            <div class="capacity-row">
+                <div class="capacity-control">
+                    <label>🏠 最大座位</label>
+                    <input type="number" id="maxSeatsInput" min="1" max="20" value="20" step="1">
+                    <button class="admin-btn" id="applyCapacityBtn" style="padding: 3px 10px;">设置</button>
+                </div>
+                <div class="stat-badge" id="roomStats">👥 0 / 20</div>
+            </div>
+            <div class="seats-grid" id="seatsGrid"></div>
+            <div class="admin-buttons">
+                <button class="admin-btn" id="addRandomPlayerBtn">➕ 随机加入</button>
+                <button class="admin-btn" id="clearAllPlayersBtn">🗑️ 清空</button>
+                <button class="admin-btn" id="fillExampleBtn">🎲 示例8人</button>
+            </div>
+            <footer style="background:transparent; padding:6px 0 0;">点击座位「邀请入座」/「移除」自由管理</footer>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------- 游戏核心 (庄家完整逻辑) ----------
+    const PATTERNS = [
+        { id: "fish", name: "鱼", icon: "🐟", value: 1 },
+        { id: "shrimp", name: "虾", icon: "🦐", value: 2 },
+        { id: "crab", name: "蟹", icon: "🦀", value: 3 },
+        { id: "calabash", name: "葫芦", icon: "🏺", value: 4 },
+        { id: "coin", name: "金钱", icon: "💰", value: 5 },
+        { id: "chicken", name: "鸡", icon: "🐔", value: 6 }
+    ];
+    const patternIdToName = { fish:"鱼", shrimp:"虾", crab:"蟹", calabash:"葫芦", coin:"金钱", chicken:"鸡" };
+    const SPECIALS = [
+        { id: "big", name: "大", icon: "🔴", odds: 1 },
+        { id: "small", name: "小", icon: "🔵", odds: 1 },
+        { id: "odd", name: "单", icon: "⚪", odds: 1 },
+        { id: "even", name: "双", icon: "⚫", odds: 1 },
+        { id: "allTriplets", name: "全围", icon: "🌀", odds: 24 }
+    ];
+
+    let balance = 10000;
+    let patternBets = { fish:0, shrimp:0, crab:0, calabash:0, coin:0, chicken:0 };
+    let specialBets = { big:0, small:0, odd:0, even:0, allTriplets:0 };
+    let currentChip = 100;
+    let lastWinAmount = 0;
+    let isRolling = false;
+
+    const balanceEl = document.getElementById("balanceValue");
+    const totalBetEl = document.getElementById("totalBetValue");
+    const lastWinEl = document.getElementById("lastWin");
+    const msgArea = document.getElementById("msgArea");
+
+    function getTotalBet() {
+        let p = Object.values(patternBets).reduce((a,b)=>a+b,0);
+        let s = Object.values(specialBets).reduce((a,b)=>a+b,0);
+        return p+s;
+    }
+    function updateStatsUI() {
+        balanceEl.innerText = Math.floor(balance);
+        totalBetEl.innerText = getTotalBet();
+        lastWinEl.innerText = lastWinAmount;
+    }
+    function updateAllBetUI() {
+        for(let id of Object.keys(patternBets)) {
+            let span = document.getElementById(`bet_${id}`);
+            if(span) span.innerText = patternBets[id];
+        }
+        for(let id of Object.keys(specialBets)) {
+            let span = document.getElementById(`bet_special_${id}`);
+            if(span) span.innerText = specialBets[id];
+        }
+        updateStatsUI();
+    }
+    let msgTimeout = null;
+    function showMsg(msg, duration=2000) {
+        if(msgTimeout) clearTimeout(msgTimeout);
+        msgArea.innerText = msg;
+        msgTimeout = setTimeout(() => {
+            if(msgArea.innerText === msg) msgArea.innerText = "🎲 点击开骰 | 管理二十人座位";
+        }, duration);
+    }
+
+    function addBet(type, id, val) {
+        let target = (type === 'pattern') ? patternBets : specialBets;
+        if(target[id] === undefined) return;
+        let totalNow = getTotalBet();
+        if(totalNow + val > balance) { showMsg(`余额不足，无法加注 ${val}`); return; }
+        target[id] += val;
+        updateAllBetUI();
+        let name = (type === 'pattern') ? patternIdToName[id] : SPECIALS.find(s=>s.id===id)?.name || id;
+        showMsg(`➕ ${name} +${val}`, 800);
+    }
+    function subBet(type, id, val) {
+        let target = (type === 'pattern') ? patternBets : specialBets;
+        if(target[id] === undefined) return;
+        let old = target[id];
+        let newVal = Math.max(0, old - val);
+        if(old !== newVal) {
+            target[id] = newVal;
+            updateAllBetUI();
+            let name = (type === 'pattern') ? patternIdToName[id] : SPECIALS.find(s=>s.id===id)?.name || id;
+            showMsg(`➖ ${name} -${val}`, 800);
+        }
+    }
+    function clearAllBets() {
+        for(let k of Object.keys(patternBets)) patternBets[k]=0;
+        for(let k of Object.keys(specialBets)) specialBets[k]=0;
+        updateAllBetUI();
+        showMsg("清空所有下注");
+    }
+    function resetGame() {
+        balance = 10000;
+        clearAllBets();
+        lastWinAmount = 0;
+        updateStatsUI();
+        document.querySelectorAll(".dice").forEach(d => d.innerHTML = "🎲");
+        showMsg("庄家重置，本金 10000 文");
+    }
+
+    async function animateRoll(finalPatterns) {
+        const diceEls = document.querySelectorAll(".dice");
+        const iconMap = { "鱼":"🐟","虾":"🦐","蟹":"🦀","葫芦":"🏺","金钱":"💰","鸡":"🐔" };
+        for(let step=0; step<6; step++) {
+            await new Promise(r=>setTimeout(r, 60));
+            for(let i=0;i<3;i++) {
+                let rand = PATTERNS[Math.floor(Math.random()*6)];
+                diceEls[i].innerHTML = rand.icon;
+            }
+        }
+        for(let i=0;i<3;i++) diceEls[i].innerHTML = iconMap[finalPatterns[i]] || "🎲";
+    }
+    function getPointValue(pname) { const m={"鱼":1,"虾":2,"蟹":3,"葫芦":4,"金钱":5,"鸡":6}; return m[pname]||0; }
+    function settleGame(diceNames) {
+        let points = diceNames.map(n=>getPointValue(n));
+        let sum = points.reduce((a,b)=>a+b,0);
+        let isTriplet = diceNames[0]===diceNames[1] && diceNames[1]===diceNames[2];
+        let totalBet = getTotalBet();
+        if(totalBet===0) { showMsg("没有下注"); return false; }
+        if(totalBet > balance) { showMsg("下注超额"); return false; }
+        balance -= totalBet;
+        let winAmount = 0;
+        let winDetails = [];
+        // 六门结算
+        for(let [pid, betVal] of Object.entries(patternBets)) {
+            if(betVal===0) continue;
+            let occur = diceNames.filter(n=> n === patternIdToName[pid]).length;
+            if(occur>0) {
+                let prize = betVal * (occur+1);
+                winAmount += prize;
+                winDetails.push(`${patternIdToName[pid]} x${occur}`);
+            }
+        }
+        // 特殊
+        let bigWin=false, smallWin=false, oddWin=false, evenWin=false, allTripletWin=false;
+        if(!isTriplet) {
+            if(sum>=11 && sum<=17) bigWin=true;
+            if(sum>=4 && sum<=10) smallWin=true;
+            if(sum%2===1) oddWin=true;
+            if(sum%2===0) evenWin=true;
+        }
+        if(isTriplet) allTripletWin=true;
+        if(specialBets.big>0 && bigWin) { winAmount += specialBets.big*2; winDetails.push("大"); }
+        if(specialBets.small>0 && smallWin) { winAmount += specialBets.small*2; winDetails.push("小"); }
+        if(specialBets.odd>0 && oddWin) { winAmount += specialBets.odd*2; winDetails.push("单"); }
+        if(specialBets.even>0 && evenWin) { winAmount += specialBets.even*2; winDetails.push("双"); }
+        if(specialBets.allTriplets>0 && allTripletWin) { winAmount += specialBets.allTriplets*25; winDetails.push("全围"); }
+
+        let net = winAmount - totalBet;
+        balance += winAmount;
+        lastWinAmount = net;
+        updateStatsUI();
+        let diceShow = diceNames.join("、");
+        if(winAmount>0) showMsg(`🎲 ${diceShow} 净赢+${net}  [${winDetails.join(',')}]`, 4000);
+        else showMsg(`😢 ${diceShow} 亏损 ${totalBet}`, 3000);
+        clearAllBets();
+        return true;
+    }
+    async function onRoll() {
+        if(isRolling) return;
+        let total = getTotalBet();
+        if(total===0) { showMsg("请先下注"); return; }
+        if(total>balance) { showMsg("下注超过余额"); return; }
+        isRolling=true;
+        document.getElementById("rollBtn").disabled=true;
+        const patternList = ["鱼","虾","蟹","葫芦","金钱","鸡"];
+        let result = [patternList[Math.floor(Math.random()*6)], patternList[Math.floor(Math.random()*6)], patternList[Math.floor(Math.random()*6)]];
+        await animateRoll(result);
+        settleGame(result);
+        document.getElementById("rollBtn").disabled=false;
+        isRolling=false;
+    }
+
+    // 构建投注UI
+    function buildGameUI() {
+        const patternContainer = document.getElementById("patternGrid");
+        patternContainer.innerHTML="";
+        PATTERNS.forEach(p=>{
+            let card = document.createElement("div"); card.className="bet-card";
+            card.innerHTML = `<div class="bet-icon">${p.icon}</div><div class="bet-name">${p.name}</div><div class="bet-odds">1~3倍</div>
+            <div class="bet-amount"><button class="btn-chip sub-pattern" data-id="${p.id}">-</button><span id="bet_${p.id}">0</span><button class="btn-chip add-pattern" data-id="${p.id}">+</button></div>`;
+            patternContainer.appendChild(card);
+        });
+        patternContainer.addEventListener("click",(e)=>{
+            if(e.target.classList.contains("add-pattern")) addBet('pattern', e.target.dataset.id, currentChip);
+            if(e.target.classList.contains("sub-pattern")) subBet('pattern', e.target.dataset.id, currentChip);
+        });
+        const specialContainer = document.getElementById("specialGrid");
+        specialContainer.innerHTML="";
+        SPECIALS.forEach(s=>{
+            let card = document.createElement("div"); card.className="bet-card";
+            card.innerHTML = `<div class="bet-icon">${s.icon}</div><div class="bet-name">${s.name}</div><div class="bet-odds">${s.odds===1?"1:1":"1:24"}</div>
+            <div class="bet-amount"><button class="btn-chip sub-special" data-id="${s.id}">-</button><span id="bet_special_${s.id}">0</span><button class="btn-chip add-special" data-id="${s.id}">+</button></div>`;
+            specialContainer.appendChild(card);
+        });
+        specialContainer.addEventListener("click",(e)=>{
+            if(e.target.classList.contains("add-special")) addBet('special', e.target.dataset.id, currentChip);
+            if(e.target.classList.contains("sub-special")) subBet('special', e.target.dataset.id, currentChip);
+        });
+        const chips = document.querySelectorAll(".chip");
+        chips.forEach(c=>{
+            c.addEventListener("click",()=>{
+                let val = parseInt(c.dataset.chip);
+                if(!isNaN(val)) { currentChip=val; chips.forEach(cc=>cc.classList.remove("selected")); c.classList.add("selected"); showMsg(`筹码 ${val}`,500); }
+            });
+        });
+        document.getElementById("rollBtn").addEventListener("click", onRoll);
+        document.getElementById("resetBetBtn").addEventListener("click", clearAllBets);
+        document.getElementById("resetGameBtn").addEventListener("click", resetGame);
+        let defaultChip = Array.from(chips).find(c=>parseInt(c.dataset.chip)===100);
+        if(defaultChip) defaultChip.classList.add("selected");
+        currentChip=100;
+        updateAllBetUI();
+    }
+
+    // ---------- 二十人房间管理 (手机紧凑版) ----------
+    let maxSeats = 20;
+    let players = []; // { id, name, seatIndex }
+    let nextPlayerId = 100;
+    const namePool = ["阿强","老李","虾妹","蟹叔","金钱哥","鸡姐","小陈","骰子手","好运","锦鲤","鱼神","虾兵","蟹将","葫芦仙","铜钱","凤姐","阿珍","闲人","福仔","潮汕仔"];
+
+    function renderSeats() {
+        const container = document.getElementById("seatsGrid");
+        if(!container) return;
+        container.innerHTML = "";
+        for(let i=1; i<=maxSeats; i++) {
+            const player = players.find(p => p.seatIndex === i);
+            const isOccupied = !!player;
+            const seatDiv = document.createElement("div");
+            seatDiv.className = `seat-card ${isOccupied ? "occupied" : "empty-seat"}`;
+            seatDiv.innerHTML = `
+                <div class="seat-number">#${i}</div>
+                ${isOccupied ? `<div class="player-name" title="${escapeHtml(player.name)}">${escapeHtml(player.name.length>6?player.name.slice(0,5)+"..":player.name)}</div><button class="seat-action remove-player" data-seat="${i}">移除</button>` 
+                              : `<div class="player-name">🔲 空闲</div><button class="seat-action add-to-seat" data-seat="${i}">邀请</button>`}
+            `;
+            container.appendChild(seatDiv);
+        }
+        document.getElementById("roomStats").innerHTML = `👥 ${players.length} / ${maxSeats}`;
+        // 绑定动态事件
+        document.querySelectorAll(".remove-player").forEach(btn => {
+            btn.addEventListener("click", (e) => { let seat = parseInt(btn.dataset.seat); removePlayerBySeat(seat); });
+        });
+        document.querySelectorAll(".add-to-seat").forEach(btn => {
+            btn.addEventListener("click", (e) => { let seat = parseInt(btn.dataset.seat); addPlayerToSeat(seat); });
+        });
+    }
+    function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+    function addPlayerToSeat(seatIndex) {
+        if(players.find(p=>p.seatIndex===seatIndex)) { showMsg(`座位 ${seatIndex} 已占用`, 1000); return; }
+        if(players.length >= maxSeats) { showMsg(`房间已满 (最大${maxSeats}人)`, 1000); return; }
+        let randomName = namePool[Math.floor(Math.random() * namePool.length)] + (Math.floor(Math.random()*90)+10);
+        let newPlayer = { id: nextPlayerId++, name: randomName, seatIndex: seatIndex };
+        players.push(newPlayer);
+        renderSeats();
+        showMsg(`✨ ${randomName} 入座 ${seatIndex} 号`, 1200);
+    }
+    function removePlayerBySeat(seatIndex) {
+        let idx = players.findIndex(p=>p.seatIndex===seatIndex);
+        if(idx !== -1) {
+            let removed = players[idx];
+            players.splice(idx,1);
+            renderSeats();
+            showMsg(`🚪 ${removed.name} 离开 ${seatIndex} 号`, 1200);
+        }
+    }
+    function addRandomPlayer() {
+        if(players.length >= maxSeats) { showMsg(`房间已满`, 1000); return; }
+        let emptySeats = [];
+        for(let i=1;i<=maxSeats;i++) if(!players.find(p=>p.seatIndex===i)) emptySeats.push(i);
+        if(emptySeats.length===0) return;
+        let randomSeat = emptySeats[Math.floor(Math.random()*emptySeats.length)];
+        addPlayerToSeat(randomSeat);
+    }
+    function clearAllPlayers() { players = []; renderSeats(); showMsg(`清空所有玩家`, 1000); }
+    function fillExamplePlayers() {
+        clearAllPlayers();
+        let count = Math.min(8, maxSeats);
+        let usedSeats = new Set();
+        for(let i=0;i<count;i++) {
+            let seat = 1;
+            while(usedSeats.has(seat)) seat = (seat % maxSeats) + 1;
+            usedSeats.add(seat);
+            let name = namePool[i % namePool.length] + (Math.floor(Math.random()*100));
+            players.push({ id: nextPlayerId++, name: name, seatIndex: seat });
+        }
+        renderSeats();
+        showMsg(`示例填充 ${players.length} 位玩家`, 1200);
+    }
+    function applyMaxCapacity() {
+        let newMax = parseInt(document.getElementById("maxSeatsInput").value);
+        if(isNaN(newMax)) newMax=20;
+        newMax = Math.min(20, Math.max(1, newMax));
+        maxSeats = newMax;
+        players = players.filter(p => p.seatIndex <= maxSeats);
+        renderSeats();
+        showMsg(`最大座位调整为 ${maxSeats}`, 1000);
+    }
+    function initAdmin() {
+        renderSeats();
+        document.getElementById("applyCapacityBtn").addEventListener("click", applyMaxCapacity);
+        document.getElementById("addRandomPlayerBtn").addEventListener("click", addRandomPlayer);
+        document.getElementById("clearAllPlayersBtn").addEventListener("click", clearAllPlayers);
+        document.getElementById("fillExampleBtn").addEventListener("click", fillExamplePlayers);
+// 折叠管理面板
+        let collapsed = false;
+        const adminContent = document.getElementById("adminContent");
+        const toggleBtn = document.getElementById("toggleAdminBtn");
+        toggleBtn.addEventListener("click",()=>{
+            collapsed = !collapsed;
+            if(collapsed) { adminContent.classList.add("collapsed"); toggleBtn.innerText = "▼ 展开"; }
+            else { adminContent.classList.remove("collapsed"); toggleBtn.innerText = "▼ 收起"; }
+        });
+        // 预填充示例让房间热闹
+        fillExamplePlayers();
+    }
+
+    buildGameUI();
+    initAdmin();
+</script>
+</body>
+</html>
+
+
+
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
