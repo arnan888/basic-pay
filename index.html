@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>潮汕葫芦鱼·二十人骰宝房 | 手机管理全功能</title>
+    <title>潮汕葫芦鱼·骰盅版 | 二十人房 + 缓慢开盅动画</title>
     <style>
         * {
             margin: 0;
@@ -20,7 +20,7 @@
             padding: 12px;
         }
 
-        /* 主容器垂直布局 */
+        /* 主容器 */
         .app {
             max-width: 550px;
             margin: 0 auto;
@@ -29,7 +29,7 @@
             gap: 14px;
         }
 
-        /* 游戏主卡片 */
+        /* 游戏卡片 */
         .game-card {
             background: linear-gradient(145deg, #362a1f 0%, #251e16 100%);
             border-radius: 48px;
@@ -37,7 +37,6 @@
             overflow: hidden;
         }
 
-        /* 头部 */
         .game-header {
             background: linear-gradient(135deg, #b85a2e, #7a3116);
             padding: 12px 16px;
@@ -92,7 +91,7 @@
             font-family: monospace;
         }
 
-        /* 骰子区 */
+        /* 骰子区域 - 相对定位，用于罩子 */
         .dice-area {
             background: #2a211a;
             margin: 12px 16px;
@@ -100,6 +99,7 @@
             padding: 12px;
             text-align: center;
             box-shadow: inset 0 0 0 2px #5e4230, 0 6px 12px black;
+            position: relative;
         }
         .dice-title {
             font-size: 0.7rem;
@@ -110,6 +110,7 @@
             display: flex;
             justify-content: center;
             gap: 12px;
+            position: relative;
         }
         .dice {
             background: #fff2df;
@@ -122,9 +123,53 @@
             font-size: 2.6rem;
             box-shadow: 0 5px 0 #926b42;
             border: 1px solid #e5b874;
+            transition: all 0.1s;
+        }
+        /* 骰盅罩子 */
+        .dice-cover {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% 30%, rgba(0,0,0,0.85), #2c1e14);
+            backdrop-filter: blur(6px);
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 15;
+            cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.34, 1.1, 0.55, 1);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,215,150,0.3);
+            border: 2px solid #cb9e6b;
+        }
+        .dice-cover span {
+            font-size: 2.8rem;
+            filter: drop-shadow(2px 4px 6px black);
+        }
+        .dice-cover .cover-text {
+            font-size: 0.7rem;
+            background: #00000099;
+            padding: 2px 12px;
+            border-radius: 30px;
+            margin-top: 6px;
+            color: #ffdd99;
+        }
+        /* 开盅动画: 向上移 + 淡出 + 缩放 */
+        .dice-cover.open-cover {
+            transform: translateY(-80px) scale(0.6);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        /* 隐藏罩子（开盅后彻底隐藏） */
+        .dice-cover.hidden-cover {
+            display: none;
         }
 
-        /* 投注区网格 - 紧凑 */
+        /* 投注区 */
         .bet-sections {
             padding: 0 12px 8px 12px;
         }
@@ -255,7 +300,7 @@
             min-height: 55px;
         }
 
-        /* ========= 管理面板 (紧凑手机版) ========= */
+        /* 管理面板 */
         .admin-card {
             background: #1e1813;
             border-radius: 48px;
@@ -414,17 +459,24 @@
     <div class="game-card">
         <div class="game-header">
             <h1><span>🎲</span> 潮汕葫芦鱼 · 二十人房 <span>🦐</span></h1>
-            <div class="sub">六门 | 大小单双 | 全围24倍</div>
+            <div class="sub">六门 | 大小单双 | 全围24倍 | 骰盅慢启</div>
         </div>
         <div class="stats-panel">
             <div class="stat-card"><div class="stat-label">💰 庄家余额</div><div class="stat-value" id="balanceValue">10000</div></div>
             <div class="stat-card"><div class="stat-label">🎲 总押注</div><div class="stat-value" id="totalBetValue">0</div></div>
             <div class="stat-card"><div class="stat-label">🏆 上局净利</div><div class="stat-value" id="lastWin">0</div></div>
         </div>
-        <div class="dice-area">
+        <div class="dice-area" id="diceArea">
             <div class="dice-title">⚡ 三骰开彩 · 鱼虾蟹葫芦金钱鸡 ⚡</div>
             <div class="dice-box" id="diceContainer">
-                <div class="dice">🎲</div><div class="dice">🎲</div><div class="dice">🎲</div>
+                <div class="dice">🎲</div>
+                <div class="dice">🎲</div>
+                <div class="dice">🎲</div>
+            </div>
+            <!-- 骰盅罩子 -->
+            <div class="dice-cover" id="diceCover">
+                <span>🏺</span>
+                <div class="cover-text">骰盅未开</div>
             </div>
         </div>
         <div class="bet-sections">
@@ -445,10 +497,10 @@
             <button class="action-btn" id="resetBetBtn">🧹 清空下注</button>
             <button class="action-btn" id="resetGameBtn">💺 重置庄家</button>
         </div>
-        <div class="message-area" id="msgArea">庄家坐镇 | 右侧管理二十人座位</div>
+        <div class="message-area" id="msgArea">庄家坐镇 | 骰盅缓慢开启 → 骰子摇动</div>
     </div>
 
-    <!-- 管理面板：二十人房间 + 座位管理 (手机紧凑) -->
+    <!-- 管理面板 -->
     <div class="admin-card">
         <div class="admin-header" id="adminHeader">
             <h3>🎛️ 二十人座席管理</h3>
@@ -475,7 +527,7 @@
 </div>
 
 <script>
-    // ---------- 游戏核心 (庄家完整逻辑) ----------
+    // ---------- 游戏核心 (完整版 + 骰盅动画) ----------
     const PATTERNS = [
         { id: "fish", name: "鱼", icon: "🐟", value: 1 },
         { id: "shrimp", name: "虾", icon: "🦐", value: 2 },
@@ -498,12 +550,15 @@
     let specialBets = { big:0, small:0, odd:0, even:0, allTriplets:0 };
     let currentChip = 100;
     let lastWinAmount = 0;
-    let isRolling = false;
+    let isRolling = false;      // 防止连点
+    let isCoverAnimating = false;
 
     const balanceEl = document.getElementById("balanceValue");
     const totalBetEl = document.getElementById("totalBetValue");
     const lastWinEl = document.getElementById("lastWin");
     const msgArea = document.getElementById("msgArea");
+    const diceCover = document.getElementById("diceCover");
+    const rollBtn = document.getElementById("rollBtn");
 
     function getTotalBet() {
         let p = Object.values(patternBets).reduce((a,b)=>a+b,0);
@@ -531,7 +586,7 @@
         if(msgTimeout) clearTimeout(msgTimeout);
         msgArea.innerText = msg;
         msgTimeout = setTimeout(() => {
-            if(msgArea.innerText === msg) msgArea.innerText = "🎲 点击开骰 | 管理二十人座位";
+            if(msgArea.innerText === msg) msgArea.innerText = "🎲 点击开骰 | 骰盅缓慢升起开奖";
         }, duration);
     }
 
@@ -563,39 +618,60 @@
         updateAllBetUI();
         showMsg("清空所有下注");
     }
+    
+    // 重置骰盅（显示罩子，移除动画class）
+    function resetDiceCover() {
+        if(diceCover) {
+            diceCover.classList.remove("open-cover", "hidden-cover");
+            // 确保显示
+            diceCover.style.display = "flex";
+            diceCover.style.visibility = "visible";
+            diceCover.style.opacity = "1";
+            diceCover.style.transform = "translateY(0) scale(1)";
+        }
+    }
+    
+    // 重置庄家（包括骰盅）
     function resetGame() {
         balance = 10000;
         clearAllBets();
         lastWinAmount = 0;
         updateStatsUI();
+        // 重置骰子图案为🎲
         document.querySelectorAll(".dice").forEach(d => d.innerHTML = "🎲");
-        showMsg("庄家重置，本金 10000 文");
+        resetDiceCover();
+        showMsg("庄家重置，本金 10000 文，骰盅已复位");
     }
 
-    async function animateRoll(finalPatterns) {
+    // 骰子摇动动画 (带随机闪烁)
+    async function animateRolling(finalPatterns) {
         const diceEls = document.querySelectorAll(".dice");
         const iconMap = { "鱼":"🐟","虾":"🦐","蟹":"🦀","葫芦":"🏺","金钱":"💰","鸡":"🐔" };
-        for(let step=0; step<6; step++) {
-            await new Promise(r=>setTimeout(r, 60));
+        for(let step=0; step<8; step++) {
+            await new Promise(r=>setTimeout(r, 70));
             for(let i=0;i<3;i++) {
                 let rand = PATTERNS[Math.floor(Math.random()*6)];
                 diceEls[i].innerHTML = rand.icon;
             }
         }
-        for(let i=0;i<3;i++) diceEls[i].innerHTML = iconMap[finalPatterns[i]] || "🎲";
+        for(let i=0;i<3;i++) {
+            diceEls[i].innerHTML = iconMap[finalPatterns[i]] || "🎲";
+        }
     }
+
     function getPointValue(pname) { const m={"鱼":1,"虾":2,"蟹":3,"葫芦":4,"金钱":5,"鸡":6}; return m[pname]||0; }
+    
     function settleGame(diceNames) {
         let points = diceNames.map(n=>getPointValue(n));
         let sum = points.reduce((a,b)=>a+b,0);
         let isTriplet = diceNames[0]===diceNames[1] && diceNames[1]===diceNames[2];
         let totalBet = getTotalBet();
-        if(totalBet===0) { showMsg("没有下注"); return false; }
-        if(totalBet > balance) { showMsg("下注超额"); return false; }
+        if(totalBet===0) { showMsg("没有下注，无法结算"); return false; }
+        if(totalBet > balance) { showMsg("下注超额，请检查余额"); return false; }
         balance -= totalBet;
         let winAmount = 0;
         let winDetails = [];
-        // 六门结算
+        // 六门
         for(let [pid, betVal] of Object.entries(patternBets)) {
             if(betVal===0) continue;
             let occur = diceNames.filter(n=> n === patternIdToName[pid]).length;
@@ -625,26 +701,72 @@
         lastWinAmount = net;
         updateStatsUI();
         let diceShow = diceNames.join("、");
-        if(winAmount>0) showMsg(`🎲 ${diceShow} 净赢+${net}  [${winDetails.join(',')}]`, 4000);
+        if(winAmount>0) showMsg(`🎲 ${diceShow} 净赢+${net}  [${winDetails.join(',')}]`, 4500);
         else showMsg(`😢 ${diceShow} 亏损 ${totalBet}`, 3000);
         clearAllBets();
         return true;
     }
-    async function onRoll() {
-        if(isRolling) return;
-        let total = getTotalBet();
-        if(total===0) { showMsg("请先下注"); return; }
-        if(total>balance) { showMsg("下注超过余额"); return; }
-        isRolling=true;
-        document.getElementById("rollBtn").disabled=true;
-        const patternList = ["鱼","虾","蟹","葫芦","金钱","鸡"];
-        let result = [patternList[Math.floor(Math.random()*6)], patternList[Math.floor(Math.random()*6)], patternList[Math.floor(Math.random()*6)]];
-        await animateRoll(result);
-        settleGame(result);
-        document.getElementById("rollBtn").disabled=false;
-        isRolling=false;
-    }
 
+    // 开骰主流程：先开盅动画，再摇骰结算，最后复位盅（为下一局准备）
+    async function onRollWithCover() {
+        if(isRolling || isCoverAnimating) return;
+        let total = getTotalBet();
+        if(total === 0) { showMsg("请先下注再开骰！"); return; }
+        if(total > balance) { showMsg("下注总额超过庄家余额，请减少下注"); return; }
+        
+        // 检查骰盅是否存在且未开启
+        if(!diceCover) return;
+        // 如果罩子已经处于隐藏状态（异常情况），先重置
+        if(diceCover.classList.contains("hidden-cover") || diceCover.style.display === "none") {
+            resetDiceCover();
+        }
+        
+        isRolling = true;
+        isCoverAnimating = true;
+        rollBtn.disabled = true;
+        
+        // 步骤1: 播放骰盅缓慢打开动画
+        diceCover.classList.add("open-cover");
+        // 等待动画完成 (0.5s 配合transition)
+        await new Promise(resolve => setTimeout(resolve, 550));
+        // 动画结束后彻底隐藏罩子（避免遮挡点击）
+        diceCover.classList.add("hidden-cover");
+        diceCover.style.display = "none";
+        
+        // 步骤2: 生成最终结果并执行摇骰动画
+        const patternList = ["鱼","虾","蟹","葫芦","金钱","鸡"];
+        let finalResult = [
+            patternList[Math.floor(Math.random()*6)],
+            patternList[Math.floor(Math.random()*6)],
+            patternList[Math.floor(Math.random()*6)]
+        ];
+        await animateRolling(finalResult);
+        
+        // 步骤3: 结算游戏（内部清空下注）
+        settleGame(finalResult);
+        
+        // 步骤4: 重置骰盅（为下一局准备，重新显示罩子并复位样式）
+        // 注意：需要重新显示骰盅，但要在下一局开始前。这里重置并隐藏动画痕迹。
+        // 直接重置css类，并恢复显示，但内容需要保持骰子最后结果？用户需要看到结果后罩子重新盖上？传统玩法是开盅后不盖，直到下一局下注后再盖。
+        // 为了体验：结算完成后，等待1.5秒再自动盖上骰盅，这样玩家能看到结果。
+        await new Promise(r => setTimeout(r, 1500));
+        // 重置骰盅（恢复显示，但此时骰子保持最终图案，准备下一次开骰前玩家可以再次下注，骰盅盖住但骰子图案还在？最好盖住前先将骰子变成默认🎲？需要符合逻辑。
+        // 一般骰盅盖上时，骰子应复位为未知状态（🎲），所以我们把骰子重置为🎲再盖盅。
+        const diceEls = document.querySelectorAll(".dice");
+        diceEls.forEach(d => d.innerHTML = "🎲");
+        // 重新显示并重置罩子样式
+        diceCover.style.display = "flex";
+        diceCover.classList.remove("open-cover", "hidden-cover");
+        diceCover.style.visibility = "visible";
+        diceCover.style.opacity = "1";
+        diceCover.style.transform = "translateY(0) scale(1)";
+        
+        isCoverAnimating = false;
+        isRolling = false;
+        rollBtn.disabled = false;
+        showMsg("骰盅已复位，可继续下注", 1500);
+    }
+    
     // 构建投注UI
     function buildGameUI() {
         const patternContainer = document.getElementById("patternGrid");
@@ -678,7 +800,7 @@
                 if(!isNaN(val)) { currentChip=val; chips.forEach(cc=>cc.classList.remove("selected")); c.classList.add("selected"); showMsg(`筹码 ${val}`,500); }
             });
         });
-        document.getElementById("rollBtn").addEventListener("click", onRoll);
+        rollBtn.addEventListener("click", onRollWithCover);
         document.getElementById("resetBetBtn").addEventListener("click", clearAllBets);
         document.getElementById("resetGameBtn").addEventListener("click", resetGame);
         let defaultChip = Array.from(chips).find(c=>parseInt(c.dataset.chip)===100);
@@ -687,12 +809,12 @@
         updateAllBetUI();
     }
 
-    // ---------- 二十人房间管理 (手机紧凑版) ----------
+    // ---------- 二十人房间管理 (同前) ----------
     let maxSeats = 20;
-    let players = []; // { id, name, seatIndex }
+    let players = [];
     let nextPlayerId = 100;
     const namePool = ["阿强","老李","虾妹","蟹叔","金钱哥","鸡姐","小陈","骰子手","好运","锦鲤","鱼神","虾兵","蟹将","葫芦仙","铜钱","凤姐","阿珍","闲人","福仔","潮汕仔"];
-
+    
     function renderSeats() {
         const container = document.getElementById("seatsGrid");
         if(!container) return;
@@ -710,7 +832,6 @@
             container.appendChild(seatDiv);
         }
         document.getElementById("roomStats").innerHTML = `👥 ${players.length} / ${maxSeats}`;
-        // 绑定动态事件
         document.querySelectorAll(".remove-player").forEach(btn => {
             btn.addEventListener("click", (e) => { let seat = parseInt(btn.dataset.seat); removePlayerBySeat(seat); });
         });
@@ -775,7 +896,6 @@
         document.getElementById("addRandomPlayerBtn").addEventListener("click", addRandomPlayer);
         document.getElementById("clearAllPlayersBtn").addEventListener("click", clearAllPlayers);
         document.getElementById("fillExampleBtn").addEventListener("click", fillExamplePlayers);
-// 折叠管理面板
         let collapsed = false;
         const adminContent = document.getElementById("adminContent");
         const toggleBtn = document.getElementById("toggleAdminBtn");
@@ -784,12 +904,12 @@
             if(collapsed) { adminContent.classList.add("collapsed"); toggleBtn.innerText = "▼ 展开"; }
             else { adminContent.classList.remove("collapsed"); toggleBtn.innerText = "▼ 收起"; }
         });
-        // 预填充示例让房间热闹
         fillExamplePlayers();
     }
-
+    
     buildGameUI();
     initAdmin();
+    resetDiceCover(); // 初始确保罩子可见
 </script>
 </body>
 </html>
