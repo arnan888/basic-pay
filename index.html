@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>至尊骰宝 · 完整版</title>
+    <title>至尊骰宝 · 内方光版</title>
     <style>
         * {
             margin: 0;
@@ -35,7 +35,7 @@
             border-radius: 32px;
             padding: 10px;
         }
-        /* 骰子区域 — 内陷 + 外发光 */
+        /* 骰子区域 — 内陷 + 外发光 + 内方光 */
         .dice-area {
             background: rgba(0,0,0,0.7);
             border-radius: 24px;
@@ -44,7 +44,28 @@
             perspective: 1000px;
             border: 1px solid rgba(255,170,68,0.3);
             margin-bottom: 14px;
-            box-shadow: inset 0 0 12px rgba(0,0,0,0.6), 0 0 12px rgba(255,170,68,0.6), 0 6px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08);
+            /* 外发光 + 底部阴影 */
+            box-shadow: 0 0 12px rgba(255,170,68,0.6), 0 6px 12px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden; /* 让内方光不超出圆角 */
+        }
+        /* 内方光效果：使用伪元素制造内部方形光晕 */
+        .dice-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(255,220,150,0.25) 0%, rgba(255,220,150,0) 70%);
+            pointer-events: none;
+            z-index: 0;
+            border-radius: 24px;
+        }
+        /* 确保骰子在内方光之上 */
+        .dice-row, .total {
+            position: relative;
+            z-index: 1;
         }
         .dice-row {
             display: flex;
@@ -79,7 +100,6 @@
         .top    { transform: rotateX(90deg) translateZ(30px); }
         .bottom { transform: rotateX(-90deg) translateZ(30px); }
 
-        /* 点数圆点 */
         .pip {
             position: absolute;
             width: 9px;
@@ -111,7 +131,6 @@
         .pip-r2 { right: 20%; top: 50%; transform: translateY(-50%); }
         .pip-r3 { right: 20%; bottom: 15%; }
 
-        /* 动画 */
         @keyframes roll1 {
             0% { transform: rotateX(0deg) rotateY(0deg); }
             25% { transform: rotateX(180deg) rotateY(90deg); }
@@ -234,6 +253,7 @@
         }
         .action-btn:active { transform: scale(0.97); }
         .btn-cancel { background: #e74c3c; }
+        .btn-repeat { background: #f39c12; }
         .btn-refresh { background: #2ecc71; }
         .btn-bet { background: #3498db; }
 
@@ -488,10 +508,9 @@
 <body>
 <div class="game-container">
     <div class="inner">
-        <!-- 骰子区（完整3D骰子） -->
+        <!-- 骰子区（完整3D骰子 + 内方光） -->
         <div class="dice-area">
             <div class="dice-row">
-                <!-- 骰子1 -->
                 <div class="dice" id="dice1">
                     <div class="dice-face front face-1"><div class="pip pip-center"></div></div>
                     <div class="dice-face back face-6"><div class="pip pip-l1"></div><div class="pip pip-l2"></div><div class="pip pip-l3"></div><div class="pip pip-r1"></div><div class="pip pip-r2"></div><div class="pip pip-r3"></div></div>
@@ -500,7 +519,6 @@
                     <div class="dice-face top face-2"><div class="pip pip-tl"></div><div class="pip pip-br"></div></div>
                     <div class="dice-face bottom face-5"><div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-mid"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div></div>
                 </div>
-                <!-- 骰子2 -->
                 <div class="dice" id="dice2">
                     <div class="dice-face front face-1"><div class="pip pip-center"></div></div>
                     <div class="dice-face back face-6"><div class="pip pip-l1"></div><div class="pip pip-l2"></div><div class="pip pip-l3"></div><div class="pip pip-r1"></div><div class="pip pip-r2"></div><div class="pip pip-r3"></div></div>
@@ -509,7 +527,6 @@
                     <div class="dice-face top face-2"><div class="pip pip-tl"></div><div class="pip pip-br"></div></div>
                     <div class="dice-face bottom face-5"><div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-mid"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div></div>
                 </div>
-                <!-- 骰子3 -->
                 <div class="dice" id="dice3">
                     <div class="dice-face front face-1"><div class="pip pip-center"></div></div>
                     <div class="dice-face back face-6"><div class="pip pip-l1"></div><div class="pip pip-l2"></div><div class="pip pip-l3"></div><div class="pip pip-r1"></div><div class="pip pip-r2"></div><div class="pip pip-r3"></div></div>
@@ -558,9 +575,10 @@
             </div>
         </div>
 
-        <!-- 三个主按钮 -->
+        <!-- 四个主按钮（包含续押） -->
         <div class="action-buttons">
             <button class="action-btn btn-cancel" id="clearAllBtn">全部取消</button>
+            <button class="action-btn btn-repeat" id="repeatBtn">续押</button>
             <button class="action-btn btn-refresh" id="refreshBtn">刷新余额</button>
             <button class="action-btn btn-bet" id="betBtn">确认投注</button>
         </div>
@@ -658,6 +676,9 @@
     const totalEl = document.getElementById('totalPoints');
     const rollingWinEl = document.getElementById('rollingWinNumber');
 
+    // 记录上一次的下注（用于续押）
+    let lastBet = null;
+
     // 3D骰子旋转设置
     function setDiceValue(dice, val) {
         const rot = {
@@ -696,8 +717,7 @@
             }, 50);
         });
     }
-
-    // 中奖金额滚动动画 (5秒)
+// 中奖金额滚动动画 (5秒)
     let rollingAnimation = null;
     function startRollingNumber(finalAmount) {
         if (rollingAnimation) cancelAnimationFrame(rollingAnimation);
@@ -790,11 +810,59 @@
         if (navigator.vibrate) navigator.vibrate(30);
     }
 
+    // 续押功能：复制上一次的下注
+    function repeatLastBet() {
+        if (!lastBet) { alert("没有可续押的记录"); return; }
+        // 计算总押注金额
+        let totalNeed = 0;
+        for (let k in lastBet) {
+            totalNeed += lastBet[k];
+        }
+        if (totalNeed > currentBalance) {
+            alert("余额不足，无法续押");
+            return;
+        }
+        // 清空当前下注
+        for (let k in bets) bets[k] = 0;
+        // 复制上一次的下注
+        for (let k in lastBet) {
+            bets[k] = lastBet[k];
+        }
+        // 扣款
+        currentBalance -= totalNeed;
+        setBalance(currentUser, currentBalance);
+        updateUI();
+        // 高亮显示续押的选项（可选）
+        for (let k in lastBet) {
+            if (lastBet[k] > 0) {
+                let selector = '';
+                if (typeof k === 'string') {
+                    if (k.startsWith('TRIPLE_')) selector = `.trio-card[data-type="${k}"]`;
+                    else selector = `.special-card[data-type="${k}"]`;
+                } else {
+                    selector = `.point-card[data-point="${k}"]`;
+                }
+                document.querySelector(selector)?.classList.add('selected');
+            }
+        }
+        setTimeout(() => {
+            document.querySelectorAll('.special-card, .point-card, .trio-card').forEach(el => el.classList.remove('selected'));
+        }, 1500);
+        if (navigator.vibrate) navigator.vibrate(50);
+        // 续押后自动开奖（可选，根据需求可以立即开奖或等待倒计时）
+        // 这里为了体验，直接调用开奖
+        if (!isDrawing && !isBetLocked) {
+            draw();
+        }
+    }
+
     let isDrawing = false, isBetLocked = false, countdownInterval = null;
     async function draw() {
         if (isDrawing) return;
         let totalBet = Object.values(bets).reduce((a,b)=>a+b,0);
         if (totalBet === 0) { alert("请先下注"); return; }
+        // 保存当前下注到 lastBet 用于续押
+        lastBet = JSON.parse(JSON.stringify(bets));
         isDrawing = true;
         isBetLocked = true;
         const d1 = Math.floor(Math.random() * 6) + 1;
@@ -1049,6 +1117,7 @@
         });
         // 绑定按钮
         document.getElementById('clearAllBtn').onclick = clearAllBets;
+        document.getElementById('repeatBtn').onclick = repeatLastBet;
         document.getElementById('refreshBtn').onclick = refreshBalance;
         document.getElementById('betBtn').onclick = draw;
         document.getElementById('switchBtn').onclick = switchUser;
