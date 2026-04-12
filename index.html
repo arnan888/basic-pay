@@ -735,4 +735,427 @@
             diceEl[0].classList.add('rolling1');
             diceEl[1].classList.add('rolling2');
             diceEl[2].classList.add('rolling3');
-            totalEl.classList
+            totalEl.classList.add('total-blink');
+            let step = 0, maxStep = 18;
+            let iv = setInterval(() => {
+                step++;
+                diceEl.forEach(d => setDiceValue(d, Math.floor(Math.random() * 6) + 1));
+                if (step >= maxStep) {
+                    clearInterval(iv);
+                    diceEl.forEach(d => d.classList.remove('rolling1', 'rolling2', 'rolling3'));
+                    totalEl.classList.remove('total-blink');
+                    diceEl.forEach((d, i) => {
+                        setDiceValue(d, finalVals[i]);
+                        d.classList.add('land');
+                        setTimeout(() => d.classList.remove('land'), 200);
+                    });
+                    resolve();
+                }
+            }, 50);
+        });
+    }
+
+    let rollingAnimation = null;
+    function startRollingNumber(finalAmount) {
+        if (rollingAnimation) cancelAnimationFrame(rollingAnimation);
+        const startTime = performance.now();
+        const duration = 5000;
+        const startVal = 0.01;
+        rollingWinEl.classList.add('rolling-animate');
+        function update(now) {
+            const elapsed = now - startTime;
+            const progress = Math.min(1, elapsed / duration);
+            const ease = 1 - Math.pow(1 - progress, 2);
+            let current = startVal + (finalAmount - startVal) * ease;
+            rollingWinEl.innerText = current.toFixed(2);
+            if (progress < 1) {
+                rollingAnimation = requestAnimationFrame(update);
+            } else {
+                rollingWinEl.innerText = finalAmount.toFixed(2);
+                rollingWinEl.classList.remove('rolling-animate');
+                rollingAnimation = null;
+            }
+        }
+        rollingAnimation = requestAnimationFrame(update);
+    }
+
+    function getResultInfo(d1,d2,d3) {
+        let total = d1+d2+d3;
+        let types = [];
+        if (total >= 11 && total <= 17) types.push('BIG');
+        if (total >= 4 && total <= 10) types.push('SMALL');
+        if (total % 2 === 1) types.push('ODD');
+        if (total % 2 === 0) types.push('EVEN');
+        if (d1 === d2 && d2 === d3) {
+            types.push(`TRIPLE_${d1}`);
+            types.push('ALL_TRIPLE');
+        }
+        return { total, types };
+    }
+
+    function updateUI() {
+        document.getElementById('bet_BIG').innerText = bets['BIG'];
+        document.getElementById('bet_SMALL').innerText = bets['SMALL'];
+        document.getElementById('bet_ODD').innerText = bets['ODD'];
+        document.getElementById('bet_EVEN').innerText = bets['EVEN'];
+        for (let i=4;i<=17;i++) {
+            let el = document.getElementById(`bet_${i}`);
+            if (el) el.innerText = bets[i];
+        }
+        for (let i=1;i<=6;i++) {
+            let el = document.getElementById(`bet_TRIPLE_${i}`);
+            if (el) el.innerText = bets[`TRIPLE_${i}`];
+        }
+        document.getElementById('bet_ALL_TRIPLE').innerText = bets['ALL_TRIPLE'];
+        let total = Object.values(bets).reduce((a,b)=>a+b,0);
+        document.getElementById('totalBet').innerText = total;
+        document.getElementById('balanceDisplay').innerText = currentBalance.toFixed(2);
+        let pool = 50000 + (Math.random() - 0.5) * 3000;
+        pool = Math.max(40000, Math.min(60000, pool));
+        document.getElementById('poolDisplay').innerText = pool.toFixed(2);
+    }
+
+    function addBet(type) {
+        if (selectedChip <= 0) { showToast("请先选择筹码"); return; }
+        if (selectedChip > currentBalance) { showToast("余额不足！当前余额：" + currentBalance); return; }
+        currentBalance -= selectedChip;
+        setBalance(currentUser, currentBalance);
+        bets[type] += selectedChip;
+        updateUI();
+        document.querySelectorAll('.special-card, .point-card, .trio-card').forEach(el => el.classList.remove('selected'));
+        let selector = '';
+        if (typeof type === 'string') {
+            if (type.startsWith('TRIPLE_')) selector = `.trio-card[data-type="${type}"]`;
+            else selector = `.special-card[data-type="${type}"]`;
+        } else {
+            selector = `.point-card[data-point="${type}"]`;
+        }
+        document.querySelector(selector)?.classList.add('selected');
+        setTimeout(() => {
+            document.querySelectorAll('.special-card, .point-card, .trio-card').forEach(el => el.classList.remove('selected'));
+        }, 800);
+        if (navigator.vibrate) navigator.vibrate(30);
+    }
+
+    function clearAllBets() {
+        let total = Object.values(bets).reduce((a,b)=>a+b,0);
+        currentBalance += total;
+        setBalance(currentUser, currentBalance);
+        for (let k in bets) bets[k] = 0;
+        updateUI();
+        if (navigator.vibrate) navigator.vibrate(30);
+        showToast("已取消所有下注", false);
+    }
+
+    function repeatLastBet() {
+        if (!lastBet) { showToast("没有可续押的记录"); return; }
+        let totalNeed = 0;
+        for (let k in lastBet) totalNeed += lastBet[k];
+        if (totalNeed > currentBalance) { showToast("余额不足，无法续押"); return; }
+        for (let k in bets) bets[k] = 0;
+        for (let k in lastBet) bets[k] = lastBet[k];
+        currentBalance -= totalNeed;
+        setBalance(currentUser, currentBalance);
+        updateUI();
+        for (let k in lastBet) {
+            if (lastBet[k] > 0) {
+                let selector = '';
+                if (typeof k === 'string') {
+                    if (k.startsWith('TRIPLE_')) selector = `.trio-card[data-type="${k}"]`;
+                    else selector = `.special-card[data-type="${k}"]`;
+                } else {
+                    selector = `.point-card[data-point="${k}"]`;
+                }
+                document.querySelector(selector)?.classList.add('selected');
+            }
+        }
+        setTimeout(() => {
+            document.querySelectorAll('.special-card, .point-card, .trio-card').forEach(el => el.classList.remove('selected'));
+        }, 1500);
+        if (navigator.vibrate) navigator.vibrate(50);
+        if (!isDrawing && !isBetLocked) draw();
+    }
+
+    let isDrawing = false, isBetLocked = false, countdownInterval = null;
+    async function draw() {
+        if (isDrawing) return;
+        let totalBet = Object.values(bets).reduce((a,b)=>a+b,0);
+        if (totalBet === 0) { showToast("请先下注"); return; }
+        lastBet = JSON.parse(JSON.stringify(bets));
+        isDrawing = true;
+        isBetLocked = true;
+        const d1 = Math.floor(Math.random() * 6) + 1;
+        const d2 = Math.floor(Math.random() * 6) + 1;
+        const d3 = Math.floor(Math.random() * 6) + 1;
+        const { total, types } = getResultInfo(d1,d2,d3);
+        let winAmounts = [];
+        if (types.includes('BIG') && bets['BIG']>0) winAmounts.push(bets['BIG'] * 2);
+        if (types.includes('SMALL') && bets['SMALL']>0) winAmounts.push(bets['SMALL'] * 2);
+        if (types.includes('ODD') && bets['ODD']>0) winAmounts.push(bets['ODD'] * 2);
+        if (types.includes('EVEN') && bets['EVEN']>0) winAmounts.push(bets['EVEN'] * 2);
+        if (bets[total] > 0) winAmounts.push(bets[total] * CONFIG.odds[total]);
+        for (let t of types) {
+            if (t.startsWith('TRIPLE_') && bets[t] > 0) winAmounts.push(bets[t] * CONFIG.odds[t]);
+            if (t === 'ALL_TRIPLE' && bets['ALL_TRIPLE'] > 0) winAmounts.push(bets['ALL_TRIPLE'] * CONFIG.odds['ALL_TRIPLE']);
+        }
+        let totalWin = winAmounts.reduce((a,b)=>a+b,0);
+        startRollingNumber(totalWin);
+        await startRolling([d1,d2,d3]);
+        totalEl.innerText = total;
+        if (totalWin > 0) {
+            totalEl.style.color = '#4caf50';
+            setTimeout(() => totalEl.style.color = '#ff3300', 2000);
+        } else {
+            totalEl.style.color = '#f44336';
+            setTimeout(() => totalEl.style.color = '#ff3300', 2000);
+        }
+        currentBalance += totalWin;
+        setBalance(currentUser, currentBalance);
+        let betSummary = [];
+        for (let k in bets) if (bets[k] > 0) {
+            if (k === 'BIG') betSummary.push(`大${bets[k]}`);
+            else if (k === 'SMALL') betSummary.push(`小${bets[k]}`);
+            else if (k === 'ODD') betSummary.push(`单${bets[k]}`);
+            else if (k === 'EVEN') betSummary.push(`双${bets[k]}`);
+            else if (typeof k === 'number') betSummary.push(`${k}点${bets[k]}`);
+            else if (k.startsWith('TRIPLE_')) betSummary.push(`${k.split('_')[1]}围${bets[k]}`);
+            else if (k === 'ALL_TRIPLE') betSummary.push(`豹子${bets[k]}`);
+        }
+        let recs = users[currentUser].records || [];
+        recs.unshift({
+            time: new Date().toLocaleTimeString(),
+            bets: betSummary.join(' '),
+            result: total,
+            resultType: types.map(t=>t==='BIG'?'大':t==='SMALL'?'小':t==='ODD'?'单':t==='EVEN'?'双':t.startsWith('TRIPLE_')?t.split('_')[1]+'围':'豹子').join(','),
+            win: totalWin,
+            isWin: totalWin>0
+        });
+        if (recs.length>30) recs.pop();
+        users[currentUser].records = recs;
+        saveUsers();
+        updateHistory();
+        for (let k in bets) bets[k] = 0;
+        updateUI();
+        if (navigator.vibrate) navigator.vibrate(totalWin>0?[100,50,100]:80);
+        setTimeout(() => {
+            isDrawing = false;
+            isBetLocked = false;
+            startCountdown(CONFIG.countdownSeconds);
+        }, 5000);
+    }
+
+    function startCountdown(sec) {
+        if (countdownInterval) clearInterval(countdownInterval);
+        let c = sec;
+        const cdSpan = document.getElementById('countdownNum');
+        cdSpan.innerText = c;
+        cdSpan.classList.remove('countdown-warning');
+        isBetLocked = false;
+        countdownInterval = setInterval(() => {
+            if (c <= 1) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+                isBetLocked = true;
+                draw();
+            } else {
+                c--;
+                cdSpan.innerText = c;
+                if (c <= 5) cdSpan.classList.add('countdown-warning');
+            }
+        }, 1000);
+    }
+
+    function updateHistory() {
+        const container = document.getElementById('historyList');
+        const recs = users[currentUser]?.records || [];
+        container.innerHTML = '';
+        if (recs.length === 0) {
+            container.innerHTML = '<div style="text-align:center;color:#666">暂无记录</div>';
+            return;
+        }
+        recs.slice(0,10).forEach(r => {
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            div.innerHTML = `<span>${r.time}</span><span>${r.bets}</span><span>开${r.result}(${r.resultType})</span><span class="${r.isWin?'win':'lose'}">${r.isWin?'+'+r.win:''}</span>`;
+            container.appendChild(div);
+        });
+    }
+
+    function refreshBalance() { currentBalance = getBalance(currentUser); updateUI(); showToast("余额已刷新", false); }
+    function switchUser() {
+        let newId = document.getElementById('switchId').value.trim();
+        if (!newId) return;
+        currentUser = newId;
+        if (!users[currentUser]) users[currentUser] = { balance: CONFIG.defaultBalance, records: [] };
+        document.getElementById('currentUserId').innerText = currentUser;
+        currentBalance = getBalance(currentUser);
+        for (let k in bets) bets[k] = 0;
+        updateUI();
+        if (countdownInterval) clearInterval(countdownInterval);
+        startCountdown(CONFIG.countdownSeconds);
+        updateHistory();
+        document.querySelectorAll('.special-card, .point-card, .trio-card').forEach(el => el.classList.remove('selected'));
+        showToast(`已切换到 ${currentUser}`, false);
+    }
+
+    function showHistoryModal() {
+        const recs = users[currentUser]?.records || [];
+        let html = '<div style="max-height:300px;overflow-y:auto">';
+        if (recs.length === 0) html += '<p>暂无记录</p>';
+        else recs.forEach(r => { html += `<div style="padding:8px;border-bottom:1px solid #333;display:flex;justify-content:space-between"><span>${r.time}</span><span>${r.bets}</span><span>开${r.result}点</span><span style="color:${r.isWin?'#4caf50':'#f44336'}">${r.isWin?'+'+r.win:''}</span></div>`; });
+        html += '</div><button id="closeModalBtn" style="background:#ff6600;border:none;border-radius:30px;padding:10px 24px;margin-top:16px;color:#fff">关闭</button>';
+        const modal = document.createElement('div'); modal.className = 'modal'; modal.innerHTML = `<div class="modal-content"><h3>📜 投注记录</h3>${html}</div>`;
+        document.body.appendChild(modal);
+        document.getElementById('closeModalBtn').onclick = () => modal.remove();
+    }
+
+    // 管理员面板
+    let adminPanel = null, adminSelectedUser = currentUser;
+    function showAdminPanel() {
+        if (adminPanel) { adminPanel.remove(); adminPanel = null; return; }
+        const panel = document.createElement('div'); panel.className = 'modal';
+        panel.innerHTML = `
+            <div class="modal-content" style="width:90%;max-width:360px">
+                <h3>🔐 管理员面板</h3>
+                <div id="adminUserList" class="admin-user-list"></div>
+                <div>当前：<strong id="adminSelectedUser">${adminSelectedUser}</strong></div>
+                <input type="number" id="adminAmount" class="admin-input" placeholder="金额" value="0">
+                <div class="admin-btns">
+                    <button id="adminAdd" class="admin-btn" style="background:#4caf50;color:#fff">上分</button>
+                    <button id="adminSub" class="admin-btn" style="background:#f44336;color:#fff">下分</button>
+                    <button id="adminQuery" class="admin-btn" style="background:#2196f3;color:#fff">查询</button>
+                    <button id="adminReset" class="admin-btn" style="background:#ff9800;color:#fff">重置</button>
+                    <button id="adminPwd" class="admin-btn" style="background:#9c27b0;color:#fff">改密</button>
+                </div>
+                <button id="adminClose" style="background:#ffaa44;color:#1a1a2a;padding:8px 24px;border-radius:25px;border:none;margin-top:12px">关闭</button>
+            </div>
+        `;
+        document.body.appendChild(panel); adminPanel = panel;
+        function refreshList() {
+            const listDiv = document.getElementById('adminUserList');
+            const usersArr = Object.keys(users);
+            listDiv.innerHTML = '';
+            usersArr.forEach(uid => {
+                const div = document.createElement('div'); div.className = 'admin-user'; if (uid === adminSelectedUser) div.classList.add('selected');
+                div.textContent = `${uid} (${getBalance(uid).toFixed(2)})`;
+                div.onclick = () => { adminSelectedUser = uid; document.getElementById('adminSelectedUser').innerText = adminSelectedUser; refreshList(); };
+                listDiv.appendChild(div);
+            });
+        }
+        refreshList();
+        document.getElementById('adminAdd').onclick = () => {
+            let amt = parseFloat(document.getElementById('adminAmount').value);
+            if (isNaN(amt)||amt<=0) { showToast("请输入正数"); return; }
+            let cur = getBalance(adminSelectedUser);
+            setBalance(adminSelectedUser, cur+amt);
+            refreshList();
+            if (adminSelectedUser===currentUser) { currentBalance=getBalance(currentUser); updateUI(); }
+            showToast(`给 ${adminSelectedUser} 上分 ${amt}`, false);
+        };
+        document.getElementById('adminSub').onclick = () => {
+            let amt = parseFloat(document.getElementById('adminAmount').value);
+            if (isNaN(amt)||amt<=0) { showToast("请输入正数"); return; }
+            let cur = getBalance(adminSelectedUser);
+            if (cur<amt) { showToast("余额不足"); return; }
+            setBalance(adminSelectedUser, cur-amt);
+            refreshList();
+            if (adminSelectedUser===currentUser) { currentBalance=getBalance(currentUser); updateUI(); }
+            showToast(`从 ${adminSelectedUser} 下分 ${amt}`, false);
+        };
+        document.getElementById('adminQuery').onclick = () => {
+            showToast(`${adminSelectedUser} 余额: ${getBalance(adminSelectedUser).toFixed(2)}`, false);
+        };
+        document.getElementById('adminReset').onclick = () => {
+            if (confirm(`重置 ${adminSelectedUser} 余额为${CONFIG.defaultBalance}？`)) {
+                setBalance(adminSelectedUser, CONFIG.defaultBalance);
+                refreshList();
+                if (adminSelectedUser===currentUser) { currentBalance=getBalance(currentUser); updateUI(); }
+                showToast("重置成功", false);
+            }
+        };
+        document.getElementById('adminPwd').onclick = () => {
+            let old = prompt("当前密码:");
+            if (old !== adminPwd) { showToast("密码错误"); return; }
+            let newPwd = prompt("新密码(至少6位):");
+            if (!newPwd || newPwd.length<6) { showToast("密码至少6位"); return; }
+            adminPwd = newPwd;
+            localStorage.setItem('dice_admin_pwd', newPwd);
+            showToast("密码修改成功", false);
+        };
+        document.getElementById('adminClose').onclick = () => { panel.remove(); adminPanel = null; };
+    }
+
+    function createPointsGrid() {
+        const grid = document.getElementById('pointsGrid');
+        for (let i=4;i<=17;i++) {
+            const card = document.createElement('div');
+            card.className = 'point-card';
+            card.setAttribute('data-point', i);
+            card.innerHTML = `<div class="point-value">${i}点</div><div class="point-odds">赔 ${CONFIG.odds[i]}倍</div><div class="point-bet-amount" id="bet_${i}">0</div>`;
+            card.onclick = () => addBet(i);
+            grid.appendChild(card);
+        }
+    }
+
+    function createCombinedGrid() {
+        const grid = document.getElementById('combinedGrid');
+        for (let i=1;i<=6;i++) {
+            const card = document.createElement('div');
+            card.className = 'trio-card';
+            card.setAttribute('data-type', `TRIPLE_${i}`);
+            card.innerHTML = `<div class="trio-name">${i}围</div><div class="trio-odds">赔 150倍</div><div class="trio-bet-amount" id="bet_TRIPLE_${i}">0</div>`;
+            card.onclick = () => addBet(`TRIPLE_${i}`);
+            grid.appendChild(card);
+        }
+        const allCard = document.createElement('div');
+        allCard.className = 'trio-card';
+        allCard.setAttribute('data-type', 'ALL_TRIPLE');
+        allCard.innerHTML = `<div class="trio-name">豹子</div><div class="trio-odds">赔 30倍</div><div class="trio-bet-amount" id="bet_ALL_TRIPLE">0</div>`;
+        allCard.onclick = () => addBet('ALL_TRIPLE');
+        grid.appendChild(allCard);
+    }
+
+    function init() {
+        createPointsGrid();
+        createCombinedGrid();
+        document.querySelectorAll('.chip').forEach(chip => {
+            chip.onclick = () => {
+                selectedChip = parseInt(chip.dataset.val);
+                document.getElementById('selectedChip').innerText = selectedChip;
+                document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected-chip'));
+                chip.classList.add('selected-chip');
+                if (navigator.vibrate) navigator.vibrate(20);
+            };
+        });
+        document.querySelectorAll('.special-card').forEach(card => {
+            card.onclick = () => addBet(card.dataset.type);
+        });
+        document.getElementById('clearAllBtn').onclick = clearAllBets;
+        document.getElementById('repeatBtn').onclick = repeatLastBet;
+        document.getElementById('refreshBtn').onclick = refreshBalance;
+        document.getElementById('betBtn').onclick = draw;
+        document.getElementById('switchBtn').onclick = switchUser;
+        document.getElementById('historyBtn').onclick = showHistoryModal;
+        document.getElementById('adminEntry').onclick = () => {
+            let pwd = prompt("管理员密码:");
+            if (pwd === adminPwd) showAdminPanel();
+            else if (pwd !== null) showToast("密码错误");
+        };
+        document.getElementById('newUserBtn').onclick = () => {
+            let newId = "player_" + Math.floor(Math.random() * 100000);
+            document.getElementById('switchId').value = newId;
+            switchUser();
+            showToast(`新账户：${newId} 初始余额 ${CONFIG.defaultBalance}`, false);
+        };
+        diceEl.forEach(d => setDiceValue(d, 1));
+        totalEl.innerText = 3;
+        updateUI();
+        updateHistory();
+        startCountdown(CONFIG.countdownSeconds);
+        let saved = localStorage.getItem('dice_admin_pwd');
+        if (saved) adminPwd = saved;
+    }
+    init();
+</script>
+</body>
+</html>
