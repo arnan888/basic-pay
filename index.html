@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>潮汕葫芦鱼·二十人房 | 独立管理后台</title>
+    <title>潮汕葫芦鱼·二十人房 | 密码保护后台</title>
     <style>
         * {
             margin: 0;
@@ -28,7 +28,6 @@
             gap: 14px;
         }
 
-        /* 游戏卡片 */
         .game-card {
             background: linear-gradient(145deg, #362a1f 0%, #251e16 100%);
             border-radius: 48px;
@@ -291,7 +290,6 @@
             min-height: 55px;
         }
 
-        /* 管理面板 (座位管理 + 独立后台入口) */
         .admin-card {
             background: #1e1813;
             border-radius: 48px;
@@ -436,14 +434,15 @@
             color: #fff;
             box-shadow: 0 2px 0 #1b5e20;
         }
-        /* 独立管理后台模态框 */
+
+        /* 模态框通用 */
         .modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             backdrop-filter: blur(8px);
             display: flex;
             align-items: center;
@@ -461,11 +460,32 @@
             border: 1px solid #ffaa44;
             box-shadow: 0 20px 35px rgba(0,0,0,0.5);
         }
-        .modal-content h2 {
+        .modal-content h2, .modal-content h3 {
             color: #ffdd99;
             text-align: center;
             margin-bottom: 16px;
-            font-size: 1.3rem;
+        }
+        .password-input {
+            width: 100%;
+            padding: 12px;
+            margin: 16px 0;
+            background: #2a241e;
+            border: 1px solid #ffaa44;
+            border-radius: 40px;
+            color: white;
+            font-size: 1rem;
+            text-align: center;
+        }
+        .modal-btn {
+            background: #ffaa44;
+            color: #1a1a2a;
+            border: none;
+            border-radius: 40px;
+            padding: 10px;
+            width: 100%;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 8px;
         }
         .player-list {
             max-height: 55vh;
@@ -483,7 +503,7 @@
             flex-wrap: wrap;
             gap: 8px;
         }
-        .player-name {
+        .player-item .player-name {
             font-weight: bold;
             color: #ffdd99;
             min-width: 100px;
@@ -597,7 +617,7 @@
         <div class="message-area" id="msgArea">庄家坐镇 | 骰盅缓慢开启 → 骰子摇动</div>
     </div>
 
-    <!-- 座位管理 + 独立后台入口 -->
+    <!-- 座位管理 + 后台入口（带密码） -->
     <div class="admin-card">
         <div class="admin-header" id="adminHeader">
             <h3>🎛️ 二十人座席管理 · 后台入口</h3>
@@ -617,9 +637,9 @@
                 <button class="admin-btn" id="addRandomPlayerBtn">➕ 随机加入</button>
                 <button class="admin-btn" id="clearAllPlayersBtn">🗑️ 清空</button>
                 <button class="admin-btn" id="fillExampleBtn">🎲 示例8人</button>
-                <button class="admin-btn charge" id="openAdminModalBtn">🎛️ 管理后台</button>
+                <button class="admin-btn charge" id="openAdminModalBtn">🔐 管理后台(需密码)</button>
             </div>
-            <footer style="background:transparent; padding:6px 0 0;">点击「管理后台」可独立调整所有玩家余额</footer>
+            <footer style="background:transparent; padding:6px 0 0;">点击「管理后台」需输入密码，默认 admin123</footer>
         </div>
     </div>
 </div>
@@ -691,7 +711,7 @@
         if(msgTimeout) clearTimeout(msgTimeout);
         msgArea.innerText = msg;
         msgTimeout = setTimeout(() => {
-            if(msgArea.innerText === msg) msgArea.innerText = "🎲 点击开骰 | 骰盅开奖";
+            if(msgArea.innerText === msg) msgArea.innerText = "🎲 点击开骰 | 骰盅缓慢升起开奖";
         }, duration);
     }
 
@@ -742,7 +762,7 @@
         updateStatsUI();
         document.querySelectorAll(".dice").forEach(d => d.innerHTML = "🎲");
         resetDiceCover();
-        showMsg("庄家开奖，本金 10000 文，骰盅已复位");
+        showMsg("庄家重置，本金 10000 文，骰盅已复位");
     }
 
     async function animateRolling(finalPatterns) {
@@ -891,19 +911,16 @@
         updateAllBetUI();
     }
 
-    // ========== 独立管理后台：管理所有玩家（座位上的玩家 + 庄家） ==========
-    let players = [];       // 座位上的玩家 { id, name, seatIndex, balance? } 注意：玩家的余额独立于庄家
+    // ========== 玩家座位管理 ==========
+    let players = [];
     let nextPlayerId = 100;
     const namePool = ["阿强","老李","虾妹","蟹叔","金钱哥","鸡姐","小陈","骰子手","好运","锦鲤","鱼神","虾兵","蟹将","葫芦仙","铜钱","凤姐","阿珍","闲人","福仔","潮汕仔"];
-    
-    // 玩家余额存储 (独立于庄家)
     let playerBalances = JSON.parse(localStorage.getItem('chaoshan_player_balances')) || {};
     function savePlayerBalances() { localStorage.setItem('chaoshan_player_balances', JSON.stringify(playerBalances)); }
     function getPlayerBalance(name) { return playerBalances[name] || 1000; }
     function setPlayerBalance(name, amt) { playerBalances[name] = Math.max(0, amt); savePlayerBalances(); }
     function addPlayerBalance(name, delta) { let cur = getPlayerBalance(name); setPlayerBalance(name, cur + delta); }
 
-    // 渲染座位 (玩家列表)
     let maxSeats = 20;
     function renderSeats() {
         const container = document.getElementById("seatsGrid");
@@ -939,7 +956,6 @@
         if(players.find(p=>p.seatIndex===seatIndex)) { showMsg(`座位 ${seatIndex} 已占用`, 1000); return; }
         if(players.length >= maxSeats) { showMsg(`房间已满 (最大${maxSeats}人)`, 1000); return; }
         let randomName = namePool[Math.floor(Math.random() * namePool.length)] + (Math.floor(Math.random()*90)+10);
-        // 确保该玩家有初始余额
         if(!playerBalances[randomName]) setPlayerBalance(randomName, 1000);
         let newPlayer = { id: nextPlayerId++, name: randomName, seatIndex: seatIndex };
         players.push(newPlayer);
@@ -989,21 +1005,70 @@
         showMsg(`最大座位调整为 ${maxSeats}`, 1000);
     }
 
-    // 独立管理后台模态框
+    // ========== 密码管理 ==========
+    const ADMIN_PWD_KEY = 'chaoshan_admin_password';
+    let adminPassword = localStorage.getItem(ADMIN_PWD_KEY) || 'admin123';
+    function verifyPassword(inputPwd) {
+        return inputPwd === adminPassword;
+    }
+    function changePassword(newPwd) {
+        if(newPwd && newPwd.length >= 4) {
+            adminPassword = newPwd;
+            localStorage.setItem(ADMIN_PWD_KEY, adminPassword);
+            showMsg("后台密码修改成功！新密码已保存", 2000);
+            return true;
+        } else {
+            showMsg("密码至少4位", 1500);
+            return false;
+        }
+    }
+
+    // 带密码验证的打开后台模态框
+    function openAdminModalWithPassword() {
+        const pwdModal = document.createElement('div');
+        pwdModal.className = 'modal';
+        pwdModal.innerHTML = `
+            <div class="modal-content">
+                <h2>🔐 管理员验证</h2>
+                <input type="password" id="adminPasswordInput" class="password-input" placeholder="请输入管理密码" autocomplete="off">
+                <button id="submitPwdBtn" class="modal-btn">确认</button>
+                <button id="cancelPwdBtn" class="modal-btn" style="background:#555; color:#fff;">取消</button>
+            </div>
+        `;
+        document.body.appendChild(pwdModal);
+        const input = pwdModal.querySelector('#adminPasswordInput');
+        const submitBtn = pwdModal.querySelector('#submitPwdBtn');
+        const cancelBtn = pwdModal.querySelector('#cancelPwdBtn');
+        const checkAndOpen = () => {
+            const pwd = input.value;
+            if(verifyPassword(pwd)) {
+                pwdModal.remove();
+                openAdminModal();  // 打开真正的管理后台
+            } else {
+                showMsg("密码错误，无权访问后台", 1500);
+                input.value = '';
+                input.focus();
+            }
+        };
+        submitBtn.addEventListener('click', checkAndOpen);
+        cancelBtn.addEventListener('click', () => pwdModal.remove());
+        input.addEventListener('keypress', (e) => { if(e.key === 'Enter') checkAndOpen(); });
+        input.focus();
+    }
+
+    // 真正的管理后台 (带修改密码功能)
     function openAdminModal() {
         const modal = document.createElement('div');
         modal.className = 'modal';
-        // 收集所有玩家 (座位上的玩家 + 庄家特殊显示)
         let allUsers = [...players.map(p => ({ name: p.name, type: 'player' }))];
-        // 庄家单独显示
         allUsers.unshift({ name: '庄家(当前)', type: 'banker' });
         let playerListHtml = '<div class="player-list">';
         allUsers.forEach(user => {
-            let balance = (user.type === 'banker') ? balance : getPlayerBalance(user.name);
+            let balanceVal = (user.type === 'banker') ? balance : getPlayerBalance(user.name);
             playerListHtml += `
                 <div class="player-item">
                     <div class="player-name">${user.name}</div>
-                    <div class="player-balance">💰 ${balance.toFixed(2)}</div>
+                    <div class="player-balance">💰 ${balanceVal.toFixed(2)}</div>
                     <div class="player-actions">
                         <button class="add-btn" data-name="${user.name}" data-type="${user.type}">+</button>
                         <button class="sub-btn" data-name="${user.name}" data-type="${user.type}">-</button>
@@ -1021,6 +1086,7 @@
                 <div class="admin-global">
                     <button id="globalAdd500Btn">➕ 全体+500</button>
                     <button id="globalResetBtn">🔄 全体重置为1000</button>
+                    <button id="changePwdBtn">🔑 修改密码</button>
                 </div>
                 <button class="close-modal">关闭后台</button>
             </div>
@@ -1040,7 +1106,7 @@
                     addPlayerBalance(name, 100);
                     showMsg(`玩家 ${name} +100，余额 ${getPlayerBalance(name)}`, 1000);
                 }
-                openAdminModal(); // 刷新模态框
+                openAdminModal(); // 刷新
             });
         });
         modal.querySelectorAll('.sub-btn').forEach(btn => {
@@ -1090,6 +1156,16 @@
             showMsg(`全体重置为初始值 (庄家10000, 玩家1000)`, 1500);
             openAdminModal();
         });
+        document.getElementById('changePwdBtn')?.addEventListener('click', () => {
+            let newPwd = prompt("请输入新密码 (至少4位):");
+            if(newPwd && newPwd.length >= 4) {
+                changePassword(newPwd);
+                modal.remove();
+                showMsg("密码已修改，下次进入后台需使用新密码", 2000);
+            } else if(newPwd) {
+                showMsg("密码长度至少4位", 1200);
+            }
+        });
         modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
     }
 
@@ -1099,7 +1175,7 @@
         document.getElementById("addRandomPlayerBtn").addEventListener("click", addRandomPlayer);
         document.getElementById("clearAllPlayersBtn").addEventListener("click", clearAllPlayers);
         document.getElementById("fillExampleBtn").addEventListener("click", fillExamplePlayers);
-        document.getElementById("openAdminModalBtn").addEventListener("click", openAdminModal);
+        document.getElementById("openAdminModalBtn").addEventListener("click", openAdminModalWithPassword);
         let collapsed = false;
         const adminContent = document.getElementById("adminContent");
         const toggleBtn = document.getElementById("toggleAdminBtn");
@@ -1118,5 +1194,9 @@
 </script>
 </body>
 </html>
+
+
+
+
 
 
