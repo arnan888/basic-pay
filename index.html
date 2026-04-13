@@ -147,6 +147,7 @@
             transition: all 0.5s cubic-bezier(0.34, 1.1, 0.55, 1);
             box-shadow: 0 8px 20px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,215,150,0.3);
             border: 2px solid #cb9e6b;
+            pointer-events: none;
         }
         .dice-cover span {
             font-size: 2.5rem;
@@ -443,9 +444,6 @@
             color: #fff;
             box-shadow: 0 2px 0 #1b5e20;
         }
-        .admin-btn.banker {
-            background: #b85a2e;
-        }
         footer {
             font-size: 0.5rem;
             text-align: center;
@@ -533,7 +531,7 @@
     // ========== 游戏核心 (庄家可变 + 抢庄机制) ==========
     const STORAGE_BANKER = 'chaoshan_banker';
     const STORAGE_BANKER_BAL = 'chaoshan_banker_balance';
-    const STORAGE_PLAYERS = 'chaoshan_players_list';
+    const STORAGE_PLAYERS_LIST = 'chaoshan_players_list';
     const STORAGE_PLAYER_BALS = 'chaoshan_player_balances';
     
     // 当前庄家信息
@@ -563,6 +561,7 @@
     let lastWinAmount = 0;
     let isRolling = false;
     let isCoverAnimating = false;
+    let countdownInterval = null; // 添加倒计时变量
 
     const bankerNameSpan = document.getElementById("bankerName");
     const balanceEl = document.getElementById("balanceValue");
@@ -661,7 +660,7 @@
         document.querySelectorAll(".dice").forEach(d => d.innerHTML = "🎲");
         resetDiceCover();
         showMsg("庄家重置为系统庄家，本金 10000 文");
-        renderSeats(); // 刷新座位显示（清除所有抢庄标记）
+        renderSeats();
     }
 
     async function animateRolling(finalPatterns) {
@@ -810,17 +809,17 @@
         updateAllBetUI();
     }
 
-   // ========== 玩家座位管理 + 抢庄 ==========
-    let players = [];      // { id, name, seatIndex }
+    // ========== 玩家座位管理 + 抢庄 ==========
+    let players = [];
     let nextPlayerId = 100;
     const namePool = ["阿强","老李","虾妹","蟹叔","金钱哥","鸡姐","小陈","骰子手","好运","锦鲤","鱼神","虾兵","蟹将","葫芦仙","铜钱","凤姐","阿珍","闲人","福仔","潮汕仔"];
     let playerBalances = JSON.parse(localStorage.getItem(STORAGE_PLAYER_BALS)) || {};
     function savePlayerBalances() { localStorage.setItem(STORAGE_PLAYER_BALS, JSON.stringify(playerBalances)); }
     function getPlayerBalance(name) { return playerBalances[name] || 1000; }
     function setPlayerBalance(name, amt) { playerBalances[name] = Math.max(0, amt); savePlayerBalances(); }
-    function addPlayerBalance(name, delta) { let cur = getPlayerBalance(name); setPlayerBalance(name, cur + delta); }
-
+    
     let maxSeats = 20;
+    
     function renderSeats() {
         const container = document.getElementById("seatsGrid");
         if(!container) return;
@@ -847,7 +846,7 @@
             container.appendChild(seatDiv);
         }
         document.getElementById("roomStats").innerHTML = `👥 ${players.length} / ${maxSeats}`;
-        // 绑定事件
+        
         document.querySelectorAll(".remove-player").forEach(btn => {
             btn.addEventListener("click", (e) => { let seat = parseInt(btn.dataset.seat); removePlayerBySeat(seat); });
         });
@@ -858,43 +857,34 @@
             btn.addEventListener("click", (e) => { let seat = parseInt(btn.dataset.seat); grabBanker(seat); });
         });
     }
+    
     function escapeHtml(str) { return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
     
-    // 抢庄核心逻辑
+    // 抢庄核心逻辑 (修复版)
     function grabBanker(seatIndex) {
         const player = players.find(p => p.seatIndex === seatIndex);
         if(!player) { showMsg("该座位没有玩家", 1000); return; }
         if(currentBanker === player.name) { showMsg("已经是当前庄家，无需抢庄", 1000); return; }
-        // 检查玩家余额是否足够（至少1000）
+        
         let playerMoney = getPlayerBalance(player.name);
         if(playerMoney < 500) { showMsg(`${player.name} 余额不足500，无法抢庄`, 1500); return; }
-        // 交换庄家和玩家的余额
+        
+        // 交换余额
         let oldBankerMoney = bankerBalance;
         let newBankerMoney = playerMoney;
-        // 更新余额
         bankerBalance = newBankerMoney;
         setPlayerBalance(player.name, oldBankerMoney);
-        // 更新庄家名称
+        
         let oldBankerName = currentBanker;
         currentBanker = player.name;
         persistBanker();
-        // 如果原庄家不是系统庄家且不是任何一个玩家（原庄家是玩家）则保留其玩家身份；如果是系统庄家，则不做处理
-        if(oldBankerName !== "系统庄家") {
-            // 原庄家可能已经是一个玩家（已坐在某个座位），但余额已交换，无需额外操作
-            // 如果原庄家不在玩家列表中，则将其添加为一个新玩家（理论上原庄家应该已存在，但安全处理）
-            if(!players.some(p => p.name === oldBankerName) && oldBankerName !== "系统庄家") {
-                // 找一个空闲座位添加
-                let emptySeat = null;
-                for(let i=1;i<=maxSeats;i++) if(!players.find(p=>p.seatIndex===i)) { emptySeat=i; break; }
-                if(emptySeat) {
-                    players.push({ id: nextPlayerId++, name: oldBankerName, seatIndex: emptySeat });
-                    if(!playerBalances[oldBankerName]) setPlayerBalance(oldBankerName, oldBankerMoney);
-                    showMsg(`原庄家 ${oldBankerName} 已入座 ${emptySeat} 号座位`, 1500);
-                } else {
-                    showMsg(`原庄家 ${oldBankerName} 无空闲座位，暂未入座`, 1500);
-                }
-            }
+        
+        // 如果原庄家不是系统庄家，且不是当前玩家，确保其存在（但不需要额外添加座位，避免死循环）
+        if(oldBankerName !== "系统庄家" && oldBankerName !== player.name) {
+            // 原庄家可能已经是某个座位上的玩家，余额已交换，无需额外操作
+            showMsg(`原庄家 ${oldBankerName} 余额变为 ${oldBankerMoney}`, 1200);
         }
+        
         updateStatsUI();
         renderSeats();
         showMsg(`✨ ${player.name} 抢庄成功！成为新庄家，余额 ${newBankerMoney}`, 2000);
@@ -910,6 +900,7 @@
         renderSeats();
         showMsg(`✨ ${randomName} 入座 ${seatIndex} 号 (余额: ${getPlayerBalance(randomName)})`, 1200);
     }
+    
     function removePlayerBySeat(seatIndex) {
         let idx = players.findIndex(p=>p.seatIndex===seatIndex);
         if(idx !== -1) {
@@ -919,6 +910,7 @@
             showMsg(`🚪 ${removed.name} 离开 ${seatIndex} 号`, 1200);
         }
     }
+    
     function addRandomPlayer() {
         if(players.length >= maxSeats) { showMsg(`房间已满`, 1000); return; }
         let emptySeats = [];
@@ -927,10 +919,12 @@
         let randomSeat = emptySeats[Math.floor(Math.random()*emptySeats.length)];
         addPlayerToSeat(randomSeat);
     }
+    
     function clearAllPlayers() { players = []; renderSeats(); showMsg(`清空所有玩家`, 1000); }
+    
     function fillExamplePlayers() {
         clearAllPlayers();
-        let count = Math.min(8, maxSeats);
+        let count = Math.min(6, maxSeats);
         let usedSeats = new Set();
         for(let i=0;i<count;i++) {
             let seat = 1;
@@ -943,6 +937,7 @@
         renderSeats();
         showMsg(`示例填充 ${players.length} 位玩家`, 1200);
     }
+    
     function applyMaxCapacity() {
         let newMax = parseInt(document.getElementById("maxSeatsInput").value);
         if(isNaN(newMax)) newMax=20;
