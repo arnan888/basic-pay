@@ -1,152 +1,150 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Macau VIP Pai Gow</title>
+<title>Paijiu Table</title>
 <style>
-html,body{margin:0;width:100%;height:100%;background:#040404;overflow:hidden}
-canvas{display:block}
+html,body{
+  margin:0;
+  background:#0b0f0d;
+  overflow:hidden;
+}
+canvas{
+  display:block;
+}
 </style>
 </head>
 <body>
-
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/postprocessing/EffectComposer.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/postprocessing/RenderPass.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<canvas id="c"></canvas>
 
 <script>
-/* 场景 */
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x040404);
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
 
-/* 相机（固定赌场机位） */
-const camera = new THREE.PerspectiveCamera(38, innerWidth/innerHeight, 0.1, 200);
-camera.position.set(0, 10.5, 14);
-camera.lookAt(0,0,0);
-
-/* 渲染器 */
-const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(devicePixelRatio);
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.physicallyCorrectLights = true;
-document.body.appendChild(renderer.domElement);
-
-/* 后期（暗金 Bloom） */
-const composer = new THREE.EffectComposer(renderer);
-composer.addPass(new THREE.RenderPass(scene, camera));
-const bloom = new THREE.UnrealBloomPass(
-    new THREE.Vector2(innerWidth, innerHeight),
-    0.9, 0.4, 0.85
-);
-composer.addPass(bloom);
-
-/* 灯光 */
-scene.add(new THREE.AmbientLight(0x141414, 0.5));
-
-const spot = new THREE.SpotLight(0xffd18a, 3.2, 80, Math.PI/5, 0.35);
-spot.position.set(0,16,6);
-spot.castShadow = true;
-spot.shadow.mapSize.set(2048,2048);
-scene.add(spot);
-
-/* 桌布（PBR） */
-const felt = new THREE.Mesh(
-    new THREE.BoxGeometry(14,0.5,10),
-    new THREE.MeshStandardMaterial({
-        color:0x0d2a1f,
-        roughness:0.92,
-        metalness:0.02
-    })
-);
-felt.receiveShadow = true;
-felt.position.y = -0.25;
-scene.add(felt);
-
-/* 桌边（暗木） */
-const wood = new THREE.Mesh(
-    new THREE.BoxGeometry(14.6,1.1,10.6),
-    new THREE.MeshStandardMaterial({
-        color:0x2a160a,
-        roughness:0.48,
-        metalness:0.18
-    })
-);
-wood.position.y = -0.6;
-wood.receiveShadow = true;
-scene.add(wood);
-
-/* 庄位（金属） */
-const dealer = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.7,1.7,0.28,64),
-    new THREE.MeshStandardMaterial({
-        color:0x3b2a14,
-        metalness:0.78,
-        roughness:0.25,
-        emissive:0x1a1206
-    })
-);
-dealer.castShadow = true;
-dealer.position.y = 0.06;
-scene.add(dealer);
-
-/* 骨牌（真实厚度 + 投影） */
-function tile(x,z){
-    const t = new THREE.Mesh(
-        new THREE.BoxGeometry(0.9,0.22,1.55),
-        new THREE.MeshStandardMaterial({
-            color:0xf3f1e7,
-            roughness:0.38,
-            metalness:0.04
-        })
-    );
-    t.position.set(x,0.18,z);
-    t.castShadow = true;
-    scene.add(t);
+function resize(){
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 }
-[-3.2,-2].forEach(x=>tile(x,3.2));
-[2,3.2].forEach(x=>tile(x,3.2));
-[-3.2,-2].forEach(x=>tile(x,-3.2));
-[2,3.2].forEach(x=>tile(x,-3.2));
+window.addEventListener('resize',resize);
+resize();
 
-/* 筹码（金属暗金） */
-function chip(x,z){
-    const c = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.38,0.38,0.18,48),
-        new THREE.MeshStandardMaterial({
-            color:0x8a6a28,
-            metalness:0.82,
-            roughness:0.22,
-            emissive:0x1d1408
-        })
-    );
-    c.castShadow = true;
-    c.position.set(x,0.22,z);
-    scene.add(c);
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
 }
-chip(-4.6,0.2);
-chip(-5,0);
-chip(4.6,0.2);
-chip(5,0);
 
-/* 循环 */
-function animate(){
-    requestAnimationFrame(animate);
-    dealer.rotation.y += 0.0012;
-    composer.render();
+function drawTable(){
+  const w = canvas.width;
+  const h = canvas.height;
+
+  // 木框
+  ctx.fillStyle = '#3a2414';
+  ctx.fillRect(0,0,w,h);
+
+  // 桌布
+  ctx.fillStyle = '#1f6b4a';
+  roundRect(40,40,w-80,h-80,40);
+  ctx.fill();
+
+  // 内暗边
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+  ctx.lineWidth = 8;
+  ctx.stroke();
+
+  // 中央庄位
+  ctx.fillStyle = '#1a5a3f';
+  roundRect(w/2-120,h/2-120,240,240,30);
+  ctx.fill();
+
+  ctx.fillStyle = '#d6b36a';
+  ctx.font = 'bold 72px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('庄',w/2,h/2+5);
 }
-animate();
 
-/* 自适应 */
-addEventListener('resize',()=>{
-    camera.aspect = innerWidth/innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
-    composer.setSize(innerWidth, innerHeight);
-});
+function drawDomino(x,y){
+  // 阴影
+  ctx.fillStyle='rgba(0,0,0,0.35)';
+  ctx.fillRect(x+6,y+10,70,100);
+
+  // 骨牌
+  ctx.fillStyle='#f4f1ec';
+  ctx.fillRect(x,y,70,100);
+
+  ctx.strokeStyle='#ccc';
+  ctx.strokeRect(x,y,70,100);
+
+  // 分隔线
+  ctx.beginPath();
+  ctx.moveTo(x,y+50);
+  ctx.lineTo(x+70,y+50);
+  ctx.strokeStyle='#aaa';
+  ctx.stroke();
+
+  // 点
+  function pip(px,py){
+    ctx.beginPath();
+    ctx.arc(px,py,4,0,Math.PI*2);
+    ctx.fillStyle='#5a2a1a';
+    ctx.fill();
+  }
+
+  pip(x+20,y+25);
+  pip(x+50,y+25);
+  pip(x+35,y+75);
+}
+
+function drawChips(x,y,value,color){
+  for(let i=0;i<5;i++){
+    ctx.beginPath();
+    ctx.ellipse(x,y-i*4,26,8,0,0,Math.PI*2);
+    ctx.fillStyle=color;
+    ctx.fill();
+    ctx.strokeStyle='#fff';
+    ctx.stroke();
+  }
+  ctx.fillStyle='#fff';
+  ctx.font='bold 14px sans-serif';
+  ctx.textAlign='center';
+  ctx.fillText(value,x,y-8);
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawTable();
+
+  // 上排骨牌
+  drawDomino(canvas.width*0.25,canvas.height*0.25);
+  drawDomino(canvas.width*0.25+90,canvas.height*0.25);
+
+  drawDomino(canvas.width*0.65,canvas.height*0.25);
+  drawDomino(canvas.width*0.65+90,canvas.height*0.25);
+
+  // 下排骨牌
+  drawDomino(canvas.width*0.25,canvas.height*0.6);
+  drawDomino(canvas.width*0.25+90,canvas.height*0.6);
+
+  drawDomino(canvas.width*0.65,canvas.height*0.6);
+  drawDomino(canvas.width*0.65+90,canvas.height*0.6);
+
+  // 筹码
+  drawChips(canvas.width*0.75,canvas.height*0.55,'100','#1e90ff');
+  drawChips(canvas.width*0.8,canvas.height*0.58,'500','#8a2be2');
+}
+
+draw();
 </script>
 </body>
 </html>
+
+
+
+
+
