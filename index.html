@@ -1,11 +1,22 @@
+
+
+
+
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>3D 牌九桌</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Macau VIP · Pai Gow</title>
 <style>
-html,body{margin:0;overflow:hidden;background:#05070c}
+html,body{
+    margin:0;
+    width:100%;
+    height:100%;
+    background:#050505;
+    overflow:hidden;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",sans-serif;
+}
 canvas{display:block}
 </style>
 </head>
@@ -15,117 +26,128 @@ canvas{display:block}
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
 
 <script>
-/* 场景 */
+/* ===== 场景 ===== */
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x05070c);
+scene.background = new THREE.Color(0x050505);
 
-/* 相机 */
-const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 1000);
-camera.position.set(0, 8, 14);
+/* ===== 相机（VIP 俯视） ===== */
+const camera = new THREE.PerspectiveCamera(40, innerWidth/innerHeight, 0.1, 200);
+camera.position.set(0, 9.5, 13);
 
-/* 渲染 */
+/* ===== 渲染 ===== */
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(devicePixelRatio);
+renderer.physicallyCorrectLights = true;
 document.body.appendChild(renderer.domElement);
 
-/* 控制 */
+/* ===== 控制（克制） ===== */
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
+controls.enablePan = false;
+controls.minPolarAngle = Math.PI/3;
+controls.maxPolarAngle = Math.PI/2.2;
 controls.target.set(0,0,0);
+controls.enableDamping = true;
 
-/* 灯光 */
-scene.add(new THREE.AmbientLight(0x406080, 0.6));
+/* ===== 灯光（澳门厅） ===== */
+scene.add(new THREE.AmbientLight(0x1a1a1a, 0.6));
 
-const keyLight = new THREE.PointLight(0x66ccff, 1.2, 50);
-keyLight.position.set(0,10,6);
-scene.add(keyLight);
+const key = new THREE.SpotLight(0xffd48a, 2.4, 60, Math.PI/4, 0.4);
+key.position.set(0,14,4);
+key.target.position.set(0,0,0);
+scene.add(key, key.target);
 
-const rimLight = new THREE.PointLight(0x2244ff, 0.8, 50);
-rimLight.position.set(-8,6,-6);
-scene.add(rimLight);
+const rim = new THREE.PointLight(0xffc266, 1.2, 40);
+rim.position.set(-6,6,-6);
+scene.add(rim);
 
-/* 桌子 */
-const tableGeo = new THREE.BoxGeometry(14,1.2,10);
-const tableMat = new THREE.MeshStandardMaterial({
-    color:0x0e3b2b,
-    roughness:0.6,
-    metalness:0.1
-});
-const table = new THREE.Mesh(tableGeo, tableMat);
-table.position.y = -0.6;
-scene.add(table);
+/* ===== 桌布 ===== */
+const felt = new THREE.Mesh(
+    new THREE.BoxGeometry(14,0.6,10),
+    new THREE.MeshStandardMaterial({
+        color:0x0f2a1f,
+        roughness:0.85,
+        metalness:0.02
+    })
+);
+felt.position.y = -0.3;
+scene.add(felt);
 
-/* 桌边 */
-const edgeGeo = new THREE.BoxGeometry(14.4,1.4,10.4);
-const edgeMat = new THREE.MeshStandardMaterial({
-    color:0x1b0f08,
-    roughness:0.4,
-    metalness:0.2
-});
-const edge = new THREE.Mesh(edgeGeo, edgeMat);
-edge.position.y = -0.7;
-scene.add(edge);
+/* ===== 木桌边 ===== */
+const wood = new THREE.Mesh(
+    new THREE.BoxGeometry(14.6,1.2,10.6),
+    new THREE.MeshStandardMaterial({
+        color:0x2a160a,
+        roughness:0.45,
+        metalness:0.15
+    })
+);
+wood.position.y = -0.6;
+scene.add(wood);
 
-/* 庄位圆盘 */
-const dealerGeo = new THREE.CylinderGeometry(1.4,1.4,0.3,64);
-const dealerMat = new THREE.MeshStandardMaterial({
-    color:0x2b4f6a,
-    metalness:0.6,
-    roughness:0.25,
-    emissive:0x113355
-});
-const dealer = new THREE.Mesh(dealerGeo, dealerMat);
+/* ===== 庄位（金属暗金） ===== */
+const dealer = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.6,1.6,0.28,64),
+    new THREE.MeshStandardMaterial({
+        color:0x3a2b14,
+        metalness:0.65,
+        roughness:0.25,
+        emissive:0x1a1206
+    })
+);
 dealer.position.y = 0.05;
 scene.add(dealer);
 
-/* 牌（立体块） */
-function makeTile(x,z){
-    const geo = new THREE.BoxGeometry(0.9,0.2,1.4);
-    const mat = new THREE.MeshStandardMaterial({
-        color:0xf2f2f2,
-        roughness:0.3,
-        metalness:0.05
-    });
-    const m = new THREE.Mesh(geo,mat);
-    m.position.set(x,0.15,z);
+/* ===== 牌九骨牌（实体） ===== */
+function tile(x,z){
+    const m = new THREE.Mesh(
+        new THREE.BoxGeometry(0.9,0.22,1.5),
+        new THREE.MeshStandardMaterial({
+            color:0xf4f1e8,
+            roughness:0.35,
+            metalness:0.05
+        })
+    );
+    m.position.set(x,0.18,z);
     scene.add(m);
 }
 
-[-3,-1.8].forEach(x=>makeTile(x,2.8));
-[1.8,3].forEach(x=>makeTile(x,2.8));
-[-3,-1.8].forEach(x=>makeTile(x,-2.8));
-[1.8,3].forEach(x=>makeTile(x,-2.8));
+/* 四门摆牌位 */
+[-3.2,-2].forEach(x=>tile(x,3.2));
+[2,3.2].forEach(x=>tile(x,3.2));
+[-3.2,-2].forEach(x=>tile(x,-3.2));
+[2,3.2].forEach(x=>tile(x,-3.2));
 
-/* 筹码 */
-function chip(x,z,color){
-    const geo = new THREE.CylinderGeometry(0.35,0.35,0.18,48);
-    const mat = new THREE.MeshStandardMaterial({
-        color,
-        metalness:0.7,
-        roughness:0.25,
-        emissive:color
-    });
-    const c = new THREE.Mesh(geo,mat);
-    c.position.set(x,0.2,z);
+/* ===== 筹码（暗金质感） ===== */
+function chip(x,z){
+    const c = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.38,0.38,0.18,48),
+        new THREE.MeshStandardMaterial({
+            color:0x8a6b2a,
+            metalness:0.75,
+            roughness:0.22,
+            emissive:0x1f1608
+        })
+    );
+    c.position.set(x,0.22,z);
     scene.add(c);
 }
 
-chip(-4,0,0x1ecad3);
-chip(-4.5,0.1,0x3a7bff);
-chip(4,0,0x8f3bff);
-chip(4.5,0.1,0x20d08a);
+chip(-4.4,0.2);
+chip(-4.8,0);
+chip(4.4,0.2);
+chip(4.8,0);
 
-/* 渲染循环 */
-function animate(){
-    requestAnimationFrame(animate);
-    dealer.rotation.y += 0.002;
+/* ===== 动画 ===== */
+function loop(){
+    requestAnimationFrame(loop);
+    dealer.rotation.y += 0.0015;
     controls.update();
     renderer.render(scene,camera);
 }
-animate();
+loop();
 
-/* 自适应 */
+/* ===== 自适应 ===== */
 addEventListener('resize',()=>{
     camera.aspect = innerWidth/innerHeight;
     camera.updateProjectionMatrix();
@@ -135,3 +157,4 @@ addEventListener('resize',()=>{
 
 </body>
 </html>
+
