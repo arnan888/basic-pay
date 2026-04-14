@@ -1,823 +1,229 @@
+
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>广东十三张 · 豪华功能桌 | 3D发牌机</title>
-    <style>
-        * {
-            user-select: none;
-        }
-        body {
-            margin: 0;
-            overflow: hidden;
-            font-family: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', 'Roboto', sans-serif;
-        }
-        /* 主UI层 */
-        .game-ui {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            left: auto;
-            bottom: auto;
-            pointer-events: none;
-            z-index: 30;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            align-items: flex-end;
-            max-width: 300px;
-        }
-        .control-card {
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(12px);
-            border-radius: 28px;
-            padding: 16px 20px;
-            border: 1px solid rgba(255, 215, 0, 0.6);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-            pointer-events: auto;
-            color: #f5e7c8;
-            width: 100%;
-        }
-        .control-card h3 {
-            margin: 0 0 8px 0;
-            color: #ffd966;
-            font-size: 1.2rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .deck-info {
-            background: #2c2418;
-            border-radius: 40px;
-            padding: 6px 12px;
-            margin: 8px 0;
-            font-size: 0.9rem;
-            text-align: center;
-        }
-        .deck-info span {
-            color: #ffaa33;
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-        button {
-            background: #d4a373;
-            border: none;
-            color: #2c1e12;
-            font-weight: bold;
-            padding: 6px 12px;
-            margin: 4px 4px;
-            border-radius: 40px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 0.8rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            font-family: inherit;
-        }
-        button:hover {
-            background: #f4c27a;
-            transform: scale(1.02);
-        }
-        .flex-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 6px;
-            margin: 8px 0;
-        }
-        .status-text {
-            font-size: 0.7rem;
-            margin-top: 8px;
-            color: #ddccaa;
-            text-align: center;
-        }
-        .feature-panel {
-            background: rgba(0,0,0,0.7);
-            border-radius: 20px;
-            padding: 10px;
-            margin-top: 8px;
-            font-size: 0.7rem;
-        }
-        .history-log {
-            max-height: 100px;
-            overflow-y: auto;
-            font-size: 0.65rem;
-            color: #ccbb99;
-            text-align: left;
-            padding-left: 8px;
-        }
-        /* 比分面板 */
-        .score-panels {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            gap: 12px;
-            pointer-events: none;
-            z-index: 20;
-        }
-        .player-score-card {
-            background: rgba(10, 20, 8, 0.85);
-            backdrop-filter: blur(12px);
-            border-radius: 20px;
-            width: 22%;
-            min-width: 190px;
-            padding: 8px 10px;
-            border-left: 4px solid #ffcf4a;
-            color: #f5e7c8;
-            pointer-events: auto;
-            font-size: 0.7rem;
-        }
-        .player-name {
-            font-size: 0.9rem;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px dashed #ffcf6e;
-            margin-bottom: 5px;
-        }
-        .dun-summary {
-            display: flex;
-            gap: 6px;
-            margin-top: 4px;
-            flex-wrap: wrap;
-        }
-        .dun-summary span {
-            background: rgba(0,0,0,0.5);
-            border-radius: 12px;
-            padding: 2px 5px;
-            font-size: 0.65rem;
-        }
-        .score {
-            background: #2e2a1f;
-            border-radius: 20px;
-            padding: 0 6px;
-        }
-        .self-highlight {
-            border-left-color: #ffaa33 !important;
-            background: rgba(255, 170, 51, 0.2);
-        }
-        .message-area {
-            position: absolute;
-            bottom: 100px;
-            left: 20%;
-            right: 20%;
-            background: rgba(0,0,0,0.85);
-            text-align: center;
-            padding: 6px;
-            border-radius: 40px;
-            color: #ffdd99;
-            font-weight: bold;
-            pointer-events: none;
-            z-index: 40;
-            font-size: 0.8rem;
-            transition: 0.2s;
-        }
-        @media (max-width: 1000px) {
-            .player-score-card { width: 45%; min-width: 150px; }
-            .control-card { width: 260px; }
-        }
-        .toggle-switch {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: #2c2418;
-            border-radius: 30px;
-            padding: 3px 10px;
-            margin: 4px;
-        }
-        .toggle-switch input {
-            width: 32px;
-            height: 16px;
-            appearance: none;
-            background: #555;
-            border-radius: 20px;
-            position: relative;
-            cursor: pointer;
-        }
-        .toggle-switch input:checked {
-            background: #ffaa33;
-        }
-        .toggle-switch input::before {
-            content: '';
-            width: 14px;
-            height: 14px;
-            background: white;
-            border-radius: 50%;
-            position: absolute;
-            top: 1px;
-            left: 2px;
-            transition: 0.2s;
-        }
-        .toggle-switch input:checked::before {
-            left: 16px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>老式牌九 · 赌桌</title>
+<style>
+html,body{
+    margin:0;
+    padding:0;
+    width:100%;
+    height:100%;
+    background:#0b0502;
+    overflow:hidden;
+    font-family:"STSong","SimSun",serif;
+}
+
+/* 桌体 */
+#table{
+    position:absolute;
+    inset:0;
+    background:
+        radial-gradient(circle at center,#1e6a3b 0%,#0d3a22 65%,#081f14 100%);
+    border:28px solid #3a1e0d;
+    box-shadow:
+        inset 0 0 120px rgba(0,0,0,.9),
+        0 0 80px rgba(0,0,0,.9);
+}
+
+/* 木框压边 */
+#table::before{
+    content:'';
+    position:absolute;
+    inset:18px;
+    border:6px solid #7b4a1c;
+    box-shadow:inset 0 0 40px rgba(0,0,0,.7);
+    pointer-events:none;
+}
+
+/* 庄位 */
+#dealer{
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    width:240px;
+    height:240px;
+    border-radius:50%;
+    background:
+        radial-gradient(circle,#e0b15a 0%,#8b5514 70%);
+    box-shadow:
+        inset 0 0 40px rgba(0,0,0,.6),
+        0 0 50px rgba(0,0,0,.9);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:108px;
+    color:#6b0000;
+    font-weight:bold;
+    letter-spacing:6px;
+}
+
+/* 区域 */
+.area{
+    position:absolute;
+    width:300px;
+    height:160px;
+    border:3px solid rgba(255,215,140,.7);
+    border-radius:18px;
+    box-shadow:
+        inset 0 0 30px rgba(0,0,0,.6),
+        0 0 25px rgba(0,0,0,.7);
+}
+
+/* 区名 */
+.area .name{
+    position:absolute;
+    left:14px;
+    top:10px;
+    font-size:26px;
+    color:#f5d28a;
+    text-shadow:0 0 6px rgba(0,0,0,.8);
+}
+
+/* 牌 */
+.cards{
+    position:absolute;
+    bottom:14px;
+    left:14px;
+    display:flex;
+    gap:10px;
+}
+.card{
+    width:64px;
+    height:92px;
+    background:
+        linear-gradient(#faf7ef,#e6dcc7);
+    border-radius:8px;
+    box-shadow:
+        inset 0 0 6px rgba(0,0,0,.3),
+        0 6px 10px rgba(0,0,0,.7);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:22px;
+    color:#3b0000;
+    font-weight:bold;
+}
+
+/* 筹码 */
+.chips{
+    position:absolute;
+    right:12px;
+    bottom:-26px;
+    display:flex;
+    gap:8px;
+}
+.chip{
+    width:46px;
+    height:46px;
+    border-radius:50%;
+    font-size:13px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+    box-shadow:
+        inset 0 0 8px rgba(255,255,255,.3),
+        0 0 14px rgba(0,0,0,.8);
+}
+.c10{background:#c8a02e}
+.c50{background:#2f9e4f}
+.c100{background:#1f5fbf}
+.c500{background:#6f2dbd}
+
+/* 控制 */
+#ctrl{
+    position:absolute;
+    bottom:26px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    gap:18px;
+}
+button{
+    padding:14px 34px;
+    font-size:20px;
+    background:#d2a44a;
+    color:#4a1e00;
+    border:none;
+    border-radius:14px;
+    box-shadow:0 6px 0 #7a4d10;
+}
+button:active{
+    transform:translateY(4px);
+    box-shadow:0 2px 0 #7a4d10;
+}
+</style>
 </head>
 <body>
-    <div class="game-ui">
-        <div class="control-card">
-            <h3>🃟 智能发牌机 · 广东十三张</h3>
-            <div class="deck-info">
-                📦 牌堆剩余: <strong id="remainCards">52</strong>
-            </div>
-            <div class="flex-buttons">
-                <button id="btnDeal">🎲 发牌 & 摆墩</button>
-                <button id="btnCompare">🏆 比牌结算</button>
-                <button id="btnReset">🔄 新的一局</button>
-                <button id="btnClearScores">🧹 清空总分</button>
-            </div>
-            <div class="flex-buttons">
-                <div class="toggle-switch">
-                    <span>✨ 特效</span>
-                    <input type="checkbox" id="effectToggle" checked>
-                </div>
-                <button id="btnAutoPlay">⚡ 自动发牌+比牌</button>
-            </div>
-            <div class="feature-panel">
-                <div style="display:flex; justify-content:space-between;">
-                    <span>📜 牌型说明</span>
-                    <span>🎯 历史得分</span>
-                </div>
-                <div style="display:flex; gap:8px; margin-top:6px;">
-                    <div style="flex:1; font-size:0.6rem; background:#1e1a10; border-radius:12px; padding:4px;">
-                        同花顺>铁支>葫芦>同花>顺子>三条>两对>一对>散牌
-                    </div>
-                    <div style="flex:1; background:#1e1a10; border-radius:12px; padding:4px; max-height:70px; overflow-y:auto;" id="historyLog">
-                        暂无记录
-                    </div>
-                </div>
-            </div>
-            <div class="status-text" id="messageArea">⚡ 相机固定 | 桌面仅展示你的手牌 | 功能桌升级</div>
-        </div>
-        <div class="score-panels" id="scorePanelsContainer"></div>
+
+<div id="table">
+
+    <div id="dealer">庄</div>
+
+    <div class="area" style="left:5%;top:16%">
+        <div class="name">天门</div>
+        <div class="cards"></div>
+        <div class="chips"></div>
     </div>
-    <div id="globalMessage" class="message-area">✨ 点击「发牌」开始，新功能：自动动画、历史记录、特效开关</div>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
-            }
-        }
-    </script>
+    <div class="area" style="right:5%;top:16%">
+        <div class="name">地门</div>
+        <div class="cards"></div>
+        <div class="chips"></div>
+    </div>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+    <div class="area" style="left:5%;bottom:22%">
+        <div class="name">玄门</div>
+        <div class="cards"></div>
+        <div class="chips"></div>
+    </div>
 
-        // ---------- 初始化3D场景 (相机固定) ----------
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x071a1b);
-        scene.fog = new THREE.FogExp2(0x071a1b, 0.008);
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(3.0, 2.4, 4.0);
-        camera.lookAt(0, 0.25, 0.9);
-        
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        document.body.appendChild(renderer.domElement);
-        const labelRenderer = new CSS2DRenderer();
-        labelRenderer.setSize(window.innerWidth, window.innerHeight);
-        labelRenderer.domElement.style.position = 'absolute';
-        labelRenderer.domElement.style.top = '0px';
-        labelRenderer.domElement.style.left = '0px';
-        labelRenderer.domElement.style.pointerEvents = 'none';
-        document.body.appendChild(labelRenderer.domElement);
-        
-        // 灯光系统 (可动态)
-        const ambientLight = new THREE.AmbientLight(0x404060);
-        scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xfff5e0, 1);
-        dirLight.position.set(3, 8, 2);
-        dirLight.castShadow = true;
-        scene.add(dirLight);
-        const fillLight = new THREE.PointLight(0x6688aa, 0.5);
-        fillLight.position.set(2, 2, 3);
-        scene.add(fillLight);
-        const tableLight = new THREE.PointLight(0xffaa66, 0.6);
-        tableLight.position.set(0, 1.2, 0);
-        scene.add(tableLight);
-        // 动态彩色灯带 (增强功能)
-        const colorLights = [];
-        for (let i = 0; i < 8; i++) {
-            const angle = (i / 8) * Math.PI * 2;
-            const light = new THREE.PointLight(0xffaa44, 0.3);
-            light.position.set(Math.cos(angle) * 2.3, 0.15, Math.sin(angle) * 2.3);
-            scene.add(light);
-            colorLights.push(light);
+    <div class="area" style="right:5%;bottom:22%">
+        <div class="name">黄门</div>
+        <div class="cards"></div>
+        <div class="chips"></div>
+    </div>
+
+    <div id="ctrl">
+        <button onclick="deal()">开牌</button>
+        <button onclick="bet()">压筹</button>
+        <button onclick="clearAll()">收桌</button>
+    </div>
+</div>
+
+<script>
+const tiles=["天","地","人","和","梅","长三","板凳","虎头","红十","高脚","幺六","四六"];
+
+function deal(){
+    document.querySelectorAll('.cards').forEach(c=>{
+        c.innerHTML='';
+        for(let i=0;i<2;i++){
+            const d=document.createElement('div');
+            d.className='card';
+            d.textContent=tiles[Math.floor(Math.random()*tiles.length)];
+            c.appendChild(d);
         }
-        
-        // 圆桌
-        const tableMat = new THREE.MeshStandardMaterial({ color: 0xbc9a6c, roughness: 0.4 });
-        const tableTop = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 0.18, 64), tableMat);
-        tableTop.position.set(0, 0.1, 0);
-        tableTop.castShadow = true;
-        scene.add(tableTop);
-        const rimMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.7 });
-        const rim = new THREE.Mesh(new THREE.TorusGeometry(2.25, 0.06, 32, 100), rimMat);
-        rim.rotation.x = Math.PI / 2;
-        rim.position.set(0, 0.2, 0);
-        scene.add(rim);
-        
-        // 椅子装饰
-        function addChair(x, z, angle) {
-            const group = new THREE.Group();
-            const seat = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.12, 0.8), new THREE.MeshStandardMaterial({ color: 0xc99e6f }));
-            seat.position.set(0, 0.2, 0);
-            group.add(seat);
-            const back = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.08), new THREE.MeshStandardMaterial({ color: 0xc99e6f }));
-            back.position.set(0, 0.45, -0.4);
-            group.add(back);
-            group.position.set(x, -0.15, z);
-            group.rotation.y = angle;
-            scene.add(group);
-        }
-        addChair(0, 2.8, 0);
-        addChair(0, -2.8, Math.PI);
-        addChair(-2.8, 0, Math.PI/2);
-        addChair(2.8, 0, -Math.PI/2);
-        
-        // 中央发牌机模型 (增强粒子效果)
-        const dealerMachine = new THREE.Group();
-        const basePlate = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.0, 0.2, 32), new THREE.MeshStandardMaterial({ color: 0xccaa77, metalness: 0.6 }));
-        basePlate.position.y = 0.15;
-        dealerMachine.add(basePlate);
-        const bodyCyl = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.7, 0.55, 32), new THREE.MeshStandardMaterial({ color: 0xaa8866, metalness: 0.4 }));
-        bodyCyl.position.y = 0.48;
-        dealerMachine.add(bodyCyl);
-        const ringLight = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.05, 32, 64), new THREE.MeshStandardMaterial({ color: 0xffaa44, emissive: 0xaa4422, emissiveIntensity: 0.5 }));
-        ringLight.rotation.x = Math.PI / 2;
-        ringLight.position.y = 0.78;
-        dealerMachine.add(ringLight);
-        const screenDome = new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 32), new THREE.MeshStandardMaterial({ color: 0x225588, emissive: 0x004466, emissiveIntensity: 0.3 }));
-        screenDome.position.y = 0.9;
-        dealerMachine.add(screenDome);
-        const particleRing = new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.02, 16, 64), new THREE.MeshStandardMaterial({ color: 0xffaa55, emissive: 0xff5500 }));
-        particleRing.rotation.x = Math.PI / 2;
-        particleRing.position.y = 0.45;
-        dealerMachine.add(particleRing);
-        scene.add(dealerMachine);
-        
-        const machineLabelDiv = document.createElement('div');
-        machineLabelDiv.textContent = '⚙️ 智能发牌机 ⚙️';
-        machineLabelDiv.style.backgroundColor = 'rgba(0,0,0,0.6)';
-        machineLabelDiv.style.color = '#ffcf6e';
-        machineLabelDiv.style.padding = '2px 10px';
-        machineLabelDiv.style.borderRadius = '30px';
-        machineLabelDiv.style.fontSize = '12px';
-        const machineLabel = new CSS2DObject(machineLabelDiv);
-        machineLabel.position.set(0, 1.1, 0);
-        scene.add(machineLabel);
-        
-        // 粒子系统 (发牌特效)
-        let particleSystem = null;
-        function createParticleEffect(pos, count = 20) {
-            if (!document.getElementById('effectToggle').checked) return;
-            const geometry = new THREE.BufferGeometry();
-            const vertices = [];
-            for (let i = 0; i < count; i++) {
-                vertices.push((Math.random() - 0.5) * 1.2, Math.random() * 0.8, (Math.random() - 0.5) * 1.2);
-            }
-            geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
-            const material = new THREE.PointsMaterial({ color: 0xffaa66, size: 0.05 });
-            const particles = new THREE.Points(geometry, material);
-            particles.position.copy(pos);
-            scene.add(particles);
-            setTimeout(() => scene.remove(particles), 500);
-        }
-        
-        // 动画变量
-        let machineTime = 0;
-        let effectEnabled = true;
-        
-        // ---------- 扑克牌游戏逻辑 ----------
-        const SUITS = [
-            { sym: '♠', color: 'black', rankVal: 4 },
-            { sym: '♥', color: 'red', rankVal: 3 },
-            { sym: '♣', color: 'black', rankVal: 2 },
-            { sym: '♦', color: 'red', rankVal: 1 }
-        ];
-        const RANK_MAP = { '2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14 };
-        const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
-        
-        class Card {
-            constructor(rank, suitSym, suitColor) {
-                this.rank = rank;
-                this.rankValue = RANK_MAP[rank];
-                this.suitSym = suitSym;
-                this.suitColor = suitColor;
-            }
-            toString() { return `${this.rank}${this.suitSym}`; }
-        }
-        
-        function createDeck() {
-            const deck = [];
-            for (const suit of SUITS) {
-                for (const rank of RANKS) {
-                    deck.push(new Card(rank, suit.sym, suit.color));
-                }
-            }
-            return deck;
-        }
-        
-        function shuffle(deck) {
-            for (let i = deck.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [deck[i], deck[j]] = [deck[j], deck[i]];
-            }
-            return deck;
-        }
-        
-        function getHandType(cards) {
-            const sorted = [...cards].sort((a,b) => a.rankValue - b.rankValue);
-            const isFlush = cards.every(c => c.suitColor === cards[0].suitColor);
-            let isStraight = true;
-            let straightHigh = 0;
-            for (let i = 0; i < sorted.length-1; i++) {
-                if (sorted[i+1].rankValue - sorted[i].rankValue !== 1) {
-                    if (i === sorted.length-2 && sorted[i+1].rankValue === 14 && sorted[0].rankValue === 2) {
-                        const a2345 = sorted.every((c,idx) => idx===0 ? c.rankValue===2 : idx===1?3:idx===2?4:idx===3?5:idx===4?14:false);
-                        if (a2345) { isStraight = true; straightHigh = 5; break; }
-                        else isStraight = false;
-                    } else isStraight = false;
-                    break;
-                }
-            }
-            if (isStraight && !straightHigh) straightHigh = sorted[sorted.length-1].rankValue;
-            const rankCount = new Map();
-            sorted.forEach(c => rankCount.set(c.rankValue, (rankCount.get(c.rankValue)||0)+1));
-            const values = [...rankCount.values()].sort((a,b)=>b-a);
-            const isFour = values[0] === 4;
-            const isFullHouse = values[0] === 3 && values[1] === 2;
-            const isThree = values[0] === 3 && values[1] === 1;
-            const isTwoPair = values[0] === 2 && values[1] === 2;
-            const isOnePair = values[0] === 2 && values[1] === 1;
-            
-            if (isFlush && isStraight) return { type: 9, compareVal: straightHigh, name: '同花顺', main: straightHigh };
-            if (isFour) { let fourRank = 0, kicker = 0; for(let [r,c] of rankCount) if(c===4) fourRank = r; else kicker = r; return { type: 8, compareVal: fourRank*100 + kicker, name: '铁支', main: fourRank }; }
-            if (isFullHouse) { let threeRank = 0, pairRank = 0; for(let [r,c] of rankCount) if(c===3) threeRank = r; else pairRank = r; return { type: 7, compareVal: threeRank*100 + pairRank, name: '葫芦', main: threeRank }; }
-            if (isFlush) return { type: 6, compareVal: sorted.map(c=>c.rankValue).reverse().reduce((a,b)=>a*15+b,0), name: '同花', main: sorted[sorted.length-1].rankValue };
-            if (isStraight) return { type: 5, compareVal: straightHigh, name: '顺子', main: straightHigh };
-            if (isThree) { let threeRank = 0, kickers = []; for(let [r,c] of rankCount) if(c===3) threeRank = r; else kickers.push(r); kickers.sort((a,b)=>b-a); return { type: 4, compareVal: threeRank*225 + kickers[0]*15 + kickers[1], name: '三条', main: threeRank }; }
-            if (isTwoPair) { let pairs = [], kicker = 0; for(let [r,c] of rankCount) if(c===2) pairs.push(r); else kicker = r; pairs.sort((a,b)=>b-a); return { type: 3, compareVal: pairs[0]*225 + pairs[1]*15 + kicker, name: '两对', main: pairs[0] }; }
-            if (isOnePair) { let pairRank = 0, kickers = []; for(let [r,c] of rankCount) if(c===2) pairRank = r; else kickers.push(r); kickers.sort((a,b)=>b-a); return { type: 2, compareVal: pairRank*3375 + kickers[0]*225 + kickers[1]*15 + kickers[2], name: '一对', main: pairRank }; }
-            const highVals = sorted.map(c=>c.rankValue).reverse();
-            let cmp = 0; highVals.forEach(v => cmp = cmp*15 + v);
-            return { type: 1, compareVal: cmp, name: '散牌', main: sorted[sorted.length-1].rankValue };
-        }
-        
-        function compareDun(aCards, bCards) {
-            const typeA = getHandType(aCards);
-            const typeB = getHandType(bCards);
-            if (typeA.type !== typeB.type) return typeA.type > typeB.type ? 1 : -1;
-            if (typeA.compareVal > typeB.compareVal) return 1;
-            if (typeA.compareVal < typeB.compareVal) return -1;
-            return 0;
-        }
-        
-        function isValidFront(cards) {
-            if (cards.length !== 3) return false;
-            const type = getHandType(cards).type;
-            return type <= 4;
-        }
-        
-        function autoArrange(handCards) {
-            const n = handCards.length;
-            if (n !== 13) return null;
-            let best = null;
-            let bestScore = -1e9;
-            function comb3(start, chosen) {
-                if (chosen.length === 3) {
-                    const frontCards = chosen.map(i => handCards[i]);
-                    if (!isValidFront(frontCards)) return;
-                    const remainingIndices = [];
-                    for (let i=0;i<13;i++) if(!chosen.includes(i)) remainingIndices.push(i);
-                    function comb5(startM, chosenM) {
-                        if (chosenM.length === 5) {
-                            const midCards = chosenM.map(i => handCards[i]);
-                            const backIndices = remainingIndices.filter(i => !chosenM.includes(i));
-                            const backCards = backIndices.map(i => handCards[i]);
-                            if (compareDun(frontCards, midCards) <= 0 && compareDun(midCards, backCards) <= 0) {
-                                const frontScore = getHandType(frontCards).type * 10;
-                                const midScore = getHandType(midCards).type * 30;
-                                const backScore = getHandType(backCards).type * 100;
-                                const total = frontScore + midScore + backScore;
-                                if (total > bestScore) {
-                                    bestScore = total;
-                                    best = { front: frontCards, mid: midCards, back: backCards };
-                                }
-                            }
-                            return;
-                        }
-                        for (let i = startM; i < remainingIndices.length; i++) {
-                            chosenM.push(remainingIndices[i]);
-                            comb5(i+1, chosenM);
-                            chosenM.pop();
-                        }
-                    }
-                    comb5(0, []);
-                    return;
-                }
-                for (let i = start; i < 13; i++) {
-                    chosen.push(i);
-                    comb3(i+1, chosen);
-                    chosen.pop();
-                }
-            }
-            comb3(0, []);
-            if (!best) {
-                const sorted = [...handCards].sort((a,b)=>b.rankValue - a.rankValue);
-                best = { front: sorted.slice(0,3), mid: sorted.slice(3,8), back: sorted.slice(8,13) };
-            }
-            return best;
-        }
-        
-        // 游戏状态
-        let currentDeck = [];
-        let players = [
-            { id:0, name:'你 (南方)', handCards:[], front:[], mid:[], back:[], score:0, totalScore:0, handGroup3D: null, pos: { x:0, z:2.4 }, dir:'south' },
-            { id:1, name:'北方玩家', handCards:[], front:[], mid:[], back:[], score:0, totalScore:0, handGroup3D: null },
-            { id:2, name:'西方玩家', handCards:[], front:[], mid:[], back:[], score:0, totalScore:0, handGroup3D: null },
-            { id:3, name:'东方玩家', handCards:[], front:[], mid:[], back:[], score:0, totalScore:0, handGroup3D: null }
-        ];
-        let roundActive = false;
-        let historyScores = []; // 存储每轮得分字符串
-        
-        // 纹理系统
-        const cardTextureCache = new Map();
-        const backTexture = (() => {
-            const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 360;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#2c5a6e';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#e9c468';
-            ctx.font = 'bold 38px "Segoe UI"';
-            ctx.fillText('🃟', canvas.width/2 - 25, canvas.height/2 + 20);
-            ctx.strokeStyle = '#ffcc77';
-            ctx.lineWidth = 4;
-            ctx.strokeRect(12, 12, canvas.width - 24, canvas.height - 24);
-            return new THREE.CanvasTexture(canvas);
-        })();
-        
-        function getCardTexture(rank, suitSym, suitColor) {
-            const key = `${rank}${suitSym}`;
-            if (cardTextureCache.has(key)) return cardTextureCache.get(key);
-            const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 360;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#fff8f0';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = '#bbaa88';
-            ctx.lineWidth = 6;
-            ctx.strokeRect(8, 8, canvas.width - 16, canvas.height - 16);
-            ctx.font = `bold 52px "Segoe UI"`;
-            ctx.fillStyle = suitColor;
-            ctx.fillText(rank, 18, 70);
-            ctx.font = `48px "Segoe UI"`;
-            ctx.fillText(suitSym, 18, 125);
-            ctx.fillStyle = suitColor;
-            ctx.font = `bold 52px "Segoe UI"`;
-            ctx.fillText(rank, canvas.width - 68, canvas.height - 40);
-            ctx.font = `48px "Segoe UI"`;
-            ctx.fillText(suitSym, canvas.width - 68, canvas.height - 85);
-            ctx.font = `110px "Segoe UI"`;
-            ctx.fillStyle = suitColor + 'cc';
-            ctx.fillText(suitSym, canvas.width/2 - 45, canvas.height/2 + 30);
-            const texture = new THREE.CanvasTexture(canvas);
-            cardTextureCache.set(key, texture);
-            return texture;
-        }
-        
-        function createHorizontalCard(rank, suitSym, suitColor) {
-            const texture = getCardTexture(rank, suitSym, suitColor);
-            const material = new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide, roughness: 0.2 });
-            const geometry = new THREE.BoxGeometry(0.82, 0.03, 0.62);
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.castShadow = true;
-            mesh.rotation.x = -Math.PI / 2;
-            return mesh;
-        }
-        
-        function initSelfHandGroup() {
-            const self = players[0];
-            const group = new THREE.Group();
-            group.position.set(self.pos.x, 0.23, self.pos.z + 0.95);
-            scene.add(group);
-            self.handGroup3D = group;
-        }
-        
-        function updateSelf3DHands() {
-            const self = players[0];
-            if (!self.handGroup3D) return;
-            while(self.handGroup3D.children.length) self.handGroup3D.remove(self.handGroup3D.children[0]);
-            const allCards = [...self.front, ...self.mid, ...self.back];
-            if (allCards.length === 0) return;
-            const startX = - (allCards.length-1) * 0.46 / 2;
-            for (let i = 0; i < allCards.length; i++) {
-                const card = allCards[i];
-                const mesh = createHorizontalCard(card.rank, card.suitSym, card.suitColor);
-                mesh.position.set(startX + i * 0.46, 0, 0);
-                self.handGroup3D.add(mesh);
-            }
-        }
-        
-        function renderScorePanels() {
-            const container = document.getElementById('scorePanelsContainer');
-            container.innerHTML = '';
-            players.forEach((p, idx) => {
-                const panel = document.createElement('div');
-                panel.className = 'player-score-card';
-                if (idx === 0) panel.classList.add('self-highlight');
-                panel.innerHTML = `
-                    <div class="player-name">
-                        ${p.name}
-                        <span class="score">🏆 ${p.totalScore} 分</span>
-                    </div>
-                    <div class="dun-summary">
-                        <span>前: ${p.front.length ? getHandType(p.front).name : '—'}</span>
-                        <span>中: ${p.mid.length ? getHandType(p.mid).name : '—'}</span>
-                        <span>后: ${p.back.length ? getHandType(p.back).name : '—'}</span>
-                    </div>
-                    <div style="font-size:0.6rem; opacity:0.7;">${p.front.length ? p.front.map(c=>c.toString()).join(' ') : ''}</div>
-                `;
-                container.appendChild(panel);
-            });
-        }
-        
-        function updateRemainUI() {
-            document.getElementById('remainCards').innerText = currentDeck.length;
-        }
-        
-        function addHistoryRecord(roundMsg) {
-            historyScores.unshift(roundMsg);
-            if (historyScores.length > 6) historyScores.pop();
-            const logDiv = document.getElementById('historyLog');
-            if (logDiv) logDiv.innerHTML = historyScores.map(s => `📌 ${s}`).join('<br>') || '暂无记录';
-        }
-        
-        function showMessage(msg, isError=false) {
-            const box = document.getElementById('globalMessage');
-            box.innerHTML = msg;
-            box.style.backgroundColor = isError ? 'rgba(180,40,40,0.85)' : 'rgba(0,0,0,0.8)';
-            setTimeout(() => {
-                if(box.innerHTML === msg) box.innerHTML = '🎲 功能桌 | 特效开关 | 历史记录';
-            }, 2500);
-        }
-        
-        async function dealAndArrangeAsync() {
-            if(currentDeck.length < 52) resetGameSilence();
-            if(currentDeck.length < 52) { showMessage('牌不足，重置牌局', true); resetGameSilence(); }
-            for(let i=0;i<players.length;i++) {
-                const hand = [];
-                for(let j=0;j<13;j++) hand.push(currentDeck.pop());
-                players[i].handCards = hand;
-                const arranged = autoArrange(hand);
-                players[i].front = arranged.front;
-                players[i].mid = arranged.mid;
-                players[i].back = arranged.back;
-                players[i].score = 0;
-                // 特效粒子
-                createParticleEffect(new THREE.Vector3(0, 0.6, 0), 15);
-                await new Promise(r => setTimeout(r, 30));
-            }
-            updateSelf3DHands();
-            roundActive = true;
-            renderScorePanels();
-            updateRemainUI();
-            showMessage(`✅ 发牌完成！自动摆墩，点击比牌或自动结算`);
-            ringLight.material.emissiveIntensity = 0.9;
-            setTimeout(() => { if(ringLight.material) ringLight.material.emissiveIntensity = 0.5; }, 500);
-        }
-        
-        function compareAndScore() {
-            if(!roundActive) { showMessage('请先发牌', true); return; }
-            players.forEach(p => p.score = 0);
-            for(let i=0;i<players.length;i++) {
-                for(let j=i+1;j<players.length;j++) {
-                    const pA = players[i], pB = players[j];
-                    const f = compareDun(pA.front, pB.front);
-                    if(f===1) { pA.score += 1; pB.score -= 1; }
-                    else if(f===-1) { pA.score -= 1; pB.score += 1; }
-                    const m = compareDun(pA.mid, pB.mid);
-                    if(m===1) { pA.score += 1; pB.score -= 1; }
-                    else if(m===-1) { pA.score -= 1; pB.score += 1; }
-                    const b = compareDun(pA.back, pB.back);
-                    if(b===1) { pA.score += 1; pB.score -= 1; }
-                    else if(b===-1) { pA.score -= 1; pB.score += 1; }
-                }
-            }
-            let roundSummary = '';
-            players.forEach(p => { 
-                p.totalScore += p.score; 
-                roundSummary += `${p.name} ${p.score>=0?'+'+p.score:p.score} `;
-            });
-            addHistoryRecord(roundSummary);
-            roundActive = false;
-            renderScorePanels();
-            updateRemainUI();
-            showMessage(`📊 本轮: ${roundSummary}`);
-            createParticleEffect(new THREE.Vector3(0, 0.7, 0), 30);
-        }
-        
-        function resetGameSilence() {
-            currentDeck = shuffle(createDeck());
-            players.forEach(p => {
-                p.handCards = [];
-                p.front = []; p.mid = []; p.back = [];
-                p.score = 0;
-                if(p.id !== 0) p.totalScore = 0; // 清总分只通过按钮
-            });
-            if(players[0].handGroup3D) while(players[0].handGroup3D.children.length) players[0].handGroup3D.remove(players[0].handGroup3D.children[0]);
-            roundActive = false;
-            renderScorePanels();
-            updateRemainUI();
-        }
-        
-        function clearAllScores() {
-            players.forEach(p => p.totalScore = 0);
-            historyScores = [];
-            document.getElementById('historyLog').innerHTML = '暂无记录';
-            renderScorePanels();
-            showMessage(`🧹 总分已清空`);
-        }
-        
-        function autoPlay() {
-            if (!roundActive) {
-                dealAndArrangeAsync().then(() => {
-                    setTimeout(() => compareAndScore(), 800);
-                });
-            } else {
-                compareAndScore();
-                setTimeout(() => dealAndArrangeAsync(), 500);
-            }
-        }
-        
-        function resetAndNewGame() {
-            resetGameSilence();
-            showMessage(`🔄 新牌局，点击发牌`);
-        }
-        
-        // 特效开关
-        function toggleEffects() {
-            effectEnabled = document.getElementById('effectToggle').checked;
-            colorLights.forEach(light => light.intensity = effectEnabled ? 0.3 : 0);
-            tableLight.intensity = effectEnabled ? 0.6 : 0.2;
-        }
-        
-        // 事件绑定
-        document.getElementById('btnDeal').addEventListener('click', () => dealAndArrangeAsync());
-        document.getElementById('btnCompare').addEventListener('click', compareAndScore);
-        document.getElementById('btnReset').addEventListener('click', resetAndNewGame);
-        document.getElementById('btnClearScores').addEventListener('click', clearAllScores);
-        document.getElementById('btnAutoPlay').addEventListener('click', autoPlay);
-        document.getElementById('effectToggle').addEventListener('change', toggleEffects);
-        
-        initSelfHandGroup();
-        resetGameSilence();
-        toggleEffects();
-        
-        // 动态光效动画
-        let lightHue = 0;
-        function animate() {
-            requestAnimationFrame(animate);
-            machineTime += 0.02;
-            particleRing.rotation.z = machineTime * 0.8;
-            ringLight.rotation.z = machineTime * 0.5;
-            if (effectEnabled) {
-                lightHue += 0.01;
-                colorLights.forEach((light, idx) => {
-                    const hue = (lightHue + idx * 0.5) % (Math.PI * 2);
-                    light.color.setHSL(0.1 + Math.sin(hue) * 0.1, 1, 0.5);
-                });
-            }
-            renderer.render(scene, camera);
-            labelRenderer.render(scene, camera);
-        }
-        animate();
-        
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            labelRenderer.setSize(window.innerWidth, window.innerHeight);
-        });
-        
-        console.log('功能桌子升级完成：自动动画、历史记录、特效灯带、自动连打');
-    </script>
+    });
+}
+
+function bet(){
+    document.querySelectorAll('.chips').forEach(c=>{
+        const v=[10,50,100,500][Math.floor(Math.random()*4)];
+        const d=document.createElement('div');
+        d.className='chip c'+v;
+        d.textContent=v;
+        c.appendChild(d);
+    });
+}
+
+function clearAll(){
+    document.querySelectorAll('.cards,.chips').forEach(e=>e.innerHTML='');
+}
+</script>
+
 </body>
 </html>
-
-
-
-
-
-
