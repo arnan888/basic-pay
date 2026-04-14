@@ -3,14 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>广东十三张 · 固定视角 | 单家牌面展示</title>
+    <title>广东十三张 · 豪华功能桌 | 3D发牌机</title>
     <style>
+        * {
+            user-select: none;
+        }
         body {
             margin: 0;
             overflow: hidden;
             font-family: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', 'Roboto', sans-serif;
         }
-        /* UI 控制面板 - 悬浮右上角，简洁 */
+        /* 主UI层 */
         .game-ui {
             position: absolute;
             top: 20px;
@@ -23,80 +26,87 @@
             flex-direction: column;
             gap: 12px;
             align-items: flex-end;
+            max-width: 300px;
         }
         .control-card {
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(12px);
             border-radius: 28px;
-            padding: 16px 24px;
+            padding: 16px 20px;
             border: 1px solid rgba(255, 215, 0, 0.6);
             box-shadow: 0 8px 20px rgba(0,0,0,0.5);
             pointer-events: auto;
             color: #f5e7c8;
-            width: 260px;
-            text-align: center;
+            width: 100%;
         }
         .control-card h3 {
-            margin: 0 0 10px 0;
+            margin: 0 0 8px 0;
             color: #ffd966;
             font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .deck-info {
             background: #2c2418;
             border-radius: 40px;
             padding: 6px 12px;
-            margin: 10px 0;
-            font-size: 1rem;
+            margin: 8px 0;
+            font-size: 0.9rem;
+            text-align: center;
         }
         .deck-info span {
             color: #ffaa33;
             font-weight: bold;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
         }
         button {
             background: #d4a373;
             border: none;
             color: #2c1e12;
             font-weight: bold;
-            padding: 8px 16px;
-            margin: 6px 5px;
+            padding: 6px 12px;
+            margin: 4px 4px;
             border-radius: 40px;
             cursor: pointer;
             transition: all 0.2s ease;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
             font-family: inherit;
-            width: calc(100% - 10px);
         }
         button:hover {
             background: #f4c27a;
             transform: scale(1.02);
         }
-        .input-group {
+        .flex-buttons {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin: 12px 0;
-            gap: 10px;
-        }
-        .input-group label {
-            font-size: 0.85rem;
-        }
-        input {
-            width: 60px;
-            padding: 6px;
-            border-radius: 30px;
-            border: none;
-            text-align: center;
-            font-weight: bold;
-            background: #f0e2c5;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 6px;
+            margin: 8px 0;
         }
         .status-text {
-            font-size: 0.75rem;
-            margin-top: 10px;
+            font-size: 0.7rem;
+            margin-top: 8px;
             color: #ddccaa;
+            text-align: center;
         }
-        /* 玩家比分面板 - 显示四家分数与墩牌信息，但3D桌面只展示南方玩家手牌 */
+        .feature-panel {
+            background: rgba(0,0,0,0.7);
+            border-radius: 20px;
+            padding: 10px;
+            margin-top: 8px;
+            font-size: 0.7rem;
+        }
+        .history-log {
+            max-height: 100px;
+            overflow-y: auto;
+            font-size: 0.65rem;
+            color: #ccbb99;
+            text-align: left;
+            padding-left: 8px;
+        }
+        /* 比分面板 */
         .score-panels {
             position: absolute;
             bottom: 20px;
@@ -114,36 +124,41 @@
             backdrop-filter: blur(12px);
             border-radius: 20px;
             width: 22%;
-            min-width: 200px;
-            padding: 8px 12px;
+            min-width: 190px;
+            padding: 8px 10px;
             border-left: 4px solid #ffcf4a;
             color: #f5e7c8;
             pointer-events: auto;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
         }
         .player-name {
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: bold;
             display: flex;
             justify-content: space-between;
             border-bottom: 1px dashed #ffcf6e;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
         }
         .dun-summary {
             display: flex;
-            gap: 8px;
-            margin-top: 5px;
-            font-size: 0.7rem;
+            gap: 6px;
+            margin-top: 4px;
+            flex-wrap: wrap;
         }
         .dun-summary span {
             background: rgba(0,0,0,0.5);
             border-radius: 12px;
-            padding: 2px 6px;
+            padding: 2px 5px;
+            font-size: 0.65rem;
         }
         .score {
             background: #2e2a1f;
             border-radius: 20px;
             padding: 0 6px;
+        }
+        .self-highlight {
+            border-left-color: #ffaa33 !important;
+            background: rgba(255, 170, 51, 0.2);
         }
         .message-area {
             position: absolute;
@@ -152,38 +167,95 @@
             right: 20%;
             background: rgba(0,0,0,0.85);
             text-align: center;
-            padding: 8px;
+            padding: 6px;
             border-radius: 40px;
             color: #ffdd99;
             font-weight: bold;
             pointer-events: none;
             z-index: 40;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
+            transition: 0.2s;
         }
         @media (max-width: 1000px) {
-            .player-score-card { width: 45%; min-width: 160px; }
-            .control-card { width: 220px; padding: 12px; }
+            .player-score-card { width: 45%; min-width: 150px; }
+            .control-card { width: 260px; }
         }
-        .highlight {
-            background: rgba(255, 215, 0, 0.2);
+        .toggle-switch {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #2c2418;
+            border-radius: 30px;
+            padding: 3px 10px;
+            margin: 4px;
+        }
+        .toggle-switch input {
+            width: 32px;
+            height: 16px;
+            appearance: none;
+            background: #555;
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+        }
+        .toggle-switch input:checked {
+            background: #ffaa33;
+        }
+        .toggle-switch input::before {
+            content: '';
+            width: 14px;
+            height: 14px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 1px;
+            left: 2px;
+            transition: 0.2s;
+        }
+        .toggle-switch input:checked::before {
+            left: 16px;
         }
     </style>
 </head>
 <body>
     <div class="game-ui">
         <div class="control-card">
-            <h3>🃟 中央发牌机 · 广东十三张</h3>
+            <h3>🃟 智能发牌机 · 广东十三张</h3>
             <div class="deck-info">
                 📦 牌堆剩余: <strong id="remainCards">52</strong>
             </div>
-            <button id="btnDeal">🎲 发牌 & 自动摆墩</button>
-            <button id="btnCompare">🏆 比牌 · 结算分数</button>
-            <button id="btnReset">🔄 新的一局</button>
-            <div class="status-text" id="messageArea">⚡ 相机固定 | 桌面仅展示南方玩家手牌</div>
+            <div class="flex-buttons">
+                <button id="btnDeal">🎲 发牌 & 摆墩</button>
+                <button id="btnCompare">🏆 比牌结算</button>
+                <button id="btnReset">🔄 新的一局</button>
+                <button id="btnClearScores">🧹 清空总分</button>
+            </div>
+            <div class="flex-buttons">
+                <div class="toggle-switch">
+                    <span>✨ 特效</span>
+                    <input type="checkbox" id="effectToggle" checked>
+                </div>
+                <button id="btnAutoPlay">⚡ 自动发牌+比牌</button>
+            </div>
+            <div class="feature-panel">
+                <div style="display:flex; justify-content:space-between;">
+                    <span>📜 牌型说明</span>
+                    <span>🎯 历史得分</span>
+                </div>
+                <div style="display:flex; gap:8px; margin-top:6px;">
+                    <div style="flex:1; font-size:0.6rem; background:#1e1a10; border-radius:12px; padding:4px;">
+                        同花顺>铁支>葫芦>同花>顺子>三条>两对>一对>散牌
+                    </div>
+                    <div style="flex:1; background:#1e1a10; border-radius:12px; padding:4px; max-height:70px; overflow-y:auto;" id="historyLog">
+                        暂无记录
+                    </div>
+                </div>
+            </div>
+            <div class="status-text" id="messageArea">⚡ 相机固定 | 桌面仅展示你的手牌 | 功能桌升级</div>
         </div>
         <div class="score-panels" id="scorePanelsContainer"></div>
     </div>
-    <div id="globalMessage" class="message-area">✨ 点击「发牌」开始，其他玩家牌面隐藏，但比分正常</div>
+    <div id="globalMessage" class="message-area">✨ 点击「发牌」开始，新功能：自动动画、历史记录、特效开关</div>
 
     <script type="importmap">
         {
@@ -196,17 +268,15 @@
 
     <script type="module">
         import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
-        // ---------- 初始化3D场景 (相机固定，不可晃动) ----------
+        // ---------- 初始化3D场景 (相机固定) ----------
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x071a1b);
         scene.fog = new THREE.FogExp2(0x071a1b, 0.008);
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        // 固定相机位置，看向桌子中央和南方玩家手牌区域
-        camera.position.set(3.2, 2.5, 4.2);
-        camera.lookAt(0, 0.3, 0.8);
+        camera.position.set(3.0, 2.4, 4.0);
+        camera.lookAt(0, 0.25, 0.9);
         
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -220,10 +290,7 @@
         labelRenderer.domElement.style.pointerEvents = 'none';
         document.body.appendChild(labelRenderer.domElement);
         
-        // 禁用轨道控制 - 相机完全固定，桌子不能晃动
-        // 不添加 OrbitControls
-        
-        // 灯光系统
+        // 灯光系统 (可动态)
         const ambientLight = new THREE.AmbientLight(0x404060);
         scene.add(ambientLight);
         const dirLight = new THREE.DirectionalLight(0xfff5e0, 1);
@@ -236,9 +303,18 @@
         const tableLight = new THREE.PointLight(0xffaa66, 0.6);
         tableLight.position.set(0, 1.2, 0);
         scene.add(tableLight);
+        // 动态彩色灯带 (增强功能)
+        const colorLights = [];
+        for (let i = 0; i < 8; i++) {
+            const angle = (i / 8) * Math.PI * 2;
+            const light = new THREE.PointLight(0xffaa44, 0.3);
+            light.position.set(Math.cos(angle) * 2.3, 0.15, Math.sin(angle) * 2.3);
+            scene.add(light);
+            colorLights.push(light);
+        }
         
         // 圆桌
-        const tableMat = new THREE.MeshStandardMaterial({ color: 0xbc9a6c, roughness: 0.4, metalness: 0.1 });
+        const tableMat = new THREE.MeshStandardMaterial({ color: 0xbc9a6c, roughness: 0.4 });
         const tableTop = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 0.18, 64), tableMat);
         tableTop.position.set(0, 0.1, 0);
         tableTop.castShadow = true;
@@ -249,7 +325,7 @@
         rim.position.set(0, 0.2, 0);
         scene.add(rim);
         
-        // 椅子 (装饰)
+        // 椅子装饰
         function addChair(x, z, angle) {
             const group = new THREE.Group();
             const seat = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.12, 0.8), new THREE.MeshStandardMaterial({ color: 0xc99e6f }));
@@ -267,7 +343,7 @@
         addChair(-2.8, 0, Math.PI/2);
         addChair(2.8, 0, -Math.PI/2);
         
-        // ---------- 中央发牌机模型 (装饰) ----------
+        // 中央发牌机模型 (增强粒子效果)
         const dealerMachine = new THREE.Group();
         const basePlate = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.0, 0.2, 32), new THREE.MeshStandardMaterial({ color: 0xccaa77, metalness: 0.6 }));
         basePlate.position.y = 0.15;
@@ -282,12 +358,6 @@
         const screenDome = new THREE.Mesh(new THREE.SphereGeometry(0.45, 32, 32), new THREE.MeshStandardMaterial({ color: 0x225588, emissive: 0x004466, emissiveIntensity: 0.3 }));
         screenDome.position.y = 0.9;
         dealerMachine.add(screenDome);
-        const btnRed = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), new THREE.MeshStandardMaterial({ color: 0xdd3333, emissive: 0x441111 }));
-        btnRed.position.set(0.35, 0.55, 0.45);
-        dealerMachine.add(btnRed);
-        const btnGreen = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), new THREE.MeshStandardMaterial({ color: 0x33dd33, emissive: 0x116611 }));
-        btnGreen.position.set(-0.35, 0.55, 0.45);
-        dealerMachine.add(btnGreen);
         const particleRing = new THREE.Mesh(new THREE.TorusGeometry(0.72, 0.02, 16, 64), new THREE.MeshStandardMaterial({ color: 0xffaa55, emissive: 0xff5500 }));
         particleRing.rotation.x = Math.PI / 2;
         particleRing.position.y = 0.45;
@@ -295,7 +365,7 @@
         scene.add(dealerMachine);
         
         const machineLabelDiv = document.createElement('div');
-        machineLabelDiv.textContent = '⚙️ 发牌机 ⚙️';
+        machineLabelDiv.textContent = '⚙️ 智能发牌机 ⚙️';
         machineLabelDiv.style.backgroundColor = 'rgba(0,0,0,0.6)';
         machineLabelDiv.style.color = '#ffcf6e';
         machineLabelDiv.style.padding = '2px 10px';
@@ -305,10 +375,28 @@
         machineLabel.position.set(0, 1.1, 0);
         scene.add(machineLabel);
         
-        // 简单动画让发牌机顶部光环旋转
-        let machineTime = 0;
+        // 粒子系统 (发牌特效)
+        let particleSystem = null;
+        function createParticleEffect(pos, count = 20) {
+            if (!document.getElementById('effectToggle').checked) return;
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            for (let i = 0; i < count; i++) {
+                vertices.push((Math.random() - 0.5) * 1.2, Math.random() * 0.8, (Math.random() - 0.5) * 1.2);
+            }
+            geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+            const material = new THREE.PointsMaterial({ color: 0xffaa66, size: 0.05 });
+            const particles = new THREE.Points(geometry, material);
+            particles.position.copy(pos);
+            scene.add(particles);
+            setTimeout(() => scene.remove(particles), 500);
+        }
         
-        // ---------- 扑克牌系统 ----------
+        // 动画变量
+        let machineTime = 0;
+        let effectEnabled = true;
+        
+        // ---------- 扑克牌游戏逻辑 ----------
         const SUITS = [
             { sym: '♠', color: 'black', rankVal: 4 },
             { sym: '♥', color: 'red', rankVal: 3 },
@@ -346,7 +434,6 @@
             return deck;
         }
         
-        // 牌型判断与比较
         function getHandType(cards) {
             const sorted = [...cards].sort((a,b) => a.rankValue - b.rankValue);
             const isFlush = cards.every(c => c.suitColor === cards[0].suitColor);
@@ -451,17 +538,18 @@
             return best;
         }
         
-        // ---------- 游戏状态 ----------
+        // 游戏状态
         let currentDeck = [];
         let players = [
-            { id:0, name:'南方玩家', handCards:[], front:[], mid:[], back:[], score:0, totalScore:0, handGroup3D: null, pos: { x:0, z:2.4 }, dir:'south' },
-            { id:1, name:'北方玩家', handCards:[], front:[], mid:[], back:[], score:0, totalScore:0, handGroup3D: null, pos: { x:0, z:-2.4 }, dir:'north' },
-            { id:2, name:'西方玩家', handCards:[], front:[], mid:[], back:[], score:0, totalScore:0, handGroup3D: null, pos: { x:-2.4, z:0 }, dir:'west' },
-            { id:3, name:'东方玩家', handCards:[], front:[], mid:[], back:[], score:0, totalScore:0, handGroup3D: null, pos: { x:2.4, z:0 }, dir:'east' }
+            { id:0, name:'你 (南方)', handCards:[], front:[], mid:[], back:[], score:0, totalScore:0, handGroup3D: null, pos: { x:0, z:2.4 }, dir:'south' },
+            { id:1, name:'北方玩家', handCards:[], front:[], mid:[], back:[], score:0, totalScore:0, handGroup3D: null },
+            { id:2, name:'西方玩家', handCards:[], front:[], mid:[], back:[], score:0, totalScore:0, handGroup3D: null },
+            { id:3, name:'东方玩家', handCards:[], front:[], mid:[], back:[], score:0, totalScore:0, handGroup3D: null }
         ];
         let roundActive = false;
+        let historyScores = []; // 存储每轮得分字符串
         
-        // 纹理缓存
+        // 纹理系统
         const cardTextureCache = new Map();
         const backTexture = (() => {
             const canvas = document.createElement('canvas');
@@ -519,45 +607,36 @@
             return mesh;
         }
         
-        // 只为南方玩家（索引0）创建3D手牌组，其他玩家不创建，实现“只显示一家牌”
-        function initSinglePlayerHandGroup() {
-            const southPlayer = players[0];
+        function initSelfHandGroup() {
+            const self = players[0];
             const group = new THREE.Group();
-            // 位置在南方玩家面前的桌面上
-            group.position.set(southPlayer.pos.x, 0.23, southPlayer.pos.z + 0.95);
+            group.position.set(self.pos.x, 0.23, self.pos.z + 0.95);
             scene.add(group);
-            southPlayer.handGroup3D = group;
-            // 其他玩家不创建3D组
-            for (let i = 1; i < players.length; i++) {
-                players[i].handGroup3D = null;
-            }
+            self.handGroup3D = group;
         }
         
-        function updateSinglePlayer3DHands() {
-            const player = players[0];
-            if (!player.handGroup3D) return;
-            while(player.handGroup3D.children.length) player.handGroup3D.remove(player.handGroup3D.children[0]);
-            const allCards = [...player.front, ...player.mid, ...player.back];
+        function updateSelf3DHands() {
+            const self = players[0];
+            if (!self.handGroup3D) return;
+            while(self.handGroup3D.children.length) self.handGroup3D.remove(self.handGroup3D.children[0]);
+            const allCards = [...self.front, ...self.mid, ...self.back];
             if (allCards.length === 0) return;
-            const count = allCards.length;
-            const startX = - (count-1) * 0.46 / 2;
-            for (let i = 0; i < count; i++) {
+            const startX = - (allCards.length-1) * 0.46 / 2;
+            for (let i = 0; i < allCards.length; i++) {
                 const card = allCards[i];
-                const cardMesh = createHorizontalCard(card.rank, card.suitSym, card.suitColor);
-                cardMesh.position.set(startX + i * 0.46, 0, 0);
-                player.handGroup3D.add(cardMesh);
+                const mesh = createHorizontalCard(card.rank, card.suitSym, card.suitColor);
+                mesh.position.set(startX + i * 0.46, 0, 0);
+                self.handGroup3D.add(mesh);
             }
         }
         
-        // UI 显示所有玩家的比分和墩牌类型（但3D只显示南方玩家手牌）
         function renderScorePanels() {
             const container = document.getElementById('scorePanelsContainer');
             container.innerHTML = '';
             players.forEach((p, idx) => {
                 const panel = document.createElement('div');
                 panel.className = 'player-score-card';
-                // 高亮南方玩家
-                if (idx === 0) panel.style.borderLeftColor = '#ffaa33';
+                if (idx === 0) panel.classList.add('self-highlight');
                 panel.innerHTML = `
                     <div class="player-name">
                         ${p.name}
@@ -568,9 +647,7 @@
                         <span>中: ${p.mid.length ? getHandType(p.mid).name : '—'}</span>
                         <span>后: ${p.back.length ? getHandType(p.back).name : '—'}</span>
                     </div>
-                    <div style="font-size:0.65rem; margin-top:4px;" id="detail-${idx}">
-                        ${p.front.length ? p.front.map(c=>c.toString()).join(' ') : ''}
-                    </div>
+                    <div style="font-size:0.6rem; opacity:0.7;">${p.front.length ? p.front.map(c=>c.toString()).join(' ') : ''}</div>
                 `;
                 container.appendChild(panel);
             });
@@ -580,44 +657,43 @@
             document.getElementById('remainCards').innerText = currentDeck.length;
         }
         
+        function addHistoryRecord(roundMsg) {
+            historyScores.unshift(roundMsg);
+            if (historyScores.length > 6) historyScores.pop();
+            const logDiv = document.getElementById('historyLog');
+            if (logDiv) logDiv.innerHTML = historyScores.map(s => `📌 ${s}`).join('<br>') || '暂无记录';
+        }
+        
         function showMessage(msg, isError=false) {
             const box = document.getElementById('globalMessage');
             box.innerHTML = msg;
             box.style.backgroundColor = isError ? 'rgba(180,40,40,0.85)' : 'rgba(0,0,0,0.8)';
             setTimeout(() => {
-                if(box.innerHTML === msg) box.innerHTML = '🎲 相机固定 | 桌面只显示南方玩家手牌';
+                if(box.innerHTML === msg) box.innerHTML = '🎲 功能桌 | 特效开关 | 历史记录';
             }, 2500);
         }
         
-        function dealAndArrange() {
+        async function dealAndArrangeAsync() {
             if(currentDeck.length < 52) resetGameSilence();
             if(currentDeck.length < 52) { showMessage('牌不足，重置牌局', true); resetGameSilence(); }
             for(let i=0;i<players.length;i++) {
                 const hand = [];
-                for(let j=0;j<13;j++) {
-                    if(currentDeck.length===0) break;
-                    hand.push(currentDeck.pop());
-                }
+                for(let j=0;j<13;j++) hand.push(currentDeck.pop());
                 players[i].handCards = hand;
                 const arranged = autoArrange(hand);
-                if(arranged) {
-                    players[i].front = arranged.front;
-                    players[i].mid = arranged.mid;
-                    players[i].back = arranged.back;
-                } else {
-                    players[i].front = hand.slice(0,3);
-                    players[i].mid = hand.slice(3,8);
-                    players[i].back = hand.slice(8,13);
-                }
+                players[i].front = arranged.front;
+                players[i].mid = arranged.mid;
+                players[i].back = arranged.back;
                 players[i].score = 0;
+                // 特效粒子
+                createParticleEffect(new THREE.Vector3(0, 0.6, 0), 15);
+                await new Promise(r => setTimeout(r, 30));
             }
-            // 只更新南方玩家的3D手牌
-            updateSinglePlayer3DHands();
+            updateSelf3DHands();
             roundActive = true;
             renderScorePanels();
             updateRemainUI();
-            showMessage(`✅ 发牌完成！自动摆出最优墩牌，点击「比牌」结算分数`);
-            // 发牌机闪烁效果
+            showMessage(`✅ 发牌完成！自动摆墩，点击比牌或自动结算`);
             ringLight.material.emissiveIntensity = 0.9;
             setTimeout(() => { if(ringLight.material) ringLight.material.emissiveIntensity = 0.5; }, 500);
         }
@@ -639,13 +715,17 @@
                     else if(b===-1) { pA.score -= 1; pB.score += 1; }
                 }
             }
-            players.forEach(p => { p.totalScore += p.score; });
+            let roundSummary = '';
+            players.forEach(p => { 
+                p.totalScore += p.score; 
+                roundSummary += `${p.name} ${p.score>=0?'+'+p.score:p.score} `;
+            });
+            addHistoryRecord(roundSummary);
             roundActive = false;
             renderScorePanels();
             updateRemainUI();
-            let scoreMsg = '📊 本轮: ';
-            players.forEach(p => { scoreMsg += `${p.name} ${p.score>=0?'+'+p.score:p.score} `; });
-            showMessage(scoreMsg + ' | 总分已更新');
+            showMessage(`📊 本轮: ${roundSummary}`);
+            createParticleEffect(new THREE.Vector3(0, 0.7, 0), 30);
         }
         
         function resetGameSilence() {
@@ -654,36 +734,71 @@
                 p.handCards = [];
                 p.front = []; p.mid = []; p.back = [];
                 p.score = 0;
-                p.totalScore = 0;
+                if(p.id !== 0) p.totalScore = 0; // 清总分只通过按钮
             });
-            if(players[0].handGroup3D) {
-                while(players[0].handGroup3D.children.length) players[0].handGroup3D.remove(players[0].handGroup3D.children[0]);
-            }
+            if(players[0].handGroup3D) while(players[0].handGroup3D.children.length) players[0].handGroup3D.remove(players[0].handGroup3D.children[0]);
             roundActive = false;
             renderScorePanels();
             updateRemainUI();
         }
         
+        function clearAllScores() {
+            players.forEach(p => p.totalScore = 0);
+            historyScores = [];
+            document.getElementById('historyLog').innerHTML = '暂无记录';
+            renderScorePanels();
+            showMessage(`🧹 总分已清空`);
+        }
+        
+        function autoPlay() {
+            if (!roundActive) {
+                dealAndArrangeAsync().then(() => {
+                    setTimeout(() => compareAndScore(), 800);
+                });
+            } else {
+                compareAndScore();
+                setTimeout(() => dealAndArrangeAsync(), 500);
+            }
+        }
+        
         function resetAndNewGame() {
             resetGameSilence();
-            showMessage(`🔄 全新牌局，点击「发牌」开始`);
+            showMessage(`🔄 新牌局，点击发牌`);
+        }
+        
+        // 特效开关
+        function toggleEffects() {
+            effectEnabled = document.getElementById('effectToggle').checked;
+            colorLights.forEach(light => light.intensity = effectEnabled ? 0.3 : 0);
+            tableLight.intensity = effectEnabled ? 0.6 : 0.2;
         }
         
         // 事件绑定
-        document.getElementById('btnDeal').addEventListener('click', dealAndArrange);
+        document.getElementById('btnDeal').addEventListener('click', () => dealAndArrangeAsync());
         document.getElementById('btnCompare').addEventListener('click', compareAndScore);
         document.getElementById('btnReset').addEventListener('click', resetAndNewGame);
+        document.getElementById('btnClearScores').addEventListener('click', clearAllScores);
+        document.getElementById('btnAutoPlay').addEventListener('click', autoPlay);
+        document.getElementById('effectToggle').addEventListener('change', toggleEffects);
         
-        // 初始化
-        initSinglePlayerHandGroup();
+        initSelfHandGroup();
         resetGameSilence();
+        toggleEffects();
         
-        // 动画循环 (发牌机特效)
+        // 动态光效动画
+        let lightHue = 0;
         function animate() {
             requestAnimationFrame(animate);
             machineTime += 0.02;
-            if (particleRing) particleRing.rotation.z = machineTime * 0.8;
-            if (ringLight) ringLight.rotation.z = machineTime * 0.5;
+            particleRing.rotation.z = machineTime * 0.8;
+            ringLight.rotation.z = machineTime * 0.5;
+            if (effectEnabled) {
+                lightHue += 0.01;
+                colorLights.forEach((light, idx) => {
+                    const hue = (lightHue + idx * 0.5) % (Math.PI * 2);
+                    light.color.setHSL(0.1 + Math.sin(hue) * 0.1, 1, 0.5);
+                });
+            }
             renderer.render(scene, camera);
             labelRenderer.render(scene, camera);
         }
@@ -696,7 +811,13 @@
             labelRenderer.setSize(window.innerWidth, window.innerHeight);
         });
         
-        console.log('广东十三张 | 相机固定，桌面仅展示南方玩家手牌，其他玩家信息在底部面板');
+        console.log('功能桌子升级完成：自动动画、历史记录、特效灯带、自动连打');
     </script>
 </body>
 </html>
+
+
+
+
+
+
