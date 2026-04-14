@@ -3,154 +3,150 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Macau VIP · Pai Gow</title>
+<title>Macau VIP Pai Gow</title>
 <style>
-html,body{
-    margin:0;
-    width:100%;
-    height:100%;
-    background:#050505;
-    overflow:hidden;
-    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",sans-serif;
-}
+html,body{margin:0;width:100%;height:100%;background:#040404;overflow:hidden}
 canvas{display:block}
 </style>
 </head>
 <body>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
 <script>
-/* ===== 场景 ===== */
+/* 场景 */
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x050505);
+scene.background = new THREE.Color(0x040404);
 
-/* ===== 相机（VIP 俯视） ===== */
-const camera = new THREE.PerspectiveCamera(40, innerWidth/innerHeight, 0.1, 200);
-camera.position.set(0, 9.5, 13);
+/* 相机（固定赌场机位） */
+const camera = new THREE.PerspectiveCamera(38, innerWidth/innerHeight, 0.1, 200);
+camera.position.set(0, 10.5, 14);
+camera.lookAt(0,0,0);
 
-/* ===== 渲染 ===== */
+/* 渲染器 */
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(devicePixelRatio);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.physicallyCorrectLights = true;
 document.body.appendChild(renderer.domElement);
 
-/* ===== 控制（克制） ===== */
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.enablePan = false;
-controls.minPolarAngle = Math.PI/3;
-controls.maxPolarAngle = Math.PI/2.2;
-controls.target.set(0,0,0);
-controls.enableDamping = true;
+/* 后期（暗金 Bloom） */
+const composer = new THREE.EffectComposer(renderer);
+composer.addPass(new THREE.RenderPass(scene, camera));
+const bloom = new THREE.UnrealBloomPass(
+    new THREE.Vector2(innerWidth, innerHeight),
+    0.9, 0.4, 0.85
+);
+composer.addPass(bloom);
 
-/* ===== 灯光（澳门厅） ===== */
-scene.add(new THREE.AmbientLight(0x1a1a1a, 0.6));
+/* 灯光 */
+scene.add(new THREE.AmbientLight(0x141414, 0.5));
 
-const key = new THREE.SpotLight(0xffd48a, 2.4, 60, Math.PI/4, 0.4);
-key.position.set(0,14,4);
-key.target.position.set(0,0,0);
-scene.add(key, key.target);
+const spot = new THREE.SpotLight(0xffd18a, 3.2, 80, Math.PI/5, 0.35);
+spot.position.set(0,16,6);
+spot.castShadow = true;
+spot.shadow.mapSize.set(2048,2048);
+scene.add(spot);
 
-const rim = new THREE.PointLight(0xffc266, 1.2, 40);
-rim.position.set(-6,6,-6);
-scene.add(rim);
-
-/* ===== 桌布 ===== */
+/* 桌布（PBR） */
 const felt = new THREE.Mesh(
-    new THREE.BoxGeometry(14,0.6,10),
+    new THREE.BoxGeometry(14,0.5,10),
     new THREE.MeshStandardMaterial({
-        color:0x0f2a1f,
-        roughness:0.85,
+        color:0x0d2a1f,
+        roughness:0.92,
         metalness:0.02
     })
 );
-felt.position.y = -0.3;
+felt.receiveShadow = true;
+felt.position.y = -0.25;
 scene.add(felt);
 
-/* ===== 木桌边 ===== */
+/* 桌边（暗木） */
 const wood = new THREE.Mesh(
-    new THREE.BoxGeometry(14.6,1.2,10.6),
+    new THREE.BoxGeometry(14.6,1.1,10.6),
     new THREE.MeshStandardMaterial({
         color:0x2a160a,
-        roughness:0.45,
-        metalness:0.15
+        roughness:0.48,
+        metalness:0.18
     })
 );
 wood.position.y = -0.6;
+wood.receiveShadow = true;
 scene.add(wood);
 
-/* ===== 庄位（金属暗金） ===== */
+/* 庄位（金属） */
 const dealer = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.6,1.6,0.28,64),
+    new THREE.CylinderGeometry(1.7,1.7,0.28,64),
     new THREE.MeshStandardMaterial({
-        color:0x3a2b14,
-        metalness:0.65,
+        color:0x3b2a14,
+        metalness:0.78,
         roughness:0.25,
         emissive:0x1a1206
     })
 );
-dealer.position.y = 0.05;
+dealer.castShadow = true;
+dealer.position.y = 0.06;
 scene.add(dealer);
 
-/* ===== 牌九骨牌（实体） ===== */
+/* 骨牌（真实厚度 + 投影） */
 function tile(x,z){
-    const m = new THREE.Mesh(
-        new THREE.BoxGeometry(0.9,0.22,1.5),
+    const t = new THREE.Mesh(
+        new THREE.BoxGeometry(0.9,0.22,1.55),
         new THREE.MeshStandardMaterial({
-            color:0xf4f1e8,
-            roughness:0.35,
-            metalness:0.05
+            color:0xf3f1e7,
+            roughness:0.38,
+            metalness:0.04
         })
     );
-    m.position.set(x,0.18,z);
-    scene.add(m);
+    t.position.set(x,0.18,z);
+    t.castShadow = true;
+    scene.add(t);
 }
-
-/* 四门摆牌位 */
 [-3.2,-2].forEach(x=>tile(x,3.2));
 [2,3.2].forEach(x=>tile(x,3.2));
 [-3.2,-2].forEach(x=>tile(x,-3.2));
 [2,3.2].forEach(x=>tile(x,-3.2));
 
-/* ===== 筹码（暗金质感） ===== */
+/* 筹码（金属暗金） */
 function chip(x,z){
     const c = new THREE.Mesh(
         new THREE.CylinderGeometry(0.38,0.38,0.18,48),
         new THREE.MeshStandardMaterial({
-            color:0x8a6b2a,
-            metalness:0.75,
+            color:0x8a6a28,
+            metalness:0.82,
             roughness:0.22,
-            emissive:0x1f1608
+            emissive:0x1d1408
         })
     );
+    c.castShadow = true;
     c.position.set(x,0.22,z);
     scene.add(c);
 }
+chip(-4.6,0.2);
+chip(-5,0);
+chip(4.6,0.2);
+chip(5,0);
 
-chip(-4.4,0.2);
-chip(-4.8,0);
-chip(4.4,0.2);
-chip(4.8,0);
-
-/* ===== 动画 ===== */
-function loop(){
-    requestAnimationFrame(loop);
-    dealer.rotation.y += 0.0015;
-    controls.update();
-    renderer.render(scene,camera);
+/* 循环 */
+function animate(){
+    requestAnimationFrame(animate);
+    dealer.rotation.y += 0.0012;
+    composer.render();
 }
-loop();
+animate();
 
-/* ===== 自适应 ===== */
+/* 自适应 */
 addEventListener('resize',()=>{
     camera.aspect = innerWidth/innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(innerWidth, innerHeight);
+    composer.setSize(innerWidth, innerHeight);
 });
 </script>
-
 </body>
 </html>
-
