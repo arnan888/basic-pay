@@ -750,29 +750,38 @@ function initDiceGame(container) {
         if (!isDrawing && !isBetLocked) drawWithCover();
     }
     async function drawWithCover() {
-        if (isDrawing) return;
-        let totalBet = Object.values(bets).reduce((a,b)=>a+b,0);
-        if (totalBet===0) { showToast("请先下注"); return; }
-        if (totalBet>currentBalance) { showToast("余额不足，无法开奖"); return; }
-        isDrawing=true; isBetLocked=true;
-        // 无骰盅，直接开骰
-        let d1=Math.floor(Math.random()*6)+1, d2=Math.floor(Math.random()*6)+1, d3=Math.floor(Math.random()*6)+1;
-        let {total,types} = getResultInfo(d1,d2,d3);
-        let winAmounts = [];
-        if (types.includes('BIG') && bets['BIG']>0) winAmounts.push(bets['BIG']*2);
-        if (types.includes('SMALL') && bets['SMALL']>0) winAmounts.push(bets['SMALL']*2);
-        if (types.includes('ODD') && bets['ODD']>0) winAmounts.push(bets['ODD']*2);
-        if (types.includes('EVEN') && bets['EVEN']>0) winAmounts.push(bets['EVEN']*2);
-        if (bets[total]>0) winAmounts.push(bets[total]*CONFIG.odds[total]);
-        for (let t of types) {
-            if (t.startsWith('TRIPLE_') && bets[t]>0) winAmounts.push(bets[t]*CONFIG.odds[t]);
-            if (t==='ALL_TRIPLE' && bets['ALL_TRIPLE']>0) winAmounts.push(bets['ALL_TRIPLE']*CONFIG.odds['ALL_TRIPLE']);
-        }
-        let totalWin = winAmounts.reduce((a,b)=>a+b,0);
-        startRollingNumber(totalWin);
-        await startRolling([d1,d2,d3]);
-        totalEl.innerText = total;
-        currentBalance += totalWin;
+    if (isDrawing) return;
+    let totalBet = Object.values(bets).reduce((a,b)=>a+b,0);
+    if (totalBet===0) { showToast("请先下注"); return; }
+    if (totalBet>currentBalance) { showToast("余额不足，无法开奖"); return; }
+    isDrawing=true; isBetLocked=true;
+    
+    // 生成随机点数（1-6）
+    let d1 = Math.floor(Math.random() * 6) + 1;
+    let d2 = Math.floor(Math.random() * 6) + 1;
+    let d3 = Math.floor(Math.random() * 6) + 1;
+    
+    let {total,types} = getResultInfo(d1,d2,d3);
+    
+    // 计算奖金...
+    let winAmounts = [];
+    if (types.includes('BIG') && bets['BIG']>0) winAmounts.push(bets['BIG']*2);
+    if (types.includes('SMALL') && bets['SMALL']>0) winAmounts.push(bets['SMALL']*2);
+    if (types.includes('ODD') && bets['ODD']>0) winAmounts.push(bets['ODD']*2);
+    if (types.includes('EVEN') && bets['EVEN']>0) winAmounts.push(bets['EVEN']*2);
+    if (bets[total]>0) winAmounts.push(bets[total]*CONFIG.odds[total]);
+    for (let t of types) {
+        if (t.startsWith('TRIPLE_') && bets[t]>0) winAmounts.push(bets[t]*CONFIG.odds[t]);
+        if (t==='ALL_TRIPLE' && bets['ALL_TRIPLE']>0) winAmounts.push(bets['ALL_TRIPLE']*CONFIG.odds['ALL_TRIPLE']);
+    }
+    let totalWin = winAmounts.reduce((a,b)=>a+b,0);
+    
+    startRollingNumber(totalWin);
+    await startRolling([d1, d2, d3]);  // 确保传递的是 d1,d2,d3
+    totalEl.innerText = total;
+    
+    // 更新余额...
+     currentBalance += totalWin;
         setUserBalance(currentBalance);
         let betSummary = [];
         for (let k in bets) if (bets[k]>0) {
