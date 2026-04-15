@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>双游戏大厅 | 葫芦鱼+骰宝 | 在线人数版</title>
+    <title>双游戏大厅 | 葫芦鱼+骰宝 | 抢庄功能</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { background: #1a120c; background-image: radial-gradient(circle at 20% 30%, rgba(200,140,70,0.15) 2%, transparent 2.5%); background-size: 28px 28px; font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif; padding: 12px; }
@@ -37,6 +37,9 @@
         .fish-wrapper .bet-amount span { color: #ffbc6e; font-size: 0.7rem; background: #2a1c12; padding: 1px 5px; border-radius: 25px; min-width: 32px; }
         .fish-wrapper .btn-chip { background: #523b26; border: none; color: #fce2b4; font-weight: bold; width: 24px; height: 24px; border-radius: 25px; font-size: 0.8rem; cursor: pointer; }
         .fish-wrapper .action-bar { display: flex; justify-content: center; gap: 8px; margin: 0 12px 12px; }
+        .fish-wrapper .grab-bar { display: flex; justify-content: center; margin: 8px 12px; }
+        .grab-btn { background: #ffaa44; color: #2f1b0a; border: none; padding: 6px 20px; border-radius: 30px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        .grab-btn:disabled { background: #888; cursor: not-allowed; }
         .online-count-box { background: #2a1f16; margin: 12px 12px 8px; padding: 8px 12px; border-radius: 40px; text-align: center; font-size: 0.8rem; color: #ffdd99; border: 1px solid #ffaa44; }
         .online-number { font-size: 1.2rem; font-weight: bold; color: #ffaa44; margin-left: 8px; }
         /* 骰宝样式 */
@@ -150,7 +153,7 @@
     function recharge() { showRechargeModal(); }
     function withdraw() { showToast("💰 提现请联系客服处理"); }
 
-    // ==================== 游戏一：潮汕葫芦鱼（移除座位席，增加在线人数显示） ====================
+    // ==================== 游戏一：潮汕葫芦鱼（增加抢庄功能） ====================
     let fishDestroy = null, fishInterval = null;
     function initFishGame(container) {
         if (fishDestroy) fishDestroy();
@@ -171,6 +174,10 @@
                         <div class="stat-label" style="font-size:0.55rem; color:#e2bc89;">🏆 上局净利</div>
                         <div class="stat-value" id="lastWinValue">0</div>
                     </div>
+                </div>
+                <!-- 抢庄区域 -->
+                <div class="grab-bar">
+                    <button id="grabBtn" class="grab-btn">🎲 抢庄 (需2000文)</button>
                 </div>
                 <!-- 骰子区域 -->
                 <div class="dice-area" style="background:#2a211a; margin:12px 12px 8px; border-radius:50px; padding:12px; text-align:center; box-shadow:inset 0 0 0 2px #5e4230, 0 6px 12px black; position:relative;">
@@ -208,9 +215,9 @@
                 </div>
                 <!-- 消息区 -->
                 <div class="message-area" id="fishMsgArea" style="background:#1c140e; margin:0 12px 12px; border-radius:35px; padding:6px 10px; font-size:0.65rem; color:#dbbc8c; text-align:center; min-height:48px;">庄家坐镇 | 骰盅缓慢开启 → 骰子摇动</div>
-                <!-- 在线人数显示（取代座位席） -->
+                <!-- 在线人数显示 -->
                 <div class="online-count-box">
-                    🎮 大厅在线人数 <span id="onlineCount" class="online-number">128</span>
+                    🎮 大厅在线人数 <span id="onlineCount" class="online-number">0</span>
                 </div>
             </div>
         `;
@@ -223,6 +230,7 @@
         let currentChip = 100;
         let lastWinAmount = 0;
         let isRolling = false;
+        let hasGrabbed = false;   // 是否已抢庄
 
         function getFishTotalBet() { return Object.values(patternBets).reduce((a,b)=>a+b,0) + Object.values(specialBets).reduce((a,b)=>a+b,0); }
         function updateFishUI() {
@@ -393,19 +401,129 @@
         container.querySelector('#fishResetGameBtn').onclick = resetFishGame;
         updateFishUI();
 
-        // 在线人数动态模拟（每30秒随机变化±5，范围50-200）
-        let onlineCount = 128;
-        const onlineSpan = container.querySelector('#onlineCount');
-        function updateOnlineCount() {
-            let change = Math.floor(Math.random() * 11) - 5; // -5 到 +5
-            let newCount = onlineCount + change;
-            if (newCount < 50) newCount = 50;
-            if (newCount > 200) newCount = 200;
-            onlineCount = newCount;
-            onlineSpan.innerText = onlineCount;
+        // ========== 抢庄功能 ==========
+        const grabBtn = container.querySelector('#grabBtn');
+        function updateGrabButtonState() {
+            const currentBalance = getUserBalance();
+            if (hasGrabbed) {
+                grabBtn.disabled = true;
+                grabBtn.textContent = '🏆 已抢庄';
+            } else if (currentBalance >= 2000) {
+                grabBtn.disabled = false;
+                grabBtn.textContent = '🎲 抢庄 (需2000文)';
+            } else {
+                grabBtn.disabled = true;
+                grabBtn.textContent = `🎲 抢庄 (余额不足，需2000文)`;
+            }
         }
-        let onlineInterval = setInterval(updateOnlineCount, 30000);
-        onlineSpan.innerText = onlineCount;
+        async function grabBanker() {
+            if (hasGrabbed) {
+                showFishMsg("您已经是庄家了！");
+                return;
+            }
+            const userBalance = getUserBalance();
+            if (userBalance < 2000) {
+                showFishMsg(`余额不足2000文，无法抢庄！当前余额: ${userBalance}`);
+                return;
+            }
+            // 执行抢庄：从玩家余额扣2000，加到庄家余额
+            const newUserBalance = userBalance - 2000;
+            setUserBalance(newUserBalance);
+            fishBalance += 2000;
+            localStorage.setItem('fish_banker_balance', fishBalance);
+            updateFishUI();
+            hasGrabbed = true;
+            updateGrabButtonState();
+            showFishMsg(`🎉 抢庄成功！您已成为庄家，庄家余额 +2000，当前庄家余额 ${fishBalance}`);
+            // 同时更新顶部用户余额显示
+            document.getElementById("userBalanceDisplay").innerText = newUserBalance.toFixed(2);
+        }
+        grabBtn.onclick = grabBanker;
+        updateGrabButtonState();
+
+        // 监听余额变化（例如充值、下注结算后）更新抢庄按钮状态
+        const originalSetUserBalance = setUserBalance;
+        window.setUserBalance = function(amt) {
+            originalSetUserBalance(amt);
+            updateGrabButtonState();
+        };
+        // 简单覆盖，但注意不要破坏其他逻辑，由于函数在全局，我们直接hook，但最好在游戏内也监听
+        // 另外，当用户通过管理员后台修改余额时，也需要更新，但管理员后台调用的是 setUserBalance，所以也会触发。
+        
+        // ========== 真实在线人数（连接后端） ==========
+        const BACKEND_URL = 'http://localhost:3000';  // 后端地址，请根据实际情况修改
+        let heartbeatInterval = null;
+
+        function getUserId() {
+            return currentUser ? currentUser.phone : 'guest_' + Math.random().toString(36).substr(2, 8);
+        }
+
+        async function updateOnlineCountDisplay() {
+            try {
+                const res = await fetch(`${BACKEND_URL}/online-count`);
+                const data = await res.json();
+                const onlineSpan = container.querySelector('#onlineCount');
+                if (onlineSpan) onlineSpan.innerText = data.online;
+            } catch (err) {
+                console.error('获取在线人数失败', err);
+            }
+        }
+
+        async function joinRoom() {
+            const userId = getUserId();
+            try {
+                await fetch(`${BACKEND_URL}/join`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId })
+                });
+                await updateOnlineCountDisplay();
+            } catch (err) {
+                console.error('加入房间失败', err);
+            }
+        }
+
+        async function sendHeartbeat() {
+            const userId = getUserId();
+            try {
+                await fetch(`${BACKEND_URL}/heartbeat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId })
+                });
+                await updateOnlineCountDisplay();
+            } catch (err) {
+                console.error('心跳失败', err);
+            }
+        }
+
+        async function leaveRoom() {
+            const userId = getUserId();
+            try {
+                await fetch(`${BACKEND_URL}/leave`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId })
+                });
+            } catch (err) {
+                console.error('离开失败', err);
+            }
+        }
+
+        function startHeartbeat() {
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+            heartbeatInterval = setInterval(() => {
+                sendHeartbeat();
+            }, 25000);
+        }
+
+        window.addEventListener('beforeunload', () => {
+            leaveRoom();
+        });
+
+        joinRoom();
+        startHeartbeat();
+        updateOnlineCountDisplay();
 
         // 管理员后台：筹码1k连点三下（带当前用户信息）
         let clickCount = 0, clickTimer = null;
@@ -479,6 +597,7 @@
                     if(phone === currentUser.phone) {
                         currentUser.balance = usersData[phone].balance;
                         document.getElementById("userBalanceDisplay").innerText = currentUser.balance.toFixed(2);
+                        updateGrabButtonState();
                     }
                     modal.remove();
                     openFishAdminPanel();
@@ -494,6 +613,7 @@
                         if(phone === currentUser.phone) {
                             currentUser.balance = usersData[phone].balance;
                             document.getElementById("userBalanceDisplay").innerText = currentUser.balance.toFixed(2);
+                            updateGrabButtonState();
                         }
                     } else showToast(`玩家 ${phone} 余额不足100`);
                     modal.remove();
@@ -509,6 +629,7 @@
                     if(phone === currentUser.phone) {
                         currentUser.balance = usersData[phone].balance;
                         document.getElementById("userBalanceDisplay").innerText = "1000.00";
+                        updateGrabButtonState();
                     }
                     modal.remove();
                     openFishAdminPanel();
@@ -520,6 +641,7 @@
                 showToast(`全体玩家 +500`);
                 currentUser.balance = usersData[currentUser.phone].balance;
                 document.getElementById("userBalanceDisplay").innerText = currentUser.balance.toFixed(2);
+                updateGrabButtonState();
                 modal.remove();
                 openFishAdminPanel();
             });
@@ -529,6 +651,7 @@
                 showToast(`全体玩家重置为1000`);
                 currentUser.balance = usersData[currentUser.phone].balance;
                 document.getElementById("userBalanceDisplay").innerText = "1000.00";
+                updateGrabButtonState();
                 modal.remove();
                 openFishAdminPanel();
             });
@@ -537,13 +660,14 @@
         }
 
         fishDestroy = () => {
-            if (onlineInterval) clearInterval(onlineInterval);
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
             if (fishInterval) clearInterval(fishInterval);
             container.innerHTML = '';
         };
         return fishDestroy;
     }
-     // ==================== 游戏二：至尊骰宝（完整，与之前相同，无座位） ====================
+
+    // ==================== 游戏二：至尊骰宝（完整，无座位） ====================
     let diceDestroy = null;
     function initDiceGame(container) {
         if (diceDestroy) diceDestroy();
@@ -933,7 +1057,8 @@
             container.querySelector('#clearAllBtn').onclick = clearAllBets;
             container.querySelector('#repeatBtn').onclick = repeatLastBet;
             container.querySelector('#refreshBtn').onclick = refreshBalance;
-            container.querySelector('#betBtn').onclick = () => { if(!isDrawing && !isBetLocked) drawWithCover(); };         container.querySelector('#adminEntry').onclick = () => { let pwd=prompt("管理员密码:"); if(pwd===adminPwd) showAdminPanel(); else if(pwd!==null) showToast("密码错误"); };
+            container.querySelector('#betBtn').onclick = () => { if(!isDrawing && !isBetLocked) drawWithCover(); };
+            container.querySelector('#adminEntry').onclick = () => { let pwd=prompt("管理员密码:"); if(pwd===adminPwd) showAdminPanel(); else if(pwd!==null) showToast("密码错误"); };
             
             diceEl.forEach(d => {
                 for (let i=0;i<6;i++) {
@@ -986,7 +1111,7 @@
             if(!phone || !pwd) { showToast("请填写手机号和密码"); return; }
             let user = usersData[phone];
             if(!user) { showToast("手机号未注册"); return; }
-            if(user.password !== pwd) { showToast("密码错误"); return; }            
+            if(user.password !== pwd) { showToast("密码错误"); return; }
             if(remember) { localStorage.setItem('saved_phone', phone); localStorage.setItem('saved_password', pwd); localStorage.setItem('remember_me', 'true'); }
             else { localStorage.removeItem('saved_phone'); localStorage.removeItem('saved_password'); localStorage.setItem('remember_me', 'false'); }
             currentUser = { phone, ...user };
@@ -1058,17 +1183,3 @@
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
