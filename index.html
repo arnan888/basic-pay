@@ -153,8 +153,8 @@ const WECHAT_QR = "mmexport1776247819360.jpg";
     function withdraw() { showToast("💰 提现请联系客服处理"); }
 
     // ==================== 游戏一：潮汕葫芦鱼（完善后台+抢庄+服务费） ====================
-    let fishDestroy = null, fishInterval = null;
-  function initFishGame(container) {
+ let fishDestroy = null, fishInterval = null;
+ function initFishGame(container) {
     if (fishDestroy) fishDestroy();
     container.innerHTML = '';
     const fishHTML = `
@@ -177,6 +177,15 @@ const WECHAT_QR = "mmexport1776247819360.jpg";
             <!-- 抢庄区域 -->
             <div class="grab-bar" style="display:flex; justify-content:center; margin:8px 12px;">
                 <button id="grabBtn" class="grab-btn" style="background:#ffaa44; color:#2f1b0a; border:none; padding:6px 20px; border-radius:30px; font-weight:bold; cursor:pointer;">🎲 抢庄 (需2001文)</button>
+            </div>
+            <!-- 房间选择 -->
+            <div class="room-selector" style="display:flex; justify-content:center; margin:8px 12px;">
+                <label style="color:#ffdd99; margin-right:8px;">🏠 房间：</label>
+                <select id="roomSelect" style="background:#2a1f16; color:#ffdd99; border:1px solid #ffaa44; border-radius:20px; padding:4px 8px;">
+                    <option value="room1">初级房</option>
+                    <option value="room2">中级房</option>
+                    <option value="room3">高级房</option>
+                </select>
             </div>
             <!-- 骰子区域 -->
             <div class="dice-area" style="background:#2a211a; margin:12px 12px 8px; border-radius:50px; padding:12px; text-align:center; box-shadow:inset 0 0 0 2px #5e4230, 0 6px 12px black; position:relative;">
@@ -216,9 +225,10 @@ const WECHAT_QR = "mmexport1776247819360.jpg";
             <div class="record-area" style="margin:12px 12px 8px;">
                 <button id="showRecordBtn" style="width:100%; background:#2a1f16; border:1px solid #ffaa44; border-radius:40px; padding:8px 0; color:#ffdd99; font-weight:bold; cursor:pointer;">📜 开奖记录查询</button>
             </div>
-            <!-- 在线人数显示 -->
-            <div class="online-count-box">
-                🎮 大厅在线人数 <span id="onlineCount" class="online-number">0</span>
+            <!-- 在线人数显示 + 规则按钮 -->
+            <div class="online-count-box" style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div>🎮 大厅在线人数 <span id="onlineCount" class="online-number">0</span></div>
+                <button id="showRulesBtn" style="background: #ffaa44; border: none; border-radius: 30px; padding: 4px 12px; color: #2f1b0a; font-weight: bold; cursor: pointer;">📋 赔付规则</button>
             </div>
         </div>
     `;
@@ -233,8 +243,17 @@ const WECHAT_QR = "mmexport1776247819360.jpg";
     let hasGrabbed = false;
     let playerBankerBalance = 0;
     
-    // 开奖记录存储（最多50条）
-    let gameRecords = [];
+    // 多房间支持
+    let currentRoom = "room1";
+    function getBankerKey() { return `fish_banker_balance_${currentRoom}`; }
+    function getPlayerBankerKey() { return `player_banker_balance_${currentRoom}`; }
+    
+    let fishBalance = parseInt(localStorage.getItem(getBankerKey())) || 10000;
+    let savedPlayerBalance = parseInt(localStorage.getItem(getPlayerBankerKey())) || 0;
+    if (savedPlayerBalance > 0) {
+        hasGrabbed = true;
+        playerBankerBalance = savedPlayerBalance;
+    }
 
     // 闲家下注限额
     const MAX_SINGLE_BET = 500;
@@ -250,9 +269,7 @@ const WECHAT_QR = "mmexport1776247819360.jpg";
         for(let id of Object.keys(specialBets)) { let span = container.querySelector(`#bet_special_${id}`); if(span) span.innerText = specialBets[id]; }
     }
     function showFishMsg(msg) {
-        // 改为控制台输出或短暂提示，不需要在界面显示长文本
         console.log(msg);
-        // 可选：短暂显示在记录按钮上
         const recordBtn = container.querySelector('#showRecordBtn');
         if (recordBtn) {
             recordBtn.style.backgroundColor = "#3a2a1a";
@@ -262,7 +279,6 @@ const WECHAT_QR = "mmexport1776247819360.jpg";
     function addBet(type, id, val) {
         let target = type === 'pattern' ? patternBets : specialBets;
         if(target[id] === undefined) return;
-        
         if (val > MAX_SINGLE_BET) {
             showFishMsg(`单注最大 ${MAX_SINGLE_BET} 文，当前 ${val} 超过限额`);
             return;
@@ -272,14 +288,11 @@ const WECHAT_QR = "mmexport1776247819360.jpg";
             showFishMsg(`本局总下注不能超过 ${MAX_TOTAL_BET} 文，当前已下注 ${currentTotal}`);
             return;
         }
-        
         let totalNow = getFishTotalBet();
         let userBal = getUserBalance();
         if(totalNow + val > userBal) { showFishMsg(`余额不足，无法加注 ${val}`); return; }
         target[id] += val;
         updateFishUI();
-        let name = type === 'pattern' ? patternIdMap[id] : (id === 'doubleBet' ? '双押(鱼+虾)' : id);
-        // 不显示消息，保持安静
     }
     function subBet(type, id, val) {
         let target = type === 'pattern' ? patternBets : specialBets;
@@ -298,6 +311,7 @@ const WECHAT_QR = "mmexport1776247819360.jpg";
         container.querySelectorAll(".dice").forEach(d => d.innerHTML = "🎲");
         const cover = container.querySelector('#fishDiceCover');
         if(cover) { cover.style.display = "flex"; cover.style.transform = "translateY(0) scale(1)"; cover.style.opacity = "1"; cover.style.visibility = "visible"; }
+        showFishMsg("游戏已重置，骰盅已复位");
     }
     async function animateRolling(finalNames) {
         const diceEls = container.querySelectorAll(".dice");
@@ -317,6 +331,9 @@ const WECHAT_QR = "mmexport1776247819360.jpg";
         return Math.random() >= 0.2;
     }
     
+    // 开奖记录存储（最多50条）
+    let gameRecords = [];
+
     async function settleGame(diceNames) {
         let points = diceNames.map(n=>getPointValue(n)), sum = points.reduce((a,b)=>a+b,0);
         let isTriplet = diceNames[0]===diceNames[1] && diceNames[1]===diceNames[2];
@@ -357,8 +374,8 @@ const WECHAT_QR = "mmexport1776247819360.jpg";
         if(specialBets.small>0 && smallWin) { winAmount += specialBets.small*2; winDetails.push("小"); }
         if(specialBets.odd>0 && oddWin) { winAmount += specialBets.odd*2; winDetails.push("单"); }
         if(specialBets.even>0 && evenWin) { winAmount += specialBets.even*2; winDetails.push("双"); }
-        if(specialBets.allTriplets>0 && allTripletWin) { winAmount += specialBets.allTriplets*25; winDetails.push("全围"); }
-        if(specialBets.doubleBet>0 && doubleWin) { winAmount += specialBets.doubleBet*5; winDetails.push("双押(鱼+虾)"); }
+        if(specialBets.allTriplets>0 && allTripletWin) { winAmount += specialBets.allTriplets*24; winDetails.push("全围"); }
+        if(specialBets.doubleBet>0 && doubleWin) { winAmount += specialBets.doubleBet*4.5; winDetails.push("双押(鱼+虾)"); }
         
         let net = winAmount - totalBet;
         let newBalance = getUserBalance() + winAmount;
@@ -367,12 +384,13 @@ const WECHAT_QR = "mmexport1776247819360.jpg";
         if (hasGrabbed) {
             playerBankerBalance -= winAmount;
             if (playerBankerBalance < 0) {
+                showFishMsg(`⚠️ 庄家余额不足，自动回收庄家权限！`);
                 hasGrabbed = false;
                 playerBankerBalance = 0;
-                localStorage.setItem('player_banker_balance', 0);
+                localStorage.setItem(getPlayerBankerKey(), 0);
                 updateGrabButtonState();
             } else {
-                localStorage.setItem('player_banker_balance', playerBankerBalance);
+                localStorage.setItem(getPlayerBankerKey(), playerBankerBalance);
             }
         }
         
@@ -443,6 +461,51 @@ const WECHAT_QR = "mmexport1776247819360.jpg";
         modal.querySelector('#closeRecordModal').onclick = () => modal.remove();
     }
     
+    // 赔付规则弹窗
+    function showRulesModal() {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 450px; text-align: left;">
+                <h3 style="text-align: center; margin-bottom: 15px;">🎲 游戏赔付规则</h3>
+                <table style="width:100%; border-collapse: collapse; color: #ffdd99;">
+                    <tr style="border-bottom: 1px solid #ffaa44;">
+                        <th style="padding: 8px; text-align: left;">投注类型</th>
+                        <th style="padding: 8px; text-align: center;">赔付倍数</th>
+                        <th style="padding: 8px; text-align: center;">单注上限</th>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px;">🐟 鱼 / 🦐 虾 / 🦀 蟹 / 🏺 葫芦 / 💰 金钱 / 🐔 鸡</td>
+                        <td style="padding: 6px; text-align: center;">出现1次赔1.5倍<br>出现2次赔2倍<br>出现3次赔2.5倍</td>
+                        <td style="padding: 6px; text-align: center;">500 文</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px;">🔴 大 / 🔵 小 / ⚪ 单 / ⚫ 双</td>
+                        <td style="padding: 6px; text-align: center;">1.9 倍</td>
+                        <td style="padding: 6px; text-align: center;">500 文</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px;">🌀 全围（豹子）</td>
+                        <td style="padding: 6px; text-align: center;">24 倍</td>
+                        <td style="padding: 6px; text-align: center;">500 文</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 6px;">👑 双押（鱼+虾）</td>
+                        <td style="padding: 6px; text-align: center;">4.5 倍</td>
+                        <td style="padding: 6px; text-align: center;">500 文</td>
+                    </tr>
+                    <tr style="border-top: 1px solid #ffaa44;">
+                        <td style="padding: 6px;"><strong>单局总投注上限</strong></td>
+                        <td colspan="2" style="padding: 6px; text-align: center;"><strong>2000 文</strong></td>
+                    </tr>
+                </table>
+                <button id="closeRulesModal" style="width:100%; margin-top: 20px; background: #c47c3a; border: none; padding: 8px; border-radius: 40px; color: #2f1b0a; font-weight: bold; cursor: pointer;">关闭</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.querySelector('#closeRulesModal').onclick = () => modal.remove();
+    }
+    
     // 抢庄功能
     const grabBtn = container.querySelector('#grabBtn');
     function updateGrabButtonState() {
@@ -472,7 +535,7 @@ const WECHAT_QR = "mmexport1776247819360.jpg";
         setUserBalance(newUserBalance);
         playerBankerBalance = 2001;
         hasGrabbed = true;
-        localStorage.setItem('player_banker_balance', playerBankerBalance);
+        localStorage.setItem(getPlayerBankerKey(), playerBankerBalance);
         updateFishUI();
         updateGrabButtonState();
         document.getElementById("userBalanceDisplay").innerText = newUserBalance.toFixed(2);
@@ -480,17 +543,25 @@ const WECHAT_QR = "mmexport1776247819360.jpg";
     grabBtn.onclick = grabBanker;
     updateGrabButtonState();
     
-    // 绑定开奖记录按钮
+    // 房间切换
+    const roomSelect = container.querySelector('#roomSelect');
+    roomSelect.addEventListener('change', (e) => {
+        currentRoom = e.target.value;
+        // 重新加载数据
+        fishBalance = parseInt(localStorage.getItem(getBankerKey())) || 10000;
+        playerBankerBalance = parseInt(localStorage.getItem(getPlayerBankerKey())) || 0;
+        hasGrabbed = (playerBankerBalance > 0);
+        clearAllBets();
+        updateFishUI();
+        updateGrabButtonState();
+        showFishMsg(`切换到 ${roomSelect.options[roomSelect.selectedIndex].text}`);
+    });
+    
+    // 绑定开奖记录按钮和规则按钮
     const recordBtn = container.querySelector('#showRecordBtn');
     if (recordBtn) recordBtn.onclick = showRecordModal;
-    
-    const savedBankerBalance = localStorage.getItem('player_banker_balance');
-    if (savedBankerBalance && parseInt(savedBankerBalance) > 0) {
-        hasGrabbed = true;
-        playerBankerBalance = parseInt(savedBankerBalance);
-        updateGrabButtonState();
-        updateFishUI();
-    }
+    const rulesBtn = container.querySelector('#showRulesBtn');
+    if (rulesBtn) rulesBtn.onclick = showRulesModal;
     
     // 构建六门下注网格
     const patternList = ["鱼","虾","蟹","葫芦","金钱","鸡"];
@@ -582,7 +653,7 @@ const WECHAT_QR = "mmexport1776247819360.jpg";
     container.querySelector('#fishResetGameBtn').onclick = resetFishGame;
     updateFishUI();
 
-    // 管理员后台（省略，保持原样）
+    // 管理员后台（保持原样，但注意 localStorage key 需要加上房间后缀，这里已通过函数封装）
     let clickCount = 0, clickTimer = null;
     const adminChip = container.querySelector('#adminTriggerChip');
     if(adminChip) {
@@ -625,7 +696,12 @@ const WECHAT_QR = "mmexport1776247819360.jpg";
                          </div>`;
         userListHtml += `<div class="player-item" style="background:#3a2a1a;">
                             <div class="player-name">🎲 庄家</div>
-                            <div class="player-balance">💰 ∞</div>
+                            <div class="player-balance">💰 ${fishBalance}</div>
+                            <div class="player-actions">
+                                <button class="add-banker">+100</button>
+                                <button class="sub-banker">-100</button>
+                                <button class="reset-banker">重置1w</button>
+                            </div>
                          </div>`;
         userListHtml += `<div class="player-item" style="background:#2a2a2a; margin-top:8px;">
                             <div class="player-name">📋 选择玩家</div>
@@ -654,6 +730,35 @@ const WECHAT_QR = "mmexport1776247819360.jpg";
         const getUserSelect = () => modal.querySelector('#adminTargetUser').value;
         const getAmount = () => parseInt(modal.querySelector('#adminAmount').value) || 0;
 
+        // 庄家操作（注意使用房间对应的 key）
+        modal.querySelector('.add-banker')?.addEventListener('click', () => {
+            fishBalance += 100;
+            localStorage.setItem(getBankerKey(), fishBalance);
+            updateFishUI();
+            showToast(`庄家余额 +100，当前 ${fishBalance}`);
+            modal.remove();
+            openFishAdminPanel();
+        });
+        modal.querySelector('.sub-banker')?.addEventListener('click', () => {
+            if (fishBalance >= 100) {
+                fishBalance -= 100;
+                localStorage.setItem(getBankerKey(), fishBalance);
+                updateFishUI();
+                showToast(`庄家余额 -100，当前 ${fishBalance}`);
+            } else showToast("庄家余额不足100");
+            modal.remove();
+            openFishAdminPanel();
+        });
+        modal.querySelector('.reset-banker')?.addEventListener('click', () => {
+            fishBalance = 10000;
+            localStorage.setItem(getBankerKey(), fishBalance);
+            updateFishUI();
+            showToast("庄家余额重置为 10000");
+            modal.remove();
+            openFishAdminPanel();
+        });
+
+        // 玩家操作（上分/下分/重置，与房间无关，因为是修改玩家自身余额）
         modal.querySelector('#adminAdd').onclick = () => {
             const targetPhone = getUserSelect();
             let amount = getAmount();
