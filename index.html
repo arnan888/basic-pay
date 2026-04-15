@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>双游戏大厅 | 葫芦鱼+骰宝 | 抢庄功能</title>
+    <title>双游戏大厅 | 葫芦鱼+骰宝 | 完善后台+抢庄+服务费</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { background: #1a120c; background-image: radial-gradient(circle at 20% 30%, rgba(200,140,70,0.15) 2%, transparent 2.5%); background-size: 28px 28px; font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif; padding: 12px; }
@@ -153,7 +153,7 @@
     function recharge() { showRechargeModal(); }
     function withdraw() { showToast("💰 提现请联系客服处理"); }
 
-    // ==================== 游戏一：潮汕葫芦鱼（增加抢庄功能） ====================
+    // ==================== 游戏一：潮汕葫芦鱼（完善后台+抢庄+服务费） ====================
     let fishDestroy = null, fishInterval = null;
     function initFishGame(container) {
         if (fishDestroy) fishDestroy();
@@ -177,7 +177,7 @@
                 </div>
                 <!-- 抢庄区域 -->
                 <div class="grab-bar">
-                    <button id="grabBtn" class="grab-btn">🎲 抢庄 (需2000文)</button>
+                    <button id="grabBtn" class="grab-btn">🎲 抢庄 (需2001文)</button>
                 </div>
                 <!-- 骰子区域 -->
                 <div class="dice-area" style="background:#2a211a; margin:12px 12px 8px; border-radius:50px; padding:12px; text-align:center; box-shadow:inset 0 0 0 2px #5e4230, 0 6px 12px black; position:relative;">
@@ -215,7 +215,7 @@
                 </div>
                 <!-- 消息区 -->
                 <div class="message-area" id="fishMsgArea" style="background:#1c140e; margin:0 12px 12px; border-radius:35px; padding:6px 10px; font-size:0.65rem; color:#dbbc8c; text-align:center; min-height:48px;">庄家坐镇 | 骰盅缓慢开启 → 骰子摇动</div>
-                <!-- 在线人数显示 -->
+                <!-- 在线人数显示（需后端配合，若无后端则显示模拟数据） -->
                 <div class="online-count-box">
                     🎮 大厅在线人数 <span id="onlineCount" class="online-number">0</span>
                 </div>
@@ -315,6 +315,11 @@
             let net = winAmount - totalBet;
             let newBalance = getUserBalance() + winAmount;
             setUserBalance(newBalance);
+            
+            // 每局结算后从庄家余额扣除10服务费
+            fishBalance = Math.max(0, fishBalance - 10);
+            localStorage.setItem('fish_banker_balance', fishBalance);
+            
             lastWinAmount = net; updateFishUI();
             let diceShow = diceNames.join("、");
             if(winAmount>0) showFishMsg(`🎲 ${diceShow} 净赢+${net}  [${winDetails.join(',')}]`);
@@ -401,19 +406,19 @@
         container.querySelector('#fishResetGameBtn').onclick = resetFishGame;
         updateFishUI();
 
-        // ========== 抢庄功能 ==========
+        // ========== 抢庄功能（条件：余额 ≥ 2001） ==========
         const grabBtn = container.querySelector('#grabBtn');
         function updateGrabButtonState() {
             const currentBalance = getUserBalance();
             if (hasGrabbed) {
                 grabBtn.disabled = true;
                 grabBtn.textContent = '🏆 已抢庄';
-            } else if (currentBalance >= 2000) {
+            } else if (currentBalance >= 2001) {
                 grabBtn.disabled = false;
-                grabBtn.textContent = '🎲 抢庄 (需2000文)';
+                grabBtn.textContent = '🎲 抢庄 (需2001文)';
             } else {
                 grabBtn.disabled = true;
-                grabBtn.textContent = `🎲 抢庄 (余额不足，需2000文)`;
+                grabBtn.textContent = `🎲 抢庄 (余额不足，需2001文)`;
             }
         }
         async function grabBanker() {
@@ -422,110 +427,26 @@
                 return;
             }
             const userBalance = getUserBalance();
-            if (userBalance < 2000) {
-                showFishMsg(`余额不足2000文，无法抢庄！当前余额: ${userBalance}`);
+            if (userBalance < 2001) {
+                showFishMsg(`余额不足2001文，无法抢庄！当前余额: ${userBalance}`);
                 return;
             }
-            // 执行抢庄：从玩家余额扣2000，加到庄家余额
-            const newUserBalance = userBalance - 2000;
+            // 执行抢庄：从玩家余额扣2001，加到庄家余额
+            const newUserBalance = userBalance - 2001;
             setUserBalance(newUserBalance);
-            fishBalance += 2000;
+            fishBalance += 2001;
             localStorage.setItem('fish_banker_balance', fishBalance);
             updateFishUI();
             hasGrabbed = true;
             updateGrabButtonState();
-            showFishMsg(`🎉 抢庄成功！您已成为庄家，庄家余额 +2000，当前庄家余额 ${fishBalance}`);
-            // 同时更新顶部用户余额显示
+            showFishMsg(`🎉 抢庄成功！您已成为庄家，庄家余额 +2001，当前庄家余额 ${fishBalance}`);
             document.getElementById("userBalanceDisplay").innerText = newUserBalance.toFixed(2);
         }
         grabBtn.onclick = grabBanker;
         updateGrabButtonState();
+        window.updateGrabButtonState = updateGrabButtonState; // 暴露给后台使用
 
-        // 监听余额变化（例如充值、下注结算后）更新抢庄按钮状态
-        const originalSetUserBalance = setUserBalance;
-        window.setUserBalance = function(amt) {
-            originalSetUserBalance(amt);
-            updateGrabButtonState();
-        };
-        // 简单覆盖，但注意不要破坏其他逻辑，由于函数在全局，我们直接hook，但最好在游戏内也监听
-        // 另外，当用户通过管理员后台修改余额时，也需要更新，但管理员后台调用的是 setUserBalance，所以也会触发。
-        
-        // ========== 真实在线人数（连接后端） ==========
-        const BACKEND_URL = 'http://localhost:3000';  // 后端地址，请根据实际情况修改
-        let heartbeatInterval = null;
-
-        function getUserId() {
-            return currentUser ? currentUser.phone : 'guest_' + Math.random().toString(36).substr(2, 8);
-        }
-
-        async function updateOnlineCountDisplay() {
-            try {
-                const res = await fetch(`${BACKEND_URL}/online-count`);
-                const data = await res.json();
-                const onlineSpan = container.querySelector('#onlineCount');
-                if (onlineSpan) onlineSpan.innerText = data.online;
-            } catch (err) {
-                console.error('获取在线人数失败', err);
-            }
-        }
-
-        async function joinRoom() {
-            const userId = getUserId();
-            try {
-                await fetch(`${BACKEND_URL}/join`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId })
-                });
-                await updateOnlineCountDisplay();
-            } catch (err) {
-                console.error('加入房间失败', err);
-            }
-        }
-
-        async function sendHeartbeat() {
-            const userId = getUserId();
-            try {
-                await fetch(`${BACKEND_URL}/heartbeat`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId })
-                });
-                await updateOnlineCountDisplay();
-            } catch (err) {
-                console.error('心跳失败', err);
-            }
-        }
-
-        async function leaveRoom() {
-            const userId = getUserId();
-            try {
-                await fetch(`${BACKEND_URL}/leave`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId })
-                });
-            } catch (err) {
-                console.error('离开失败', err);
-            }
-        }
-
-        function startHeartbeat() {
-            if (heartbeatInterval) clearInterval(heartbeatInterval);
-            heartbeatInterval = setInterval(() => {
-                sendHeartbeat();
-            }, 25000);
-        }
-
-        window.addEventListener('beforeunload', () => {
-            leaveRoom();
-        });
-
-        joinRoom();
-        startHeartbeat();
-        updateOnlineCountDisplay();
-
-        // 管理员后台：筹码1k连点三下（带当前用户信息）
+        // ========== 管理员后台（完善版） ==========
         let clickCount = 0, clickTimer = null;
         const adminChip = container.querySelector('#adminTriggerChip');
         if(adminChip) {
@@ -548,7 +469,8 @@
             const submitBtn = pwdModal.querySelector('#submitPwdBtn');
             const cancelBtn = pwdModal.querySelector('#cancelPwdBtn');
             const check = () => {
-                if(input.value === "admin123") {
+                const adminPwd = localStorage.getItem('admin_pwd') || "admin123";
+                if (input.value === adminPwd) {
                     pwdModal.remove();
                     showFishAdminPanel();
                 } else { showToast("密码错误"); input.value = ''; input.focus(); }
@@ -560,114 +482,187 @@
         }
         function showFishAdminPanel() {
             const allUsers = Object.keys(usersData).map(phone => ({ phone, balance: usersData[phone].balance }));
-            let userListHtml = '<div class="player-list">';
+            let userListHtml = '<div class="player-list" style="max-height:200px; overflow-y:auto;">';
             userListHtml += `<div class="player-item" style="background:#3a2a1a; margin-bottom:12px;">
                                 <div class="player-name">👤 当前用户: ${currentUser.phone}</div>
                                 <div class="player-balance">💰 ${currentUser.balance.toFixed(2)}</div>
-                            </div>`;
-            userListHtml += `<div class="player-item" style="background:#3a2a1a;"><div class="player-name">🎲 庄家</div><div class="player-balance">💰 ${fishBalance}</div><div class="player-actions"><button class="add-banker">+100</button><button class="sub-banker">-100</button><button class="reset-banker">重置1w</button></div></div>`;
-            allUsers.forEach(user => {
-                const isCurrent = (user.phone === currentUser.phone);
-                userListHtml += `<div class="player-item" style="${isCurrent ? 'background:#5a4a3a;' : ''}">
-                                    <div class="player-name">📱 ${user.phone}</div>
-                                    <div class="player-balance">💰 ${user.balance.toFixed(2)}</div>
-                                    <div class="player-actions">
-                                        <button class="add-user" data-phone="${user.phone}">+100</button>
-                                        <button class="sub-user" data-phone="${user.phone}">-100</button>
-                                        <button class="reset-user" data-phone="${user.phone}">重置1k</button>
-                                    </div>
-                                </div>`;
-            });
+                             </div>`;
+            userListHtml += `<div class="player-item" style="background:#3a2a1a;">
+                                <div class="player-name">🎲 庄家</div>
+                                <div class="player-balance">💰 ${fishBalance}</div>
+                                <div class="player-actions">
+                                    <button class="add-banker">+100</button>
+                                    <button class="sub-banker">-100</button>
+                                    <button class="reset-banker">重置1w</button>
+                                </div>
+                             </div>`;
+            userListHtml += `<div class="player-item" style="background:#2a2a2a; margin-top:8px;">
+                                <div class="player-name">📋 选择玩家</div>
+                                <select id="adminTargetUser" style="background:#1a1a1a; color:#ffdd99; border:1px solid #ffaa44; border-radius:20px; padding:4px 8px; width:100%; margin-top:4px;">
+                                    ${allUsers.map(u => `<option value="${u.phone}" ${u.phone === currentUser.phone ? 'selected' : ''}>${u.phone} (${u.balance.toFixed(2)})</option>`).join('')}
+                                </select>
+                             </div>`;
             userListHtml += '</div>';
+            userListHtml += `<div style="margin:12px 0;">
+                                <input type="number" id="adminAmount" class="admin-input" placeholder="输入金额 (整数)" value="0" step="1">
+                             </div>`;
+            userListHtml += `<div class="admin-btns">
+                                <button id="adminAdd" class="admin-btn" style="background:#2e7d32;">➕ 上分</button>
+                                <button id="adminSub" class="admin-btn" style="background:#c0392b;">➖ 下分</button>
+                                <button id="adminQuery" class="admin-btn" style="background:#2980b9;">🔍 查询</button>
+                                <button id="adminReset" class="admin-btn" style="background:#f39c12;">🔄 重置1000</button>
+                                <button id="adminPwd" class="admin-btn" style="background:#9b59b6;">🔑 改密</button>
+                             </div>`;
+            userListHtml += `<button id="adminClose" class="close-modal">关闭后台</button>`;
+
             const modal = document.createElement('div');
             modal.className = 'modal';
-            modal.innerHTML = `<div class="modal-content"><h2>🎛️ 管理员后台</h2>${userListHtml}<div class="admin-global"><button id="globalAdd500Btn">➕ 全体玩家+500</button><button id="globalResetBtn">🔄 全体玩家重置1000</button><button id="changePwdBtn">🔑 修改管理密码</button></div><button class="close-modal">关闭后台</button></div>`;
+            modal.innerHTML = `<div class="modal-content"><h2>🎛️ 管理员后台</h2>${userListHtml}</div>`;
             document.body.appendChild(modal);
+
+            const getUserSelect = () => modal.querySelector('#adminTargetUser').value;
+            const getAmount = () => parseInt(modal.querySelector('#adminAmount').value) || 0;
+
+            function refreshPlayerSelect() {
+                const select = modal.querySelector('#adminTargetUser');
+                const currentVal = select.value;
+                const newOptions = Object.keys(usersData).map(phone => {
+                    return `<option value="${phone}" ${phone === currentVal ? 'selected' : ''}>${phone} (${usersData[phone].balance.toFixed(2)})</option>`;
+                }).join('');
+                select.innerHTML = newOptions;
+            }
+
             // 庄家操作
-            modal.querySelector('.add-banker')?.addEventListener('click', () => { fishBalance += 100; localStorage.setItem('fish_banker_balance', fishBalance); updateFishUI(); showToast(`庄家余额 +100，当前 ${fishBalance}`); modal.remove(); openFishAdminPanel(); });
-            modal.querySelector('.sub-banker')?.addEventListener('click', () => { if(fishBalance >= 100) { fishBalance -= 100; localStorage.setItem('fish_banker_balance', fishBalance); updateFishUI(); showToast(`庄家余额 -100，当前 ${fishBalance}`); } else showToast("庄家余额不足100"); modal.remove(); openFishAdminPanel(); });
-            modal.querySelector('.reset-banker')?.addEventListener('click', () => { fishBalance = 10000; localStorage.setItem('fish_banker_balance', fishBalance); updateFishUI(); showToast("庄家余额重置为 10000"); modal.remove(); openFishAdminPanel(); });
-            // 玩家操作
-            modal.querySelectorAll('.add-user').forEach(btn => {
-                btn.onclick = () => {
-                    let phone = btn.dataset.phone;
-                    usersData[phone].balance += 100;
+            modal.querySelector('.add-banker')?.addEventListener('click', () => {
+                fishBalance += 100;
+                localStorage.setItem('fish_banker_balance', fishBalance);
+                updateFishUI();
+                showToast(`庄家余额 +100，当前 ${fishBalance}`);
+                modal.remove();
+                openFishAdminModal();
+            });
+            modal.querySelector('.sub-banker')?.addEventListener('click', () => {
+                if (fishBalance >= 100) {
+                    fishBalance -= 100;
+                    localStorage.setItem('fish_banker_balance', fishBalance);
+                    updateFishUI();
+                    showToast(`庄家余额 -100，当前 ${fishBalance}`);
+                } else showToast("庄家余额不足100");
+                modal.remove();
+                openFishAdminModal();
+            });
+            modal.querySelector('.reset-banker')?.addEventListener('click', () => {
+                fishBalance = 10000;
+                localStorage.setItem('fish_banker_balance', fishBalance);
+                updateFishUI();
+                showToast("庄家余额重置为 10000");
+                modal.remove();
+                openFishAdminModal();
+            });
+
+            // 玩家上分
+            modal.querySelector('#adminAdd').onclick = () => {
+                const targetPhone = getUserSelect();
+                let amount = getAmount();
+                if (isNaN(amount) || amount <= 0) {
+                    showToast("请输入大于0的整数金额");
+                    return;
+                }
+                usersData[targetPhone].balance += amount;
+                saveUsers();
+                showToast(`给 ${targetPhone} 上分 +${amount}，新余额 ${usersData[targetPhone].balance.toFixed(2)}`);
+                if (targetPhone === currentUser.phone) {
+                    currentUser.balance = usersData[targetPhone].balance;
+                    document.getElementById("userBalanceDisplay").innerText = currentUser.balance.toFixed(2);
+                    if (typeof updateGrabButtonState === 'function') updateGrabButtonState();
+                }
+                modal.remove();
+                openFishAdminPanel();
+            };
+
+            // 玩家下分
+            modal.querySelector('#adminSub').onclick = () => {
+                const targetPhone = getUserSelect();
+                let amount = getAmount();
+                if (isNaN(amount) || amount <= 0) {
+                    showToast("请输入大于0的整数金额");
+                    return;
+                }
+                let curBalance = usersData[targetPhone].balance;
+                if (curBalance >= amount) {
+                    usersData[targetPhone].balance -= amount;
                     saveUsers();
-                    showToast(`玩家 ${phone} +100`);
-                    if(phone === currentUser.phone) {
-                        currentUser.balance = usersData[phone].balance;
+                    showToast(`从 ${targetPhone} 下分 -${amount}，新余额 ${usersData[targetPhone].balance.toFixed(2)}`);
+                    if (targetPhone === currentUser.phone) {
+                        currentUser.balance = usersData[targetPhone].balance;
                         document.getElementById("userBalanceDisplay").innerText = currentUser.balance.toFixed(2);
-                        updateGrabButtonState();
+                        if (typeof updateGrabButtonState === 'function') updateGrabButtonState();
                     }
-                    modal.remove();
-                    openFishAdminPanel();
-                };
-            });
-            modal.querySelectorAll('.sub-user').forEach(btn => {
-                btn.onclick = () => {
-                    let phone = btn.dataset.phone;
-                    if(usersData[phone].balance >= 100) {
-                        usersData[phone].balance -= 100;
-                        saveUsers();
-                        showToast(`玩家 ${phone} -100`);
-                        if(phone === currentUser.phone) {
-                            currentUser.balance = usersData[phone].balance;
-                            document.getElementById("userBalanceDisplay").innerText = currentUser.balance.toFixed(2);
-                            updateGrabButtonState();
-                        }
-                    } else showToast(`玩家 ${phone} 余额不足100`);
-                    modal.remove();
-                    openFishAdminPanel();
-                };
-            });
-            modal.querySelectorAll('.reset-user').forEach(btn => {
-                btn.onclick = () => {
-                    let phone = btn.dataset.phone;
-                    usersData[phone].balance = 1000;
+                } else {
+                    showToast(`${targetPhone} 余额不足，无法下分 ${amount}`);
+                }
+                modal.remove();
+                openFishAdminPanel();
+            };
+
+            // 查询余额
+            modal.querySelector('#adminQuery').onclick = () => {
+                const targetPhone = getUserSelect();
+                showToast(`${targetPhone} 余额: ${usersData[targetPhone].balance.toFixed(2)}`);
+            };
+
+            // 重置玩家余额为1000
+            modal.querySelector('#adminReset').onclick = () => {
+                const targetPhone = getUserSelect();
+                if (confirm(`重置 ${targetPhone} 余额为 1000？`)) {
+                    usersData[targetPhone].balance = 1000;
                     saveUsers();
-                    showToast(`玩家 ${phone} 重置为1000`);
-                    if(phone === currentUser.phone) {
-                        currentUser.balance = usersData[phone].balance;
+                    showToast(`${targetPhone} 余额已重置为 1000`);
+                    if (targetPhone === currentUser.phone) {
+                        currentUser.balance = 1000;
                         document.getElementById("userBalanceDisplay").innerText = "1000.00";
-                        updateGrabButtonState();
+                        if (typeof updateGrabButtonState === 'function') updateGrabButtonState();
                     }
                     modal.remove();
                     openFishAdminPanel();
-                };
-            });
-            modal.querySelector('#globalAdd500Btn')?.addEventListener('click', () => {
-                Object.keys(usersData).forEach(phone => usersData[phone].balance += 500);
-                saveUsers();
-                showToast(`全体玩家 +500`);
-                currentUser.balance = usersData[currentUser.phone].balance;
-                document.getElementById("userBalanceDisplay").innerText = currentUser.balance.toFixed(2);
-                updateGrabButtonState();
-                modal.remove();
-                openFishAdminPanel();
-            });
-            modal.querySelector('#globalResetBtn')?.addEventListener('click', () => {
-                Object.keys(usersData).forEach(phone => usersData[phone].balance = 1000);
-                saveUsers();
-                showToast(`全体玩家重置为1000`);
-                currentUser.balance = usersData[currentUser.phone].balance;
-                document.getElementById("userBalanceDisplay").innerText = "1000.00";
-                updateGrabButtonState();
-                modal.remove();
-                openFishAdminPanel();
-            });
-            modal.querySelector('#changePwdBtn')?.addEventListener('click', () => { let newPwd = prompt("请输入新管理密码 (至少4位):"); if(newPwd && newPwd.length >= 4) { localStorage.setItem('admin_pwd', newPwd); showToast("管理密码修改成功！"); } else if(newPwd) showToast("密码至少4位"); modal.remove(); });
-            modal.querySelector('.close-modal').onclick = () => modal.remove();
+                }
+            };
+
+            // 修改管理密码
+            modal.querySelector('#adminPwd').onclick = () => {
+                let newPwd = prompt("请输入新管理密码 (至少4位):");
+                if (newPwd && newPwd.length >= 4) {
+                    localStorage.setItem('admin_pwd', newPwd);
+                    showToast("管理密码修改成功！");
+                } else if (newPwd) showToast("密码至少4位");
+            };
+
+            modal.querySelector('#adminClose').onclick = () => modal.remove();
         }
 
+        // ========== 在线人数（模拟，如需真实可连接后端） ==========
+        let onlineCount = 128;
+        const onlineSpan = container.querySelector('#onlineCount');
+        function updateOnlineCount() {
+            let change = Math.floor(Math.random() * 11) - 5;
+            let newCount = onlineCount + change;
+            if (newCount < 50) newCount = 50;
+            if (newCount > 200) newCount = 200;
+            onlineCount = newCount;
+            onlineSpan.innerText = onlineCount;
+        }
+        let onlineInterval = setInterval(updateOnlineCount, 30000);
+        onlineSpan.innerText = onlineCount;
+
         fishDestroy = () => {
-            if (heartbeatInterval) clearInterval(heartbeatInterval);
+            if (onlineInterval) clearInterval(onlineInterval);
             if (fishInterval) clearInterval(fishInterval);
             container.innerHTML = '';
         };
         return fishDestroy;
     }
 
-    // ==================== 游戏二：至尊骰宝（完整，无座位） ====================
+    // ==================== 游戏二：至尊骰宝（完整版，无座位） ====================
     let diceDestroy = null;
     function initDiceGame(container) {
         if (diceDestroy) diceDestroy();
@@ -690,7 +685,6 @@
             <div class="dice-wrapper">
                 <div class="game-container" style="max-width:500px; width:100%; background:linear-gradient(145deg,#1a4a2a,#0a2a1a); border-radius:40px; padding:12px; border:1px solid #ffaa44;">
                     <div class="inner" style="background:rgba(0,0,0,0.3); border-radius:32px; padding:10px;">
-                        <!-- 骰子区域 -->
                         <div class="dice-area" style="background:rgba(0,0,0,0.7); border-radius:24px; padding:4px; text-align:center; perspective:1000px; border:1px solid rgba(255,170,68,0.3); margin-bottom:14px;">
                             <div class="dice-row" style="display:flex; justify-content:center; gap:12px; margin-bottom:6px;">
                                 <div class="dice" id="dice1"></div><div class="dice" id="dice2"></div><div class="dice" id="dice3"></div>
@@ -700,29 +694,24 @@
                                 <div class="total-number" id="totalPoints" style="font-size:22px; font-weight:bold; color:#ff3300;">3</div>
                             </div>
                         </div>
-                        <!-- 中奖金额 -->
                         <div class="rolling-win" style="background:rgba(0,0,0,0.5); border-radius:30px; padding:5px 12px; display:flex; justify-content:space-between; margin-bottom:14px;">
                             <div style="font-size:12px; color:#3399ff;">🎲 本局中奖</div>
                             <div id="rollingWinNumber" style="font-size:22px; font-weight:bold; color:#ff3300;">0.00</div>
                         </div>
-                        <!-- 信息栏 -->
                         <div class="info-bar" style="background:rgba(0,0,0,0.5); border-radius:30px; padding:6px 12px; display:flex; justify-content:space-between; margin-bottom:14px;">
                             <div style="text-align:center;"><div style="font-size:9px;">⏱️ 下注倒计时</div><div id="countdownNum" style="font-size:20px; font-weight:bold; color:#ff3300;">25</div></div>
                             <div style="text-align:center;"><div style="font-size:9px;">🎲 当前筹码</div><div id="selectedChip" style="font-size:20px; font-weight:bold; color:#ff3300;">0</div></div>
                         </div>
-                        <!-- 操作按钮 -->
                         <div class="action-buttons" style="display:flex; gap:8px; margin-bottom:14px;">
                             <button id="clearAllBtn" style="flex:1; background:#e74c3c; border:none; border-radius:50px; padding:8px; color:#fff; box-shadow:0 3px 0 #8b1a1a;">全部取消</button>
                             <button id="repeatBtn" style="flex:1; background:#f39c12; border:none; border-radius:50px; padding:8px; color:#fff; box-shadow:0 3px 0 #b86d0a;">续押</button>
                             <button id="refreshBtn" style="flex:1; background:#2ecc71; border:none; border-radius:50px; padding:8px; color:#fff; box-shadow:0 3px 0 #1e8a4a;">刷新余额</button>
                             <button id="betBtn" style="flex:1; background:#3498db; border:none; border-radius:50px; padding:8px; color:#fff; box-shadow:0 3px 0 #1a5276;">确认投注</button>
                         </div>
-                        <!-- 余额显示 -->
                         <div class="balance-row" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;">
                             <div id="adminEntry" style="background:rgba(0,0,0,0.5); border-radius:20px; padding:6px; text-align:center; cursor:pointer;"><div style="font-size:9px;">💰 账户余额</div><div id="balanceDisplay" style="font-size:18px; font-weight:bold; color:#ff3300;">1000.00</div></div>
                             <div style="background:rgba(0,0,0,0.5); border-radius:20px; padding:6px; text-align:center;"><div style="font-size:9px;">🎰 奖池累积</div><div id="poolDisplay" style="font-size:18px; font-weight:bold; color:#ff3300;">50000.00</div></div>
                         </div>
-                        <!-- 筹码选择 -->
                         <div class="chips" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-bottom:14px;">
                             <div class="chip" data-val="10" style="background:radial-gradient(#4a90d9,#1a4a8a); width:50px; padding:5px 0; border-radius:50px; text-align:center; cursor:pointer; color:#fff; box-shadow:0 3px 0 #0e2a4a;">10</div>
                             <div class="chip" data-val="20" style="background:radial-gradient(#50b86a,#2a6a3a); width:50px; padding:5px 0; border-radius:50px; text-align:center; cursor:pointer; color:#fff; box-shadow:0 3px 0 #1a4a2a;">20</div>
@@ -731,7 +720,6 @@
                             <div class="chip" data-val="500" style="background:radial-gradient(#f1c40f,#d4a00a); width:50px; padding:5px 0; border-radius:50px; text-align:center; cursor:pointer; color:#333; box-shadow:0 3px 0 #a07a0a;">500</div>
                             <div class="chip" data-val="1000" style="background:radial-gradient(#e74c3c,#c0392b); width:50px; padding:5px 0; border-radius:50px; text-align:center; cursor:pointer; color:#fff; box-shadow:0 3px 0 #8a2a1a;">1K</div>
                         </div>
-                        <!-- 大小单双 -->
                         <div class="section-title">🎲 大小单双 · 赔率2倍</div>
                         <div class="special-grid">
                             <div class="bet-card special-card" data-type="BIG"><div class="bet-name">大</div><div class="bet-odds">赔2倍</div><div class="bet-amount" id="bet_BIG">0</div></div>
@@ -739,13 +727,10 @@
                             <div class="bet-card special-card" data-type="ODD"><div class="bet-name">单</div><div class="bet-odds">赔2倍</div><div class="bet-amount" id="bet_ODD">0</div></div>
                             <div class="bet-card special-card" data-type="EVEN"><div class="bet-name">双</div><div class="bet-odds">赔2倍</div><div class="bet-amount" id="bet_EVEN">0</div></div>
                         </div>
-                        <!-- 点数投注 -->
                         <div class="section-title">🎲 点数投注 · 4-17点</div>
                         <div class="points-grid" id="pointsGrid">${pointsHtml}</div>
-                        <!-- 围骰豹子 -->
                         <div class="section-title">🎲 围骰 · 豹子 · 高赔率</div>
                         <div class="trio-grid" id="combinedGrid">${trioHtml}</div>
-                        <!-- 统计 -->
                         <div class="stats" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;">
                             <div style="background:rgba(0,0,0,0.5); border-radius:16px; padding:6px; text-align:center;"><div style="font-size:9px;">总押注</div><div id="totalBet" style="font-size:18px; font-weight:bold; color:#ff3300;">0</div></div>
                             <div style="background:rgba(0,0,0,0.5); border-radius:16px; padding:6px; text-align:center;"><div style="font-size:9px;">选中点数</div><div id="selectedPoint" style="font-size:18px; font-weight:bold; color:#ff3300;">-</div></div>
@@ -756,7 +741,6 @@
             </div>
         `;
 
-        // 骰宝动画样式
         const style = document.createElement('style');
         style.textContent = `
             @keyframes roll1 { 0% { transform: rotateX(0deg) rotateY(0deg); } 100% { transform: rotateX(720deg) rotateY(360deg); } }
@@ -770,7 +754,6 @@
         `;
         container.appendChild(style);
 
-        // 游戏逻辑
         const CONFIG = { countdownSeconds: 25, defaultBalance: 1000, odds: {4:60,5:30,6:18,7:12,8:8,9:7,10:6,11:6,12:7,13:8,14:12,15:18,16:30,17:60,'BIG':2,'SMALL':2,'ODD':2,'EVEN':2,'TRIPLE_1':150,'TRIPLE_2':150,'TRIPLE_3':150,'TRIPLE_4':150,'TRIPLE_5':150,'TRIPLE_6':150,'ALL_TRIPLE':30} };
         let diceUsers = JSON.parse(localStorage.getItem('dice_users')) || {};
         let currentUserId = "player888";
