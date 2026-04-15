@@ -1,5 +1,9 @@
-<!DOCTYPE html>  content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>双游戏大厅 | 葫芦鱼 + 至尊骰宝</title>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>双游戏大厅 | 葫芦鱼+骰宝 | 完整功能</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { background: #1a120c; background-image: radial-gradient(circle at 20% 30%, rgba(200,140,70,0.15) 2%, transparent 2.5%); background-size: 28px 28px; font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif; padding: 12px; }
@@ -17,8 +21,6 @@
         .charge-btn, .withdraw-btn { background: #c47c3a; border: none; padding: 5px 20px; border-radius: 30px; color: #2f1b0a; font-weight: bold; font-size: 0.75rem; cursor: pointer; flex: 1; text-align: center; box-shadow: 0 2px 0 #764e26; }
         .withdraw-btn { background: #734c2e; color: #ffe3b3; box-shadow: 0 2px 0 #3f2a1a; }
         .game-container { background: linear-gradient(145deg, #362a1f 0%, #251e16 100%); border-radius: 48px; box-shadow: 0 12px 25px rgba(0,0,0,0.5); overflow: hidden; min-height: 550px; }
-        .game-panel { display: none; }
-        .game-panel.active { display: block; }
         .auth-panel { background: linear-gradient(145deg, #362a1f 0%, #251e16 100%); border-radius: 48px; padding: 30px 20px; text-align: center; border: 2px solid #ffaa44; }
         .auth-panel h2 { color: #ffdd99; font-size: 1.5rem; margin-bottom: 20px; }
         .auth-input { width: 100%; padding: 12px; margin: 10px 0; background: #2a241e; border: 1px solid #ffaa44; border-radius: 40px; color: white; font-size: 0.9rem; text-align: center; }
@@ -36,7 +38,6 @@
         .fish-wrapper .btn-chip { background: #523b26; border: none; color: #fce2b4; font-weight: bold; width: 24px; height: 24px; border-radius: 25px; font-size: 0.8rem; cursor: pointer; }
         .fish-wrapper .seat-card { background: #1a130d; border-radius: 16px; padding: 4px 2px; text-align: center; border: 1px solid #6f4f34; }
         .fish-wrapper .seat-card.occupied { background: #2f4127; border: 1px solid #ffaa55; }
-        .fish-wrapper .seat-number { font-size: 0.5rem; color: #dba24b; }
         /* 骰宝样式 */
         .dice-wrapper .dice { width: 60px; height: 60px; position: relative; transform-style: preserve-3d; }
         .dice-wrapper .dice-face { position: absolute; width: 60px; height: 60px; background: linear-gradient(145deg, #fffff0, #f5f5dc); border-radius: 12px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; border: 1px solid rgba(200,180,120,0.5); }
@@ -56,6 +57,12 @@
         @keyframes fadeInOut { 0% { opacity:0; transform: translateX(-50%) translateY(20px); } 15% { opacity:1; transform: translateX(-50%) translateY(0); } 85% { opacity:1; } 100% { opacity:0; transform: translateX(-50%) translateY(-20px); } }
         .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 3000; }
         .modal-content { background: #1a2a1a; border-radius: 32px; padding: 20px; border: 1px solid #ffaa44; width: 85%; max-width: 340px; color: #fff; }
+        .admin-user-list { max-height: 150px; overflow-y: auto; margin: 12px 0; background: #0a1a0a; border-radius: 12px; padding: 8px; }
+        .admin-user { padding: 8px; border-bottom: 1px solid #333; cursor: pointer; }
+        .admin-user.selected { background: #ffaa44; color: #1a1a2a; }
+        .admin-input { width: 100%; padding: 8px; margin: 8px 0; border-radius: 12px; background: #0a1a0a; border: 1px solid #ffaa44; color: #fff; }
+        .admin-btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin: 12px 0; }
+        .admin-btn { padding: 6px 12px; border-radius: 25px; border: none; font-weight: bold; cursor: pointer; }
         @media (max-width: 480px) {
             .dice-wrapper .dice { width: 50px; height: 50px; }
             .dice-wrapper .dice-face { width: 50px; height: 50px; }
@@ -92,7 +99,7 @@
     function recharge() { showToast("💎 充值请联系管理员"); }
     function withdraw() { showToast("💰 提现请联系管理员"); }
 
-    // ==================== 游戏一：潮汕葫芦鱼（完整） ====================
+    // ==================== 游戏一：潮汕葫芦鱼（完整 + 双押2中2） ====================
     let fishDestroy = null, fishInterval = null;
     function initFishGame(container) {
         if (fishDestroy) fishDestroy();
@@ -123,7 +130,7 @@
                 </div>
                 <div class="chip-bar" style="background:#2a1f16; margin:6px 12px 10px; padding:6px 8px; border-radius:40px; display:flex; justify-content:center; gap:8px; flex-wrap:wrap;">
                     <div class="chip" data-chip="20">20</div><div class="chip" data-chip="50">50</div><div class="chip" data-chip="100" class="selected">100</div>
-                    <div class="chip" data-chip="500">500</div><div class="chip" data-chip="1000" id="adminTriggerChip" style="background:radial-gradient(#e74c3c, #c0392b); color:#fff;">1k</div>
+                    <div class="chip" data-chip="500">500</div><div class="chip" data-chip="1000">1k</div>
                 </div>
                 <div class="action-bar" style="display:flex; justify-content:center; gap:8px; padding:6px 12px 14px; flex-wrap:wrap;">
                     <button id="fishRollBtn" class="action-btn primary" style="background:#c47c3a; border:none; padding:5px 14px; border-radius:35px; color:#2f1b0a; box-shadow:0 3px 0 #764e26; cursor:pointer;">🎲 开骰！</button>
@@ -141,7 +148,7 @@
 
         let fishBalance = parseInt(localStorage.getItem('fish_banker_balance')) || 10000;
         let patternBets = { fish:0, shrimp:0, crab:0, calabash:0, coin:0, chicken:0 };
-        let specialBets = { big:0, small:0, odd:0, even:0, allTriplets:0 };
+        let specialBets = { big:0, small:0, odd:0, even:0, allTriplets:0, doubleBet:0 }; // 新增双押
         let currentChip = 100;
         let lastWinAmount = 0;
         let isRolling = false;
@@ -172,7 +179,7 @@
             if(totalNow + val > userBal) { showFishMsg(`余额不足，无法加注 ${val}`); return; }
             target[id] += val;
             updateFishUI();
-            let name = type === 'pattern' ? patternIdMap[id] : id;
+            let name = type === 'pattern' ? patternIdMap[id] : (id === 'doubleBet' ? '双押(鱼+虾)' : id);
             showFishMsg(`➕ ${name} +${val}`);
         }
         function subBet(type, id, val) {
@@ -180,7 +187,7 @@
             if(target[id] === undefined) return;
             let old = target[id];
             let newVal = Math.max(0, old - val);
-            if(old !== newVal) { target[id] = newVal; updateFishUI(); showFishMsg(`➖ ${name} -${val}`); }
+            if(old !== newVal) { target[id] = newVal; updateFishUI(); let name = type === 'pattern' ? patternIdMap[id] : (id === 'doubleBet' ? '双押(鱼+虾)' : id); showFishMsg(`➖ ${name} -${val}`); }
         }
         function clearAllBets() {
             for(let k of Object.keys(patternBets)) patternBets[k]=0;
@@ -219,14 +226,24 @@
                 let occur = diceNames.filter(n=> n === patternIdMap[pid]).length;
                 if(occur>0) { let prize = betVal * (occur+1); winAmount += prize; winDetails.push(`${patternIdMap[pid]} x${occur}`); }
             }
-            let bigWin=false, smallWin=false, oddWin=false, evenWin=false, allTripletWin=false;
-            if(!isTriplet) { if(sum>=11 && sum<=17) bigWin=true; if(sum>=4 && sum<=10) smallWin=true; if(sum%2===1) oddWin=true; if(sum%2===0) evenWin=true; }
+            let bigWin=false, smallWin=false, oddWin=false, evenWin=false, allTripletWin=false, doubleWin=false;
+            if(!isTriplet) {
+                if(sum>=11 && sum<=17) bigWin=true;
+                if(sum>=4 && sum<=10) smallWin=true;
+                if(sum%2===1) oddWin=true;
+                if(sum%2===0) evenWin=true;
+            }
             if(isTriplet) allTripletWin=true;
+            // 双押：同时出现鱼和虾
+            if(diceNames.includes("鱼") && diceNames.includes("虾")) doubleWin = true;
+            
             if(specialBets.big>0 && bigWin) { winAmount += specialBets.big*2; winDetails.push("大"); }
             if(specialBets.small>0 && smallWin) { winAmount += specialBets.small*2; winDetails.push("小"); }
             if(specialBets.odd>0 && oddWin) { winAmount += specialBets.odd*2; winDetails.push("单"); }
             if(specialBets.even>0 && evenWin) { winAmount += specialBets.even*2; winDetails.push("双"); }
             if(specialBets.allTriplets>0 && allTripletWin) { winAmount += specialBets.allTriplets*25; winDetails.push("全围"); }
+            if(specialBets.doubleBet>0 && doubleWin) { winAmount += specialBets.doubleBet*5; winDetails.push("双押(鱼+虾) x5"); }
+            
             let net = winAmount - totalBet;
             let newBalance = getUserBalance() + winAmount;
             setUserBalance(newBalance);
@@ -303,11 +320,18 @@
         }
         const specialContainer = container.querySelector('#specialGrid');
         if(specialContainer) {
-            const SPECIALS = [{ id:"big", name:"大", icon:"🔴" },{ id:"small", name:"小", icon:"🔵" },{ id:"odd", name:"单", icon:"⚪" },{ id:"even", name:"双", icon:"⚫" },{ id:"allTriplets", name:"全围", icon:"🌀" }];
+            const SPECIALS = [
+                { id:"big", name:"大", icon:"🔴", odds:"1:1" },
+                { id:"small", name:"小", icon:"🔵", odds:"1:1" },
+                { id:"odd", name:"单", icon:"⚪", odds:"1:1" },
+                { id:"even", name:"双", icon:"⚫", odds:"1:1" },
+                { id:"allTriplets", name:"全围", icon:"🌀", odds:"1:25" },
+                { id:"doubleBet", name:"双押(鱼+虾)", icon:"🐟🦐", odds:"1:5" }
+            ];
             specialContainer.innerHTML = "";
             SPECIALS.forEach(s=>{
                 let card = document.createElement("div"); card.className="bet-card";
-                card.innerHTML = `<div class="bet-icon">${s.icon}</div><div class="bet-name">${s.name}</div><div class="bet-odds">${s.id==="allTriplets"?"1:24":"1:1"}</div>
+                card.innerHTML = `<div class="bet-icon">${s.icon}</div><div class="bet-name">${s.name}</div><div class="bet-odds">${s.odds}</div>
                 <div class="bet-amount"><button class="btn-chip sub-special" data-id="${s.id}">-</button><span id="bet_special_${s.id}">0</span><button class="btn-chip add-special" data-id="${s.id}">+</button></div>`;
                 specialContainer.appendChild(card);
             });
@@ -341,7 +365,7 @@
         return fishDestroy;
     }
 
-    // ==================== 游戏二：至尊骰宝（完整） ====================
+    // ==================== 游戏二：至尊骰宝（完整 + 抽屉可展开） ====================
     let diceDestroy = null;
     function initDiceGame(container) {
         if (diceDestroy) diceDestroy();
@@ -397,7 +421,7 @@
                             <div class="chip" data-val="500" style="background:radial-gradient(#f1c40f,#d4a00a); width:50px; padding:5px 0; border-radius:50px; text-align:center; cursor:pointer; color:#333;">500</div>
                             <div class="chip" data-val="1000" style="background:radial-gradient(#e74c3c,#c0392b); width:50px; padding:5px 0; border-radius:50px; text-align:center; cursor:pointer; color:#fff;">1K</div>
                         </div>
-                        <!-- 抽屉：大小单双 -->
+                        <!-- 抽屉：大小单双（默认展开） -->
                         <div class="drawer-section" style="margin-bottom:14px; border-radius:24px; overflow:hidden; background:rgba(0,0,0,0.3);">
                             <div class="drawer-header" data-drawer="drawerSpecial" style="background:linear-gradient(145deg,#2a5a3a,#1a3a2a); padding:10px 16px; display:flex; justify-content:space-between; cursor:pointer; border-radius:24px; border:1px solid #ffaa44;">
                                 <span style="color:#ffdd99;">🎲 大小单双 · 赔率2倍</span>
@@ -706,6 +730,13 @@
                     else { content.classList.add('open'); icon.innerHTML='▲'; }
                 });
             });
+            // 默认全部展开抽屉，方便看到押注选项
+            setTimeout(() => {
+                container.querySelectorAll('.drawer-content').forEach(content => {
+                    content.classList.add('open');
+                });
+                container.querySelectorAll('.drawer-icon').forEach(icon => icon.innerHTML='▲');
+            }, 100);
         }
         function init() {
             createPointsGrid(); createCombinedGrid();
@@ -848,3 +879,11 @@
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
