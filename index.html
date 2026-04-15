@@ -155,7 +155,7 @@
 
     // ==================== 游戏一：潮汕葫芦鱼（完善后台+抢庄+服务费） ====================
     let fishDestroy = null, fishInterval = null;
-   function initFishGame(container) {
+  function initFishGame(container) {
     if (fishDestroy) fishDestroy();
     container.innerHTML = '';
     const fishHTML = `
@@ -211,10 +211,12 @@
                 <div class="section-title" style="font-size:0.7rem; color:#ffd49f; margin:8px 0 6px 4px; border-left:3px solid #f7b05e; padding-left:8px;">🐟 六门押注 (按次数赔)</div>
                 <div class="bet-grid" id="patternGrid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:8px;"></div>
                 <div class="section-title" style="font-size:0.7rem; color:#ffd49f; margin:8px 0 6px 4px; border-left:3px solid #f7b05e; padding-left:8px;">🎯 特殊投注</div>
-                <div class="special-grid" id="specialGrid" style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:8px;"></div>
+                <div class="special-grid" id="specialGrid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:8px;"></div>
             </div>
-            <!-- 消息区 -->
-            <div class="message-area" id="fishMsgArea" style="background:#1c140e; margin:0 12px 12px; border-radius:35px; padding:6px 10px; font-size:0.65rem; color:#dbbc8c; text-align:center; min-height:48px;">庄家坐镇 | 骰盅缓慢开启 → 骰子摇动</div>
+            <!-- 消息区（改为开奖记录查询按钮） -->
+            <div class="record-area" style="margin:12px 12px 8px;">
+                <button id="showRecordBtn" style="width:100%; background:#2a1f16; border:1px solid #ffaa44; border-radius:40px; padding:8px 0; color:#ffdd99; font-weight:bold; cursor:pointer;">📜 开奖记录查询</button>
+            </div>
             <!-- 在线人数显示 -->
             <div class="online-count-box">
                 🎮 大厅在线人数 <span id="onlineCount" class="online-number">0</span>
@@ -229,8 +231,11 @@
     let currentChip = 100;
     let lastWinAmount = 0;
     let isRolling = false;
-    let hasGrabbed = false;          // 是否有人抢庄
-    let playerBankerBalance = 0;     // 玩家庄家余额
+    let hasGrabbed = false;
+    let playerBankerBalance = 0;
+    
+    // 开奖记录存储（最多50条）
+    let gameRecords = [];
 
     // 闲家下注限额
     const MAX_SINGLE_BET = 500;
@@ -246,9 +251,14 @@
         for(let id of Object.keys(specialBets)) { let span = container.querySelector(`#bet_special_${id}`); if(span) span.innerText = specialBets[id]; }
     }
     function showFishMsg(msg) {
-        const msgDiv = container.querySelector('#fishMsgArea');
-        msgDiv.innerText = msg;
-        setTimeout(() => { if(msgDiv.innerText === msg) msgDiv.innerText = "🎲 点击开骰 | 骰盅缓慢开启开奖"; }, 2500);
+        // 改为控制台输出或短暂提示，不需要在界面显示长文本
+        console.log(msg);
+        // 可选：短暂显示在记录按钮上
+        const recordBtn = container.querySelector('#showRecordBtn');
+        if (recordBtn) {
+            recordBtn.style.backgroundColor = "#3a2a1a";
+            setTimeout(() => { if(recordBtn) recordBtn.style.backgroundColor = "#2a1f16"; }, 500);
+        }
     }
     function addBet(type, id, val) {
         let target = type === 'pattern' ? patternBets : specialBets;
@@ -270,26 +280,25 @@
         target[id] += val;
         updateFishUI();
         let name = type === 'pattern' ? patternIdMap[id] : (id === 'doubleBet' ? '双押(鱼+虾)' : id);
-        showFishMsg(`➕ ${name} +${val}`);
+        // 不显示消息，保持安静
     }
     function subBet(type, id, val) {
         let target = type === 'pattern' ? patternBets : specialBets;
         if(target[id] === undefined) return;
         let old = target[id];
         let newVal = Math.max(0, old - val);
-        if(old !== newVal) { target[id] = newVal; updateFishUI(); let name = type === 'pattern' ? patternIdMap[id] : (id === 'doubleBet' ? '双押(鱼+虾)' : id); showFishMsg(`➖ ${name} -${val}`); }
+        if(old !== newVal) { target[id] = newVal; updateFishUI(); }
     }
     function clearAllBets() {
         for(let k of Object.keys(patternBets)) patternBets[k]=0;
         for(let k of Object.keys(specialBets)) specialBets[k]=0;
-        updateFishUI(); showFishMsg("清空所有下注");
+        updateFishUI();
     }
     function resetFishGame() {
         clearAllBets(); lastWinAmount = 0; updateFishUI();
         container.querySelectorAll(".dice").forEach(d => d.innerHTML = "🎲");
         const cover = container.querySelector('#fishDiceCover');
         if(cover) { cover.style.display = "flex"; cover.style.transform = "translateY(0) scale(1)"; cover.style.opacity = "1"; cover.style.visibility = "visible"; }
-        showFishMsg("游戏已重置，骰盅已复位");
     }
     async function animateRolling(finalNames) {
         const diceEls = container.querySelectorAll(".dice");
@@ -305,8 +314,7 @@
     // 中奖概率控制：仅系统坐庄时降低六门押注中奖概率 20%
     function shouldWinPattern(originalWin) {
         if (!originalWin) return false;
-        if (hasGrabbed) return true;  // 玩家抢庄时正常中奖
-        // 系统坐庄时，有 20% 的概率将中奖改为不中奖（中奖率从 50% 降到 40%）
+        if (hasGrabbed) return true;
         return Math.random() >= 0.2;
     }
     
@@ -314,16 +322,15 @@
         let points = diceNames.map(n=>getPointValue(n)), sum = points.reduce((a,b)=>a+b,0);
         let isTriplet = diceNames[0]===diceNames[1] && diceNames[1]===diceNames[2];
         let totalBet = getFishTotalBet();
-        if(totalBet===0) { showFishMsg("没有下注，无法结算"); return false; }
+        if(totalBet===0) { return false; }
         let userBal = getUserBalance();
-        if(totalBet > userBal) { showFishMsg("下注超额，请检查余额"); return false; }
+        if(totalBet > userBal) { return false; }
         
         setUserBalance(userBal - totalBet);
         
         let winAmount = 0;
         let winDetails = [];
         
-        // 六门押注赔付（系统坐庄时中奖概率降低）
         for(let [pid, betVal] of Object.entries(patternBets)) {
             if(betVal===0) continue;
             let occur = diceNames.filter(n=> n === patternIdMap[pid]).length;
@@ -337,7 +344,6 @@
             }
         }
         
-        // 特殊投注（正常概率，不受系统坐庄影响）
         let bigWin=false, smallWin=false, oddWin=false, evenWin=false, allTripletWin=false, doubleWin=false;
         if(!isTriplet) {
             if(sum>=11 && sum<=17) bigWin=true;
@@ -362,7 +368,6 @@
         if (hasGrabbed) {
             playerBankerBalance -= winAmount;
             if (playerBankerBalance < 0) {
-                showFishMsg(`⚠️ 庄家余额不足，自动回收庄家权限！`);
                 hasGrabbed = false;
                 playerBankerBalance = 0;
                 localStorage.setItem('player_banker_balance', 0);
@@ -375,9 +380,16 @@
         lastWinAmount = net;
         updateFishUI();
         
-        let diceShow = diceNames.join("、");
-        if(winAmount>0) showFishMsg(`🎲 ${diceShow} 净赢+${net}  [${winDetails.join(',')}]`);
-        else showFishMsg(`😢 ${diceShow} 亏损 ${totalBet}`);
+        // 记录开奖结果
+        let resultText = diceNames.join("、");
+        let winText = winAmount > 0 ? `中奖 ${winAmount}` : `未中奖 (输 ${totalBet})`;
+        gameRecords.unshift({
+            time: new Date().toLocaleTimeString(),
+            dice: resultText,
+            result: winText,
+            winAmount: winAmount
+        });
+        if (gameRecords.length > 50) gameRecords.pop();
         
         clearAllBets();
         document.getElementById("userBalanceDisplay").innerText = newBalance.toFixed(2);
@@ -407,7 +419,29 @@
         diceCover.style.opacity = "1";
         diceCover.style.visibility = "visible";
         isRolling = false;
-        showFishMsg("骰盅已复位，可继续下注");
+    }
+    
+    // 开奖记录查询弹窗
+    function showRecordModal() {
+        if (gameRecords.length === 0) {
+            showToast("暂无开奖记录");
+            return;
+        }
+        let html = '<div style="max-height:400px; overflow-y:auto; padding:8px;">';
+        gameRecords.forEach(rec => {
+            html += `<div style="background:#2a241e; margin-bottom:8px; padding:8px; border-radius:12px; border-left:3px solid #ffaa44;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#ffaa66;">${rec.time}</div>
+                        <div style="font-size:1rem; font-weight:bold; color:#ffdd99; margin:4px 0;">🎲 ${rec.dice}</div>
+                        <div style="font-size:0.8rem; color:${rec.winAmount > 0 ? '#4caf50' : '#f44336'}">${rec.result}</div>
+                     </div>`;
+        });
+        html += '</div><button id="closeRecordModal" style="background:#ffaa44; border:none; padding:8px 16px; border-radius:30px; margin-top:12px; cursor:pointer;">关闭</button>';
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `<div class="modal-content" style="max-width:450px;"><h3 style="margin-bottom:12px;">📜 开奖记录</h3>${html}</div>`;
+        document.body.appendChild(modal);
+        modal.querySelector('#closeRecordModal').onclick = () => modal.remove();
     }
     
     // 抢庄功能
@@ -442,11 +476,14 @@
         localStorage.setItem('player_banker_balance', playerBankerBalance);
         updateFishUI();
         updateGrabButtonState();
-        showFishMsg(`🎉 抢庄成功！您已成为庄家，庄家本金 2001 文`);
         document.getElementById("userBalanceDisplay").innerText = newUserBalance.toFixed(2);
     }
     grabBtn.onclick = grabBanker;
     updateGrabButtonState();
+    
+    // 绑定开奖记录按钮
+    const recordBtn = container.querySelector('#showRecordBtn');
+    if (recordBtn) recordBtn.onclick = showRecordModal;
     
     const savedBankerBalance = localStorage.getItem('player_banker_balance');
     if (savedBankerBalance && parseInt(savedBankerBalance) > 0) {
@@ -473,29 +510,39 @@
         });
     }
     
-    // 构建特殊投注网格（新布局：大、小、单、双、全围、双押）
+    // 构建特殊投注网格
     const specialContainer = container.querySelector('#specialGrid');
     if(specialContainer) {
         specialContainer.style.display = "grid";
-        specialContainer.style.gridTemplateColumns = "repeat(4, 1fr)";
+        specialContainer.style.gridTemplateColumns = "repeat(3, 1fr)";
         specialContainer.style.gap = "8px";
         specialContainer.innerHTML = "";
         
-        // 大（左边）
         let bigCard = document.createElement("div"); bigCard.className = "bet-card special-card"; bigCard.setAttribute("data-type", "big");
         bigCard.style.background = "linear-gradient(145deg, #ff8c42, #e67e22)";
         bigCard.style.border = "1px solid #ffaa44";
         bigCard.innerHTML = `<div class="bet-name" style="font-size:1rem;">大</div><div class="bet-odds">2倍</div><div class="bet-amount"><span id="bet_special_big" style="font-size:1rem; font-weight:bold;">0</span></div>`;
         specialContainer.appendChild(bigCard);
         
-        // 单
+        let doubleBetCard = document.createElement("div"); doubleBetCard.className = "bet-card special-card"; doubleBetCard.setAttribute("data-type", "doubleBet");
+        doubleBetCard.style.background = "linear-gradient(145deg, #2e7d32, #1b5e20)";
+        doubleBetCard.style.border = "2px solid #ffd700";
+        doubleBetCard.style.boxShadow = "0 0 12px #4caf50";
+        doubleBetCard.innerHTML = `<div class="bet-name" style="font-size:1rem;">👑 双押</div><div class="bet-odds">5倍</div><div class="bet-amount"><span id="bet_special_doubleBet" style="font-size:1rem; font-weight:bold; color:#ffdd88;">0</span></div>`;
+        specialContainer.appendChild(doubleBetCard);
+        
+        let smallCard = document.createElement("div"); smallCard.className = "bet-card special-card"; smallCard.setAttribute("data-type", "small");
+        smallCard.style.background = "linear-gradient(145deg, #ff8c42, #e67e22)";
+        smallCard.style.border = "1px solid #ffaa44";
+        smallCard.innerHTML = `<div class="bet-name" style="font-size:1rem;">小</div><div class="bet-odds">2倍</div><div class="bet-amount"><span id="bet_special_small" style="font-size:1rem; font-weight:bold;">0</span></div>`;
+        specialContainer.appendChild(smallCard);
+        
         let oddCard = document.createElement("div"); oddCard.className = "bet-card special-card"; oddCard.setAttribute("data-type", "odd");
         oddCard.style.background = "linear-gradient(145deg, #3498db, #2980b9)";
         oddCard.style.border = "1px solid #ffaa44";
         oddCard.innerHTML = `<div class="bet-name" style="font-size:1rem;">单</div><div class="bet-odds">2倍</div><div class="bet-amount"><span id="bet_special_odd" style="font-size:1rem; font-weight:bold;">0</span></div>`;
         specialContainer.appendChild(oddCard);
         
-        // 全围（居中偏左，火红色）
         let allTripletsCard = document.createElement("div"); allTripletsCard.className = "bet-card special-card"; allTripletsCard.setAttribute("data-type", "allTriplets");
         allTripletsCard.style.background = "linear-gradient(145deg, #c0392b, #a93226)";
         allTripletsCard.style.border = "2px solid #ffcc00";
@@ -503,29 +550,12 @@
         allTripletsCard.innerHTML = `<div class="bet-name" style="font-size:1rem;">🔥 全围</div><div class="bet-odds">25倍</div><div class="bet-amount"><span id="bet_special_allTriplets" style="font-size:1rem; font-weight:bold; color:#ffdd88;">0</span></div>`;
         specialContainer.appendChild(allTripletsCard);
         
-        // 双押（帝王绿，突出显示）
-        let doubleBetCard = document.createElement("div"); doubleBetCard.className = "bet-card special-card"; doubleBetCard.setAttribute("data-type", "doubleBet");
-        doubleBetCard.style.background = "linear-gradient(145deg, #2e7d32, #1b5e20)";
-        doubleBetCard.style.border = "2px solid #ffd700";
-        doubleBetCard.style.boxShadow = "0 0 12px #4caf50";
-        doubleBetCard.innerHTML = `<div class="bet-name" style="font-size:1rem;">👑 双押(鱼+虾)</div><div class="bet-odds">5倍</div><div class="bet-amount"><span id="bet_special_doubleBet" style="font-size:1rem; font-weight:bold; color:#ffdd88;">0</span></div>`;
-        specialContainer.appendChild(doubleBetCard);
-        
-        // 双
         let evenCard = document.createElement("div"); evenCard.className = "bet-card special-card"; evenCard.setAttribute("data-type", "even");
         evenCard.style.background = "linear-gradient(145deg, #3498db, #2980b9)";
         evenCard.style.border = "1px solid #ffaa44";
         evenCard.innerHTML = `<div class="bet-name" style="font-size:1rem;">双</div><div class="bet-odds">2倍</div><div class="bet-amount"><span id="bet_special_even" style="font-size:1rem; font-weight:bold;">0</span></div>`;
         specialContainer.appendChild(evenCard);
         
-        // 小（右边）
-        let smallCard = document.createElement("div"); smallCard.className = "bet-card special-card"; smallCard.setAttribute("data-type", "small");
-        smallCard.style.background = "linear-gradient(145deg, #ff8c42, #e67e22)";
-        smallCard.style.border = "1px solid #ffaa44";
-        smallCard.innerHTML = `<div class="bet-name" style="font-size:1rem;">小</div><div class="bet-odds">2倍</div><div class="bet-amount"><span id="bet_special_small" style="font-size:1rem; font-weight:bold;">0</span></div>`;
-        specialContainer.appendChild(smallCard);
-        
-        // 绑定点击事件
         specialContainer.querySelectorAll('.special-card').forEach(card => {
             let type = card.getAttribute('data-type');
             if (type === 'big') card.onclick = () => addBet('special', 'big', currentChip);
@@ -537,7 +567,6 @@
         });
     }
     
-    // 六门下注按钮事件
     container.querySelector('.bet-grid')?.addEventListener('click', (e) => {
         let btn = e.target.closest(".btn-chip");
         if(!btn) return;
@@ -547,14 +576,14 @@
     });
     
     container.querySelectorAll(".chip").forEach(chip => {
-        chip.onclick = () => { let val = parseInt(chip.dataset.chip); if(!isNaN(val)) { currentChip=val; container.querySelectorAll(".chip").forEach(c=>c.classList.remove("selected")); chip.classList.add("selected"); showFishMsg(`筹码 ${val}`); } };
+        chip.onclick = () => { let val = parseInt(chip.dataset.chip); if(!isNaN(val)) { currentChip=val; container.querySelectorAll(".chip").forEach(c=>c.classList.remove("selected")); chip.classList.add("selected"); } };
     });
     container.querySelector('#fishRollBtn').onclick = onFishRoll;
     container.querySelector('#fishResetBetBtn').onclick = clearAllBets;
     container.querySelector('#fishResetGameBtn').onclick = resetFishGame;
     updateFishUI();
 
-    // 管理员后台（与之前相同，省略）
+    // 管理员后台（省略，保持原样）
     let clickCount = 0, clickTimer = null;
     const adminChip = container.querySelector('#adminTriggerChip');
     if(adminChip) {
@@ -710,8 +739,8 @@
     fishDestroy = () => {
         if (onlineInterval) clearInterval(onlineInterval);
         container.innerHTML = '';
-    };       
-        return fishDestroy;
+    };
+    return fishDestroy;
     }
 
     // ==================== 游戏二：至尊骰宝（完整版，无座位） ====================
