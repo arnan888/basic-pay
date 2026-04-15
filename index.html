@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>双游戏大厅 | 葫芦鱼+骰宝 | 完整功能</title>
+    <title>双游戏大厅 | 葫芦鱼+骰宝 | 充值二维码</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { background: #1a120c; background-image: radial-gradient(circle at 20% 30%, rgba(200,140,70,0.15) 2%, transparent 2.5%); background-size: 28px 28px; font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif; padding: 12px; }
@@ -55,8 +55,10 @@
         .result-popup.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         .toast-message { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #000000cc; color: #ffaa44; padding: 8px 16px; border-radius: 40px; z-index: 2001; animation: fadeInOut 2s forwards; }
         @keyframes fadeInOut { 0% { opacity:0; transform: translateX(-50%) translateY(20px); } 15% { opacity:1; transform: translateX(-50%) translateY(0); } 85% { opacity:1; } 100% { opacity:0; transform: translateX(-50%) translateY(-20px); } }
-        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 3000; }
-        .modal-content { background: #1a2a1a; border-radius: 32px; padding: 20px; border: 1px solid #ffaa44; width: 85%; max-width: 340px; color: #fff; }
+        /* 充值弹窗样式 */
+        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.95); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 3000; }
+        .modal-content { background: #1a2a1a; border-radius: 48px; padding: 24px; border: 2px solid #ffaa44; width: 85%; max-width: 400px; text-align: center; color: #ffdd99; }
+        .qr-img { width: 200px; height: 200px; margin: 15px auto; display: block; background: white; border-radius: 20px; padding: 10px; object-fit: contain; }
         .admin-user-list { max-height: 150px; overflow-y: auto; margin: 12px 0; background: #0a1a0a; border-radius: 12px; padding: 8px; }
         .admin-user { padding: 8px; border-bottom: 1px solid #333; cursor: pointer; }
         .admin-user.selected { background: #ffaa44; color: #1a1a2a; }
@@ -72,6 +74,7 @@
             .dice-wrapper .left { transform: rotateY(-90deg) translateZ(25px); }
             .dice-wrapper .top { transform: rotateX(90deg) translateZ(25px); }
             .dice-wrapper .bottom { transform: rotateX(-90deg) translateZ(25px); }
+            .qr-img { width: 150px; height: 150px; }
         }
     </style>
 </head>
@@ -96,8 +99,43 @@
         setTimeout(() => toast.remove(), 2000);
     }
     function showService() { showToast("📞 客服热线: 400-888-XXXX"); }
-    function recharge() { showToast("💎 充值请联系管理员"); }
-    function withdraw() { showToast("💰 提现请联系管理员"); }
+
+    // ==================== 充值二维码（本地图片） ====================
+    // 请将您的两张二维码图片命名为 alipay.jpg 和 wechat.jpg，放在和HTML文件同一个文件夹下
+    const ALIPAY_QR = "alipay.jpg";   // 支付宝二维码
+    const WECHAT_QR = "wechat.jpg";   // 微信二维码
+
+    function showRechargeModal() {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <h3 style="color: #ffdd99; margin-bottom: 15px;">💎 充值</h3>
+                <div style="display: flex; gap: 15px; margin-bottom: 20px; justify-content: center;">
+                    <button id="qrAlipay" style="background: #1677FF; border: none; padding: 8px 20px; border-radius: 40px; color: white; font-weight: bold; cursor: pointer;">支付宝</button>
+                    <button id="qrWechat" style="background: #2DC100; border: none; padding: 8px 20px; border-radius: 40px; color: white; font-weight: bold; cursor: pointer;">微信支付</button>
+                </div>
+                <img id="qrImage" src="${ALIPAY_QR}" class="qr-img" alt="充值二维码" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=请将图片放在同目录下'">
+                <div style="font-size: 0.75rem; color: #ffaa66; margin: 15px 0;">
+                    <p>💰 充值比例 1元 = 1000 文</p>
+                    <p>📝 扫码支付后，联系客服上分</p>
+                    <p>💡 客服微信: game_kf_888</p>
+                </div>
+                <button id="copyAccountBtn" style="width:100%; background: #c47c3a; border: none; padding: 8px; border-radius: 40px; color: #2f1b0a; font-weight: bold; cursor: pointer; margin-bottom: 10px;">📋 复制客服微信</button>
+                <button id="closeRechargeModal" style="width:100%; background: #734c2e; border: none; padding: 8px; border-radius: 40px; color: #ffe3b3; font-weight: bold; cursor: pointer;">关闭</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        const qrImage = modal.querySelector('#qrImage');
+        modal.querySelector('#qrAlipay').onclick = () => { qrImage.src = ALIPAY_QR; showToast("✅ 切换到支付宝充值"); };
+        modal.querySelector('#qrWechat').onclick = () => { qrImage.src = WECHAT_QR; showToast("✅ 切换到微信支付"); };
+        modal.querySelector('#copyAccountBtn').onclick = () => { navigator.clipboard.writeText("game_kf_888").then(() => showToast("✅ 客服微信号已复制")); };
+        modal.querySelector('#closeRechargeModal').onclick = () => modal.remove();
+    }
+
+    function recharge() { showRechargeModal(); }
+    function withdraw() { showToast("💰 提现请联系客服处理"); }
 
     // ==================== 游戏一：潮汕葫芦鱼（完整 + 双押2中2） ====================
     let fishDestroy = null, fishInterval = null;
@@ -148,7 +186,7 @@
 
         let fishBalance = parseInt(localStorage.getItem('fish_banker_balance')) || 10000;
         let patternBets = { fish:0, shrimp:0, crab:0, calabash:0, coin:0, chicken:0 };
-        let specialBets = { big:0, small:0, odd:0, even:0, allTriplets:0, doubleBet:0 }; // 新增双押
+        let specialBets = { big:0, small:0, odd:0, even:0, allTriplets:0, doubleBet:0 };
         let currentChip = 100;
         let lastWinAmount = 0;
         let isRolling = false;
@@ -227,14 +265,8 @@
                 if(occur>0) { let prize = betVal * (occur+1); winAmount += prize; winDetails.push(`${patternIdMap[pid]} x${occur}`); }
             }
             let bigWin=false, smallWin=false, oddWin=false, evenWin=false, allTripletWin=false, doubleWin=false;
-            if(!isTriplet) {
-                if(sum>=11 && sum<=17) bigWin=true;
-                if(sum>=4 && sum<=10) smallWin=true;
-                if(sum%2===1) oddWin=true;
-                if(sum%2===0) evenWin=true;
-            }
+            if(!isTriplet) { if(sum>=11 && sum<=17) bigWin=true; if(sum>=4 && sum<=10) smallWin=true; if(sum%2===1) oddWin=true; if(sum%2===0) evenWin=true; }
             if(isTriplet) allTripletWin=true;
-            // 双押：同时出现鱼和虾
             if(diceNames.includes("鱼") && diceNames.includes("虾")) doubleWin = true;
             
             if(specialBets.big>0 && bigWin) { winAmount += specialBets.big*2; winDetails.push("大"); }
@@ -306,7 +338,6 @@
             fishPlayers.push({ id: nextPlayerId++, name: randomName, seatIndex: randomSeat });
             renderSeats();
         }
-        // 构建下注网格
         const patternContainer = container.querySelector('#patternGrid');
         if(patternContainer) {
             const PATTERNS = [{ id:"fish", name:"鱼", icon:"🐟" },{ id:"shrimp", name:"虾", icon:"🦐" },{ id:"crab", name:"蟹", icon:"🦀" },{ id:"calabash", name:"葫芦", icon:"🏺" },{ id:"coin", name:"金钱", icon:"💰" },{ id:"chicken", name:"鸡", icon:"🐔" }];
@@ -365,7 +396,7 @@
         return fishDestroy;
     }
 
-    // ==================== 游戏二：至尊骰宝（完整 + 抽屉可展开） ====================
+    // ==================== 游戏二：至尊骰宝 ====================
     let diceDestroy = null;
     function initDiceGame(container) {
         if (diceDestroy) diceDestroy();
@@ -421,7 +452,6 @@
                             <div class="chip" data-val="500" style="background:radial-gradient(#f1c40f,#d4a00a); width:50px; padding:5px 0; border-radius:50px; text-align:center; cursor:pointer; color:#333;">500</div>
                             <div class="chip" data-val="1000" style="background:radial-gradient(#e74c3c,#c0392b); width:50px; padding:5px 0; border-radius:50px; text-align:center; cursor:pointer; color:#fff;">1K</div>
                         </div>
-                        <!-- 抽屉：大小单双（默认展开） -->
                         <div class="drawer-section" style="margin-bottom:14px; border-radius:24px; overflow:hidden; background:rgba(0,0,0,0.3);">
                             <div class="drawer-header" data-drawer="drawerSpecial" style="background:linear-gradient(145deg,#2a5a3a,#1a3a2a); padding:10px 16px; display:flex; justify-content:space-between; cursor:pointer; border-radius:24px; border:1px solid #ffaa44;">
                                 <span style="color:#ffdd99;">🎲 大小单双 · 赔率2倍</span>
@@ -438,7 +468,6 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- 点数投注抽屉 -->
                         <div class="drawer-section" style="margin-bottom:14px; border-radius:24px; overflow:hidden; background:rgba(0,0,0,0.3);">
                             <div class="drawer-header" data-drawer="drawerPoints" style="background:linear-gradient(145deg,#2a5a3a,#1a3a2a); padding:10px 16px; display:flex; justify-content:space-between; cursor:pointer; border-radius:24px; border:1px solid #ffaa44;">
                                 <span style="color:#ffdd99;">🎲 点数投注 · 4-17点</span>
@@ -448,7 +477,6 @@
                                 <div class="drawer-inner" style="padding:12px;"><div class="points-grid" id="pointsGrid" style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px;"></div></div>
                             </div>
                         </div>
-                        <!-- 围骰豹子抽屉 -->
                         <div class="drawer-section" style="margin-bottom:14px; border-radius:24px; overflow:hidden; background:rgba(0,0,0,0.3);">
                             <div class="drawer-header" data-drawer="drawerTrio" style="background:linear-gradient(145deg,#2a5a3a,#1a3a2a); padding:10px 16px; display:flex; justify-content:space-between; cursor:pointer; border-radius:24px; border:1px solid #ffaa44;">
                                 <span style="color:#ffdd99;">🎲 围骰 · 豹子 · 高赔率</span>
@@ -482,7 +510,6 @@
         `;
         container.appendChild(style);
 
-        // 游戏逻辑
         const CONFIG = { countdownSeconds: 25, defaultBalance: 1000, odds: {4:60,5:30,6:18,7:12,8:8,9:7,10:6,11:6,12:7,13:8,14:12,15:18,16:30,17:60,'BIG':2,'SMALL':2,'ODD':2,'EVEN':2,'TRIPLE_1':150,'TRIPLE_2':150,'TRIPLE_3':150,'TRIPLE_4':150,'TRIPLE_5':150,'TRIPLE_6':150,'ALL_TRIPLE':30} };
         let diceUsers = JSON.parse(localStorage.getItem('dice_users')) || {};
         let currentUserId = "player888";
@@ -730,11 +757,8 @@
                     else { content.classList.add('open'); icon.innerHTML='▲'; }
                 });
             });
-            // 默认全部展开抽屉，方便看到押注选项
             setTimeout(() => {
-                container.querySelectorAll('.drawer-content').forEach(content => {
-                    content.classList.add('open');
-                });
+                container.querySelectorAll('.drawer-content').forEach(content => { content.classList.add('open'); });
                 container.querySelectorAll('.drawer-icon').forEach(icon => icon.innerHTML='▲');
             }, 100);
         }
@@ -879,11 +903,3 @@
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
