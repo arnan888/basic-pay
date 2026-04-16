@@ -921,10 +921,16 @@ function initDiceGame(container) {
                             <div class="total-number" id="totalPoints" style="font-size:22px; font-weight:bold; color:#ff3300;">3</div>
                         </div>
                     </div>
-                    <!-- 中奖金额显示 -->
-                    <div class="rolling-win" style="background:rgba(0,0,0,0.5); border-radius:30px; padding:5px 12px; display:flex; justify-content:space-between; margin-bottom:14px;">
-                        <div style="font-size:12px; color:#3399ff;">🎲 本局中奖</div>
-                        <div id="rollingWinNumber" style="font-size:22px; font-weight:bold; color:#ff3300;">0.00</div>
+                    <!-- 总押注 + 本局中奖（往上移） -->
+                    <div class="stats-row" style="display:flex; justify-content:space-between; gap:8px; margin:0 0 12px 0; background:rgba(0,0,0,0.5); border-radius:30px; padding:8px 12px;">
+                        <div style="text-align:center; flex:1;">
+                            <div style="font-size:10px; color:#88aa88;">总押注</div>
+                            <div id="totalBet" style="font-size:18px; font-weight:bold; color:#ff3300;">0</div>
+                        </div>
+                        <div style="text-align:center; flex:1;">
+                            <div style="font-size:10px; color:#88aa88;">🎲 本局中奖</div>
+                            <div id="rollingWinNumber" style="font-size:18px; font-weight:bold; color:#ff3300;">0.00</div>
+                        </div>
                     </div>
                     <!-- 下注信息栏（倒计时 + 筹码） -->
                     <div class="info-bar" style="background:rgba(0,0,0,0.5); border-radius:30px; padding:6px 12px; display:flex; justify-content:space-between; margin-bottom:14px;">
@@ -977,19 +983,16 @@ function initDiceGame(container) {
                     <!-- 围骰豹子 -->
                     <div class="section-title" style="font-size: 0.7rem; color: #ffd49f; margin: 12px 0 6px 4px; border-left: 3px solid #f7b05e; padding-left: 8px;">🎲 围骰 · 豹子 · 高赔率</div>
                     <div class="trio-grid" id="combinedGrid" style="display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 12px;">${trioHtml}</div>
-                    <!-- 统计（总押注 + 选中点数） -->
-                    <div class="stats" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;">
-                        <div style="background:rgba(0,0,0,0.5); border-radius:16px; padding:6px; text-align:center;"><div style="font-size:9px;">总押注</div><div id="totalBet" style="font-size:18px; font-weight:bold; color:#ff3300;">0</div></div>
-                        <div style="background:rgba(0,0,0,0.5); border-radius:16px; padding:6px; text-align:center;"><div style="font-size:9px;">选中点数</div><div id="selectedPoint" style="font-size:18px; font-weight:bold; color:#ff3300;">-</div></div>
+                    <!-- 开奖记录按钮（点击弹出模态框） -->
+                    <div style="margin: 12px 0;">
+                        <button id="showDiceHistoryBtn" style="width:100%; background:#2a1f16; border:1px solid #ffaa44; border-radius:40px; padding:8px 0; color:#ffdd99; font-weight:bold; cursor:pointer;">📜 开奖记录查询</button>
                     </div>
-                    <!-- 开奖记录（像葫芦鱼一样简洁） -->
-                    <div class="history" id="historyList" style="background:rgba(0,0,0,0.4); border-radius:20px; padding:8px; max-height:90px; overflow-y:auto;"></div>
                 </div>
             </div>
         </div>
     `;
 
-    // 骰宝动画样式
+    // 骰宝动画样式（包含骰子面样式）
     const style = document.createElement('style');
     style.textContent = `
         @keyframes roll1 { 0% { transform: rotateX(0deg) rotateY(0deg); } 100% { transform: rotateX(720deg) rotateY(360deg); } }
@@ -1000,12 +1003,37 @@ function initDiceGame(container) {
         .rolling3 { animation: roll3 0.9s cubic-bezier(0.2,0.9,0.4,1.1); }
         .land { animation: land 0.15s ease-out; }
         @keyframes land { 0% { transform: scale(1.15); } 100% { transform: scale(1); } }
+        .dice { width: 60px; height: 60px; position: relative; transform-style: preserve-3d; }
+        .dice-face { position: absolute; width: 60px; height: 60px; background: linear-gradient(145deg, #fffff0, #f5f5dc); border-radius: 12px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; border: 1px solid rgba(200,180,120,0.5); }
+        .front { transform: translateZ(30px); }
+        .back { transform: rotateY(180deg) translateZ(30px); }
+        .right { transform: rotateY(90deg) translateZ(30px); }
+        .left { transform: rotateY(-90deg) translateZ(30px); }
+        .top { transform: rotateX(90deg) translateZ(30px); }
+        .bottom { transform: rotateX(-90deg) translateZ(30px); }
+        .pip { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #e74c3c, #c0392b); }
+        .face-1 .pip-center { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .face-2 .pip-tl { top: 20%; left: 20%; } .face-2 .pip-br { bottom: 20%; right: 20%; }
+        .face-3 .pip-tl { top: 20%; left: 20%; } .face-3 .pip-center { top: 50%; left: 50%; transform: translate(-50%, -50%); } .face-3 .pip-br { bottom: 20%; right: 20%; }
+        .face-4 .pip-tl { top: 20%; left: 20%; } .face-4 .pip-tr { top: 20%; right: 20%; } .face-4 .pip-bl { bottom: 20%; left: 20%; } .face-4 .pip-br { bottom: 20%; right: 20%; }
+        .face-5 .pip-tl { top: 20%; left: 20%; } .face-5 .pip-tr { top: 20%; right: 20%; } .face-5 .pip-mid { top: 50%; left: 50%; transform: translate(-50%, -50%); } .face-5 .pip-bl { bottom: 20%; left: 20%; } .face-5 .pip-br { bottom: 20%; right: 20%; }
+        .face-6 .pip-l1 { left: 20%; top: 15%; } .face-6 .pip-l2 { left: 20%; top: 50%; transform: translateY(-50%); } .face-6 .pip-l3 { left: 20%; bottom: 15%; } .face-6 .pip-r1 { right: 20%; top: 15%; } .face-6 .pip-r2 { right: 20%; top: 50%; transform: translateY(-50%); } .face-6 .pip-r3 { right: 20%; bottom: 15%; }
         .bet-card:active { transform: translateY(3px); box-shadow: 0 3px 0 #0a0705 !important; }
         .chip:active { transform: translateY(3px); }
-        /* 开奖记录样式 */
-        .history-item { display: flex; justify-content: space-between; padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 10px; color: #ccc; }
-        .win { color: #4caf50; }
-        .lose { color: #f44336; }
+        @media (max-width: 480px) {
+            .dice { width: 50px; height: 50px; }
+            .dice-face { width: 50px; height: 50px; }
+            .front { transform: translateZ(25px); }
+            .back { transform: rotateY(180deg) translateZ(25px); }
+            .right { transform: rotateY(90deg) translateZ(25px); }
+            .left { transform: rotateY(-90deg) translateZ(25px); }
+            .top { transform: rotateX(90deg) translateZ(25px); }
+            .bottom { transform: rotateX(-90deg) translateZ(25px); }
+        }
+        .result-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.6); background: linear-gradient(145deg, #ffcc44, #ff9933); color: #1a1a2a; padding: 24px 40px; border-radius: 80px; font-size: 2rem; font-weight: 900; z-index: 2000; opacity: 0; transition: 0.25s; pointer-events: none; }
+        .result-popup.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        .result-popup.win { background: linear-gradient(145deg, #ffcc44, #ffaa22); }
+        .result-popup.lose { background: linear-gradient(145deg, #555, #333); color: #ffaa66; }
     `;
     container.appendChild(style);
 
@@ -1026,6 +1054,32 @@ function initDiceGame(container) {
     const diceEl = [container.querySelector('#dice1'), container.querySelector('#dice2'), container.querySelector('#dice3')];
     const totalEl = container.querySelector('#totalPoints');
     const rollingWinEl = container.querySelector('#rollingWinNumber');
+    const totalBetEl = container.querySelector('#totalBet');
+
+    // 生成骰子3D面（必须执行，否则骰子不显示）
+    function buildDiceFaces() {
+        diceEl.forEach(dice => {
+            dice.innerHTML = ''; // 清空
+            for (let i = 0; i < 6; i++) {
+                let faceDivs = ['front', 'back', 'right', 'left', 'top', 'bottom'];
+                let faceClass = faceDivs[i];
+                let valMap = { front: 1, back: 6, right: 4, left: 3, top: 2, bottom: 5 };
+                let num = valMap[faceClass];
+                let faceDiv = document.createElement('div');
+                faceDiv.className = 'dice-face ' + faceClass + ' face-' + num;
+                let pipHtml = '';
+                if (num === 1) pipHtml = '<div class="pip pip-center"></div>';
+                else if (num === 2) pipHtml = '<div class="pip pip-tl"></div><div class="pip pip-br"></div>';
+                else if (num === 3) pipHtml = '<div class="pip pip-tl"></div><div class="pip pip-center"></div><div class="pip pip-br"></div>';
+                else if (num === 4) pipHtml = '<div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div>';
+                else if (num === 5) pipHtml = '<div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-mid"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div>';
+                else if (num === 6) pipHtml = '<div class="pip pip-l1"></div><div class="pip pip-l2"></div><div class="pip pip-l3"></div><div class="pip pip-r1"></div><div class="pip pip-r2"></div><div class="pip pip-r3"></div>';
+                faceDiv.innerHTML = pipHtml;
+                dice.appendChild(faceDiv);
+            }
+        });
+    }
+    buildDiceFaces();
 
     function setDiceValue(dice, val) {
         const rot = {1:'rotateX(0deg) rotateY(0deg)',2:'rotateX(-90deg) rotateY(0deg)',3:'rotateX(0deg) rotateY(90deg)',4:'rotateX(0deg) rotateY(-90deg)',5:'rotateX(90deg) rotateY(0deg)',6:'rotateX(180deg) rotateY(0deg)'};
@@ -1087,8 +1141,7 @@ function initDiceGame(container) {
         for (let i=1;i<=6;i++) { let el = container.querySelector('#bet_TRIPLE_'+i); if(el) el.innerText = bets['TRIPLE_'+i]; }
         container.querySelector('#bet_ALL_TRIPLE').innerText = bets['ALL_TRIPLE'];
         let totalBet = Object.values(bets).reduce((a,b)=>a+b,0);
-        container.querySelector('#totalBet').innerText = totalBet;
-        // 不再显示余额（已在全局显示）
+        totalBetEl.innerText = totalBet;
     }
     
     function addBet(type) {
@@ -1192,6 +1245,9 @@ function initDiceGame(container) {
         });
     }
     
+    // 开奖记录存储
+    let gameRecords = [];
+    
     async function drawWithCover() {
         if (isDrawing) return;
         let totalBet = Object.values(bets).reduce((a,b)=>a+b,0);
@@ -1240,28 +1296,50 @@ function initDiceGame(container) {
             }
         }
         
-        let betSummary = [];
-        for (let k in bets) if (bets[k]>0) {
-            if (k==='BIG') betSummary.push('大'+bets[k]);
-            else if (k==='SMALL') betSummary.push('小'+bets[k]);
-            else if (k==='ODD') betSummary.push('单'+bets[k]);
-            else if (k==='EVEN') betSummary.push('双'+bets[k]);
-            else if (typeof k==='number') betSummary.push(k+'点'+bets[k]);
-            else if (k.startsWith('TRIPLE_')) betSummary.push(k.split('_')[1]+'围'+bets[k]);
-            else if (k==='ALL_TRIPLE') betSummary.push('豹子'+bets[k]);
-        }
-        let recs = diceUsers[currentUserId].records || [];
-        recs.unshift({ time:new Date().toLocaleTimeString(), bets:betSummary.join(' '), result:total, resultType:types.join(','), win:totalWin, isWin:totalWin>0 });
-        if (recs.length>30) recs.pop();
-        diceUsers[currentUserId].records = recs;
-        saveDiceUsers();
-        updateHistory();
+        // 记录开奖结果
+        let resultText = `点数和${total}`;
+        let winText = totalWin > 0 ? `中奖 ${totalWin}` : `未中奖`;
+        gameRecords.unshift({
+            time: new Date().toLocaleTimeString(),
+            dice: `${d1},${d2},${d3}`,
+            result: resultText,
+            win: totalWin,
+            isWin: totalWin > 0
+        });
+        if (gameRecords.length > 50) gameRecords.pop();
+        
+        // 清空下注
         for (let k in bets) bets[k]=0;
         updateUI();
         lastBet = JSON.parse(JSON.stringify(bets));
-        let winText = totalWin>0 ? `🎉 恭喜！ 赢 ${totalWin.toFixed(2)} 🎉` : `😭 很遗憾 输 ${totalBet.toFixed(2)} 😭`;
-        let pop = document.createElement('div'); pop.className='result-popup '+(totalWin>0?'win':'lose'); pop.textContent=winText; document.body.appendChild(pop); setTimeout(()=>pop.classList.add('show'),10); setTimeout(()=>{pop.classList.remove('show');setTimeout(()=>pop.remove(),300);},2000);
+        
+        let winTextPopup = totalWin>0 ? `🎉 恭喜！ 赢 ${totalWin.toFixed(2)} 🎉` : `😭 很遗憾 输 ${totalBet.toFixed(2)} 😭`;
+        let pop = document.createElement('div'); pop.className='result-popup '+(totalWin>0?'win':'lose'); pop.textContent=winTextPopup; document.body.appendChild(pop); setTimeout(()=>pop.classList.add('show'),10); setTimeout(()=>{pop.classList.remove('show');setTimeout(()=>pop.remove(),300);},2000);
+        
         setTimeout(()=>{ isDrawing=false; isBetLocked=false; startCountdown(CONFIG.countdownSeconds); },5000);
+    }
+    
+    // 开奖记录弹窗（类似葫芦鱼）
+    function showRecordModal() {
+        if (gameRecords.length === 0) {
+            showToast("暂无开奖记录");
+            return;
+        }
+        let html = '<div style="max-height:400px; overflow-y:auto; padding:8px;">';
+        gameRecords.forEach(rec => {
+            html += `<div style="background:#2a241e; margin-bottom:8px; padding:8px; border-radius:12px; border-left:3px solid #ffaa44;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#ffaa66;">${rec.time}</div>
+                        <div style="font-size:1rem; font-weight:bold; color:#ffdd99; margin:4px 0;">🎲 ${rec.dice}</div>
+                        <div style="font-size:0.8rem; color:${rec.win > 0 ? '#4caf50' : '#f44336'}">${rec.win > 0 ? `赢 ${rec.win}` : '输'}</div>
+                     </div>`;
+        });
+        html += '</div><button id="closeRecordModal" style="background:#ffaa44; border:none; padding:8px 16px; border-radius:30px; margin-top:12px; cursor:pointer;">关闭</button>';
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `<div class="modal-content" style="max-width:450px;"><h3 style="margin-bottom:12px;">📜 开奖记录</h3>${html}</div>`;
+        document.body.appendChild(modal);
+        modal.querySelector('#closeRecordModal').onclick = () => modal.remove();
     }
     
     function startCountdown(sec) {
@@ -1273,22 +1351,6 @@ function initDiceGame(container) {
             if (c<=1) { clearInterval(countdownInterval); countdownInterval=null; isBetLocked=true; drawWithCover(); }
             else { c--; cdSpan.innerText = c; if (c<=5) cdSpan.classList.add('countdown-warning'); }
         }, 1000);
-    }
-    
-    function updateHistory() {
-        let histDiv = container.querySelector('#historyList');
-        let recs = diceUsers[currentUserId]?.records || [];
-        histDiv.innerHTML = '';
-        if (recs.length === 0) {
-            histDiv.innerHTML = '<div style="text-align:center;color:#666">暂无记录</div>';
-            return;
-        }
-        recs.slice(0, 10).forEach(r => {
-            let div = document.createElement('div');
-            div.className = 'history-item';
-            div.innerHTML = `<span>${r.time}</span><span>${r.bets}</span><span>开${r.result}点</span><span class="${r.isWin ? 'win' : 'lose'}">${r.isWin ? '+' + r.win : ''}</span>`;
-            histDiv.appendChild(div);
-        });
     }
     
     function refreshBalance() { currentBalance = getUserBalance(); updateUI(); showToast("余额已刷新"); }
@@ -1411,28 +1473,14 @@ function initDiceGame(container) {
         container.querySelector('#betBtn').onclick = () => { if(!isDrawing && !isBetLocked) drawWithCover(); };
         container.querySelector('#adminEntry').onclick = () => { let pwd=prompt("管理员密码:"); if(pwd===adminPwd) showAdminPanel(); else if(pwd!==null) showToast("密码错误"); };
         
-        diceEl.forEach(d => {
-            for (let i=0;i<6;i++) {
-                let faceDivs=['front','back','right','left','top','bottom'];
-                let faceClass=faceDivs[i];
-                let valMap={front:1,back:6,right:4,left:3,top:2,bottom:5};
-                let num=valMap[faceClass];
-                let faceDiv=document.createElement('div');
-                faceDiv.className='dice-face '+faceClass+' face-'+num;
-                let pipHtml='';
-                if (num===1) pipHtml='<div class="pip pip-center"></div>';
-                else if (num===2) pipHtml='<div class="pip pip-tl"></div><div class="pip pip-br"></div>';
-                else if (num===3) pipHtml='<div class="pip pip-tl"></div><div class="pip pip-center"></div><div class="pip pip-br"></div>';
-                else if (num===4) pipHtml='<div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div>';
-                else if (num===5) pipHtml='<div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-mid"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div>';
-                else if (num===6) pipHtml='<div class="pip pip-l1"></div><div class="pip pip-l2"></div><div class="pip pip-l3"></div><div class="pip pip-r1"></div><div class="pip pip-r2"></div><div class="pip pip-r3"></div>';
-                faceDiv.innerHTML=pipHtml;
-                d.appendChild(faceDiv);
-            }
-        });
-        diceEl.forEach(d=>setDiceValue(d,1));
-        totalEl.innerText=3;
-        updateUI(); updateHistory(); startCountdown(CONFIG.countdownSeconds);
+        // 开奖记录按钮
+        const historyBtn = container.querySelector('#showDiceHistoryBtn');
+        if (historyBtn) historyBtn.onclick = showRecordModal;
+        
+        // 初始化骰子显示为1点
+        diceEl.forEach(d => setDiceValue(d, 1));
+        totalEl.innerText = 3;
+        updateUI(); startCountdown(CONFIG.countdownSeconds);
     }
     init();
 
@@ -1442,7 +1490,7 @@ function initDiceGame(container) {
         container.innerHTML = '';
     };
     return diceDestroy;
-}
+} 
     // ==================== 预留游戏三、四 ====================
     function initGame3(container) { container.innerHTML = '<div style="padding:40px;text-align:center;color:#ffdd99;">🎮 游戏3预留位</div>'; return ()=>{}; }
     function initGame4(container) { container.innerHTML = '<div style="padding:40px;text-align:center;color:#ffdd99;">♠️ 游戏4预留位</div>'; return ()=>{}; }
