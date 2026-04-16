@@ -871,11 +871,11 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
 
     // ==================== 游戏二：至尊骰宝（完整版，无座位） ====================
     let diceDestroy = null;
-    function initDiceGame(container) {
+ function initDiceGame(container) {
     if (diceDestroy) diceDestroy();
     container.innerHTML = '';
     
-    // 生成点数投注HTML
+    // 生成点数投注HTML (4-17点)
     let pointsHtml = '';
     const oddsMap = {4:60,5:30,6:18,7:12,8:8,9:7,10:6,11:6,12:7,13:8,14:12,15:18,16:30,17:60};
     for (let i = 4; i <= 17; i++) {
@@ -921,12 +921,12 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
                             <div class="total-number" id="totalPoints" style="font-size:22px; font-weight:bold; color:#ff3300;">3</div>
                         </div>
                     </div>
-                    <!-- 中奖金额 -->
+                    <!-- 中奖金额显示 -->
                     <div class="rolling-win" style="background:rgba(0,0,0,0.5); border-radius:30px; padding:5px 12px; display:flex; justify-content:space-between; margin-bottom:14px;">
                         <div style="font-size:12px; color:#3399ff;">🎲 本局中奖</div>
                         <div id="rollingWinNumber" style="font-size:22px; font-weight:bold; color:#ff3300;">0.00</div>
                     </div>
-                    <!-- 信息栏 -->
+                    <!-- 下注信息栏（倒计时 + 筹码） -->
                     <div class="info-bar" style="background:rgba(0,0,0,0.5); border-radius:30px; padding:6px 12px; display:flex; justify-content:space-between; margin-bottom:14px;">
                         <div style="text-align:center;"><div style="font-size:9px;">⏱️ 下注倒计时</div><div id="countdownNum" style="font-size:20px; font-weight:bold; color:#ff3300;">25</div></div>
                         <div style="text-align:center;"><div style="font-size:9px;">🎲 当前筹码</div><div id="selectedChip" style="font-size:20px; font-weight:bold; color:#ff3300;">0</div></div>
@@ -937,11 +937,6 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
                         <button id="repeatBtn" style="flex:1; background:#f39c12; border:none; border-radius:50px; padding:8px; color:#fff; box-shadow:0 3px 0 #b86d0a;">续押</button>
                         <button id="refreshBtn" style="flex:1; background:#2ecc71; border:none; border-radius:50px; padding:8px; color:#fff; box-shadow:0 3px 0 #1e8a4a;">刷新余额</button>
                         <button id="betBtn" style="flex:1; background:#3498db; border:none; border-radius:50px; padding:8px; color:#fff; box-shadow:0 3px 0 #1a5276;">确认投注</button>
-                    </div>
-                    <!-- 余额显示 -->
-                    <div class="balance-row" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;">
-                        <div id="adminEntry" style="background:rgba(0,0,0,0.5); border-radius:20px; padding:6px; text-align:center; cursor:pointer;"><div style="font-size:9px;">💰 账户余额</div><div id="balanceDisplay" style="font-size:18px; font-weight:bold; color:#ff3300;">1000.00</div></div>
-                        <div style="background:rgba(0,0,0,0.5); border-radius:20px; padding:6px; text-align:center;"><div style="font-size:9px;">🎰 奖池累积</div><div id="poolDisplay" style="font-size:18px; font-weight:bold; color:#ff3300;">50000.00</div></div>
                     </div>
                     <!-- 筹码选择 -->
                     <div class="chips" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-bottom:14px;">
@@ -982,11 +977,12 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
                     <!-- 围骰豹子 -->
                     <div class="section-title" style="font-size: 0.7rem; color: #ffd49f; margin: 12px 0 6px 4px; border-left: 3px solid #f7b05e; padding-left: 8px;">🎲 围骰 · 豹子 · 高赔率</div>
                     <div class="trio-grid" id="combinedGrid" style="display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 12px;">${trioHtml}</div>
-                    <!-- 统计 -->
+                    <!-- 统计（总押注 + 选中点数） -->
                     <div class="stats" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;">
                         <div style="background:rgba(0,0,0,0.5); border-radius:16px; padding:6px; text-align:center;"><div style="font-size:9px;">总押注</div><div id="totalBet" style="font-size:18px; font-weight:bold; color:#ff3300;">0</div></div>
                         <div style="background:rgba(0,0,0,0.5); border-radius:16px; padding:6px; text-align:center;"><div style="font-size:9px;">选中点数</div><div id="selectedPoint" style="font-size:18px; font-weight:bold; color:#ff3300;">-</div></div>
                     </div>
+                    <!-- 开奖记录（像葫芦鱼一样简洁） -->
                     <div class="history" id="historyList" style="background:rgba(0,0,0,0.4); border-radius:20px; padding:8px; max-height:90px; overflow-y:auto;"></div>
                 </div>
             </div>
@@ -1006,6 +1002,10 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
         @keyframes land { 0% { transform: scale(1.15); } 100% { transform: scale(1); } }
         .bet-card:active { transform: translateY(3px); box-shadow: 0 3px 0 #0a0705 !important; }
         .chip:active { transform: translateY(3px); }
+        /* 开奖记录样式 */
+        .history-item { display: flex; justify-content: space-between; padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 10px; color: #ccc; }
+        .win { color: #4caf50; }
+        .lose { color: #f44336; }
     `;
     container.appendChild(style);
 
@@ -1032,26 +1032,18 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
         dice.style.transform = rot[val];
     }
     
-    // 修复：确保动画结束后显示正确的点数
     async function startRolling(finalVals) {
         return new Promise(resolve => {
-            // 开始动画
             diceEl[0].classList.add('rolling1');
             diceEl[1].classList.add('rolling2');
             diceEl[2].classList.add('rolling3');
-            
-            let step = 0;
-            const maxStep = 18;
-            const iv = setInterval(() => {
+            let step = 0, maxStep = 18;
+            let iv = setInterval(() => {
                 step++;
-                // 动画过程中随机变化
                 diceEl.forEach(d => setDiceValue(d, Math.floor(Math.random() * 6) + 1));
-                
                 if (step >= maxStep) {
                     clearInterval(iv);
-                    // 停止动画
-                    diceEl.forEach(d => d.classList.remove('rolling1', 'rolling2', 'rolling3'));
-                    // 设置最终结果
+                    diceEl.forEach(d => d.classList.remove('rolling1','rolling2','rolling3'));
                     diceEl.forEach((d, i) => {
                         setDiceValue(d, finalVals[i]);
                         d.classList.add('land');
@@ -1096,9 +1088,7 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
         container.querySelector('#bet_ALL_TRIPLE').innerText = bets['ALL_TRIPLE'];
         let totalBet = Object.values(bets).reduce((a,b)=>a+b,0);
         container.querySelector('#totalBet').innerText = totalBet;
-        container.querySelector('#balanceDisplay').innerText = currentBalance.toFixed(2);
-        let pool = 50000 + (Math.random()-0.5)*3000;
-        container.querySelector('#poolDisplay').innerText = Math.max(40000,Math.min(60000,pool)).toFixed(2);
+        // 不再显示余额（已在全局显示）
     }
     
     function addBet(type) {
@@ -1202,7 +1192,6 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
         });
     }
     
-    // 核心开奖函数 - 修复同步问题
     async function drawWithCover() {
         if (isDrawing) return;
         let totalBet = Object.values(bets).reduce((a,b)=>a+b,0);
@@ -1215,7 +1204,6 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
         let d2 = Math.floor(Math.random() * 6) + 1;
         let d3 = Math.floor(Math.random() * 6) + 1;
         
-        // 计算中奖金额
         let {total,types} = getResultInfo(d1,d2,d3);
         let winAmounts = [];
         if (types.includes('BIG') && bets['BIG']>0) winAmounts.push(bets['BIG']*2);
@@ -1229,18 +1217,12 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
         }
         let totalWin = winAmounts.reduce((a,b)=>a+b,0);
         
-        // 先显示中奖金额动画
         startRollingNumber(totalWin);
-        // 再播放骰子动画并设置最终点数
         await startRolling([d1, d2, d3]);
-        // 显示总点数
         totalEl.innerText = total;
-        
-        // 更新余额
         currentBalance += totalWin;
         setUserBalance(currentBalance);
         
-        // 玩家庄家扣款
         if (hasGrabbed) {
             playerBankerBalance -= totalWin;
             if (playerBankerBalance < 0) {
@@ -1258,7 +1240,6 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
             }
         }
         
-        // 记录历史
         let betSummary = [];
         for (let k in bets) if (bets[k]>0) {
             if (k==='BIG') betSummary.push('大'+bets[k]);
@@ -1275,16 +1256,11 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
         diceUsers[currentUserId].records = recs;
         saveDiceUsers();
         updateHistory();
-        
-        // 清空下注
         for (let k in bets) bets[k]=0;
         updateUI();
         lastBet = JSON.parse(JSON.stringify(bets));
-        
-        // 显示结果弹窗
         let winText = totalWin>0 ? `🎉 恭喜！ 赢 ${totalWin.toFixed(2)} 🎉` : `😭 很遗憾 输 ${totalBet.toFixed(2)} 😭`;
         let pop = document.createElement('div'); pop.className='result-popup '+(totalWin>0?'win':'lose'); pop.textContent=winText; document.body.appendChild(pop); setTimeout(()=>pop.classList.add('show'),10); setTimeout(()=>{pop.classList.remove('show');setTimeout(()=>pop.remove(),300);},2000);
-        
         setTimeout(()=>{ isDrawing=false; isBetLocked=false; startCountdown(CONFIG.countdownSeconds); },5000);
     }
     
@@ -1302,7 +1278,17 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
     function updateHistory() {
         let histDiv = container.querySelector('#historyList');
         let recs = diceUsers[currentUserId]?.records || [];
-        histDiv.innerHTML = recs.length===0 ? '<div style="text-align:center;color:#666">暂无记录</div>' : recs.slice(0,10).map(r=>`<div style="display:flex; justify-content:space-between; padding:4px; border-bottom:1px solid #333;"><span>${r.time}</span><span>${r.bets}</span><span>开${r.result}点</span><span style="color:${r.isWin?'#4caf50':'#f44336'}">${r.isWin?'+'+r.win:''}</span></div>`).join('');
+        histDiv.innerHTML = '';
+        if (recs.length === 0) {
+            histDiv.innerHTML = '<div style="text-align:center;color:#666">暂无记录</div>';
+            return;
+        }
+        recs.slice(0, 10).forEach(r => {
+            let div = document.createElement('div');
+            div.className = 'history-item';
+            div.innerHTML = `<span>${r.time}</span><span>${r.bets}</span><span>开${r.result}点</span><span class="${r.isWin ? 'win' : 'lose'}">${r.isWin ? '+' + r.win : ''}</span>`;
+            histDiv.appendChild(div);
+        });
     }
     
     function refreshBalance() { currentBalance = getUserBalance(); updateUI(); showToast("余额已刷新"); }
@@ -1455,7 +1441,7 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
         if (rollingAnimation) cancelAnimationFrame(rollingAnimation);
         container.innerHTML = '';
     };
-    return diceDestroy;
+   return diceDestroy;
 }
     // ==================== 预留游戏三、四 ====================
     function initGame3(container) { container.innerHTML = '<div style="padding:40px;text-align:center;color:#ffdd99;">🎮 游戏3预留位</div>'; return ()=>{}; }
