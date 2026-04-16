@@ -952,7 +952,7 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
                         <div class="chip" data-val="500" style="background:radial-gradient(#f1c40f,#d4a00a); width:50px; padding:5px 0; border-radius:50px; text-align:center; cursor:pointer; color:#333; box-shadow:0 3px 0 #a07a0a;">500</div>
                         <div class="chip" data-val="1000" style="background:radial-gradient(#e74c3c,#c0392b); width:50px; padding:5px 0; border-radius:50px; text-align:center; cursor:pointer; color:#fff; box-shadow:0 3px 0 #8a2a1a;">1K</div>
                     </div>
-                    <!-- 大小单双 - 优化UI -->
+                    <!-- 大小单双 -->
                     <div class="section-title" style="font-size: 0.7rem; color: #ffd49f; margin: 12px 0 6px 4px; border-left: 3px solid #f7b05e; padding-left: 8px;">🎲 大小单双 · 赔率2倍</div>
                     <div class="special-grid" style="display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 12px;">
                         <div class="bet-card special-card" data-type="BIG" style="background: linear-gradient(145deg, #ff8c42, #e67e22); border: 1px solid #ffaa44; border-radius: 28px; padding: 6px 2px; text-align: center; cursor: pointer; transition: 0.05s linear; box-shadow: 0 6px 0 #b86d0a;">
@@ -1015,8 +1015,8 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
     let currentUserId = "player888";
     if (!diceUsers[currentUserId]) diceUsers[currentUserId] = { records: [] };
     let adminPwd = "admin123";
-    let hasGrabbed = false;          // 骰宝抢庄状态
-    let playerBankerBalance = 0;     // 骰宝玩家庄家余额
+    let hasGrabbed = false;
+    let playerBankerBalance = 0;
     
     function saveDiceUsers() { localStorage.setItem('dice_users', JSON.stringify(diceUsers)); }
 
@@ -1032,18 +1032,26 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
         dice.style.transform = rot[val];
     }
     
+    // 修复：确保动画结束后显示正确的点数
     async function startRolling(finalVals) {
         return new Promise(resolve => {
+            // 开始动画
             diceEl[0].classList.add('rolling1');
             diceEl[1].classList.add('rolling2');
             diceEl[2].classList.add('rolling3');
-            let step = 0, maxStep = 18;
-            let iv = setInterval(() => {
+            
+            let step = 0;
+            const maxStep = 18;
+            const iv = setInterval(() => {
                 step++;
+                // 动画过程中随机变化
                 diceEl.forEach(d => setDiceValue(d, Math.floor(Math.random() * 6) + 1));
+                
                 if (step >= maxStep) {
                     clearInterval(iv);
-                    diceEl.forEach(d => d.classList.remove('rolling1','rolling2','rolling3'));
+                    // 停止动画
+                    diceEl.forEach(d => d.classList.remove('rolling1', 'rolling2', 'rolling3'));
+                    // 设置最终结果
                     diceEl.forEach((d, i) => {
                         setDiceValue(d, finalVals[i]);
                         d.classList.add('land');
@@ -1139,11 +1147,11 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
     // 抢庄功能
     const diceGrabBtn = container.querySelector('#diceGrabBtn');
     function updateGrabButtonState() {
-        const currentBalance = getUserBalance();
+        const curBalance = getUserBalance();
         if (hasGrabbed) {
             diceGrabBtn.disabled = true;
             diceGrabBtn.textContent = '🏆 已抢庄';
-        } else if (currentBalance >= 2001) {
+        } else if (curBalance >= 2001) {
             diceGrabBtn.disabled = false;
             diceGrabBtn.textContent = '🎲 抢庄 (需2001文)';
         } else {
@@ -1171,9 +1179,7 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
         updateGrabButtonState();
         document.getElementById("userBalanceDisplay").innerText = newUserBalance.toFixed(2);
         showToast("抢庄成功！您现在不能下注，只能坐庄。");
-        // 清空庄家自己的下注
         clearAllBets();
-        // 禁用筹码栏
         container.querySelectorAll(".chip").forEach(chip => {
             chip.style.pointerEvents = "none";
             chip.style.opacity = "0.5";
@@ -1185,11 +1191,10 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
         updateGrabButtonState();
     }
     
-    // 恢复玩家庄家状态
-    const savedBankerBalance = localStorage.getItem('dice_player_banker_balance');
-    if (savedBankerBalance && parseInt(savedBankerBalance) > 0) {
+    const savedBanker = localStorage.getItem('dice_player_banker_balance');
+    if (savedBanker && parseInt(savedBanker) > 0) {
         hasGrabbed = true;
-        playerBankerBalance = parseInt(savedBankerBalance);
+        playerBankerBalance = parseInt(savedBanker);
         updateGrabButtonState();
         container.querySelectorAll(".chip").forEach(chip => {
             chip.style.pointerEvents = "none";
@@ -1197,6 +1202,7 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
         });
     }
     
+    // 核心开奖函数 - 修复同步问题
     async function drawWithCover() {
         if (isDrawing) return;
         let totalBet = Object.values(bets).reduce((a,b)=>a+b,0);
@@ -1209,6 +1215,7 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
         let d2 = Math.floor(Math.random() * 6) + 1;
         let d3 = Math.floor(Math.random() * 6) + 1;
         
+        // 计算中奖金额
         let {total,types} = getResultInfo(d1,d2,d3);
         let winAmounts = [];
         if (types.includes('BIG') && bets['BIG']>0) winAmounts.push(bets['BIG']*2);
@@ -1221,9 +1228,15 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
             if (t==='ALL_TRIPLE' && bets['ALL_TRIPLE']>0) winAmounts.push(bets['ALL_TRIPLE']*CONFIG.odds['ALL_TRIPLE']);
         }
         let totalWin = winAmounts.reduce((a,b)=>a+b,0);
+        
+        // 先显示中奖金额动画
         startRollingNumber(totalWin);
+        // 再播放骰子动画并设置最终点数
         await startRolling([d1, d2, d3]);
+        // 显示总点数
         totalEl.innerText = total;
+        
+        // 更新余额
         currentBalance += totalWin;
         setUserBalance(currentBalance);
         
@@ -1245,6 +1258,7 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
             }
         }
         
+        // 记录历史
         let betSummary = [];
         for (let k in bets) if (bets[k]>0) {
             if (k==='BIG') betSummary.push('大'+bets[k]);
@@ -1261,11 +1275,16 @@ function withdraw() { showToast("💰 提现请联系客服处理"); }
         diceUsers[currentUserId].records = recs;
         saveDiceUsers();
         updateHistory();
+        
+        // 清空下注
         for (let k in bets) bets[k]=0;
         updateUI();
         lastBet = JSON.parse(JSON.stringify(bets));
+        
+        // 显示结果弹窗
         let winText = totalWin>0 ? `🎉 恭喜！ 赢 ${totalWin.toFixed(2)} 🎉` : `😭 很遗憾 输 ${totalBet.toFixed(2)} 😭`;
         let pop = document.createElement('div'); pop.className='result-popup '+(totalWin>0?'win':'lose'); pop.textContent=winText; document.body.appendChild(pop); setTimeout(()=>pop.classList.add('show'),10); setTimeout(()=>{pop.classList.remove('show');setTimeout(()=>pop.remove(),300);},2000);
+        
         setTimeout(()=>{ isDrawing=false; isBetLocked=false; startCountdown(CONFIG.countdownSeconds); },5000);
     }
     
