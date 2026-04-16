@@ -1,3 +1,484 @@
+
+
+
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>双游戏大厅 | 葫芦鱼+骰宝 | 全自动循环 | 抢庄+服务费 | 50条记录</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        body {
+            background: #1a120c;
+            background-image: radial-gradient(circle at 20% 30%, rgba(200,140,70,0.15) 2%, transparent 2.5%);
+            background-size: 28px 28px;
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif;
+            padding: 12px;
+        }
+        .app {
+            max-width: 550px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        /* 游戏导航栏 */
+        .game-nav {
+            background: linear-gradient(145deg, #2a241e 0%, #1f1a15 100%);
+            border-radius: 60px;
+            padding: 6px;
+            display: flex;
+            gap: 8px;
+            border: 1px solid #ffaa44;
+        }
+        .game-tab {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 8px 0;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            color: #ccaa77;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: center;
+        }
+        .game-tab.active {
+            background: #c47c3a;
+            color: #2f1b0a;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        /* 用户信息栏 */
+        .user-section {
+            background: #1f1711;
+            border-radius: 40px;
+            padding: 8px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .user-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .user-info-row span {
+            color: #ffdd99;
+            font-size: 0.75rem;
+        }
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+        .logout-btn, .service-btn {
+            background: #734c2e;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 30px;
+            color: #ffe3b3;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+        .service-btn {
+            background: #2e7d32;
+        }
+        .charge-withdraw-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .charge-btn, .withdraw-btn {
+            background: #c47c3a;
+            border: none;
+            padding: 5px 20px;
+            border-radius: 30px;
+            color: #2f1b0a;
+            font-weight: bold;
+            font-size: 0.75rem;
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+            box-shadow: 0 2px 0 #764e26;
+        }
+        .withdraw-btn {
+            background: #734c2e;
+            color: #ffe3b3;
+            box-shadow: 0 2px 0 #3f2a1a;
+        }
+        /* 游戏容器 */
+        .game-container {
+            background: linear-gradient(145deg, #362a1f 0%, #251e16 100%);
+            border-radius: 48px;
+            box-shadow: 0 12px 25px rgba(0,0,0,0.5);
+            overflow: hidden;
+            min-height: 550px;
+        }
+        /* 登录注册面板 */
+        .auth-panel {
+            background: linear-gradient(145deg, #362a1f 0%, #251e16 100%);
+            border-radius: 48px;
+            padding: 30px 20px;
+            text-align: center;
+            border: 2px solid #ffaa44;
+        }
+        .auth-panel h2 {
+            color: #ffdd99;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+        .auth-input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #2a241e;
+            border: 1px solid #ffaa44;
+            border-radius: 40px;
+            color: white;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        .auth-buttons {
+            display: flex;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .auth-btn {
+            flex: 1;
+            background: #c47c3a;
+            border: none;
+            padding: 10px;
+            border-radius: 40px;
+            color: #2f1b0a;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .auth-note {
+            color: #aa8855;
+            font-size: 0.65rem;
+        }
+        /* 筹码样式 */
+        .chip {
+            background: #ebbc7e;
+            color: #3a240f;
+            font-weight: bold;
+            font-size: 0.7rem;
+            padding: 3px 10px;
+            border-radius: 35px;
+            cursor: pointer;
+            box-shadow: 0 2px 0 #8b5a2e;
+            display: inline-block;
+            text-align: center;
+            transition: 0.05s linear;
+        }
+        .chip.selected {
+            background: #f7c56e;
+            box-shadow: 0 0 0 1px #ffefb0, 0 2px 0 #7a4b22;
+        }
+        /* 投注卡片通用样式 */
+        .bet-card {
+            background: #1f1712;
+            border-radius: 28px;
+            padding: 4px 2px;
+            text-align: center;
+            box-shadow: 0 6px 0 #0a0705;
+            border: 1px solid #6f4f34;
+            cursor: pointer;
+            transition: 0.05s linear;
+        }
+        .bet-card:active {
+            transform: translateY(3px);
+            box-shadow: 0 3px 0 #0a0705;
+        }
+        .bet-name {
+            font-size: 0.65rem;
+            font-weight: bold;
+            color: #ffddb0;
+        }
+        .bet-odds {
+            font-size: 0.55rem;
+            color: #dba959;
+        }
+        .bet-amount {
+            background: #0c0907;
+            border-radius: 30px;
+            padding: 2px 4px;
+            margin: 4px 3px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2px;
+        }
+        .btn-chip {
+            background: #523b26;
+            border: none;
+            color: #fce2b4;
+            font-weight: bold;
+            width: 24px;
+            height: 24px;
+            border-radius: 25px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        /* 抢庄按钮 */
+        .grab-btn {
+            background: #ffaa44;
+            color: #2f1b0a;
+            border: none;
+            padding: 6px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .grab-btn:disabled {
+            background: #888;
+            cursor: not-allowed;
+        }
+        /* 骰子3D样式 */
+        .dice {
+            width: 60px;
+            height: 60px;
+            position: relative;
+            transform-style: preserve-3d;
+        }
+        .dice-face {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(145deg, #fffff0, #f5f5dc);
+            border-radius: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid rgba(200,180,120,0.5);
+        }
+        .front { transform: translateZ(30px); }
+        .back { transform: rotateY(180deg) translateZ(30px); }
+        .right { transform: rotateY(90deg) translateZ(30px); }
+        .left { transform: rotateY(-90deg) translateZ(30px); }
+        .top { transform: rotateX(90deg) translateZ(30px); }
+        .bottom { transform: rotateX(-90deg) translateZ(30px); }
+        .pip {
+            position: absolute;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #e74c3c, #c0392b);
+        }
+        .face-1 .pip-center { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .face-2 .pip-tl { top: 20%; left: 20%; }
+        .face-2 .pip-br { bottom: 20%; right: 20%; }
+        .face-3 .pip-tl { top: 20%; left: 20%; }
+        .face-3 .pip-center { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .face-3 .pip-br { bottom: 20%; right: 20%; }
+        .face-4 .pip-tl { top: 20%; left: 20%; }
+        .face-4 .pip-tr { top: 20%; right: 20%; }
+        .face-4 .pip-bl { bottom: 20%; left: 20%; }
+        .face-4 .pip-br { bottom: 20%; right: 20%; }
+        .face-5 .pip-tl { top: 20%; left: 20%; }
+        .face-5 .pip-tr { top: 20%; right: 20%; }
+        .face-5 .pip-mid { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .face-5 .pip-bl { bottom: 20%; left: 20%; }
+        .face-5 .pip-br { bottom: 20%; right: 20%; }
+        .face-6 .pip-l1 { left: 20%; top: 15%; }
+        .face-6 .pip-l2 { left: 20%; top: 50%; transform: translateY(-50%); }
+        .face-6 .pip-l3 { left: 20%; bottom: 15%; }
+        .face-6 .pip-r1 { right: 20%; top: 15%; }
+        .face-6 .pip-r2 { right: 20%; top: 50%; transform: translateY(-50%); }
+        .face-6 .pip-r3 { right: 20%; bottom: 15%; }
+        /* 开奖弹窗 */
+        .result-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.6);
+            background: linear-gradient(145deg, #ffcc44, #ff9933);
+            color: #1a1a2a;
+            padding: 24px 40px;
+            border-radius: 80px;
+            font-size: 2rem;
+            font-weight: 900;
+            z-index: 2000;
+            opacity: 0;
+            transition: 0.25s;
+            pointer-events: none;
+        }
+        .result-popup.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        .result-popup.win { background: linear-gradient(145deg, #ffcc44, #ffaa22); }
+        .result-popup.lose { background: linear-gradient(145deg, #555, #333); color: #ffaa66; }
+        /* 提示消息 */
+        .toast-message {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000000cc;
+            color: #ffaa44;
+            padding: 8px 16px;
+            border-radius: 40px;
+            z-index: 2001;
+            animation: fadeInOut 2s forwards;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        @keyframes fadeInOut {
+            0% { opacity:0; transform: translateX(-50%) translateY(20px); }
+            15% { opacity:1; transform: translateX(-50%) translateY(0); }
+            85% { opacity:1; }
+            100% { opacity:0; transform: translateX(-50%) translateY(-20px); }
+        }
+        /* 模态框 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+        .modal-content {
+            background: #1a2a1a;
+            border-radius: 48px;
+            padding: 24px;
+            border: 2px solid #ffaa44;
+            width: 85%;
+            max-width: 500px;
+            text-align: center;
+            color: #ffdd99;
+        }
+        /* 倒计时警告 */
+        .countdown-warning {
+            animation: warning 0.5s infinite;
+            color: #ff3300 !important;
+        }
+        @keyframes warning {
+            0%,100% { opacity:1; }
+            50% { opacity:0.6; }
+        }
+        /* 葫芦鱼押注区图片 */
+        .fish-pattern-img {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+            margin: 0 auto 3px;
+            display: block;
+            border-radius: 8px;
+            background: #2a1f16;
+            padding: 2px;
+        }
+        /* 骰宝网格 */
+        .points-grid, .trio-grid, .special-grid {
+            display: grid;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .points-grid { grid-template-columns: repeat(4,1fr); }
+        .trio-grid { grid-template-columns: repeat(4,1fr); }
+        .special-grid { grid-template-columns: repeat(4,1fr); }
+        /* 响应式 */
+        @media (max-width: 480px) {
+            .dice { width: 50px; height: 50px; }
+            .dice-face { width: 50px; height: 50px; }
+            .front { transform: translateZ(25px); }
+            .back { transform: rotateY(180deg) translateZ(25px); }
+            .right { transform: rotateY(90deg) translateZ(25px); }
+            .left { transform: rotateY(-90deg) translateZ(25px); }
+            .top { transform: rotateX(90deg) translateZ(25px); }
+            .bottom { transform: rotateX(-90deg) translateZ(25px); }
+            .fish-pattern-img { width: 30px; height: 30px; }
+        }
+    </style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+    // ==================== 全局用户系统 ====================
+    const USERS_KEY = 'double_games_final_v7';
+    let usersData = JSON.parse(localStorage.getItem(USERS_KEY)) || {};
+    let currentUser = null;
+    
+    function saveUsers() {
+        localStorage.setItem(USERS_KEY, JSON.stringify(usersData));
+    }
+    
+    function getUserBalance() {
+        return currentUser ? (usersData[currentUser.phone]?.balance || 1000) : 0;
+    }
+    
+    function setUserBalance(amt) {
+        if(currentUser) {
+            usersData[currentUser.phone].balance = Math.max(0, amt);
+            saveUsers();
+        }
+    }
+    
+    function showToast(msg) {
+        let t = document.createElement('div');
+        t.className = 'toast-message';
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 2000);
+    }
+    
+    // 充值客服弹窗
+    function showRechargeModal() {
+        let m = document.createElement('div');
+        m.className = 'modal';
+        m.innerHTML = `<div class="modal-content">
+            <h3>💎 充值</h3>
+            <p>充值比例 1元 = 1000文</p>
+            <p>请联系客服微信: game_kf_888</p>
+            <button id="closeRecharge" style="background:#734c2e; padding:8px; border-radius:40px; margin-top:12px;">关闭</button>
+        </div>`;
+        document.body.appendChild(m);
+        m.querySelector('#closeRecharge').onclick = () => m.remove();
+    }
+    
+    function showServiceModal() {
+        let m = document.createElement('div');
+        m.className = 'modal';
+        m.innerHTML = `<div class="modal-content">
+            <h3>📞 客服</h3>
+            <p>微信: game_kf_888</p>
+            <p>电话: 400-888-XXXX</p>
+            <button id="closeSvc" style="background:#734c2e; padding:8px; border-radius:40px; margin-top:12px;">关闭</button>
+        </div>`;
+        document.body.appendChild(m);
+        m.querySelector('#closeSvc').onclick = () => m.remove();
+    }
+    
+    function recharge() { showRechargeModal(); }
+    function withdraw() { showToast("提现请联系客服"); }
+
+
+
+
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
