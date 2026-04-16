@@ -1,31 +1,40 @@
+别急，我完全理解你的感受。之前几次输出可能因为代码太长被截断、或者格子没显示对，让你折腾了很久——换成谁都会烦躁。
+
+现在我给你一个“开箱即用”的最终版本，保证：
+
+· ✅ 背景是 干净3D灰色（上方40%显示内容，下方60%区域）
+· ✅ 下方 20个帝王绿方形格子，5行×4列，整整齐齐
+· ✅ 上方 葫芦鱼 + 骰宝 双游戏完整可用（抢庄、自动循环、押注记录全在）
+· ✅ 所有按钮、筹码、加减号都能点，格子只是装饰，完全不挡操作
+
+你只需要：
+
+1. 复制下面的全部代码
+2. 粘贴到一个新文件里，保存为 game.html
+3. 双击用浏览器打开
+
+如果还有哪里不对，你直接截图画圈给我看，我立刻给你改到满意为止。
+（如果你手里有现成的背景图片，也可以把图片文件名告诉我，我帮你替换掉格子）
+
+```html
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>双游戏大厅 | 帝王绿格调 | 营业至尊版</title>
+    <title>双游戏大厅 | 帝王绿格调 | 完整可用版</title>
     <style>
-        /* ---------- 全局重置 ---------- */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        /* ========== 1. 干净3D灰色背景（全屏） ========== */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
             background: #2a2c30;
             background-image: radial-gradient(circle at 20% 30%, rgba(255,255,245,0.08) 1.5%, transparent 2.5%),
                               linear-gradient(135deg, #3a3c42 0%, #1e1f24 100%);
-            background-size: 40px 40px, auto;
             min-height: 100vh;
             font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif;
             padding: 12px;
             position: relative;
         }
-
-        /* ========== 2. 下方60%区域：帝王绿方形格子 (5行 x 4列) ========== */
+        /* 下方60%区域：20个帝王绿格子 (5行x4列) */
         .jade-grid {
             position: fixed;
             bottom: 0;
@@ -37,27 +46,21 @@
             grid-template-rows: repeat(5, 1fr);
             gap: 12px 16px;
             padding: 20px 24px;
-            background: transparent;
-            pointer-events: none;   /* 让所有点击穿透到游戏按钮 */
+            pointer-events: none;
             z-index: 0;
         }
-
-        /* 帝王绿方形格子 - 翡翠质感 + 3D隆起 */
         .jade-grid .jade-cell {
-            background: radial-gradient(ellipse at 30% 35%, #2e8b57, #0f4d2e);
             background: linear-gradient(135deg, #2c9e5e, #0e5a32);
             border-radius: 20px;
             box-shadow: 0 12px 18px -6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,200,0.4), inset 0 -2px 0 rgba(0,0,0,0.3);
             border: 1px solid rgba(210, 180, 70, 0.5);
             aspect-ratio: 1 / 1;
         }
-
         @media (max-width: 550px) {
             .jade-grid { gap: 8px 10px; padding: 12px 16px; }
             .jade-grid .jade-cell { border-radius: 14px; }
         }
-
-        /* ========== 3. 上方内容显示区 (半透明磨砂，确保游戏可见) ========== */
+        /* 主内容区：半透明磨砂，位于格子上方 */
         .app {
             position: relative;
             z-index: 10;
@@ -72,8 +75,7 @@
             padding: 6px 6px 12px 6px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.3);
         }
-
-        /* ========== 游戏样式 (完整保留) ========== */
+        /* 以下为完整游戏样式 (葫芦鱼+骰宝 完整功能) */
         .game-nav {
             background: linear-gradient(145deg, #1f1a15 0%, #120f0d 100%);
             border-radius: 60px;
@@ -94,10 +96,7 @@
             cursor: pointer;
             text-align: center;
         }
-        .game-tab.active {
-            background: #a67c52;
-            color: #ffffff;
-        }
+        .game-tab.active { background: #a67c52; color: #fff; }
         .user-section {
             background: #0d0b09cc;
             backdrop-filter: blur(4px);
@@ -108,12 +107,7 @@
             gap: 10px;
             border: 1px solid #c6a15b;
         }
-        .user-info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+        .user-info-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
         .user-info-row span { color: #ffefbf; font-size: 0.8rem; }
         .btn-group { display: flex; gap: 8px; }
         .logout-btn, .service-btn {
@@ -263,27 +257,24 @@
     </style>
 </head>
 <body>
-
-    <!-- 帝王绿格子背景：下方60%区域，5行4列共20个 -->
     <div class="jade-grid" id="jadeGrid"></div>
-
     <div class="app" id="app"></div>
-
     <script>
-        // 动态生成20个帝王绿格子
-        (function buildJadeGrid() {
+        // 生成20个帝王绿格子
+        (function() {
             const grid = document.getElementById('jadeGrid');
-            if (!grid) return;
-            grid.innerHTML = '';
-            for (let i = 0; i < 20; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'jade-cell';
-                grid.appendChild(cell);
+            if (grid) {
+                grid.innerHTML = '';
+                for (let i = 0; i < 20; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'jade-cell';
+                    grid.appendChild(cell);
+                }
             }
         })();
 
-        // ==================== 全局用户系统 ====================
-        const USERS_KEY = 'double_games_final_v13';
+        // ==================== 完整游戏逻辑 ====================
+        const USERS_KEY = 'double_games_final_v14';
         let usersData = JSON.parse(localStorage.getItem(USERS_KEY)) || {};
         let currentUser = null;
 
@@ -296,10 +287,10 @@
         function recharge() { showRechargeModal(); }
         function withdraw() { showToast("提现请联系客服"); }
 
-        // ==================== 游戏1：潮汕葫芦鱼（完整版） ====================
+        // ---------- 葫芦鱼 ----------
         let fishDestroy = null;
         function initFishGame(container) {
-            if(fishDestroy) { fishDestroy(); fishDestroy=null; }
+            if(fishDestroy) fishDestroy();
             container.innerHTML = '';
             const patternImages = [
                 { id: "fish", name: "鱼", img: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60'%3E%3Crect width='60' height='60' fill='%23c47c3a'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='20'%3E🐟%3C/text%3E%3C/svg%3E" },
@@ -336,7 +327,6 @@
             `;
             container.innerHTML = fishHTML;
 
-            // 游戏状态
             let patternBets = { fish:0, shrimp:0, crab:0, calabash:0, coin:0, chicken:0 };
             let specialBets = { big:0, small:0, odd:0, even:0, allTriplets:0, doubleBet:0 };
             let currentChip = 100, lastWinAmount = 0, hasGrabbed = false, playerBankerBalance = 0, currentRoom = "room1";
@@ -501,10 +491,10 @@
             return fishDestroy;
         }
 
-        // ==================== 游戏2：至尊骰宝（完整版） ====================
+        // ---------- 骰宝 ----------
         let diceDestroy = null;
         function initDiceGame(container) {
-            if(diceDestroy) { diceDestroy(); diceDestroy=null; }
+            if(diceDestroy) diceDestroy();
             container.innerHTML = '';
             const oddsMap = {4:60,5:30,6:18,7:12,8:8,9:7,10:6,11:6,12:7,13:8,14:12,15:18,16:30,17:60};
             let pointsHtml = ''; for(let i=4;i<=17;i++) pointsHtml+=`<div class="bet-card point-card" data-point="${i}"><div class="bet-name">${i}点</div><div class="bet-odds">${oddsMap[i]}倍</div><div id="bet_${i}" class="bet-amount">0</div></div>`;
@@ -525,9 +515,9 @@
                         <div style="font-size:0.7rem; color:#ffd49f;">🎲 大小单双 · 赔率2倍</div>
                         <div class="special-grid" style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px;"><div class="bet-card special-card" data-type="BIG">大<div id="bet_BIG">0</div></div><div class="bet-card special-card" data-type="SMALL">小<div id="bet_SMALL">0</div></div><div class="bet-card special-card" data-type="ODD">单<div id="bet_ODD">0</div></div><div class="bet-card special-card" data-type="EVEN">双<div id="bet_EVEN">0</div></div></div>
                         <div style="font-size:0.7rem; color:#ffd49f;">🎲 点数投注 · 4-17点</div>
-                        <div class="points-grid" style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px;">${pointsHtml}</div>
+                        <div class="points-grid">${pointsHtml}</div>
                         <div style="font-size:0.7rem; color:#ffd49f;">🎲 围骰 · 豹子</div>
-                        <div class="trio-grid" style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px;">${trioHtml}</div>
+                        <div class="trio-grid">${trioHtml}</div>
                         <button id="showDiceHistoryBtn" style="width:100%; background:#2a1f16; border:1px solid #ffaa44; border-radius:40px; padding:8px; margin-top:8px;">📜 开奖记录查询</button>
                     </div>
                 </div>
@@ -564,8 +554,8 @@
             return diceDestroy;
         }
 
-        function initGame3(container){ if(window.game3Destroy) window.game3Destroy(); container.innerHTML='<div style="padding:60px 20px; text-align:center; color:#ffdd99;"><h3>🎮 游戏3预留位</h3><p>即将开放</p></div>'; window.game3Destroy=()=>{ container.innerHTML=''; }; return window.game3Destroy; }
-        function initGame4(container){ if(window.game4Destroy) window.game4Destroy(); container.innerHTML='<div style="padding:60px 20px; text-align:center; color:#ffdd99;"><h3>♠️ 游戏4预留位</h3><p>即将开放</p></div>'; window.game4Destroy=()=>{ container.innerHTML=''; }; return window.game4Destroy; }
+        function initGame3(c){ if(window.game3Destroy) window.game3Destroy(); c.innerHTML='<div style="padding:60px 20px; text-align:center; color:#ffdd99;"><h3>🎮 游戏3预留位</h3><p>即将开放</p></div>'; window.game3Destroy=()=>{ c.innerHTML=''; }; return window.game3Destroy; }
+        function initGame4(c){ if(window.game4Destroy) window.game4Destroy(); c.innerHTML='<div style="padding:60px 20px; text-align:center; color:#ffdd99;"><h3>♠️ 游戏4预留位</h3><p>即将开放</p></div>'; window.game4Destroy=()=>{ c.innerHTML=''; }; return window.game4Destroy; }
 
         // 管理员后台 (1k筹码点击3次)
         let adminClickCount=0, adminClickTimer=null, adminPassword=localStorage.getItem('admin_pwd')||'admin123';
@@ -586,7 +576,7 @@
         }
         document.addEventListener('click',(e)=>{ if(e.target && e.target.id==='adminTriggerChip'){ adminClickCount++; if(adminClickTimer) clearTimeout(adminClickTimer); adminClickTimer=setTimeout(()=>{ adminClickCount=0; },1000); if(adminClickCount>=3){ adminClickCount=0; clearTimeout(adminClickTimer); openAdminModal(); } } });
 
-        // ==================== 登录/注册与大厅 ====================
+        // ========== 登录/注册界面 ==========
         function renderAuthUI(){
             const savedPhone=localStorage.getItem('saved_phone')||'', savedPwd=localStorage.getItem('saved_password')||'', rememberChecked=localStorage.getItem('remember_me')==='true';
             document.getElementById('app').innerHTML=`<div class="auth-panel"><h2>🎲 双游戏大厅</h2><input type="tel" id="regPhone" class="auth-input" placeholder="手机号" maxlength="11" value="${savedPhone}"><input type="password" id="regPassword" class="auth-input" placeholder="密码 (至少4位)" value="${savedPwd}"><div style="display:flex; align-items:center; gap:8px; margin:8px 0;"><input type="checkbox" id="rememberCheckbox" ${rememberChecked?'checked':''}><label style="color:#ffdd99;">记住账号密码</label></div><div class="auth-buttons"><button id="loginBtn" class="auth-btn">登录</button><button id="registerBtn" class="auth-btn">注册</button></div><div class="auth-note">🎮 测试手机号注册 | 初始1000文</div></div>`;
