@@ -1533,3 +1533,143 @@ function initDiceGame(container) {
         container.querySelector('#refreshBtn').onclick = refreshBalance;
         container.querySelector('#betBtn').onclick = () => { if(!isDrawing && !isBetLocked) drawWithCover(); };
         container.querySelector('#adminEntry').onclick = () => { let pwd=prompt("管理员密码:"); if(pwd===adminPwd) showAdminPanel(); else if(pwd!==null) showToast("密码错误"); };
+        panel.querySelector('#adminPwd').onclick = () => {
+            let old = prompt("当前密码:");
+            if(old !== adminPwd) { showToast("密码错误"); return; }
+            let newPwd = prompt("新密码(至少6位):");
+            if(newPwd && newPwd.length >= 6) {
+                adminPwd = newPwd;
+                localStorage.setItem('dice_admin_pwd', newPwd);
+                showToast("密码修改成功");
+            } else if(newPwd) showToast("密码至少6位");
+        };
+        panel.querySelector('#adminClose').onclick = () => { panel.remove(); adminPanel=null; };
+    }
+
+    function init() {
+        container.querySelectorAll('.chip').forEach(chip => {
+            chip.onclick = function() { 
+                if (hasGrabbed) { showToast("您是庄家，不能下注！"); return; }
+                selectedChip = parseInt(this.dataset.val); 
+                container.querySelector('#selectedChip').innerText = selectedChip; 
+                container.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected-chip')); 
+                this.classList.add('selected-chip'); 
+            };
+        });
+        container.querySelectorAll('.special-card').forEach(card => card.onclick = () => { if (hasGrabbed) { showToast("您是庄家，不能下注！"); return; } addBet(card.dataset.type); });
+        container.querySelectorAll('.point-card').forEach(card => card.onclick = () => { if (hasGrabbed) { showToast("您是庄家，不能下注！"); return; } addBet(parseInt(card.dataset.point)); });
+        container.querySelectorAll('.trio-card').forEach(card => card.onclick = () => { if (hasGrabbed) { showToast("您是庄家，不能下注！"); return; } addBet(card.dataset.type); });
+        container.querySelector('#clearAllBtn').onclick = clearAllBets;
+        container.querySelector('#repeatBtn').onclick = repeatLastBet;
+        container.querySelector('#refreshBtn').onclick = refreshBalance;
+        container.querySelector('#betBtn').onclick = () => { if(!isDrawing && !isBetLocked) drawWithCover(); };
+        container.querySelector('#adminEntry').onclick = () => { let pwd=prompt("管理员密码:"); if(pwd===adminPwd) showAdminPanel(); else if(pwd!==null) showToast("密码错误"); };
+
+        // 开奖记录按钮
+        const historyBtn = container.querySelector('#showDiceHistoryBtn');
+        if (historyBtn) historyBtn.onclick = showRecordModal;
+
+        // 初始化骰子显示为1点
+        diceEl.forEach(d => setDiceValue(d, 1));
+        totalEl.innerText = 3;
+        updateUI(); startCountdown(CONFIG.countdownSeconds);
+    }
+    init();
+
+    diceDestroy = () => {
+        if (countdownInterval) clearInterval(countdownInterval);
+        if (rollingAnimation) cancelAnimationFrame(rollingAnimation);
+        container.innerHTML = '';
+    };
+    return diceDestroy;
+} 
+    // ==================== 预留游戏三、四 ====================
+    function initGame3(container) { container.innerHTML = '<div style="padding:40px;text-align:center;color:#ffdd99;">🎮 游戏3预留位</div>'; return ()=>{}; }
+    function initGame4(container) { container.innerHTML = '<div style="padding:40px;text-align:center;color:#ffdd99;">♠️ 游戏4预留位</div>'; return ()=>{}; }
+
+    // ==================== 主界面 ====================
+    function renderAuthUI() {
+        const savedPhone = localStorage.getItem('saved_phone') || '';
+        const savedPwd = localStorage.getItem('saved_password') || '';
+        const rememberChecked = localStorage.getItem('remember_me') === 'true';
+        const app = document.getElementById('app');
+        app.innerHTML = `<div class="auth-panel"><h2>🎲 双游戏大厅</h2><input type="tel" id="regPhone" class="auth-input" placeholder="手机号" maxlength="11" value="${savedPhone}"><input type="password" id="regPassword" class="auth-input" placeholder="密码 (至少4位)" value="${savedPwd}"><div style="display:flex; align-items:center; gap:8px; margin:8px 0;"><input type="checkbox" id="rememberCheckbox" ${rememberChecked ? 'checked' : ''}><label style="color:#ffdd99;">记住账号密码</label></div><div class="auth-buttons"><button id="loginBtn" class="auth-btn">登录</button><button id="registerBtn" class="auth-btn">注册</button></div><div class="auth-note">🎮 测试手机号注册 | 初始1000</div></div>`;
+        document.getElementById('loginBtn').onclick = () => {
+            let phone = document.getElementById('regPhone').value.trim();
+            let pwd = document.getElementById('regPassword').value;
+            let remember = document.getElementById('rememberCheckbox').checked;
+            if(!phone || !pwd) { showToast("请填写手机号和密码"); return; }
+            let user = usersData[phone];
+            if(!user) { showToast("手机号未注册"); return; }
+            if(user.password !== pwd) { showToast("密码错误"); return; }
+            if(remember) { localStorage.setItem('saved_phone', phone); localStorage.setItem('saved_password', pwd); localStorage.setItem('remember_me', 'true'); }
+            else { localStorage.removeItem('saved_phone'); localStorage.removeItem('saved_password'); localStorage.setItem('remember_me', 'false'); }
+            currentUser = { phone, ...user };
+            showToast(`欢迎，${phone}`);
+            renderGameLobby();
+        };
+        document.getElementById('registerBtn').onclick = () => {
+            let phone = document.getElementById('regPhone').value.trim();
+            let pwd = document.getElementById('regPassword').value;
+            if(!phone || !pwd) { showToast("请填写手机号和密码"); return; }
+            if(!/^1[3-9]\d{9}$/.test(phone)) { showToast("请输入有效11位手机号"); return; }
+            if(pwd.length < 4) { showToast("密码至少4位"); return; }
+            if(usersData[phone]) { showToast("手机号已注册"); return; }
+            usersData[phone] = { password: pwd, balance: 1000 };
+            saveUsers();
+            showToast("注册成功！请登录");
+        };
+    }
+
+    function renderGameLobby() {
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <div class="user-section">
+                <div class="user-info-row">
+                    <span>📱 ${currentUser.phone.substring(0,7)}... | 💰 余额: <span id="userBalanceDisplay">${getUserBalance().toFixed(2)}</span></span>
+                    <div class="btn-group"><button id="serviceBtn" class="service-btn">📞 客服</button><button id="logoutBtn" class="logout-btn">退出</button></div>
+                </div>
+                <div class="charge-withdraw-row"><button id="rechargeBtn" class="charge-btn">💎 充值</button><button id="withdrawBtn" class="withdraw-btn">💰 提现</button></div>
+            </div>
+            <div class="game-nav">
+                <button class="game-tab active" data-game="fish">🎲 葫芦鱼</button>
+                <button class="game-tab" data-game="dice">🎲 至尊骰宝</button>
+                <button class="game-tab" data-game="game3">🎮 游戏3</button>
+                <button class="game-tab" data-game="game4">♠️ 游戏4</button>
+            </div>
+            <div class="game-container"><div id="gamePanel"></div></div>
+        `;
+        document.getElementById('logoutBtn').onclick = () => { currentUser = null; renderAuthUI(); };
+        document.getElementById('serviceBtn').onclick = showService;
+        document.getElementById('rechargeBtn').onclick = recharge;
+        document.getElementById('withdrawBtn').onclick = withdraw;
+
+        const gameContainer = document.getElementById('gamePanel');
+        let currentDestroy = null;
+        const gameInits = { fish: initFishGame, dice: initDiceGame, game3: initGame3, game4: initGame4 };
+
+        async function switchGame(gameId) {
+            if (currentDestroy) { currentDestroy(); currentDestroy = null; }
+            gameContainer.innerHTML = '';
+            const initFn = gameInits[gameId];
+            if (initFn) {
+                const destroy = await initFn(gameContainer);
+                if (typeof destroy === 'function') currentDestroy = destroy;
+            }
+            document.getElementById('userBalanceDisplay').innerText = getUserBalance().toFixed(2);
+        }
+
+        document.querySelectorAll('.game-tab').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.game-tab').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                switchGame(btn.dataset.game);
+            };
+        });
+        switchGame('fish');
+    }
+
+    renderAuthUI();
+</script>
+</body>
+</html>
