@@ -1,18 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -227,7 +212,7 @@
             transform: translateY(2px);
             box-shadow: 0 0px 0 #8b5a2e;
         }
-        /* 投注卡片通用样式 */
+        /* 投注卡片通用样式 - 原始保留，稍后覆盖 */
         .bet-card {
             background: #1f1712;
             border-radius: 8px;
@@ -478,21 +463,59 @@
             margin: 16px 0 !important;
             width: 100% !important;
         }
+        /* ========== 修改1：所有押注按键变成盒子状态体 ========== */
+        .fish-wrapper .bet-card,
+        .dice-wrapper .bet-card,
+        .bet-card {
+            background-color: #f0f0f0 !important;
+            background-image: url('pattern.png') !important;
+            background-repeat: repeat !important;
+            border-radius: 20px !important;
+            box-shadow: 0 6px 0 #a0a0a0, 0 2px 12px rgba(0,0,0,0.2) !important;
+            border: 1px solid #d4c4a8 !important;
+            transition: all 0.05s linear !important;
+        }
+        .fish-wrapper .bet-card:active,
+        .dice-wrapper .bet-card:active,
+        .bet-card:active {
+            transform: translateY(3px) !important;
+            box-shadow: 0 3px 0 #a0a0a0 !important;
+        }
+        /* 保留内部图片样式，不破坏布局 */
         .fish-wrapper .bet-card {
-            background: linear-gradient(145deg, #2a241e, #1f1a15) !important;
-            border-radius: 24px !important;
-            padding: 12px 6px !important;
-            text-align: center !important;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.4) !important;
-            border: 1px solid #c47c3a !important;
             display: flex !important;
             flex-direction: column !important;
             align-items: center !important;
             justify-content: center !important;
             min-height: 150px;
-            cursor: pointer;
-            transition: transform 0.1s;
         }
+        /* 骰宝卡片保持原有内部结构 */
+        .dice-wrapper .bet-card {
+            padding: 12px 6px !important;
+            text-align: center !important;
+        }
+        /* ========== 修改2：所有数字颜色调亮 ========== */
+        .bet-amount span, .bet-amount, #totalBetValue, #lastWinValue, #fishBalanceValue,
+        #selectedChip, #totalBet, #rollingWinNumber, #countdownNum,
+        .bet-odds, .point-card .bet-amount, .trio-card .bet-amount,
+        .special-card .bet-amount, .chip, .user-info-row span strong,
+        #userBalanceDisplay, .balance-amount,
+        .fish-wrapper .bet-amount span,
+        .dice-wrapper .bet-amount span {
+            color: #FFF2B5 !important;
+            text-shadow: 0 0 2px #ff9900 !important;
+            font-weight: bold !important;
+        }
+        .bet-odds {
+            color: #FFE484 !important;
+            font-size: 0.7rem;
+        }
+        /* 筹码文字保持原有对比度，不强制亮色（可读性） */
+        .chip {
+            color: #3a240f !important;
+            text-shadow: none !important;
+        }
+        /* 其他原有样式保留 */
         .fish-wrapper .bet-card:active {
             transform: translateY(2px);
         }
@@ -513,13 +536,6 @@
             gap: 8px !important;
             width: calc(100% - 12px) !important;
             border: 1px solid #ffaa66;
-        }
-        .fish-wrapper .bet-amount span {
-            font-size: 1rem !important;
-            font-weight: bold !important;
-            color: #ffcc66 !important;
-            min-width: 32px;
-            text-align: center;
         }
         /* 手机小屏适配 */
         @media (max-width: 480px) {
@@ -578,23 +594,23 @@
     // 全局用户系统模块
     // 功能：用户注册/登录、余额管理、本地存储、公共提示函数
     // =====================================================================
-    
+
     // 存储键名
     const USERS_KEY = 'double_games_final_v10';
     let usersData = JSON.parse(localStorage.getItem(USERS_KEY)) || {};
     let currentUser = null;
-    
+
     // 保存用户数据到 localStorage
     function saveUsers() {
         localStorage.setItem(USERS_KEY, JSON.stringify(usersData));
     }
-    
+
     // 获取当前登录用户的余额
     function getUserBalance() {
         if (!currentUser) return 0;
         return usersData[currentUser.phone]?.balance || 1000;
     }
-    
+
     // 设置当前用户余额（自动保存）
     function setUserBalance(amount) {
         if (currentUser) {
@@ -602,7 +618,7 @@
             saveUsers();
         }
     }
-    
+
     // 全局提示消息
     function showToast(message) {
         let toast = document.createElement('div');
@@ -611,7 +627,7 @@
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 2000);
     }
-    
+
     // 充值弹窗
     function showRechargeModal() {
         let modal = document.createElement('div');
@@ -627,7 +643,7 @@
         document.body.appendChild(modal);
         modal.querySelector('#closeRecharge').onclick = () => modal.remove();
     }
-    
+
     // 客服弹窗
     function showServiceModal() {
         let modal = document.createElement('div');
@@ -643,15 +659,15 @@
         document.body.appendChild(modal);
         modal.querySelector('#closeSvc').onclick = () => modal.remove();
     }
-    
+
     function recharge() { showRechargeModal(); }
     function withdraw() { showToast("提现请联系客服"); }
-    
+
     // =====================================================================
     // 游戏1：潮汕葫芦鱼（全自动循环、六图押注、抢庄、50条记录）
     // =====================================================================
     let fishDestroy = null;
-    
+
     function initFishGame(container) {
         // 清理之前的实例，防止内存泄漏
         if (fishDestroy) {
@@ -659,7 +675,7 @@
             fishDestroy = null;
         }
         container.innerHTML = '';
-        
+
         // 六门押注图片配置（请根据实际图片文件名修改）
         const patternImages = [
             { id: "fish", name: "鱼", img: "1776322917299(2).png" },
@@ -669,7 +685,7 @@
             { id: "coin", name: "金钱", img: "1776322917299(5).png" },
             { id: "chicken", name: "鸡", img: "1776322917299(4).png" }
         ];
-        
+
         // 构建HTML结构
         const fishHTML = `
             <div class="fish-wrapper">
@@ -741,8 +757,8 @@
             </div>
         `;
         container.innerHTML = fishHTML;
-        
-        // ========== 游戏状态变量 ==========
+
+       // ========== 游戏状态变量 ==========
         let patternBets = { fish:0, shrimp:0, crab:0, calabash:0, coin:0, chicken:0 };
         let specialBets = { big:0, small:0, odd:0, even:0, allTriplets:0, doubleBet:0 };
         let currentChip = 100;
@@ -750,28 +766,28 @@
         let hasGrabbed = false;
         let playerBankerBalance = 0;
         let currentRoom = "room1";
-        
+
         // 房间存储键
         function getBankerKey() { return `fish_banker_${currentRoom}`; }
         function getPlayerBankerKey() { return `fish_player_banker_${currentRoom}`; }
-        
+
         // 加载庄家数据
         let savedPlayer = parseInt(localStorage.getItem(getPlayerBankerKey())) || 0;
         if (savedPlayer > 0) {
             hasGrabbed = true;
             playerBankerBalance = savedPlayer;
         }
-        
+
         const MAX_SINGLE_BET = 500;
         const MAX_TOTAL_BET = 2000;
-        
+
         // 计算总押注额
         function getTotalBet() {
             let patternTotal = Object.values(patternBets).reduce((a,b)=>a+b,0);
             let specialTotal = Object.values(specialBets).reduce((a,b)=>a+b,0);
             return patternTotal + specialTotal;
         }
-        
+
         // 更新UI
         function updateUI() {
             let balanceSpan = document.getElementById('fishBalanceValue');
@@ -789,7 +805,7 @@
                 if (el) el.innerText = specialBets[k];
             }
         }
-        
+
         // 增加下注
         function addBet(type, id, val) {
             let target = (type === 'pattern') ? patternBets : specialBets;
@@ -810,21 +826,21 @@
             target[id] += val;
             updateUI();
         }
-        
+
         // 减少下注
         function subBet(type, id, val) {
             let target = (type === 'pattern') ? patternBets : specialBets;
             target[id] = Math.max(0, target[id] - val);
             updateUI();
         }
-        
+
         // 清空所有下注
         function clearBets() {
             for (let k in patternBets) patternBets[k] = 0;
             for (let k in specialBets) specialBets[k] = 0;
             updateUI();
         }
-        
+
         // 开奖记录（最多50条）
         let gameRecords = [];
         function addRecord(dice, winAmount, totalBet) {
@@ -836,7 +852,7 @@
             });
             if (gameRecords.length > 50) gameRecords.pop();
         }
-        
+
         // 核心开奖与动画函数（5秒动画+结算）
         async function settleAndAnimate(final) {
             const diceEls = document.querySelectorAll('.fish-wrapper .dice');
@@ -859,7 +875,7 @@
             }
             // 显示最终结果
             for (let i = 0; i < 3; i++) diceEls[i].innerHTML = iconMap[final[i]];
-            
+
             // 计算点数
             let points = final.map(n => {
                 let m = {"鱼":1,"虾":2,"蟹":3,"葫芦":4,"金钱":5,"鸡":6};
@@ -869,7 +885,7 @@
             let isTriplet = (final[0] === final[1] && final[1] === final[2]);
             let totalBet = getTotalBet();
             let winAmount = 0;
-            
+
             // 只有下注时才计算赔付和扣款
             if (totalBet > 0) {
                 let userBal = getUserBalance();
@@ -890,7 +906,7 @@
                 }
                 if (isTriplet && specialBets.allTriplets) winAmount += specialBets.allTriplets * 24;
                 if (final.includes("鱼") && final.includes("虾") && specialBets.doubleBet) winAmount += specialBets.doubleBet * 4.5;
-                
+
                 setUserBalance(getUserBalance() + winAmount);
                 // 庄家赔付（如果抢庄）
                 if (hasGrabbed) {
@@ -911,12 +927,12 @@
             } else {
                 lastWinAmount = 0;
             }
-            
+
             // 记录开奖（无论是否下注）
             addRecord(final, winAmount, totalBet);
             clearBets();
             updateUI();
-            
+
             // 重新盖上骰盅
             if (cover) {
                 cover.style.display = "flex";
@@ -924,7 +940,7 @@
                 cover.style.opacity = "1";
             }
         }
-        
+
         // 构建六门押注网格（带图片）
         const patternContainer = document.getElementById('patternGrid');
         if (patternContainer) {
@@ -944,7 +960,7 @@
                 patternContainer.appendChild(card);
             });
         }
-        
+
         // 构建特殊投注网格
         const specialContainer = document.getElementById('specialGrid');
         if (specialContainer) {
@@ -961,7 +977,7 @@
                 card.onclick = () => addBet('special', type, currentChip);
             });
         }
-        
+
         // 事件绑定：六门加减按钮
         document.querySelector('.fish-wrapper .bet-grid')?.addEventListener('click', e => {
             let btn = e.target.closest('.btn-chip');
@@ -970,7 +986,7 @@
             if (btn.classList.contains('add-pattern')) addBet('pattern', id, currentChip);
             if (btn.classList.contains('sub-pattern')) subBet('pattern', id, currentChip);
         });
-        
+
         // 筹码选择
         document.querySelectorAll('.chip').forEach(chip => {
             chip.onclick = () => {
@@ -979,7 +995,7 @@
                 chip.classList.add('selected');
             };
         });
-        
+
         // 清空下注按钮
         document.getElementById('fishResetBetBtn').onclick = clearBets;
         // 重置庄家按钮（重置骰盅和下注）
@@ -991,7 +1007,7 @@
             let cv = document.getElementById('fishDiceCover');
             if (cv) cv.style.display = 'flex';
         };
-        
+
         // 更新抢庄按钮状态
         function updateGrabButton() {
             let btn = document.getElementById('grabBtn');
@@ -1007,7 +1023,7 @@
                 btn.textContent = '🎲 抢庄 (余额不足)';
             }
         }
-        
+
         // 抢庄逻辑
         document.getElementById('grabBtn').onclick = () => {
             if (hasGrabbed) return;
@@ -1025,7 +1041,7 @@
                 showToast("余额不足2001");
             }
         };
-        
+
         // 房间切换
         document.getElementById('roomSelect').addEventListener('change', (e) => {
             currentRoom = e.target.value;
@@ -1036,7 +1052,7 @@
             updateUI();
             updateGrabButton();
         });
-        
+
         // 开奖记录查询
         document.getElementById('showRecordBtn').onclick = () => {
             if (gameRecords.length === 0) {
@@ -1058,7 +1074,7 @@
             document.body.appendChild(modal);
             modal.querySelector('#closeRec').onclick = () => modal.remove();
         };
-        
+
         // 赔付规则弹窗
         document.getElementById('showRulesBtn').onclick = () => {
             let modal = document.createElement('div');
@@ -1075,21 +1091,21 @@
             document.body.appendChild(modal);
             modal.querySelector('#closeRule').onclick = () => modal.remove();
         };
-        
+
         updateGrabButton();
         updateUI();
-        
+
         // ========== 自动循环：30秒一局（25秒下注 + 5秒开骰） ==========
         let phaseDiv = document.getElementById('fishPhaseHint');
         let roundActive = true;
         let bettingTimer = null;
         let rollTimer = null;
-        
+
         function stopRound() {
             if (bettingTimer) clearTimeout(bettingTimer);
             if (rollTimer) clearTimeout(rollTimer);
         }
-        
+
         async function startRound() {
             stopRound();
             if (!roundActive) return;
@@ -1101,7 +1117,7 @@
                 phaseDiv.innerHTML = `🎲 下注阶段 · 倒计时 ${remaining} 秒`;
                 if (remaining <= 0) clearInterval(interval);
             }, 1000);
-            
+
             bettingTimer = setTimeout(async () => {
                 clearInterval(interval);
                 if (!roundActive) return;
@@ -1117,30 +1133,30 @@
                 }
             }, 25000);
         }
-        
+
         startRound();
-        
+
         fishDestroy = () => {
             roundActive = false;
             stopRound();
             container.innerHTML = '';
         };
-        
+
         return fishDestroy;
     }
-    
+
     // =====================================================================
     // 游戏2：至尊骰宝（全自动循环、抢庄、50条记录、5秒开骰动画）
     // =====================================================================
     let diceDestroy = null;
-    
+
     function initDiceGame(container) {
         if (diceDestroy) {
             diceDestroy();
             diceDestroy = null;
         }
         container.innerHTML = '';
-        
+
         const oddsMap = {4:60,5:30,6:18,7:12,8:8,9:7,10:6,11:6,12:7,13:8,14:12,15:18,16:30,17:60};
         let pointsHtml = '';
         for (let i = 4; i <= 17; i++) {
@@ -1151,7 +1167,7 @@
             trioHtml += `<div class="bet-card trio-card" data-type="TRIPLE_${i}"><div class="bet-name">${i}围</div><div class="bet-odds">150倍</div><div id="bet_TRIPLE_${i}" class="bet-amount">0</div></div>`;
         }
         trioHtml += `<div class="bet-card trio-card" data-type="ALL_TRIPLE"><div class="bet-name">豹子</div><div class="bet-odds">30倍</div><div id="bet_ALL_TRIPLE" class="bet-amount">0</div></div>`;
-        
+
         container.innerHTML = `
             <div class="dice-wrapper">
                 <div style="max-width:500px; background:linear-gradient(145deg,#1a4a2a,#0a2a1a); border-radius:40px; padding:12px;">
@@ -1174,7 +1190,7 @@
                 </div>
             </div>
         `;
-        
+
         let bets = { 'BIG':0,'SMALL':0,'ODD':0,'EVEN':0,4:0,5:0,6:0,7:0,8:0,9:0,10:0,11:0,12:0,13:0,14:0,15:0,16:0,17:0,'TRIPLE_1':0,'TRIPLE_2':0,'TRIPLE_3':0,'TRIPLE_4':0,'TRIPLE_5':0,'TRIPLE_6':0,'ALL_TRIPLE':0 };
         let selectedChip = 0;
         let currentBalance = getUserBalance();
@@ -1185,12 +1201,12 @@
         let lastBet = null;
         let hasGrabbed = false;
         let playerBankerBalance = 0;
-        
+
         const diceEl = [document.getElementById('dice1'), document.getElementById('dice2'), document.getElementById('dice3')];
         const totalEl = document.getElementById('totalPoints');
         const rollingWinEl = document.getElementById('rollingWinNumber');
         const totalBetEl = document.getElementById('totalBet');
-        
+
         // 构建3D骰子面
         function buildDiceFaces() {
             diceEl.forEach(dice => {
@@ -1215,13 +1231,13 @@
             });
         }
         buildDiceFaces();
-        
+
         function setDiceValue(dice, val) {
             if (!dice) return;
             const rot = {1:'rotateX(0deg)',2:'rotateX(-90deg)',3:'rotateY(90deg)',4:'rotateY(-90deg)',5:'rotateX(90deg)',6:'rotateX(180deg)'};
             dice.style.transform = rot[val];
         }
-        
+
         // 5秒滚动动画
         async function startRollingLong(finalVals, duration = 5000) {
             return new Promise(resolve => {
@@ -1239,7 +1255,7 @@
                 }, interval);
             });
         }
-        
+
         // 中奖金额滚动数字效果
         function startRollingNumber(finalAmount) {
             if (rollingAnimation) cancelAnimationFrame(rollingAnimation);
@@ -1259,7 +1275,7 @@
             }
             rollingAnimation = requestAnimationFrame(update);
         }
-        
+
         function getResultInfo(d1, d2, d3) {
             let total = d1 + d2 + d3;
             let types = [];
@@ -1273,7 +1289,7 @@
             }
             return { total, types };
         }
-        
+
         function updateUI() {
             for (let k in bets) {
                 let el = document.getElementById(`bet_${k}`);
@@ -1281,7 +1297,7 @@
             }
             totalBetEl.innerText = Object.values(bets).reduce((a,b) => a + b, 0);
         }
-        
+
         function addBet(type) {
             if (hasGrabbed) { showToast("庄家不能下注"); return; }
             if (selectedChip <= 0) { showToast("请先选择筹码"); return; }
@@ -1291,7 +1307,7 @@
             bets[type] += selectedChip;
             updateUI();
         }
-        
+
         function clearAllBets() {
             let total = Object.values(bets).reduce((a,b) => a + b, 0);
             currentBalance += total;
@@ -1300,7 +1316,7 @@
             updateUI();
             showToast("已清空所有下注");
         }
-        
+
         function repeatLastBet() {
             if (!lastBet) { showToast("无续押记录"); return; }
             let need = Object.values(lastBet).reduce((a,b) => a + b, 0);
@@ -1312,7 +1328,7 @@
             updateUI();
             if (!isDrawing && !isBetLocked) startAutoDraw();
         }
-        
+
         let gameRecords = [];
         function addRecord(d1, d2, d3, winAmount, totalBet) {
             gameRecords.unshift({
@@ -1323,7 +1339,7 @@
             });
             if (gameRecords.length > 50) gameRecords.pop();
         }
-        
+
         // 自动开奖（无论下注与否）
         async function startAutoDraw() {
             if (isDrawing) return;
@@ -1382,7 +1398,7 @@
             isBetLocked = false;
             startCountdown(25);
         }
-        
+
         function startCountdown(sec) {
             if (countdownInterval) clearInterval(countdownInterval);
             let c = sec;
@@ -1404,13 +1420,13 @@
                 }
             }, 1000);
         }
-        
+
         function refreshBalance() {
             currentBalance = getUserBalance();
             updateUI();
             showToast("余额已刷新");
         }
-        
+
         function updateGrabBtn() {
             let btn = document.getElementById('diceGrabBtn');
             if (!btn) return;
@@ -1426,7 +1442,7 @@
                 btn.textContent = '🎲 抢庄 (余额不足)';
             }
         }
-        
+
         document.getElementById('diceGrabBtn').onclick = () => {
             if (hasGrabbed) return;
             if (getUserBalance() >= 2001) {
@@ -1443,7 +1459,7 @@
                 showToast("余额不足2001");
             }
         };
-        
+
         let savedBanker = localStorage.getItem('dice_player_banker');
         if (savedBanker && parseInt(savedBanker) > 0) {
             hasGrabbed = true;
@@ -1451,7 +1467,7 @@
             updateGrabBtn();
             document.querySelectorAll('.dice-wrapper .chip').forEach(c => c.style.pointerEvents = 'none');
         }
-        
+
         // 筹码选择
         document.querySelectorAll('.dice-wrapper .chip').forEach(chip => {
             chip.onclick = function() {
@@ -1462,7 +1478,7 @@
                 this.classList.add('selected');
             };
         });
-        
+
         // 投注事件绑定
         document.querySelectorAll('.special-card').forEach(c => {
             c.onclick = () => { if (!hasGrabbed) addBet(c.dataset.type); };
@@ -1473,11 +1489,11 @@
         document.querySelectorAll('.trio-card').forEach(c => {
             c.onclick = () => { if (!hasGrabbed) addBet(c.dataset.type); };
         });
-        
+
         document.getElementById('clearAllBtn').onclick = clearAllBets;
         document.getElementById('repeatBtn').onclick = repeatLastBet;
         document.getElementById('refreshBtn').onclick = refreshBalance;
-        
+
         // 开奖记录查询
         document.getElementById('showDiceHistoryBtn').onclick = () => {
             if (gameRecords.length === 0) {
@@ -1499,48 +1515,48 @@
             document.body.appendChild(modal);
             modal.querySelector('#closeRec').onclick = () => modal.remove();
         };
-        
+
         diceEl.forEach(d => setDiceValue(d, 1));
         totalEl.innerText = 3;
         updateUI();
         startCountdown(25);
-        
+
         diceDestroy = () => {
             if (countdownInterval) clearInterval(countdownInterval);
             if (rollingAnimation) cancelAnimationFrame(rollingAnimation);
             container.innerHTML = '';
         };
-        
+
         return diceDestroy;
     }
-    
+
     // =====================================================================
     // 游戏3、游戏4预留位
     // =====================================================================
     let game3Destroy = null;
     let game4Destroy = null;
-    
+
     function initGame3(container) {
         if (game3Destroy) game3Destroy();
         container.innerHTML = '<div style="padding:60px 20px; text-align:center; color:#ffdd99;"><h3>🎮 游戏3预留位</h3><p style="margin-top:16px;">即将开放，敬请期待</p></div>';
         game3Destroy = () => { container.innerHTML = ''; };
         return game3Destroy;
     }
-    
+
     function initGame4(container) {
         if (game4Destroy) game4Destroy();
         container.innerHTML = '<div style="padding:60px 20px; text-align:center; color:#ffdd99;"><h3>♠️ 游戏4预留位</h3><p style="margin-top:16px;">即将开放，敬请期待</p></div>';
         game4Destroy = () => { container.innerHTML = ''; };
         return game4Destroy;
     }
-    
+
     // =====================================================================
     // 管理员后台（点击筹码1k三次触发）
     // =====================================================================
     let adminClickCount = 0;
     let adminClickTimer = null;
     let adminPassword = localStorage.getItem('admin_pwd') || 'admin123';
-    
+
     function openAdminModal() {
         const pwdModal = document.createElement('div');
         pwdModal.className = 'modal';
@@ -1571,7 +1587,7 @@
         input.onkeypress = (e) => { if (e.key === 'Enter') submit(); };
         input.focus();
     }
-    
+
     function showAdminPanel() {
         const allUsers = Object.keys(usersData).map(phone => ({ phone, balance: usersData[phone].balance }));
         let userListHtml = '<div style="max-height:200px; overflow-y:auto; margin-bottom:12px;">';
@@ -1595,7 +1611,7 @@
         document.body.appendChild(modal);
         const getUserSelect = () => modal.querySelector('#adminTargetUser').value;
         const getAmount = () => parseInt(modal.querySelector('#adminAmount').value) || 0;
-        
+
         modal.querySelector('#adminAdd').onclick = () => {
             let target = getUserSelect();
             let amt = getAmount();
@@ -1611,7 +1627,7 @@
             modal.remove();
             showAdminPanel();
         };
-        
+
         modal.querySelector('#adminSub').onclick = () => {
             let target = getUserSelect();
             let amt = getAmount();
@@ -1629,12 +1645,12 @@
             modal.remove();
             showAdminPanel();
         };
-        
+
         modal.querySelector('#adminQuery').onclick = () => {
             let target = getUserSelect();
             showToast(`${target} 余额: ${usersData[target].balance.toFixed(2)}`);
         };
-        
+
         modal.querySelector('#adminReset').onclick = () => {
             let target = getUserSelect();
             if (confirm(`重置 ${target} 余额为 1000 文？`)) {
@@ -1650,7 +1666,7 @@
                 showAdminPanel();
             }
         };
-        
+
         modal.querySelector('#adminChangePwd').onclick = () => {
             let old = prompt("请输入当前管理密码:");
             if (old !== adminPassword) { showToast("当前密码错误"); return; }
@@ -1663,10 +1679,10 @@
                 showToast("密码至少4位");
             }
         };
-        
+
         modal.querySelector('#adminClose').onclick = () => modal.remove();
     }
-    
+
     // 监听管理员触发筹码（1k筹码点击三次）
     document.addEventListener('click', (e) => {
         if (e.target && e.target.id === 'adminTriggerChip') {
@@ -1680,7 +1696,7 @@
             }
         }
     });
-    
+
     // =====================================================================
     // 主界面渲染（登录/注册/游戏大厅）
     // =====================================================================
@@ -1705,7 +1721,7 @@
                 <div class="auth-note">🎮 测试手机号注册 | 初始1000文</div>
             </div>
         `;
-        
+
         document.getElementById('loginBtn').onclick = () => {
             let phone = document.getElementById('regPhone').value.trim();
             let pwd = document.getElementById('regPassword').value;
@@ -1726,7 +1742,7 @@
             showToast(`欢迎，${phone}`);
             renderGameLobby();
         };
-        
+
         document.getElementById('registerBtn').onclick = () => {
             let phone = document.getElementById('regPhone').value.trim();
             let pwd = document.getElementById('regPassword').value;
@@ -1739,7 +1755,7 @@
             showToast("注册成功！请登录");
         };
     }
-    
+
     function renderGameLobby() {
         const app = document.getElementById('app');
         app.innerHTML = `
@@ -1766,7 +1782,7 @@
                 <div id="gamePanel"></div>
             </div>
         `;
-        
+
         document.getElementById('logoutBtn').onclick = () => {
             currentUser = null;
             renderAuthUI();
@@ -1774,7 +1790,7 @@
         document.getElementById('serviceBtn').onclick = showServiceModal;
         document.getElementById('rechargeBtn').onclick = recharge;
         document.getElementById('withdrawBtn').onclick = withdraw;
-        
+
         const gamePanel = document.getElementById('gamePanel');
         let currentDestroy = null;
         const gameInits = {
@@ -1783,7 +1799,7 @@
             game3: initGame3,
             game4: initGame4
         };
-        
+
         async function switchGame(gameId) {
             if (currentDestroy) {
                 currentDestroy();
@@ -1797,7 +1813,7 @@
             let balSpan = document.getElementById("userBalanceDisplay");
             if (balSpan) balSpan.innerText = getUserBalance().toFixed(2);
         }
-        
+
         document.querySelectorAll('.game-tab').forEach(btn => {
             btn.onclick = () => {
                 document.querySelectorAll('.game-tab').forEach(b => b.classList.remove('active'));
@@ -1805,9 +1821,9 @@
                 switchGame(btn.dataset.game);
             };
         });
-        
+
         switchGame('fish');
-        
+
         // 在线人数模拟
         let onlineInterval = setInterval(() => {
             let onlineSpan = document.getElementById('onlineCount');
@@ -1816,19 +1832,18 @@
                 onlineSpan.innerText = newCount;
             }
         }, 30000);
-        
+
         const origDestroy = currentDestroy;
         currentDestroy = () => {
             clearInterval(onlineInterval);
             if (origDestroy) origDestroy();
         };
     }
-    
+
     // 启动应用
     renderAuthUI();
 </script>
 </body>
 </html>
-
 
 
