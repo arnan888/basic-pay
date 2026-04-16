@@ -1393,12 +1393,424 @@
         function refreshBalance() {
             currentBalance = getUserBalance();
             updateUI();
-            showToast("余额已刷新");
+           showToast("余额已刷新");
         }
 
         function updateGrabBtn() {
             let btn = document.getElementById('diceGrabBtn');
-            if (!btn)
+            if (!btn) return;
+            let bal = getUserBalance();
+            if (hasGrabbed) {
+                btn.disabled = true;
+                btn.textContent = '🏆 已抢庄';
+            } else if (bal >= 2001) {
+                btn.disabled = false;
+                btn.textContent = '🎲 抢庄 (需2001文)';
+            } else {
+                btn.disabled = true;
+                btn.textContent = '🎲 抢庄 (余额不足)';
+            }
+        }
 
+        document.getElementById('diceGrabBtn').onclick = () => {
+            if (hasGrabbed) return;
+            if (getUserBalance() >= 2001) {
+                setUserBalance(getUserBalance() - 2001);
+                playerBankerBalance = 2001;
+                hasGrabbed = true;
+                localStorage.setItem('dice_player_banker', playerBankerBalance);
+                currentBalance = getUserBalance();
+                updateUI();
+                updateGrabBtn();
+                showToast("抢庄成功，不可下注");
+                document.querySelectorAll('.dice-wrapper .chip').forEach(c => c.style.pointerEvents = 'none');
+            } else {
+                showToast("余额不足2001");
+            }
+        };
 
+        let savedBanker = localStorage.getItem('dice_player_banker');
+        if (savedBanker && parseInt(savedBanker) > 0) {
+            hasGrabbed = true;
+            playerBankerBalance = parseInt(savedBanker);
+            updateGrabBtn();
+            document.querySelectorAll('.dice-wrapper .chip').forEach(c => c.style.pointerEvents = 'none');
+        }
 
+        // 筹码选择
+        document.querySelectorAll('.dice-wrapper .chip').forEach(chip => {
+            chip.onclick = function() {
+                if (hasGrabbed) { showToast("庄家不能下注"); return; }
+                selectedChip = parseInt(this.dataset.val);
+                document.getElementById('selectedChip').innerText = selectedChip;
+                document.querySelectorAll('.dice-wrapper .chip').forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+            };
+        });
+
+        // 投注事件绑定
+        document.querySelectorAll('.special-card').forEach(c => {
+            c.onclick = () => { if (!hasGrabbed) addBet(c.dataset.type); };
+        });
+        document.querySelectorAll('.point-card').forEach(c => {
+            c.onclick = () => { if (!hasGrabbed) addBet(parseInt(c.dataset.point)); };
+        });
+        document.querySelectorAll('.trio-card').forEach(c => {
+            c.onclick = () => { if (!hasGrabbed) addBet(c.dataset.type); };
+        });
+
+        document.getElementById('clearAllBtn').onclick = clearAllBets;
+        document.getElementById('repeatBtn').onclick = repeatLastBet;
+        document.getElementById('refreshBtn').onclick = refreshBalance;
+
+        // 开奖记录查询
+        document.getElementById('showDiceHistoryBtn').onclick = () => {
+            if (gameRecords.length === 0) {
+                showToast("暂无记录");
+                return;
+            }
+            let html = '<div style="max-height:400px; overflow-y:auto;">';
+            gameRecords.forEach(r => {
+                html += `<div style="background:#2a241e; margin:8px; padding:8px; border-left:3px solid #ffaa44;">
+                            <div style="font-size:0.7rem;">${r.time}</div>
+                            <div style="font-size:1rem; font-weight:bold;">🎲 ${r.dice}</div>
+                            <div style="color:${r.win > 0 ? '#4caf50' : '#f44336'}">${r.result}</div>
+                         </div>`;
+            });
+            html += '</div><button id="closeRec" style="background:#ffaa44; margin-top:12px; padding:8px 20px; border-radius:40px;">关闭</button>';
+            let modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `<div class="modal-content"><h3 style="margin-bottom:12px;">📜 开奖记录</h3>${html}</div>`;
+            document.body.appendChild(modal);
+            modal.querySelector('#closeRec').onclick = () => modal.remove();
+        };
+
+        diceEl.forEach(d => setDiceValue(d, 1));
+        totalEl.innerText = 3;
+        updateUI();
+        startCountdown(25);
+
+        diceDestroy = () => {
+            if (countdownInterval) clearInterval(countdownInterval);
+            if (rollingAnimation) cancelAnimationFrame(rollingAnimation);
+            container.innerHTML = '';
+        };
+
+        return diceDestroy;
+    }
+
+    // =====================================================================
+    // 游戏3、游戏4预留位
+    // =====================================================================
+    let game3Destroy = null;
+    let game4Destroy = null;
+
+    function initGame3(container) {
+        if (game3Destroy) game3Destroy();
+        container.innerHTML = '<div style="padding:60px 20px; text-align:center; color:#ffdd99;"><h3>🎮 游戏3预留位</h3><p style="margin-top:16px;">即将开放，敬请期待</p></div>';
+        game3Destroy = () => { container.innerHTML = ''; };
+        return game3Destroy;
+    }
+
+    function initGame4(container) {
+        if (game4Destroy) game4Destroy();
+        container.innerHTML = '<div style="padding:60px 20px; text-align:center; color:#ffdd99;"><h3>♠️ 游戏4预留位</h3><p style="margin-top:16px;">即将开放，敬请期待</p></div>';
+        game4Destroy = () => { container.innerHTML = ''; };
+        return game4Destroy;
+    }
+
+    // =====================================================================
+    // 管理员后台（点击筹码1k三次触发）
+    // =====================================================================
+    let adminClickCount = 0;
+    let adminClickTimer = null;
+    let adminPassword = localStorage.getItem('admin_pwd') || 'admin123';
+
+    function openAdminModal() {
+        const pwdModal = document.createElement('div');
+        pwdModal.className = 'modal';
+        pwdModal.innerHTML = `
+            <div class="modal-content">
+                <h2>🔐 管理员验证</h2>
+                <input type="password" id="adminPwdInput" class="auth-input" placeholder="请输入管理密码" autocomplete="off">
+                <div style="display:flex; gap:12px; margin-top:20px;">
+                    <button id="submitPwdBtn" style="background:#c47c3a; padding:8px 20px; border-radius:40px;">确认</button>
+                    <button id="cancelPwdBtn" style="background:#734c2e; padding:8px 20px; border-radius:40px;">取消</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(pwdModal);
+        const input = pwdModal.querySelector('#adminPwdInput');
+        const submit = () => {
+            if (input.value === adminPassword) {
+                pwdModal.remove();
+                showAdminPanel();
+            } else {
+                showToast("密码错误");
+                input.value = '';
+                input.focus();
+            }
+        };
+        pwdModal.querySelector('#submitPwdBtn').onclick = submit;
+        pwdModal.querySelector('#cancelPwdBtn').onclick = () => pwdModal.remove();
+        input.onkeypress = (e) => { if (e.key === 'Enter') submit(); };
+        input.focus();
+    }
+
+    function showAdminPanel() {
+        const allUsers = Object.keys(usersData).map(phone => ({ phone, balance: usersData[phone].balance }));
+        let userListHtml = '<div style="max-height:200px; overflow-y:auto; margin-bottom:12px;">';
+        userListHtml += `<div style="background:#3a2a1a; padding:8px; margin-bottom:8px; border-radius:12px;">
+                            <div>👤 当前用户: ${currentUser.phone}</div>
+                            <div>💰 ${currentUser.balance.toFixed(2)}</div>
+                         </div>`;
+        userListHtml += `<div><label>选择玩家：</label><select id="adminTargetUser" style="background:#1a1a1a; color:#ffdd99; border:1px solid #ffaa44; border-radius:20px; padding:4px; width:100%;">${allUsers.map(u => `<option value="${u.phone}" ${u.phone === currentUser.phone ? 'selected' : ''}>${u.phone} (${u.balance.toFixed(2)})</option>`).join('')}</select></div></div>`;
+        userListHtml += `<input type="number" id="adminAmount" class="auth-input" placeholder="输入金额" value="0" step="1">`;
+        userListHtml += `<div style="display:flex; gap:8px; flex-wrap:wrap; margin:12px 0;">
+                            <button id="adminAdd" style="background:#2e7d32; padding:6px 12px; border-radius:30px;">➕ 上分</button>
+                            <button id="adminSub" style="background:#c0392b; padding:6px 12px; border-radius:30px;">➖ 下分</button>
+                            <button id="adminQuery" style="background:#2980b9; padding:6px 12px; border-radius:30px;">🔍 查询</button>
+                            <button id="adminReset" style="background:#f39c12; padding:6px 12px; border-radius:30px;">🔄 重置1000</button>
+                            <button id="adminChangePwd" style="background:#9b59b6; padding:6px 12px; border-radius:30px;">🔑 改密</button>
+                         </div>`;
+        userListHtml += `<button id="adminClose" style="background:#734c2e; padding:8px; border-radius:40px; width:100%;">关闭后台</button>`;
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `<div class="modal-content"><h2>🎛️ 管理员后台</h2>${userListHtml}</div>`;
+        document.body.appendChild(modal);
+        const getUserSelect = () => modal.querySelector('#adminTargetUser').value;
+        const getAmount = () => parseInt(modal.querySelector('#adminAmount').value) || 0;
+
+        modal.querySelector('#adminAdd').onclick = () => {
+            let target = getUserSelect();
+            let amt = getAmount();
+            if (amt <= 0) { showToast("金额必须大于0"); return; }
+            usersData[target].balance += amt;
+            saveUsers();
+            showToast(`${target} +${amt}，新余额 ${usersData[target].balance.toFixed(2)}`);
+            if (target === currentUser.phone) {
+                currentUser.balance = usersData[target].balance;
+                let balSpan = document.getElementById("userBalanceDisplay");
+                if (balSpan) balSpan.innerText = currentUser.balance.toFixed(2);
+            }
+            modal.remove();
+            showAdminPanel();
+        };
+
+        modal.querySelector('#adminSub').onclick = () => {
+            let target = getUserSelect();
+            let amt = getAmount();
+            if (amt <= 0) { showToast("金额必须大于0"); return; }
+            let cur = usersData[target].balance;
+            if (cur < amt) { showToast(`${target} 余额不足，无法下分`); return; }
+            usersData[target].balance = cur - amt;
+            saveUsers();
+            showToast(`${target} -${amt}，新余额 ${usersData[target].balance.toFixed(2)}`);
+            if (target === currentUser.phone) {
+                currentUser.balance = usersData[target].balance;
+                let balSpan = document.getElementById("userBalanceDisplay");
+                if (balSpan) balSpan.innerText = currentUser.balance.toFixed(2);
+            }
+            modal.remove();
+            showAdminPanel();
+        };
+
+        modal.querySelector('#adminQuery').onclick = () => {
+            let target = getUserSelect();
+            showToast(`${target} 余额: ${usersData[target].balance.toFixed(2)}`);
+        };
+
+        modal.querySelector('#adminReset').onclick = () => {
+            let target = getUserSelect();
+            if (confirm(`重置 ${target} 余额为 1000 文？`)) {
+                usersData[target].balance = 1000;
+                saveUsers();
+                showToast(`${target} 余额已重置为 1000`);
+                if (target === currentUser.phone) {
+                    currentUser.balance = 1000;
+                    let balSpan = document.getElementById("userBalanceDisplay");
+                    if (balSpan) balSpan.innerText = "1000.00";
+                }
+                modal.remove();
+                showAdminPanel();
+            }
+        };
+
+        modal.querySelector('#adminChangePwd').onclick = () => {
+            let old = prompt("请输入当前管理密码:");
+            if (old !== adminPassword) { showToast("当前密码错误"); return; }
+            let newPwd = prompt("请输入新密码（至少4位）:");
+            if (newPwd && newPwd.length >= 4) {
+                adminPassword = newPwd;
+                localStorage.setItem('admin_pwd', newPwd);
+                showToast("管理密码修改成功");
+            } else if (newPwd) {
+                showToast("密码至少4位");
+            }
+        };
+
+        modal.querySelector('#adminClose').onclick = () => modal.remove();
+    }
+
+    // 监听管理员触发筹码（1k筹码点击三次）
+    document.addEventListener('click', (e) => {
+        if (e.target && e.target.id === 'adminTriggerChip') {
+            adminClickCount++;
+            if (adminClickTimer) clearTimeout(adminClickTimer);
+            adminClickTimer = setTimeout(() => { adminClickCount = 0; }, 1000);
+            if (adminClickCount >= 3) {
+                adminClickCount = 0;
+                clearTimeout(adminClickTimer);
+                openAdminModal();
+            }
+        }
+    });
+
+    // =====================================================================
+    // 主界面渲染（登录/注册/游戏大厅）
+    // =====================================================================
+    function renderAuthUI() {
+        const savedPhone = localStorage.getItem('saved_phone') || '';
+        const savedPwd = localStorage.getItem('saved_password') || '';
+        const rememberChecked = localStorage.getItem('remember_me') === 'true';
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <div class="auth-panel">
+                <h2>🎲 双游戏大厅</h2>
+                <input type="tel" id="regPhone" class="auth-input" placeholder="手机号" maxlength="11" value="${savedPhone}">
+                <input type="password" id="regPassword" class="auth-input" placeholder="密码 (至少4位)" value="${savedPwd}">
+                <div style="display:flex; align-items:center; gap:8px; margin:8px 0;">
+                    <input type="checkbox" id="rememberCheckbox" ${rememberChecked ? 'checked' : ''}>
+                    <label style="color:#ffdd99;">记住账号密码</label>
+                </div>
+                <div class="auth-buttons">
+                    <button id="loginBtn" class="auth-btn">登录</button>
+                    <button id="registerBtn" class="auth-btn">注册</button>
+                </div>
+                <div class="auth-note">🎮 测试手机号注册 | 初始1000文</div>
+            </div>
+        `;
+
+        document.getElementById('loginBtn').onclick = () => {
+            let phone = document.getElementById('regPhone').value.trim();
+            let pwd = document.getElementById('regPassword').value;
+            let rem = document.getElementById('rememberCheckbox').checked;
+            if (!phone || !pwd) { showToast("请填写手机号和密码"); return; }
+            let user = usersData[phone];
+            if (!user || user.password !== pwd) { showToast("账号或密码错误"); return; }
+            if (rem) {
+                localStorage.setItem('saved_phone', phone);
+                localStorage.setItem('saved_password', pwd);
+                localStorage.setItem('remember_me', 'true');
+            } else {
+                localStorage.removeItem('saved_phone');
+                localStorage.removeItem('saved_password');
+                localStorage.setItem('remember_me', 'false');
+            }
+            currentUser = { phone, ...user };
+            showToast(`欢迎，${phone}`);
+            renderGameLobby();
+        };
+
+        document.getElementById('registerBtn').onclick = () => {
+            let phone = document.getElementById('regPhone').value.trim();
+            let pwd = document.getElementById('regPassword').value;
+            if (!phone || !pwd) { showToast("请填写手机号和密码"); return; }
+            if (!/^1[3-9]\d{9}$/.test(phone)) { showToast("请输入有效11位手机号"); return; }
+            if (pwd.length < 4) { showToast("密码至少4位"); return; }
+            if (usersData[phone]) { showToast("手机号已注册"); return; }
+            usersData[phone] = { password: pwd, balance: 1000 };
+            saveUsers();
+            showToast("注册成功！请登录");
+        };
+    }
+
+    function renderGameLobby() {
+        const app = document.getElementById('app');
+        app.innerHTML = `
+            <div class="user-section">
+                <div class="user-info-row">
+                    <span>📱 ${currentUser.phone.substring(0,7)}... | 💰 余额: <span id="userBalanceDisplay">${getUserBalance().toFixed(2)}</span></span>
+                    <div class="btn-group">
+                        <button id="serviceBtn" class="service-btn">📞 客服</button>
+                        <button id="logoutBtn" class="logout-btn">退出</button>
+                    </div>
+                </div>
+                <div class="charge-withdraw-row">
+                    <button id="rechargeBtn" class="charge-btn">💎 充值</button>
+                    <button id="withdrawBtn" class="withdraw-btn">💰 提现</button>
+                </div>
+            </div>
+            <div class="game-nav">
+                <button class="game-tab active" data-game="fish">🎲 葫芦鱼</button>
+                <button class="game-tab" data-game="dice">🎲 至尊骰宝</button>
+                <button class="game-tab" data-game="game3">🎮 游戏3</button>
+                <button class="game-tab" data-game="game4">♠️ 游戏4</button>
+            </div>
+            <div class="game-container">
+                <div id="gamePanel"></div>
+            </div>
+        `;
+
+        document.getElementById('logoutBtn').onclick = () => {
+            currentUser = null;
+            renderAuthUI();
+        };
+        document.getElementById('serviceBtn').onclick = showServiceModal;
+        document.getElementById('rechargeBtn').onclick = recharge;
+        document.getElementById('withdrawBtn').onclick = withdraw;
+
+        const gamePanel = document.getElementById('gamePanel');
+        let currentDestroy = null;
+        const gameInits = {
+            fish: initFishGame,
+            dice: initDiceGame,
+            game3: initGame3,
+            game4: initGame4
+        };
+
+        async function switchGame(gameId) {
+            if (currentDestroy) {
+                currentDestroy();
+                currentDestroy = null;
+            }
+            gamePanel.innerHTML = '';
+            const initFn = gameInits[gameId];
+            if (initFn) {
+                currentDestroy = await initFn(gamePanel);
+            }
+            let balSpan = document.getElementById("userBalanceDisplay");
+            if (balSpan) balSpan.innerText = getUserBalance().toFixed(2);
+        }
+
+        document.querySelectorAll('.game-tab').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.game-tab').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                switchGame(btn.dataset.game);
+            };
+        });
+
+        switchGame('fish');
+
+        // 在线人数模拟
+        let onlineInterval = setInterval(() => {
+            let onlineSpan = document.getElementById('onlineCount');
+            if (onlineSpan) {
+                let newCount = Math.floor(Math.random() * 151) + 50;
+                onlineSpan.innerText = newCount;
+            }
+        }, 30000);
+
+        const origDestroy = currentDestroy;
+        currentDestroy = () => {
+            clearInterval(onlineInterval);
+            if (origDestroy) origDestroy();
+        };
+    }
+
+    // 启动应用
+    renderAuthUI();
+</script>
+</body>
+</html>
