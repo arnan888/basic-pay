@@ -1091,3 +1091,717 @@ function initDiceGame(container) {
     diceDestroy=()=>{ if(countdownInterval) clearInterval(countdownInterval); if(rollingAnimation) cancelAnimationFrame(rollingAnimation); if(autoTimer) clearTimeout(autoTimer); reelIntervals.forEach(i=>clearInterval(i)); container.innerHTML=''; };
     return diceDestroy;
 }
+    // ========== 红中发财老虎机版（原有增强） ==========
+    let game3Destroy = null;
+    function initGame3(container) {
+        if (game3Destroy) game3Destroy();
+        container.innerHTML = '';
+
+        const SYMBOLS = ["红中", "发财", "白板"];
+        const SYMBOL_ICON = { "红中":"🀄️","发财":"🀅","白板":"⬜" };
+        const SYMBOL_COLOR = { "红中":"#D6402A","发财":"#2E8B57","白板":"#2F8B5A" };
+        const PAYOUTS = { "红中三连":88,"发财三连":66,"白板三连":48,"红中两连":5,"发财两连":4,"白板两连":3,"顺子":8 };
+
+        let currentSymbols = ["红中","发财","白板"];
+        let currentBet = 100;
+        let isSpinning = false;
+        let autoActive = false;
+        let autoTimer = null;
+        let soundEnabled = true;
+        let audioCtx = null;
+        let reelIntervals = [null, null, null];
+        let reelSteps = [0,0,0];
+        let reelCurrentStep = [0,0,0];
+        let spinTargets = ["红中","红中","红中"];
+
+        container.innerHTML = `
+            <div class="mahjong-slot">
+                <div class="reels-luxury">
+                    <div class="card-frame"><canvas id="mjReel0" class="mahjong-canvas" width="300" height="400"></canvas><div class="card-label">天</div></div>
+                    <div class="card-frame"><canvas id="mjReel1" class="mahjong-canvas" width="300" height="400"></canvas><div class="card-label">地</div></div>
+                    <div class="card-frame"><canvas id="mjReel2" class="mahjong-canvas" width="300" height="400"></canvas><div class="card-label">人</div></div>
+                </div>
+                <div class="slot-controls">
+                    <div class="bet-row"><span class="bet-label">💰 下注金额</span><div class="bet-value" id="betAmountMJ">100</div></div>
+                    <div class="chip-select" id="chipSelectMJ">
+                        <div class="chip-item" data-bet="10">10</div><div class="chip-item" data-bet="50">50</div>
+                        <div class="chip-item selected" data-bet="100">100</div><div class="chip-item" data-bet="200">200</div>
+                        <div class="chip-item" data-bet="500">500</div><div class="chip-item" data-bet="1000">1000</div>
+                    </div>
+                    <div class="action-row">
+                        <button id="mjSpinBtn" class="slot-btn">🎲 开牌</button>
+                        <button id="mjAutoBtn" class="slot-btn">⚡ 自动</button>
+                        <button id="mjSoundBtn" class="slot-btn sound">🔊 音效</button>
+                    </div>
+                    <div class="action-row">
+                        <button id="mjMinBtn" class="slot-btn">最小</button>
+                        <button id="mjMaxBtn" class="slot-btn">最大</button>
+                    </div>
+                </div>
+                <div class="pay-table">
+                    <div>🀄️红中三连 ×88</div><div>🀅发财三连 ×66</div><div>⬜白板三连 ×48</div>
+                    <div>🀄️🀄️红中两连 ×5</div><div>🀅🀅发财两连 ×4</div><div>⬜⬜白板两连 ×3</div>
+                    <div style="grid-column:span 3;">🀄️🀅⬜顺子 ×8</div>
+                </div>
+                <div class="info-area" id="mjInfoMsg">✨ 鸿运当头 · 恭候您开牌 ✨</div>
+            </div>
+        `;
+
+        const canvases = [document.getElementById('mjReel0'), document.getElementById('mjReel1'), document.getElementById('mjReel2')];
+        const ctxs = canvases.map(c => c.getContext('2d'));
+        const betSpan = document.getElementById('betAmountMJ');
+        const spinBtn = document.getElementById('mjSpinBtn');
+        const autoBtn = document.getElementById('mjAutoBtn');
+        const soundBtn = document.getElementById('mjSoundBtn');
+        const minBtn = document.getElementById('mjMinBtn');
+        const maxBtn = document.getElementById('mjMaxBtn');
+        const infoDiv = document.getElementById('mjInfoMsg');
+
+        function drawMahjongTile(ctx, symbol, w, h) {
+            ctx.clearRect(0,0,w,h);
+            ctx.fillStyle="#FFF9EF"; ctx.fillRect(0,0,w,h);
+            ctx.strokeStyle="#D4AF5A"; ctx.lineWidth=3; ctx.strokeRect(6,6,w-12,h-12);
+            ctx.strokeStyle="#9B6E3C"; ctx.lineWidth=1.5; ctx.strokeRect(12,12,w-24,h-24);
+            if(symbol==="白板"){ ctx.save(); ctx.strokeStyle="#2A6FBF"; ctx.lineWidth=2.5; ctx.strokeRect(20,20,w-40,h-40); ctx.restore(); }
+            let icon = SYMBOL_ICON[symbol];
+            let fontSize = Math.min(h*0.45,90);
+            if(symbol==="发财") fontSize = Math.min(h*0.55,110);
+            ctx.font = `bold ${fontSize}px "Segoe UI Emoji", "Apple Color Emoji"`;
+            ctx.fillStyle = SYMBOL_COLOR[symbol];
+            ctx.fillText(icon, w/2-40, h/2+15);
+            ctx.font = `bold ${Math.min(h*0.16,30)}px "Poppins"`;
+            ctx.fillStyle = "#A6702E";
+            ctx.fillText(symbol, w/2-30, h-22);
+        }
+        function updateReels() { for(let i=0;i<3;i++) drawMahjongTile(ctxs[i], currentSymbols[i], canvases[i].width, canvases[i].height); }
+        function getRandomSymbol() { return SYMBOLS[Math.floor(Math.random()*3)]; }
+
+        function calculateWin(symbols, bet) {
+            let [a,b,c]=symbols;
+            if(a===b && b===c){
+                if(a==="红中") return bet*88;
+                if(a==="发财") return bet*66;
+                return bet*48;
+            }
+            if(a!==b && b!==c && a!==c) return bet*8; // 顺子
+            if(a===b || a===c || b===c){
+                let pair = (a===b)?a:(a===c)?a:b;
+                if(pair==="红中") return bet*5;
+                if(pair==="发财") return bet*4;
+                return bet*3;
+            }
+            return 0;
+        }
+
+        function startRolling(targets) {
+            return new Promise((resolve)=>{
+                if(isSpinning) return resolve(false);
+                isSpinning=true; spinBtn.disabled=true; autoBtn.disabled=true;
+                spinTargets=[...targets];
+                for(let i=0;i<3;i++){
+                    if(reelIntervals[i]) clearInterval(reelIntervals[i]);
+                    reelSteps[i]=35+Math.floor(Math.random()*20);
+                    reelCurrentStep[i]=0;
+                    let intervalDelay=40;
+                    const rollFn=(idx)=>{
+                        return setInterval(()=>{
+                            if(reelCurrentStep[idx]>=reelSteps[idx]){
+                                clearInterval(reelIntervals[idx]);
+                                reelIntervals[idx]=null;
+                                currentSymbols[idx]=spinTargets[idx];
+                                drawMahjongTile(ctxs[idx], currentSymbols[idx], canvases[idx].width, canvases[idx].height);
+                                if(!reelIntervals[0] && !reelIntervals[1] && !reelIntervals[2]) { finishSettle(); resolve(true); }
+                                return;
+                            }
+                            let stepLeft=reelSteps[idx]-reelCurrentStep[idx];
+                            let tempSym;
+                            if(stepLeft<=5) tempSym=spinTargets[idx];
+                            else if(stepLeft<=12) tempSym=Math.random()<0.7?spinTargets[idx]:getRandomSymbol();
+                            else tempSym=getRandomSymbol();
+                            currentSymbols[idx]=tempSym;
+                            drawMahjongTile(ctxs[idx], currentSymbols[idx], canvases[idx].width, canvases[idx].height);
+                            reelCurrentStep[idx]++;
+                            if(reelIntervals[idx]){
+                                let newDelay=Math.min(130,40+Math.floor(reelCurrentStep[idx]*2));
+                                clearInterval(reelIntervals[idx]);
+                                reelIntervals[idx]=setInterval(()=>rollFn(idx), newDelay);
+                            }
+                        }, intervalDelay);
+                    };
+                    reelIntervals[i]=setInterval(()=>rollFn(i), intervalDelay);
+                }
+            });
+        }
+
+        async function finishSettle() {
+            let winAmount = calculateWin(currentSymbols, currentBet) * adjustFactor;
+            if(winAmount>0){
+                setUserBalance(getUserBalance()+winAmount);
+                infoDiv.innerHTML=`🎉 恭喜！${currentSymbols.join('')} 赢得 ${winAmount.toFixed(2)} 文！ 🎉`;
+                if(soundEnabled) playWinSound();
+                for(let i=0;i<3;i++){ let fc=ctxs[i]; fc.save(); fc.globalAlpha=0.5; fc.fillStyle="#FFE5A0"; fc.fillRect(0,0,canvases[i].width,canvases[i].height); fc.restore(); setTimeout(()=>drawMahjongTile(ctxs[i], currentSymbols[i], canvases[i].width, canvases[i].height),150); }
+            } else {
+                infoDiv.innerHTML=`🍂 未中奖 · 组合: ${currentSymbols.map(s=>SYMBOL_ICON[s]).join('')} 🍂`;
+                if(soundEnabled) playLoseSound();
+            }
+            updateBalanceDisplay();
+            isSpinning=false; spinBtn.disabled=false; autoBtn.disabled=false;
+            if(autoActive && !isSpinning && getUserBalance()>=currentBet){
+                autoTimer=setTimeout(()=>{ if(autoActive && !isSpinning && getUserBalance()>=currentBet) performSpin(); },500);
+            }
+            if(getUserBalance()<currentBet && autoActive) stopAutoSpin();
+        }
+
+        async function performSpin() {
+            if(isSpinning) return false;
+            if(getUserBalance()<currentBet){ infoDiv.innerHTML="💰 余额不足"; return false; }
+            setUserBalance(getUserBalance()-currentBet);
+            updateBalanceDisplay();
+            const targets=[getRandomSymbol(),getRandomSymbol(),getRandomSymbol()];
+            if(soundEnabled) playSpinSound();
+            await startRolling(targets);
+            return true;
+        }
+
+        function updateBalanceDisplay(){ let b=document.getElementById("userBalanceDisplay"); if(b) b.innerText=getUserBalance().toFixed(2); }
+        function setBet(val){ if(isSpinning) return; currentBet=val; betSpan.innerText=currentBet; document.querySelectorAll('#chipSelectMJ .chip-item').forEach(el=>{ if(parseInt(el.dataset.bet)===currentBet) el.classList.add('selected'); else el.classList.remove('selected'); }); }
+        function setMinBet(){ setBet(10); }
+        function setMaxBet(){ let maxPossible=Math.min(5000, getUserBalance()); if(maxPossible<10) maxPossible=10; setBet(maxPossible); }
+
+        document.querySelectorAll('#chipSelectMJ .chip-item').forEach(el=>{ el.onclick=()=>{ if(!isSpinning) setBet(parseInt(el.dataset.bet)); }; });
+        spinBtn.onclick=()=>{ if(!isSpinning && !autoActive && getUserBalance()>=currentBet) performSpin(); };
+        autoBtn.onclick=()=>{ autoActive ? stopAutoSpin() : startAutoSpin(); };
+        soundBtn.onclick=toggleSound;
+        minBtn.onclick=setMinBet; maxBtn.onclick=setMaxBet;
+
+        function startAutoSpin(){
+            if(autoActive) return;
+            if(isSpinning){ infoDiv.innerHTML="请等待本轮结束"; return; }
+            if(getUserBalance()<currentBet){ infoDiv.innerHTML="余额不足，无法自动"; return; }
+            autoActive=true; autoBtn.innerText="⏹️ 停止"; spinBtn.disabled=true;
+            performSpin();
+        }
+        function stopAutoSpin(){
+            if(autoTimer) clearTimeout(autoTimer);
+            autoActive=false; autoBtn.innerText="⚡ 自动";
+            if(!isSpinning) spinBtn.disabled=false;
+            infoDiv.innerHTML="⏸️ 自动旋转已结束";
+        }
+        function toggleSound(){
+            soundEnabled=!soundEnabled;
+            soundBtn.innerText=soundEnabled?"🔊 音效":"🔇 音效";
+            infoDiv.innerHTML=soundEnabled?"🔊 音效已开启":"🔇 静音模式";
+            if(soundEnabled && audioCtx && audioCtx.state==='suspended') audioCtx.resume();
+        }
+        // 复用音效函数（已有）
+        function initAudio(){ if(!audioCtx && soundEnabled){ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); } if(audioCtx && audioCtx.state==='suspended') audioCtx.resume(); }
+        function playSpinSound(){ if(!soundEnabled) return; try{ initAudio(); const osc=audioCtx.createOscillator(); const gain=audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type="sine"; osc.frequency.value=880; gain.gain.value=0.2; osc.start(); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.2); osc.stop(audioCtx.currentTime+0.2); }catch(e){} }
+        function playWinSound(){ if(!soundEnabled) return; try{ initAudio(); const now=audioCtx.currentTime; [523.25,659.25,783.99].forEach((f,i)=>{ const osc=audioCtx.createOscillator(); const gain=audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type="sine"; osc.frequency.value=f; gain.gain.value=0.25; osc.start(now+i*0.12); gain.gain.exponentialRampToValueAtTime(0.0001, now+i*0.12+0.5); osc.stop(now+i*0.12+0.5); }); }catch(e){} }
+        function playLoseSound(){ if(!soundEnabled) return; try{ initAudio(); const osc=audioCtx.createOscillator(); const gain=audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type="triangle"; osc.frequency.value=380; gain.gain.value=0.15; osc.start(); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.4); osc.stop(audioCtx.currentTime+0.4); }catch(e){} }
+
+        updateReels(); updateBalanceDisplay(); setBet(100);
+        game3Destroy=()=>{ if(autoTimer) clearTimeout(autoTimer); reelIntervals.forEach(i=>clearInterval(i)); container.innerHTML=''; };
+        return game3Destroy;
+    }
+
+    // ========== 新增游戏4：百家乐老虎机版 ==========
+    let game4Destroy = null;
+    function initGame4(container) {
+        if (game4Destroy) game4Destroy();
+        container.innerHTML = `
+            <div class="mahjong-slot">
+                <div class="reels-luxury">
+                    <div class="card-frame"><canvas id="baccReel0" class="mahjong-canvas" width="300" height="400"></canvas><div class="card-label">闲</div></div>
+                    <div class="card-frame"><canvas id="baccReel1" class="mahjong-canvas" width="300" height="400"></canvas><div class="card-label">庄</div></div>
+                </div>
+                <div class="slot-controls">
+                    <div class="bet-row"><span class="bet-label">💰 下注金额</span><div class="bet-value" id="betAmountBacc">10</div></div>
+                    <div class="chip-select" id="chipSelectBacc">
+                        <div class="chip-item" data-bet="10">10</div><div class="chip-item selected" data-bet="10">10</div>
+                        <div class="chip-item" data-bet="50">50</div><div class="chip-item" data-bet="100">100</div>
+                        <div class="chip-item" data-bet="500">500</div><div class="chip-item" data-bet="1000">1000</div>
+                    </div>
+                    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                        <div class="bet-card" data-bet="player" style="flex:1; text-align:center;">闲家<br><span id="bet_player">0</span><br>赔率1:1</div>
+                        <div class="bet-card" data-bet="banker" style="flex:1; text-align:center;">庄家<br><span id="bet_banker">0</span><br>赔率1:0.95</div>
+                        <div class="bet-card" data-bet="tie" style="flex:1; text-align:center;">和局<br><span id="bet_tie">0</span><br>赔率1:8</div>
+                    </div>
+                    <div class="action-row">
+                        <button id="baccSpinBtn" class="slot-btn">🎲 发牌</button>
+                        <button id="baccAutoBtn" class="slot-btn">⚡ 自动</button>
+                        <button id="baccSoundBtn" class="slot-btn sound">🔊 音效</button>
+                    </div>
+                    <div class="action-row">
+                        <button id="baccClearBtn" class="slot-btn">清空下注</button>
+                    </div>
+                </div>
+                <div class="info-area" id="baccInfoMsg">✨ 闲家对子+20倍 · 庄家对子+20倍 ✨</div>
+            </div>
+        `;
+        const canvases = [document.getElementById('baccReel0'), document.getElementById('baccReel1')];
+        const ctxs = canvases.map(c=>c.getContext('2d'));
+        let currentBet = 10, bets = { player:0, banker:0, tie:0 };
+        let isSpinning = false, autoActive = false, autoTimer = null, soundEnabled = true, audioCtx = null;
+        let reelIntervals = [null, null];
+        let reelSteps = [0,0], reelCurrentStep = [0,0];
+        let spinTargets = ["♠️A","♠️A"];
+        let currentCards = ["♠️A","♠️A"];
+
+        function drawCard(ctx, card, w, h) {
+            ctx.clearRect(0,0,w,h);
+            ctx.fillStyle="#FFF9EF"; ctx.fillRect(0,0,w,h);
+            ctx.strokeStyle="#D4AF5A"; ctx.lineWidth=3; ctx.strokeRect(6,6,w-12,h-12);
+            ctx.font=`bold ${Math.min(h*0.4,80)}px "Segoe UI Emoji"`;
+            ctx.fillStyle="#2c3e50";
+            ctx.fillText(card, w/2-30, h/2+15);
+        }
+        function updateReels() { drawCard(ctxs[0], currentCards[0], canvases[0].width, canvases[0].height); drawCard(ctxs[1], currentCards[1], canvases[1].width, canvases[1].height); }
+        function getRandomCard() {
+            const suits = ["♠️","♥️","♣️","♦️"];
+            const values = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+            return suits[Math.floor(Math.random()*4)] + values[Math.floor(Math.random()*13)];
+        }
+        function cardValue(card) {
+            let val = card.slice(2);
+            if(val==="A") return 1;
+            if(["J","Q","K"].includes(val)) return 0;
+            return parseInt(val) || 0;
+        }
+        function calculateWinner(pCard, bCard) {
+            let pVal = cardValue(pCard), bVal = cardValue(bCard);
+            if(pVal > bVal) return "player";
+            if(bVal > pVal) return "banker";
+            return "tie";
+        }
+        function startRolling(targets) {
+            return new Promise((resolve)=>{
+                if(isSpinning) return resolve(false);
+                isSpinning=true; document.getElementById('baccSpinBtn').disabled=true; document.getElementById('baccAutoBtn').disabled=true;
+                spinTargets=[...targets];
+                for(let i=0;i<2;i++){
+                    if(reelIntervals[i]) clearInterval(reelIntervals[i]);
+                    reelSteps[i]=25+Math.floor(Math.random()*15);
+                    reelCurrentStep[i]=0;
+                    let intervalDelay=40;
+                    const rollFn=(idx)=>{
+                        return setInterval(()=>{
+                            if(reelCurrentStep[idx]>=reelSteps[idx]){
+                                clearInterval(reelIntervals[idx]);
+                                reelIntervals[idx]=null;
+                                currentCards[idx]=spinTargets[idx];
+                                drawCard(ctxs[idx], currentCards[idx], canvases[idx].width, canvases[idx].height);
+                                if(!reelIntervals[0] && !reelIntervals[1]) { finishSettle(); resolve(true); }
+                                return;
+                            }
+                            let stepLeft=reelSteps[idx]-reelCurrentStep[idx];
+                            let temp;
+                            if(stepLeft<=5) temp=spinTargets[idx];
+                            else if(stepLeft<=12) temp=Math.random()<0.7?spinTargets[idx]:getRandomCard();
+                            else temp=getRandomCard();
+                            currentCards[idx]=temp;
+                            drawCard(ctxs[idx], currentCards[idx], canvases[idx].width, canvases[idx].height);
+                            reelCurrentStep[idx]++;
+                            if(reelIntervals[idx]){
+                                let newDelay=Math.min(130,40+Math.floor(reelCurrentStep[idx]*2));
+                                clearInterval(reelIntervals[idx]);
+                                reelIntervals[idx]=setInterval(()=>rollFn(idx), newDelay);
+                            }
+                        }, intervalDelay);
+                    };
+                    reelIntervals[i]=setInterval(()=>rollFn(i), intervalDelay);
+                }
+            });
+        }
+        async function finishSettle() {
+            let totalBet = bets.player+bets.banker+bets.tie;
+            if(totalBet===0){ isSpinning=false; document.getElementById('baccSpinBtn').disabled=false; document.getElementById('baccAutoBtn').disabled=false; return; }
+            let winner = calculateWinner(currentCards[0], currentCards[1]);
+            let winAmount=0;
+            if(winner==="player") winAmount = bets.player * 1;
+            else if(winner==="banker") winAmount = bets.banker * 0.95;
+            else winAmount = bets.tie * 8;
+            winAmount = winAmount * adjustFactor;
+            if(winAmount>0){
+                setUserBalance(getUserBalance()+winAmount);
+                document.getElementById('baccInfoMsg').innerHTML=`🎉 获胜方: ${winner==="player"?"闲家":winner==="banker"?"庄家":"和局"} 赢得 ${winAmount.toFixed(2)} 文！ 🎉`;
+                if(soundEnabled) playWinSound();
+            } else {
+                document.getElementById('baccInfoMsg').innerHTML=`🍂 输掉 ${totalBet} 文 · 结果: ${winner} 🍂`;
+                if(soundEnabled) playLoseSound();
+            }
+            for(let k in bets) bets[k]=0;
+            updateUI(); updateBalanceDisplay();
+            isSpinning=false; document.getElementById('baccSpinBtn').disabled=false; document.getElementById('baccAutoBtn').disabled=false;
+            if(autoActive && !isSpinning && getUserBalance()>=getTotalBet()){
+                autoTimer=setTimeout(()=>{ if(autoActive && !isSpinning && getUserBalance()>=getTotalBet()) performSpin(); },500);
+            }
+            if(getUserBalance()<getTotalBet() && autoActive) stopAutoSpin();
+        }
+        async function performSpin() {
+            if(isSpinning) return false;
+            let totalBet = getTotalBet();
+            if(totalBet===0){ document.getElementById('baccInfoMsg').innerHTML="请先下注"; return false; }
+            if(getUserBalance()<totalBet){ document.getElementById('baccInfoMsg').innerHTML="💰 余额不足"; return false; }
+            setUserBalance(getUserBalance()-totalBet);
+            updateBalanceDisplay();
+            const targets=[getRandomCard(),getRandomCard()];
+            if(soundEnabled) playSpinSound();
+            await startRolling(targets);
+            return true;
+        }
+        function getTotalBet(){ return bets.player+bets.banker+bets.tie; }
+        function updateUI(){
+            document.getElementById('bet_player').innerText=bets.player;
+            document.getElementById('bet_banker').innerText=bets.banker;
+            document.getElementById('bet_tie').innerText=bets.tie;
+        }
+        function updateBalanceDisplay(){ let b=document.getElementById("userBalanceDisplay"); if(b) b.innerText=getUserBalance().toFixed(2); }
+        function addBet(type,val){
+            let total=getTotalBet();
+            let maxTotal=2000;
+            if(total+val>maxTotal){ showToast(`总注上限${maxTotal}`); return; }
+            if(val>getUserBalance()){ showToast("余额不足"); return; }
+            setUserBalance(getUserBalance()-val);
+            bets[type]+=val;
+            updateUI(); updateBalanceDisplay();
+        }
+        function clearBets(){
+            let total=getTotalBet();
+            setUserBalance(getUserBalance()+total);
+            for(let k in bets) bets[k]=0;
+            updateUI(); updateBalanceDisplay();
+        }
+        function startAutoSpin(){
+            if(autoActive) return;
+            if(isSpinning){ document.getElementById('baccInfoMsg').innerHTML="请等待本轮结束"; return; }
+            if(getTotalBet()===0){ document.getElementById('baccInfoMsg').innerHTML="请先下注"; return; }
+            if(getUserBalance()<getTotalBet()){ document.getElementById('baccInfoMsg').innerHTML="余额不足"; return; }
+            autoActive=true; document.getElementById('baccAutoBtn').innerText="⏹️ 停止"; document.getElementById('baccSpinBtn').disabled=true;
+            performSpin();
+        }
+        function stopAutoSpin(){
+            if(autoTimer) clearTimeout(autoTimer);
+            autoActive=false; document.getElementById('baccAutoBtn').innerText="⚡ 自动";
+            if(!isSpinning) document.getElementById('baccSpinBtn').disabled=false;
+        }
+        // 音效复用
+        function initAudio(){ if(!audioCtx && soundEnabled){ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); } if(audioCtx && audioCtx.state==='suspended') audioCtx.resume(); }
+        function playSpinSound(){ if(!soundEnabled) return; try{ initAudio(); const osc=audioCtx.createOscillator(); const gain=audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type="sine"; osc.frequency.value=880; gain.gain.value=0.2; osc.start(); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.2); osc.stop(audioCtx.currentTime+0.2); }catch(e){} }
+        function playWinSound(){ if(!soundEnabled) return; try{ initAudio(); const now=audioCtx.currentTime; [523.25,659.25,783.99].forEach((f,i)=>{ const osc=audioCtx.createOscillator(); const gain=audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type="sine"; osc.frequency.value=f; gain.gain.value=0.25; osc.start(now+i*0.12); gain.gain.exponentialRampToValueAtTime(0.0001, now+i*0.12+0.5); osc.stop(now+i*0.12+0.5); }); }catch(e){} }
+        function playLoseSound(){ if(!soundEnabled) return; try{ initAudio(); const osc=audioCtx.createOscillator(); const gain=audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type="triangle"; osc.frequency.value=380; gain.gain.value=0.15; osc.start(); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.4); osc.stop(audioCtx.currentTime+0.4); }catch(e){} }
+
+        document.querySelectorAll('#chipSelectBacc .chip-item').forEach(el=>{ el.onclick=function(){ currentBet=parseInt(this.dataset.bet); document.getElementById('betAmountBacc').innerText=currentBet; document.querySelectorAll('#chipSelectBacc .chip-item').forEach(c=>c.classList.remove('selected')); this.classList.add('selected'); }; });
+        document.querySelectorAll('[data-bet="player"],[data-bet="banker"],[data-bet="tie"]').forEach(el=>{ el.onclick=()=>addBet(el.dataset.bet, currentBet); });
+        document.getElementById('baccClearBtn').onclick=clearBets;
+        document.getElementById('baccSpinBtn').onclick=()=>{ if(!isSpinning && !autoActive && getTotalBet()>0 && getUserBalance()>=getTotalBet()) performSpin(); };
+        document.getElementById('baccAutoBtn').onclick=()=>{ autoActive ? stopAutoSpin() : startAutoSpin(); };
+        document.getElementById('baccSoundBtn').onclick=()=>{ soundEnabled=!soundEnabled; document.getElementById('baccSoundBtn').innerText=soundEnabled?"🔊 音效":"🔇 音效"; if(soundEnabled && audioCtx && audioCtx.state==='suspended') audioCtx.resume(); };
+        updateReels(); updateUI(); updateBalanceDisplay();
+        game4Destroy=()=>{ if(autoTimer) clearTimeout(autoTimer); reelIntervals.forEach(i=>clearInterval(i)); container.innerHTML=''; };
+        return game4Destroy;
+    }
+
+    // ========== 新增游戏5：轮盘老虎机版 ==========
+    let game5Destroy = null;
+    function initGame5(container) {
+        if (game5Destroy) game5Destroy();
+        container.innerHTML = `
+            <div class="mahjong-slot">
+                <div class="reels-luxury">
+                    <div class="card-frame"><canvas id="rouletteReel" class="mahjong-canvas" width="300" height="400"></canvas><div class="card-label">轮盘</div></div>
+                </div>
+                <div class="slot-controls">
+                    <div class="bet-row"><span class="bet-label">💰 下注金额</span><div class="bet-value" id="betAmountRoulette">10</div></div>
+                    <div class="chip-select" id="chipSelectRoulette">
+                        <div class="chip-item" data-bet="10">10</div><div class="chip-item selected" data-bet="10">10</div>
+                        <div class="chip-item" data-bet="50">50</div><div class="chip-item" data-bet="100">100</div>
+                        <div class="chip-item" data-bet="500">500</div><div class="chip-item" data-bet="1000">1000</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(6,1fr); gap: 6px; margin-bottom: 12px;" id="rouletteNumbers"></div>
+                    <div class="action-row">
+                        <button id="rouletteSpinBtn" class="slot-btn">🎲 旋转</button>
+                        <button id="rouletteAutoBtn" class="slot-btn">⚡ 自动</button>
+                        <button id="rouletteSoundBtn" class="slot-btn sound">🔊 音效</button>
+                    </div>
+                    <div class="action-row">
+                        <button id="rouletteClearBtn" class="slot-btn">清空下注</button>
+                    </div>
+                </div>
+                <div class="info-area" id="rouletteInfoMsg">✨ 押中数字赔率35倍 ✨</div>
+            </div>
+        `;
+        const canvas = document.getElementById('rouletteReel');
+        const ctx = canvas.getContext('2d');
+        let currentBet = 10, bets = {};
+        for(let i=0;i<=36;i++) bets[i]=0;
+        let isSpinning = false, autoActive = false, autoTimer = null, soundEnabled = true, audioCtx = null;
+        let reelInterval = null, reelStep = 0, reelCurrent = 0, spinTarget = 0;
+        let currentNumber = 0;
+
+        function drawNumber(ctx, num, w, h) {
+            ctx.clearRect(0,0,w,h);
+            ctx.fillStyle="#FFF9EF"; ctx.fillRect(0,0,w,h);
+            ctx.strokeStyle="#D4AF5A"; ctx.lineWidth=3; ctx.strokeRect(6,6,w-12,h-12);
+            ctx.font=`bold ${Math.min(h*0.5,100)}px "Segoe UI"`;
+            ctx.fillStyle="#2c3e50";
+            ctx.fillText(num, w/2-30, h/2+20);
+        }
+        function getRandomNumber() { return Math.floor(Math.random()*37); }
+        function startRolling(target) {
+            return new Promise((resolve)=>{
+                if(isSpinning) return resolve(false);
+                isSpinning=true; document.getElementById('rouletteSpinBtn').disabled=true; document.getElementById('rouletteAutoBtn').disabled=true;
+                spinTarget=target;
+                reelStep=25+Math.floor(Math.random()*15);
+                reelCurrent=0;
+                let intervalDelay=60;
+                const rollInterval = setInterval(()=>{
+                    if(reelCurrent>=reelStep){
+                        clearInterval(rollInterval);
+                        currentNumber=spinTarget;
+                        drawNumber(ctx, currentNumber, canvas.width, canvas.height);
+                        finishSettle();
+                        resolve(true);
+                        return;
+                    }
+                    let stepLeft=reelStep-reelCurrent;
+                    let temp;
+                    if(stepLeft<=5) temp=spinTarget;
+                    else if(stepLeft<=12) temp=Math.random()<0.7?spinTarget:getRandomNumber();
+                    else temp=getRandomNumber();
+                    drawNumber(ctx, temp, canvas.width, canvas.height);
+                    reelCurrent++;
+                }, intervalDelay);
+            });
+        }
+        async function finishSettle() {
+            let totalBet = Object.values(bets).reduce((a,b)=>a+b,0);
+            if(totalBet===0){ isSpinning=false; document.getElementById('rouletteSpinBtn').disabled=false; document.getElementById('rouletteAutoBtn').disabled=false; return; }
+            let winAmount = bets[currentNumber] * 35 * adjustFactor;
+            if(winAmount>0){
+                setUserBalance(getUserBalance()+winAmount);
+                document.getElementById('rouletteInfoMsg').innerHTML=`🎉 中奖数字 ${currentNumber}！赢得 ${winAmount.toFixed(2)} 文！ 🎉`;
+                if(soundEnabled) playWinSound();
+                // 闪光
+                ctx.save(); ctx.globalAlpha=0.5; ctx.fillStyle="#FFE5A0"; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.restore();
+                setTimeout(()=>drawNumber(ctx, currentNumber, canvas.width, canvas.height),150);
+            } else {
+                document.getElementById('rouletteInfoMsg').innerHTML=`🍂 未中奖 · 开奖数字 ${currentNumber} 🍂`;
+                if(soundEnabled) playLoseSound();
+            }
+            for(let k in bets) bets[k]=0;
+            updateUI(); updateBalanceDisplay();
+            isSpinning=false; document.getElementById('rouletteSpinBtn').disabled=false; document.getElementById('rouletteAutoBtn').disabled=false;
+            if(autoActive && !isSpinning && getUserBalance()>=getTotalBet()){
+                autoTimer=setTimeout(()=>{ if(autoActive && !isSpinning && getUserBalance()>=getTotalBet()) performSpin(); },500);
+            }
+            if(getUserBalance()<getTotalBet() && autoActive) stopAutoSpin();
+        }
+        async function performSpin() {
+            if(isSpinning) return false;
+            let totalBet = getTotalBet();
+            if(totalBet===0){ document.getElementById('rouletteInfoMsg').innerHTML="请先下注"; return false; }
+            if(getUserBalance()<totalBet){ document.getElementById('rouletteInfoMsg').innerHTML="💰 余额不足"; return false; }
+            setUserBalance(getUserBalance()-totalBet);
+            updateBalanceDisplay();
+            const target=getRandomNumber();
+            if(soundEnabled) playSpinSound();
+            await startRolling(target);
+            return true;
+        }
+        function getTotalBet(){ return Object.values(bets).reduce((a,b)=>a+b,0); }
+        function updateUI(){
+            for(let i=0;i<=36;i++){ let el=document.getElementById(`bet_${i}`); if(el) el.innerText=bets[i]; }
+        }
+        function updateBalanceDisplay(){ let b=document.getElementById("userBalanceDisplay"); if(b) b.innerText=getUserBalance().toFixed(2); }
+        function addBet(num,val){
+            let total=getTotalBet();
+            let maxTotal=2000;
+            if(total+val>maxTotal){ showToast(`总注上限${maxTotal}`); return; }
+            if(val>getUserBalance()){ showToast("余额不足"); return; }
+            setUserBalance(getUserBalance()-val);
+            bets[num]+=val;
+            updateUI(); updateBalanceDisplay();
+        }
+        function clearBets(){
+            let total=getTotalBet();
+            setUserBalance(getUserBalance()+total);
+            for(let k in bets) bets[k]=0;
+            updateUI(); updateBalanceDisplay();
+        }
+        function startAutoSpin(){
+            if(autoActive) return;
+            if(isSpinning){ document.getElementById('rouletteInfoMsg').innerHTML="请等待本轮结束"; return; }
+            if(getTotalBet()===0){ document.getElementById('rouletteInfoMsg').innerHTML="请先下注"; return; }
+            if(getUserBalance()<getTotalBet()){ document.getElementById('rouletteInfoMsg').innerHTML="余额不足"; return; }
+            autoActive=true; document.getElementById('rouletteAutoBtn').innerText="⏹️ 停止"; document.getElementById('rouletteSpinBtn').disabled=true;
+            performSpin();
+        }
+        function stopAutoSpin(){
+            if(autoTimer) clearTimeout(autoTimer);
+            autoActive=false; document.getElementById('rouletteAutoBtn').innerText="⚡ 自动";
+            if(!isSpinning) document.getElementById('rouletteSpinBtn').disabled=false;
+        }
+        // 音效复用
+        function initAudio(){ if(!audioCtx && soundEnabled){ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); } if(audioCtx && audioCtx.state==='suspended') audioCtx.resume(); }
+        function playSpinSound(){ if(!soundEnabled) return; try{ initAudio(); const osc=audioCtx.createOscillator(); const gain=audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type="sine"; osc.frequency.value=880; gain.gain.value=0.2; osc.start(); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.2); osc.stop(audioCtx.currentTime+0.2); }catch(e){} }
+        function playWinSound(){ if(!soundEnabled) return; try{ initAudio(); const now=audioCtx.currentTime; [523.25,659.25,783.99].forEach((f,i)=>{ const osc=audioCtx.createOscillator(); const gain=audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type="sine"; osc.frequency.value=f; gain.gain.value=0.25; osc.start(now+i*0.12); gain.gain.exponentialRampToValueAtTime(0.0001, now+i*0.12+0.5); osc.stop(now+i*0.12+0.5); }); }catch(e){} }
+        function playLoseSound(){ if(!soundEnabled) return; try{ initAudio(); const osc=audioCtx.createOscillator(); const gain=audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type="triangle"; osc.frequency.value=380; gain.gain.value=0.15; osc.start(); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.4); osc.stop(audioCtx.currentTime+0.4); }catch(e){} }
+
+        const numbersDiv = document.getElementById('rouletteNumbers');
+        numbersDiv.innerHTML='';
+        for(let i=0;i<=36;i++){
+            let div=document.createElement('div'); div.className='bet-card'; div.dataset.num=i;
+            div.innerHTML=`<div>${i}</div><div id="bet_${i}">0</div>`;
+            div.onclick=()=>addBet(i, currentBet);
+            numbersDiv.appendChild(div);
+        }
+        document.querySelectorAll('#chipSelectRoulette .chip-item').forEach(el=>{ el.onclick=function(){ currentBet=parseInt(this.dataset.bet); document.getElementById('betAmountRoulette').innerText=currentBet; document.querySelectorAll('#chipSelectRoulette .chip-item').forEach(c=>c.classList.remove('selected')); this.classList.add('selected'); }; });
+        document.getElementById('rouletteClearBtn').onclick=clearBets;
+        document.getElementById('rouletteSpinBtn').onclick=()=>{ if(!isSpinning && !autoActive && getTotalBet()>0 && getUserBalance()>=getTotalBet()) performSpin(); };
+        document.getElementById('rouletteAutoBtn').onclick=()=>{ autoActive ? stopAutoSpin() : startAutoSpin(); };
+        document.getElementById('rouletteSoundBtn').onclick=()=>{ soundEnabled=!soundEnabled; document.getElementById('rouletteSoundBtn').innerText=soundEnabled?"🔊 音效":"🔇 音效"; if(soundEnabled && audioCtx && audioCtx.state==='suspended') audioCtx.resume(); };
+        drawNumber(ctx, 0, canvas.width, canvas.height); updateUI(); updateBalanceDisplay();
+        game5Destroy=()=>{ if(autoTimer) clearTimeout(autoTimer); if(reelInterval) clearInterval(reelInterval); container.innerHTML=''; };
+        return game5Destroy;
+    }
+
+    // ========== 游戏6、7、8、9、10 快速占位（老虎机风格，后续可扩展） ==========
+    let game6Destroy = null, game7Destroy = null, game8Destroy = null, game9Destroy = null, game10Destroy = null;
+    function initGame6(container) { if(game6Destroy) game6Destroy(); container.innerHTML=`<div class="mahjong-slot"><div class="info-area">🎰 21点老虎机（开发中）</div></div>`; game6Destroy=()=>{ container.innerHTML=''; }; return game6Destroy; }
+    function initGame7(container) { if(game7Destroy) game7Destroy(); container.innerHTML=`<div class="mahjong-slot"><div class="info-area">🍎 水果机（开发中）</div></div>`; game7Destroy=()=>{ container.innerHTML=''; }; return game7Destroy; }
+    function initGame8(container) { if(game8Destroy) game8Destroy(); container.innerHTML=`<div class="mahjong-slot"><div class="info-area">🎰 拉霸机（开发中）</div></div>`; game8Destroy=()=>{ container.innerHTML=''; }; return game8Destroy; }
+    function initGame9(container) { if(game9Destroy) game9Destroy(); container.innerHTML=`<div class="mahjong-slot"><div class="info-area">🐉 龙虎斗（开发中）</div></div>`; game9Destroy=()=>{ container.innerHTML=''; }; return game9Destroy; }
+    function initGame10(container) { if(game10Destroy) game10Destroy(); container.innerHTML=`<div class="mahjong-slot"><div class="info-area">💎 宝石迷阵（开发中）</div></div>`; game10Destroy=()=>{ container.innerHTML=''; }; return game10Destroy; }
+
+    // ========== 大厅渲染与切换 ==========
+    function renderGameLobby() {
+        document.getElementById('app').innerHTML = `
+            <div class="user-section">
+                <div class="user-info-row">
+                    <span>📱 ${currentUser.phone.substring(0,7)}... | 💰 余额: <span id="userBalanceDisplay">${getUserBalance().toFixed(2)}</span></span>
+                    <div class="btn-group"><button id="serviceBtn" class="service-btn">📞 客服</button><button id="logoutBtn" class="logout-btn">退出</button></div>
+                </div>
+                <div class="charge-withdraw-row"><button id="rechargeBtn" class="charge-btn">💎 充值</button><button id="withdrawBtn" class="withdraw-btn">💰 提现</button></div>
+            </div>
+            <div class="game-nav" id="gameNav"></div>
+            <div class="game-container"><div id="gamePanel"></div></div>
+        `;
+        document.getElementById('logoutBtn').onclick = () => { currentUser = null; renderAuthUI(); };
+        document.getElementById('serviceBtn').onclick = showServiceModal;
+        document.getElementById('rechargeBtn').onclick = recharge;
+        document.getElementById('withdrawBtn').onclick = withdraw;
+
+        const gameNav = document.getElementById('gameNav');
+        const games = [
+            { id:"fish", name:"🐟 鱼虾蟹", init: initFishGame },
+            { id:"dice", name:"🎲 至尊骰宝", init: initDiceGame },
+            { id:"game3", name:"🀄️ 红中发财", init: initGame3 },
+            { id:"game4", name:"♠️ 百家乐", init: initGame4 },
+            { id:"game5", name:"🎡 轮盘", init: initGame5 },
+            { id:"game6", name:"🎰 21点", init: initGame6 },
+            { id:"game7", name:"🍎 水果机", init: initGame7 },
+            { id:"game8", name:"🎰 拉霸", init: initGame8 },
+            { id:"game9", name:"🐉 龙虎斗", init: initGame9 },
+            { id:"game10", name:"💎 宝石迷阵", init: initGame10 }
+        ];
+        games.forEach(g=>{
+            let btn = document.createElement('button');
+            btn.className = 'game-tab';
+            btn.innerText = g.name;
+            btn.dataset.game = g.id;
+            gameNav.appendChild(btn);
+        });
+        const gamePanel = document.getElementById('gamePanel');
+        let currentDestroy = null;
+        async function switchGame(id){
+            if(currentDestroy) currentDestroy();
+            gamePanel.innerHTML = '';
+            const game = games.find(g=>g.id===id);
+            if(game) currentDestroy = await game.init(gamePanel);
+            let b = document.getElementById("userBalanceDisplay");
+            if(b) b.innerText = getUserBalance().toFixed(2);
+        }
+        document.querySelectorAll('.game-tab').forEach(btn=>{
+            btn.onclick = ()=>{
+                document.querySelectorAll('.game-tab').forEach(b=>b.classList.remove('active'));
+                btn.classList.add('active');
+                switchGame(btn.dataset.game);
+            };
+        });
+        document.querySelector('.game-tab').classList.add('active');
+        switchGame('fish');
+        startRealOnlineCount();
+        // 管理员触发（点击余额区域三次）
+        let adminTrigger = document.getElementById('userBalanceDisplay');
+        if(adminTrigger){
+            let clickCount=0, timer=null;
+            adminTrigger.onclick=()=>{
+                clickCount++;
+                if(timer) clearTimeout(timer);
+                timer=setTimeout(()=>{ clickCount=0; },1000);
+                if(clickCount>=3){ clickCount=0; clearTimeout(timer); openAdminModal(); }
+            };
+        }
+    }
+
+    function renderAuthUI() {
+        const savedPhone = localStorage.getItem('saved_phone') || '';
+        const savedPwd = localStorage.getItem('saved_password') || '';
+        const rememberChecked = localStorage.getItem('remember_me') === 'true';
+        document.getElementById('app').innerHTML = `
+            <div class="auth-panel">
+                <h2>🎲 十合一老虎机大厅</h2>
+                <input type="tel" id="regPhone" class="auth-input" placeholder="手机号" maxlength="11" value="${savedPhone}">
+                <input type="password" id="regPassword" class="auth-input" placeholder="密码 (至少4位)" value="${savedPwd}">
+                <input type="text" id="regReferralCode" class="auth-input" placeholder="推荐码 (必填)" maxlength="20">
+                <div style="display:flex; align-items:center; gap:8px; margin:8px 0;">
+                    <input type="checkbox" id="rememberCheckbox" ${rememberChecked ? 'checked' : ''}>
+                    <label style="color:#ffdd99;">记住账号密码</label>
+                </div>
+                <div class="auth-buttons">
+                    <button id="loginBtn" class="auth-btn">登录</button>
+                    <button id="registerBtn" class="auth-btn">注册</button>
+                </div>
+                <div class="auth-note">🎮 需要有效推荐码才能注册 | 初始1000文</div>
+            </div>
+        `;
+        document.getElementById('registerBtn').onclick = () => {
+            let phone = document.getElementById('regPhone').value.trim();
+            let pwd = document.getElementById('regPassword').value;
+            let code = document.getElementById('regReferralCode').value.trim().toUpperCase();
+            if (!phone || !pwd) { showToast("请填写手机号和密码"); return; }
+            if (!/^1[3-9]\d{9}$/.test(phone)) { showToast("请输入有效11位手机号"); return; }
+            if (pwd.length < 4) { showToast("密码至少4位"); return; }
+            if (!code) { showToast("请填写推荐码"); return; }
+            if (!validReferralCodes.includes(code)) { showToast("推荐码无效，无法注册"); return; }
+            if (usersData[phone]) { showToast("手机号已注册"); return; }
+            usersData[phone] = { password: pwd, balance: 1000, referralCode: code, registerTime: new Date().toLocaleString() };
+            saveUsers();
+            showToast("注册成功！请登录");
+        };
+        document.getElementById('loginBtn').onclick = () => {
+            let phone = document.getElementById('regPhone').value.trim();
+            let pwd = document.getElementById('regPassword').value;
+            let rem = document.getElementById('rememberCheckbox').checked;
+            if (!phone || !pwd) { showToast("请填写手机号和密码"); return; }
+            let user = usersData[phone];
+            if (!user || user.password !== pwd) { showToast("账号或密码错误"); return; }
+            if (rem) {
+                localStorage.setItem('saved_phone', phone);
+                localStorage.setItem('saved_password', pwd);
+                localStorage.setItem('remember_me', 'true');
+            } else {
+                localStorage.removeItem('saved_phone');
+                localStorage.removeItem('saved_password');
+                localStorage.setItem('remember_me', 'false');
+            }
+            currentUser = { phone, ...user };
+            showToast(`欢迎，${phone}`);
+            renderGameLobby();
+        };
+    }
+    renderAuthUI();
+</script>
+</body>
+</html>
