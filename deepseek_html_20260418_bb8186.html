@@ -84,11 +84,78 @@
         .countdown-warning { animation: warning 0.5s infinite; color: #ff3300 !important; text-shadow: 0 0 3px red; }
         @keyframes warning { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
         .fish-pattern-img { width: 48px; height: 48px; object-fit: contain; margin: 4px auto; display: block; background: #2a1f16; border-radius: 12px; padding: 4px; }
-        .fish-wrapper .bet-card { background: #1f1712; border-radius: 16px; padding: 8px 4px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 1px solid #6f4f34; transition: all 0.1s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100px; }
-        .fish-wrapper .bet-name { font-size: 0.85rem; font-weight: bold; color: #ffddb0; margin: 4px 0 2px; }
-        .fish-wrapper .bet-amount { background: #0c0907; border-radius: 40px; padding: 4px 8px; margin: 6px 8px 0; display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 1.2rem; font-weight: bold; color: #ffcc66; }
-        .fish-wrapper .bet-amount span { font-size: 1.2rem; font-weight: bold; color: #ffdd88; min-width: 32px; text-align: center; text-shadow: 0 0 2px #ffaa44; }
-        #patternGrid { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 12px !important; margin: 12px 0 !important; }
+        
+        /* 修复六门押注布局：一行三个完整显示 */
+        .fish-wrapper .bet-card {
+            background: #1f1712;
+            border-radius: 16px;
+            padding: 8px 4px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            border: 1px solid #6f4f34;
+            transition: all 0.1s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .fish-wrapper .bet-name {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #ffddb0;
+            margin: 4px 0 2px;
+        }
+        .fish-wrapper .bet-amount {
+            background: #0c0907;
+            border-radius: 40px;
+            padding: 4px 8px;
+            margin: 6px 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffcc66;
+            width: calc(100% - 16px);
+            box-sizing: border-box;
+        }
+        .fish-wrapper .bet-amount span {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffdd88;
+            min-width: 32px;
+            text-align: center;
+            text-shadow: 0 0 2px #ffaa44;
+        }
+        #patternGrid {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+            margin: 12px 0 !important;
+            width: 100%;
+            overflow: visible;
+        }
+        /* 确保父容器不裁剪内容 */
+        .fish-wrapper .bet-sections {
+            padding: 0 8px;
+            overflow: visible;
+        }
+        /* 特殊投注也调整一下 */
+        #specialGrid {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+            width: 100%;
+        }
+        #specialGrid .bet-card {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
         #fishBankerDisplay, #diceBankerDisplay, #totalBetValue, #lastWinValue, #totalBet, #rollingWinNumber, #countdownNum, #selectedChip {
             font-size: 1.4rem;
             font-weight: 900;
@@ -114,6 +181,10 @@
             .fish-pattern-img { width: 36px; height: 36px; }
             #userBalanceDisplay { font-size: 1.4rem; }
             #fishBankerDisplay, #diceBankerDisplay, #totalBetValue, #lastWinValue { font-size: 1.1rem; }
+            #patternGrid { gap: 6px !important; }
+            .fish-wrapper .bet-amount { padding: 2px 4px; font-size: 1rem; }
+            .fish-wrapper .bet-amount span { font-size: 1rem; min-width: 24px; }
+            .btn-chip { width: 26px; height: 26px; font-size: 1rem; }
         }
     </style>
 </head>
@@ -121,7 +192,7 @@
 <div class="app" id="app"></div>
 <script>
     // ==================== 全局系统 ====================
-    const USERS_KEY = 'double_games_final_v15';
+    const USERS_KEY = 'double_games_final_v17';
     let usersData = JSON.parse(localStorage.getItem(USERS_KEY)) || {};
     let currentUser = null;
     let validReferralCodes = JSON.parse(localStorage.getItem('valid_referral_codes')) || ['VIP888', 'ABC123', 'GAME2024', 'TEST001'];
@@ -203,7 +274,7 @@
         onlineInterval = setInterval(fetchOnline, 5000);
     }
     
-    // ==================== 游戏1：葫芦鱼（一间房） ====================
+    // ==================== 游戏1：葫芦鱼 ====================
     let fishDestroy = null;
     function initFishGame(container) {
         if (fishDestroy) { fishDestroy(); fishDestroy = null; }
@@ -257,7 +328,7 @@
                     <button id="fishResetBetBtn" style="background:#734c2e; padding:5px 14px; border-radius:35px;">清空下注</button>
                     <button id="fishResetGameBtn" style="background:#734c2e; padding:5px 14px; border-radius:35px;">重置庄家</button>
                 </div>
-                <div style="padding:0 12px;">
+                <div class="bet-sections" style="padding:0 12px;">
                     <div style="font-size:0.8rem; color:#ffd49f;">🐟 六门押注</div>
                     <div id="patternGrid"></div>
                     <div style="font-size:0.8rem; color:#ffd49f; margin-top:8px;">🎯 特殊投注</div>
@@ -692,7 +763,7 @@
     function initGame3(container) { if (game3Destroy) game3Destroy(); container.innerHTML = `<div style="padding:40px; text-align:center; color:#ffdd99;"><h3>🎮 游戏3预留位</h3><p>即将开放</p></div>`; game3Destroy = () => { container.innerHTML = ''; }; return game3Destroy; }
     function initGame4(container) { if (game4Destroy) game4Destroy(); container.innerHTML = `<div style="padding:40px; text-align:center; color:#ffdd99;"><h3>♠️ 游戏4预留位</h3><p>即将开放</p></div>`; game4Destroy = () => { container.innerHTML = ''; }; return game4Destroy; }
     
-    // ==================== 管理员后台（支持推荐码管理） ====================
+    // ==================== 管理员后台 ====================
     let adminClickCount = 0, adminClickTimer = null, adminPassword = localStorage.getItem('admin_pwd') || 'admin123';
     function openAdminModal() {
         const pwdModal = document.createElement('div'); pwdModal.className = 'modal';
