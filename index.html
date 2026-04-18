@@ -121,22 +121,16 @@
 <div class="app" id="app"></div>
 <script>
     // ==================== 全局系统 ====================
-    const USERS_KEY = 'double_games_final_v14';
+    const USERS_KEY = 'double_games_final_v15';
     let usersData = JSON.parse(localStorage.getItem(USERS_KEY)) || {};
     let currentUser = null;
     let validReferralCodes = JSON.parse(localStorage.getItem('valid_referral_codes')) || ['VIP888', 'ABC123', 'GAME2024', 'TEST001'];
     
-    // 系统庄家资金（按房间独立存储）
-    let systemBankerBalance = {
-        room1: localStorage.getItem('system_banker_room1') ? parseFloat(localStorage.getItem('system_banker_room1')) : 100000,
-        room2: localStorage.getItem('system_banker_room2') ? parseFloat(localStorage.getItem('system_banker_room2')) : 100000,
-        room3: localStorage.getItem('system_banker_room3') ? parseFloat(localStorage.getItem('system_banker_room3')) : 100000
-    };
+    // 系统庄家资金（统一一间房）
+    let systemBankerBalance = localStorage.getItem('system_banker_balance') ? parseFloat(localStorage.getItem('system_banker_balance')) : 100000;
     
-    function saveSystemBankerForRoom(room) { localStorage.setItem(`system_banker_${room}`, systemBankerBalance[room]); }
-    function getCurrentBanker(room) { return systemBankerBalance[room]; }
-    function setCurrentBanker(room, val) { systemBankerBalance[room] = Math.max(0, val); saveSystemBankerForRoom(room); }
-    function modifyBanker(room, delta) { systemBankerBalance[room] += delta; if(systemBankerBalance[room] < 0) systemBankerBalance[room] = 0; saveSystemBankerForRoom(room); }
+    function saveSystemBanker() { localStorage.setItem('system_banker_balance', systemBankerBalance); }
+    function modifyBanker(delta) { systemBankerBalance += delta; if(systemBankerBalance < 0) systemBankerBalance = 0; saveSystemBanker(); }
     
     function saveUsers() { localStorage.setItem(USERS_KEY, JSON.stringify(usersData)); }
     function getUserBalance() { return currentUser ? (usersData[currentUser.phone]?.balance || 1000) : 0; }
@@ -149,7 +143,7 @@
         setTimeout(() => t.remove(), 2000);
     }
     
-    // ==================== 充值客服弹窗（使用您提供的图片） ====================
+    // ==================== 充值客服弹窗 ====================
     function showRechargeModal() {
         let m = document.createElement('div');
         m.className = 'modal';
@@ -209,7 +203,7 @@
         onlineInterval = setInterval(fetchOnline, 5000);
     }
     
-    // ==================== 游戏1：葫芦鱼 ====================
+    // ==================== 游戏1：葫芦鱼（一间房） ====================
     let fishDestroy = null;
     function initFishGame(container) {
         if (fishDestroy) { fishDestroy(); fishDestroy = null; }
@@ -229,7 +223,7 @@
                 <div style="display:flex; gap:6px; padding:8px; background:#1f1711; border-radius:20px;">
                     <div style="flex:1; background:#1a130d; border-radius:30px; padding:4px; text-align:center;">
                         <div style="font-size:0.7rem;">🏦 系统庄家</div>
-                        <div id="fishBankerDisplay" style="font-weight:bold; font-size:1.2rem;">100000</div>
+                        <div id="fishBankerDisplay" style="font-weight:bold; font-size:1.2rem;">${systemBankerBalance.toFixed(2)}</div>
                     </div>
                     <div style="flex:1; background:#1a130d; border-radius:30px; padding:4px; text-align:center;">
                         <div style="font-size:0.7rem;">🎲 总押注</div>
@@ -239,13 +233,6 @@
                         <div style="font-size:0.7rem;">🏆 上局净利</div>
                         <div id="lastWinValue">0</div>
                     </div>
-                </div>
-                <div style="display:flex; gap:8px; justify-content:center; margin:8px;">
-                    <select id="roomSelect" style="background:#2a1f16; color:#ffdd99; border-radius:20px; padding:6px 12px; border:1px solid #ffaa44;">
-                        <option value="room1">初级房</option>
-                        <option value="room2">中级房</option>
-                        <option value="room3">高级房</option>
-                    </select>
                 </div>
                 <div class="dice-area" style="background:#2a211a; margin:12px; border-radius:50px; padding:12px; position:relative;">
                     <div style="display:flex; justify-content:center; gap:12px;">
@@ -291,13 +278,12 @@
         let specialBets = { big:0, small:0, doubleBet:0 };
         let currentChip = 100;
         let lastWinAmount = 0;
-        let currentRoom = "room1";
         const MAX_SINGLE = 500;
         const MAX_TOTAL = 2000;
         
         function updateBankerDisplay() {
             let bankerEl = document.getElementById('fishBankerDisplay');
-            if (bankerEl) bankerEl.innerText = getCurrentBanker(currentRoom).toFixed(2);
+            if (bankerEl) bankerEl.innerText = systemBankerBalance.toFixed(2);
         }
         
         function getTotalBet() { return Object.values(patternBets).reduce((a,b)=>a+b,0) + Object.values(specialBets).reduce((a,b)=>a+b,0); }
@@ -382,7 +368,7 @@
                 
                 setUserBalance(getUserBalance() + winAmount);
                 let netToBanker = totalBet - winAmount;
-                modifyBanker(currentRoom, netToBanker);
+                modifyBanker(netToBanker);
                 lastWinAmount = winAmount - totalBet;
             } else { lastWinAmount = 0; }
             
@@ -424,10 +410,11 @@
         
         document.getElementById('fishResetBetBtn').onclick = clearBets;
         document.getElementById('fishResetGameBtn').onclick = () => {
-            if (confirm(`重置${currentRoom}庄家余额为100000文？`)) {
-                setCurrentBanker(currentRoom, 100000);
+            if (confirm(`重置庄家余额为100000文？`)) {
+                systemBankerBalance = 100000;
+                saveSystemBanker();
                 updateUI();
-                showToast(`${currentRoom}庄家已重置为100000文`);
+                showToast(`庄家已重置为100000文`);
             }
         };
         
@@ -455,14 +442,6 @@
         document.getElementById('showRulesBtn').onclick = () => {
             let m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<div class="modal-content"><h3>赔付规则</h3><p>六门:1次赔1.5倍/2次2倍/3次2.5倍</p><p>大小:2倍</p><p>双押(鱼+虾):4.5倍</p><p>单注上限500，总注2000</p><button id="closeRule" style="background:#ffaa44; margin-top:12px; padding:8px; border-radius:40px;">关闭</button></div>`; document.body.appendChild(m); m.querySelector('#closeRule').onclick = () => m.remove();
         };
-        
-        const roomSelect = document.getElementById('roomSelect');
-        roomSelect.addEventListener('change', (e) => {
-            currentRoom = e.target.value;
-            clearBets();
-            updateUI();
-            showToast(`已切换到${roomSelect.options[roomSelect.selectedIndex].text}`);
-        });
         
         updateUI();
         
@@ -516,7 +495,7 @@
                     <div style="display:flex; gap:12px; margin-bottom:12px;">
                         <div style="flex:1; background:#0a0705; border-radius:40px; padding:6px; text-align:center;">
                             <div style="font-size:0.7rem;">🏦 系统庄家</div>
-                            <div id="diceBankerDisplay" style="font-size:1.2rem; font-weight:800;">${systemBankerBalance.room1.toFixed(2)}</div>
+                            <div id="diceBankerDisplay" style="font-size:1.2rem; font-weight:800;">${systemBankerBalance.toFixed(2)}</div>
                         </div>
                         <div style="flex:1; background:#0a0705; border-radius:40px; padding:6px; text-align:center;">
                             <div style="font-size:0.7rem;">🎲 总押注</div>
@@ -565,7 +544,6 @@
         const totalBetEl = document.getElementById('totalBet');
         
         function modifyBalance(delta) { setUserBalance(getUserBalance() + delta); updateUI(); }
-        function modifyBanker(delta) { modifyBanker('room1', delta); updateUI(); }
         
         function buildDiceFaces() {
             diceEl.forEach(dice => {
@@ -615,7 +593,7 @@
             for (let k in bets) { let el = document.getElementById(`bet_${k}`); if (el) el.innerText = bets[k]; }
             totalBetEl.innerText = Object.values(bets).reduce((a, b) => a + b, 0);
             let bankerEl = document.getElementById('diceBankerDisplay');
-            if (bankerEl) bankerEl.innerText = systemBankerBalance.room1.toFixed(2);
+            if (bankerEl) bankerEl.innerText = systemBankerBalance.toFixed(2);
             let balSpan = document.getElementById("userBalanceDisplay");
             if (balSpan) balSpan.innerText = getUserBalance().toFixed(2);
         }
@@ -781,7 +759,7 @@
         modal.querySelector('#adminSub').onclick = () => { let t = getTarget(), a = getAmt(); if(a<=0){showToast("金额>0");return;} if(usersData[t].balance < a){showToast("余额不足");return;} usersData[t].balance -= a; saveUsers(); showToast(`${t} -${a}`); if(t===currentUser.phone){currentUser.balance=usersData[t].balance;let b=document.getElementById("userBalanceDisplay");if(b)b.innerText=currentUser.balance.toFixed(2);} modal.remove(); showAdminPanel(); };
         modal.querySelector('#adminQuery').onclick = () => { let t = getTarget(); showToast(`${t} 余额: ${usersData[t].balance.toFixed(2)}`); };
         modal.querySelector('#adminReset').onclick = () => { if(confirm("重置为1000文？")){ let t = getTarget(); usersData[t].balance = 1000; saveUsers(); showToast(`${t} 已重置`); if(t===currentUser.phone){currentUser.balance=1000;let b=document.getElementById("userBalanceDisplay");if(b)b.innerText="1000.00";} modal.remove(); showAdminPanel(); } };
-        modal.querySelector('#adminSetBanker').onclick = () => { let newAmt = parseFloat(prompt("庄家新余额（初级房）:", systemBankerBalance.room1)); if(!isNaN(newAmt) && newAmt>=0){ setCurrentBanker('room1', newAmt); setCurrentBanker('room2', newAmt); setCurrentBanker('room3', newAmt); showToast(`所有房间庄家余额已设为 ${newAmt.toFixed(2)}`); let b1=document.getElementById('fishBankerDisplay');let b2=document.getElementById('diceBankerDisplay');if(b1)b1.innerText=newAmt.toFixed(2);if(b2)b2.innerText=newAmt.toFixed(2); } else showToast("无效"); };
+        modal.querySelector('#adminSetBanker').onclick = () => { let newAmt = parseFloat(prompt("庄家新余额:", systemBankerBalance)); if(!isNaN(newAmt) && newAmt>=0){ systemBankerBalance = newAmt; saveSystemBanker(); showToast(`庄家余额已设为 ${newAmt.toFixed(2)}`); let b1=document.getElementById('fishBankerDisplay');let b2=document.getElementById('diceBankerDisplay');if(b1)b1.innerText=newAmt.toFixed(2);if(b2)b2.innerText=newAmt.toFixed(2); } else showToast("无效"); };
         modal.querySelector('#adminChangePwd').onclick = () => { let old = prompt("当前密码:"); if(old !== adminPassword){showToast("密码错误");return;} let newPwd = prompt("新密码(≥4位):"); if(newPwd && newPwd.length>=4){ adminPassword=newPwd; localStorage.setItem('admin_pwd',newPwd); showToast("修改成功"); } else if(newPwd) showToast("至少4位"); };
         modal.querySelector('#adminClose').onclick = () => modal.remove();
     }
@@ -896,3 +874,4 @@
 </body>
 </html>
 
+          
