@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>双游戏大厅 | 抢庄+系统坐庄 | 紧凑布局 | 全局调节系数</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: #1a1a1a;
+            background-image: radial-gradient(circle at 20% 30%, rgba(200, 140, 70, 0.2) 2%, transparent 3%);
+            background-size: 40px 40px;
+            font-family: 'Segoe UI', 'PingFang SC', Roboto, sans-serif;
+            padding: 12px;
+        }
+
+        .app {
+            max-width: 550px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* 导航栏 */
+        .game-nav {
+            background: linear-gradient(135deg, #1a4a1a, #0a2a0a);
+            border-radius: 60px;
+            padding: 6px;
+            display: flex;
+            gap: 8px;
+            border: 1px solid #ffaa44;
+            flex-wrap: wrap;
+        }
+
+        .game-tab {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 8px 0;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            color: #ccaa77;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: center;
+        }
+
+        .game-tab.active {
+            background: #c47c3a;
+            color: #2f1b0a;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+        }
+
+        /* 用户区 */
+        .user-section {
+            background: #1f1711;
+            border-radius: 40px;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .user-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .user-info-row span {
+            color: #ffdd99;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        #userBalanceDisplay {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: #ffcc44;
+            background: #0a0705;
+            padding: 0 12px;
+            border-radius: 50px;
+            letter-spacing: 1px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .logout-btn,
+        .service-btn {
+            background: #734c2e;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 30px;
+            color: #ffe3b3;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .service-btn {
+            background: #2e7d32;
+        }
+
+        .charge-withdraw-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .charge-btn,
+        .withdraw-btn {
+            background: #c47c3a;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 40px;
+            color: #2f1b0a;
+            font-weight: bold;
+            font-size: 0.85rem;
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+            box-shadow: 0 2px 0 #764e26;
+        }
+
+        .withdraw-btn {
+            background: #734c2e;
+            color: #ffe3b3;
+            box-shadow: 0 2px 0 #3f2a1a;
+        }
+
+        .game-container {
+            background: linear-gradient(145deg, #362a1f 0%, #251e16 100%);
+            border-radius: 48px;
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        /* 登录界面 */
+        .auth-panel {
+            background: linear-gradient(145deg, #362a1f 0%, #251e16 100%);
+            border-radius: 48px;
+            padding: 30px 20px;
+            text-align: center;
+            border: 2px solid #ffaa44;
+        }
+
+        .auth-panel h2 {
+            color: #ffdd99;
+            font-size: 1.6rem;
+            margin-bottom: 20px;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            background: #2a241e;
+            border: 1px solid #ffaa44;
+            border-radius: 60px;
+            color: white;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .auth-buttons {
+            display: flex;
+            gap: 12px;
+            margin: 15px 0;
+        }
+
+        .auth-btn {
+            flex: 1;
+            background: #c47c3a;
+            border: none;
+            padding: 10px;
+            border-radius: 60px;
+            color: #2f1b0a;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .auth-note {
+            color: #aa8855;
+            font-size: 0.7rem;
+        }
+
+        /* 所有功能按键：圆角2px，紧凑 */
+        .chip,
+        .action-btn,
+        .grab-btn,
+        .double-bet-btn,
+        .record-btn,
+        .rules-btn,
+        .bg-upload label {
+            border-radius: 2px !important;
+            border: 1px solid #aa6f30;
+            background: #ebbc7e;
+            color: #3a240f;
+            font-weight: bold;
+            font-size: 0.8rem;
+            padding: 6px 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.05s linear;
+            display: block;
+            width: 100%;
+            box-shadow: none;
+            margin: 0;
+        }
+
+        .chip.selected {
+            background: #f7c56e;
+            border-color: #ffaa44;
+            transform: scale(0.98);
+        }
+
+        .action-btn {
+            background: #c47c3a;
+            color: #2f1b0a;
+        }
+
+        .grab-btn {
+            background: linear-gradient(135deg, #ffaa44, #ff7700);
+            color: #2f1b0a;
+            font-weight: 900;
+        }
+
+        .double-bet-btn {
+            background: linear-gradient(135deg, #ffaa44, #ff7700);
+            color: #2f1b0a;
+        }
+
+        .record-btn,
+        .rules-btn,
+        .bg-upload label {
+            background: #2a1f16;
+            color: #ffdd99;
+            border-color: #ffaa44;
+            text-align: center;
+        }
+
+        .bg-upload {
+            margin-top: 8px;
+        }
+
+        /* 左侧按钮区域 */
+        .left-panel {
+            width: 120px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* 右侧骰子区域：420x420，靠右留1px边线 */
+        .dice-panel {
+            width: 420px;
+            height: 420px;
+            background: #2a211a;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin-left: auto;
+            margin-right: 1px;
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* 整体布局 */
+        .fish-layout {
+            display: flex;
+            gap: 10px;
+            padding: 12px;
+        }
+
+        /* 骰子三角形排列 */
+        .dice-triangle {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .dice-row {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .dice {
+            width: 110px;
+            height: 110px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 2px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+        }
+
+        .dice-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            border-radius: 2px;
+            border: none;
+            backface-visibility: visible;
+        }
+
+        .front {
+            transform: translateZ(55px);
+        }
+
+        .back {
+            transform: translateZ(55px) rotateY(180deg);
+        }
+
+        .right {
+            transform: translateZ(55px) rotateY(90deg);
+        }
+
+        .left {
+            transform: translateZ(55px) rotateY(-90deg);
+        }
+
+        .top {
+            transform: translateZ(55px) rotateX(90deg);
+        }
+
+        .bottom {
+            transform: translateZ(55px) rotateX(-90deg);
+        }
+
+        /* 六门网格在下方 */
+        .bet-sections {
+            padding: 0 12px 12px;
+            clear: both;
+        }
+
+        .fish-pattern-img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            margin: 2px auto;
+            display: block;
+            background: #2a1f16;
+            border-radius: 2px;
+            padding: 3px;
+        }
+
+        .fish-wrapper .bet-card {
+            background: #660099;
+            border-radius: 2px;
+            padding: 6px 2px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            border: 1px solid #005a32;
+            transition: all 0.1s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 85px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .fish-wrapper .bet-name {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #bb77ff;
+            margin: 2px 0;
+        }
+
+        .fish-wrapper .bet-amount {
+            background: #0c0907;
+            border-radius: 2px;
+            padding: 2px 6px;
+            margin: 4px 4px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #ffcc66;
+            width: calc(100% - 8px);
+            box-sizing: border-box;
+        }
+
+        .fish-wrapper .bet-amount span {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #ffdd88;
+            min-width: 28px;
+            text-align: center;
+        }
+
+        #patternGrid {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+            margin: 8px 0 !important;
+            width: 100%;
+        }
+
+        .online-count-box {
+            background: #2a1f16;
+            margin: 10px;
+            padding: 6px 12px;
+            border-radius: 2px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #ffdd99;
+            border: 1px solid #ffaa44;
+        }
+
+        .online-number {
+            font-size: 1.3rem;
+            font-weight: 900;
+            color: #ffaa44;
+            margin-left: 6px;
+        }
+
+        /* 弹窗 */
+        .result-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.6);
+            background: linear-gradient(145deg, #ffcc44, #ff9933);
+            color: #1a1a2a;
+            padding: 18px 30px;
+            border-radius: 60px;
+            font-size: 2rem;
+            font-weight: 900;
+            z-index: 2000;
+            opacity: 0;
+            transition: 0.2s;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .result-popup.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .toast-message {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000000cc;
+            color: #ffcc44;
+            padding: 6px 12px;
+            border-radius: 40px;
+            z-index: 2001;
+            animation: fadeInOut 2s forwards;
+            font-size: 0.8rem;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        @keyframes fadeInOut {
+            0% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+
+            15% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+
+            85% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-20px);
+            }
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+
+        .modal-content {
+            background: #1a2a1a;
+            border-radius: 48px;
+            padding: 20px;
+            border: 2px solid #ffaa44;
+            width: 85%;
+            max-width: 500px;
+            text-align: center;
+            color: #ffdd99;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .qr-img {
+            width: 140px;
+            height: 140px;
+            margin: 8px auto;
+            display: block;
+            background: white;
+            border-radius: 20px;
+            padding: 8px;
+            object-fit: contain;
+        }
+
+        #fishBankerDisplay,
+        #totalBetValue,
+        #lastWinValue,
+        #bet_special_doubleBet {
+            font-size: 1rem;
+            font-weight: 900;
+            color: #ffcc44;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 0 6px;
+            border-radius: 2px;
+            display: inline-block;
+        }
+
+        @media (max-width: 550px) {
+            .dice-panel {
+                width: 100%;
+                height: auto;
+                aspect-ratio: 1 / 1;
+                max-width: 420px;
+                margin: 0 auto 0 auto;
+            }
+
+            .fish-layout {
+                flex-direction: column;
+            }
+
+            .left-panel {
+                width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            .left-panel .chip,
+            .left-panel .action-btn,
+            .left-panel .grab-btn,
+            .left-panel .double-bet-btn {
+                width: auto;
+                flex: 1;
+            }
+
+            .dice {
+                width: 80px;
+                height: 80px;
+            }
+
+            .front,
+            .back,
+            .right,
+            .left,
+            .top,
+            .bottom {
+                transform: translateZ(40px);
+            }
+
+            .back {
+                transform: translateZ(40px) rotateY(180deg);
+            }
+
+            .right {
+                transform: translateZ(40px) rotateY(90deg);
+            }
+
+            .left {
+                transform: translateZ(40px) rotateY(-90deg);
+            }
+
+            .top {
+                transform: translateZ(40px) rotateX(90deg);
+            }
+
+            .bottom {
+                transform: translateZ(40px) rotateX(-90deg);
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+    // ==================== 全局系统 ====================
+    const USERS_KEY = 'double_games_final_v33';
+    let usersData = JSON.parse(localStorage.getItem(USERS_KEY)) || {};
+    let currentUser = null;
+    let validReferralCodes = JSON.parse(localStorage.getItem('valid_referral_codes')) || ['VIP888', 'ABC123', 'GAME2024', 'TEST001'];
+
+    // 骰宝系统庄家资金
+    let systemBankerBalance = localStorage.getItem('system_banker_balance') ? parseFloat(localStorage.getItem('system_banker_balance')) : 100000;
+    function saveSystemBanker() { localStorage.setItem('system_banker_balance', systemBankerBalance); }
+    function modifyBanker(delta) { systemBankerBalance += delta; if (systemBankerBalance < 0) systemBankerBalance = 0; saveSystemBanker(); }
+
+    // 全局赔付调节系数（隐蔽，管理员可调，影响所有游戏赔付）
+    let adjustFactor = localStorage.getItem('adjust_factor') ? parseFloat(localStorage.getItem('adjust_factor')) : 1.0;
+    function saveAdjustFactor(val) { localStorage.setItem('adjust_factor', val); adjustFactor = val; }
+
+    function saveUsers() { localStorage.setItem(USERS_KEY, JSON.stringify(usersData)); }
+    function getUserBalance() { return currentUser ? (usersData[currentUser.phone]?.balance || 1000) : 0; }
+    function setUserBalance(amt) { if (currentUser) { usersData[currentUser.phone].balance = Math.max(0, amt); saveUsers(); } }
+    function showToast(msg) {
+        let t = document.createElement('div');
+        t.className = 'toast-message';
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 2000);
+    }
+
+    // ==================== 充值客服弹窗 ====================
+    function showRechargeModal() {
+        let m = document.createElement('div');
+        m.className = 'modal';
+        m.innerHTML = `
+            <div class="modal-content">
+                <h3>💎 充值</h3>
+                <p style="margin:10px 0;"><strong style="color:#ffaa44;">1元 = 1000文</strong>，扫码支付后联系客服上分</p>
+                <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:20px;">
+                    <div style="text-align:center;">
+                        <img src="mmexport1776247819360.jpg" class="qr-img" alt="微信收款码" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E%E5%BE%AE%E4%BF%A1%E6%94%B6%E6%AC%BE%E7%A0%81%3C/text%3E%3C/svg%3E'">
+                        <p>📱 微信收款码</p>
+                    </div>
+                    <div style="text-align:center;">
+                        <img src="mmexport1776247823872.jpg" class="qr-img" alt="支付宝收款码" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E%E6%94%AF%E4%BB%98%E5%AE%9D%E6%94%B6%E6%AC%BE%E7%A0%81%3C/text%3E%3C/svg%3E'">
+                        <p>📱 支付宝收款码</p>
+                    </div>
+                </div>
+                <p style="margin-top:10px;">📞 客服微信: <strong>game_kf_888</strong> (支付后截图联系)</p>
+                <button id="closeRecharge" style="background:#c47c3a; margin-top:15px; padding:8px 20px; border-radius:40px;">关闭</button>
+            </div>
+        `;
+        document.body.appendChild(m);
+        m.querySelector('#closeRecharge').onclick = () => m.remove();
+    }
+
+    function showServiceModal() {
+        let m = document.createElement('div');
+        m.className = 'modal';
+        m.innerHTML = `
+            <div class="modal-content">
+                <h3>📞 客服微信</h3>
+                <img src="29917.jpg" class="qr-img" alt="客服微信" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E%E5%AE%A2%E6%9C%8D%E5%BE%AE%E4%BF%A1%3C/text%3E%3C/svg%3E'">
+                <p style="margin-top:10px;">微信号: game_kf_888</p>
+                <button id="closeSvc" style="background:#c47c3a; margin-top:15px; padding:8px 20px; border-radius:40px;">关闭</button>
+            </div>
+        `;
+        document.body.appendChild(m);
+        m.querySelector('#closeSvc').onclick = () => m.remove();
+    }
+
+    function recharge() { showRechargeModal(); }
+    function withdraw() { showToast("提现请联系客服微信: game_kf_888"); }
+
+    // ==================== 真实在线人数 ====================
+    let onlineInterval = null;
+    function startRealOnlineCount() {
+        if (onlineInterval) clearInterval(onlineInterval);
+        function fetchOnline() {
+            const span = document.getElementById('onlineCount');
+            if (!span) return;
+            fetch('http://127.0.0.1:8090/getOnlineCount')
+                .then(res => res.json())
+                .then(data => { let count = data?.count ?? data?.online; if (typeof count === 'number' && !isNaN(count)) span.innerText = count; else span.innerText = '--'; })
+                .catch(() => { span.innerText = '--'; });
+        }
+        fetchOnline();
+        onlineInterval = setInterval(fetchOnline, 5000);
+    }
+
+    // ==================== 管理员后台（隐蔽，筹码100连点3次触发） ====================
+    let adminClickCount = 0, adminClickTimer = null;
+    let adminPassword = localStorage.getItem('admin_pwd') || 'admin123';
+    async function openAdminModal() {
+        const pwd = prompt("请输入管理密码:");
+        if (pwd !== adminPassword) { showToast("密码错误"); return; }
+        await showAdminPanel();
+    }
+    async function showAdminPanel() {
+        const allUsers = Object.keys(usersData).map(phone => ({ phone, balance: usersData[phone].balance, referralCode: usersData[phone].referralCode || '无', registerTime: usersData[phone].registerTime || '未知' }));
+        let searchKeyword = '';
+        function renderUserTable() {
+            let filtered = searchKeyword ? allUsers.filter(u => u.phone.includes(searchKeyword)) : allUsers;
+            let rows = filtered.map(u => `<tr><td style="padding:6px;">${u.phone}</td><td style="padding:6px;">💰 ${u.balance.toFixed(2)}</td><td style="padding:6px;">🎫 ${u.referralCode}</td><td style="padding:6px;">${u.registerTime}</td></tr>`).join('');
+            document.querySelector('#adminUserTableBody').innerHTML = rows || '<tr><td colspan="4" style="padding:20px;">暂无数据</td></tr>';
+        }
+        let html = `<div class="modal-content" style="max-width:650px;"><h2>🎛️ 管理员后台</h2>
+            <div style="display:flex; gap:8px; margin:12px 0;">
+                <input type="text" id="adminSearchInput" class="auth-input" placeholder="搜索手机号" style="flex:2;">
+                <button id="adminSearchBtn" style="background:#2980b9; padding:6px 12px; border-radius:40px;">🔍 搜索</button>
+                <button id="adminResetSearchBtn" style="background:#555; padding:6px 12px; border-radius:40px;">重置</button>
+            </div>
+            <div style="max-height:300px; overflow-y:auto; margin-bottom:12px;">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead style="background:#2a1f16;"><tr><th>手机号</th><th>余额</th><th>推荐码</th><th>注册时间</th></tr></thead>
+                    <tbody id="adminUserTableBody"></tbody>
+                </table>
+            </div>
+            <div style="display:flex; gap:8px; margin:12px 0;">
+                <select id="adminTargetUser" style="background:#1a1a1a; color:#ffdd99; border-radius:20px; padding:4px; flex:1;">
+                    ${allUsers.map(u => `<option value="${u.phone}">${u.phone} (${u.balance.toFixed(2)})</option>`).join('')}
+                </select>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin:12px 0;">
+                <input type="number" id="adminAmount" class="auth-input" placeholder="金额" value="0" style="flex:1;">
+                <button id="adminAdd" style="background:#2e7d32; padding:4px 10px; border-radius:30px;">➕ 上分</button>
+                <button id="adminSub" style="background:#c0392b; padding:4px 10px; border-radius:30px;">➖ 下分</button>
+                <button id="adminReset" style="background:#f39c12; padding:4px 10px; border-radius:30px;">🔄 重置1000</button>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin:12px 0;">
+                <button id="adminQuery" style="background:#2980b9; padding:4px 10px; border-radius:30px;">🔍 查询余额</button>
+                <button id="adminExport" style="background:#27ae60; padding:4px 10px; border-radius:30px;">📋 导出用户</button>
+                <button id="adminAddCode" style="background:#8e44ad; padding:4px 10px; border-radius:30px;">➕ 新增推荐码</button>
+                <button id="adminListCodes" style="background:#16a085; padding:4px 10px; border-radius:30px;">📜 查看推荐码</button>
+                <button id="adminSetBanker" style="background:#e67e22; padding:4px 10px; border-radius:30px;">🏦 设置庄家</button>
+                <button id="adminChangePwd" style="background:#9b59b6; padding:4px 10px; border-radius:30px;">🔑 改密</button>
+            </div>
+            <div style="display:flex; gap:8px; margin:12px 0;">
+                <label style="color:#ffdd99;">🎛️ 全局赔付调节系数:</label>
+                <input type="number" id="adminAdjustFactor" step="0.01" value="${adjustFactor}" style="background:#1a1a1a; color:#ffaa44; border-radius:20px; padding:2px 6px; width:100px;">
+                <button id="adminSaveFactor" style="background:#e67e22; padding:4px 10px; border-radius:30px;">保存系数</button>
+                <span style="font-size:0.7rem;">(影响所有游戏赔付，1.0为正常)</span>
+            </div>
+            <button id="adminClose" style="background:#734c2e; padding:6px; border-radius:40px; width:100%;">关闭后台</button>
+        </div>`;
+        let modalDiv = document.createElement('div'); modalDiv.className = 'modal'; modalDiv.innerHTML = html; document.body.appendChild(modalDiv);
+        renderUserTable();
+        document.querySelector('#adminSearchBtn').onclick = () => { searchKeyword = document.querySelector('#adminSearchInput').value.trim(); renderUserTable(); };
+        document.querySelector('#adminResetSearchBtn').onclick = () => { searchKeyword = ''; document.querySelector('#adminSearchInput').value = ''; renderUserTable(); };
+        document.querySelector('#adminExport').onclick = () => { let data = allUsers.map(u => `${u.phone},${u.balance},${u.referralCode},${u.registerTime}`).join('\n'); navigator.clipboard.writeText("手机号,余额,推荐码,注册时间\n" + data).then(() => showToast(`已复制 ${allUsers.length} 条用户数据`)).catch(() => showToast("复制失败")); };
+        document.querySelector('#adminAddCode').onclick = () => { let newCode = prompt("请输入新的推荐码（大写字母+数字）:"); if (newCode && newCode.trim()) { let code = newCode.trim().toUpperCase(); if (!validReferralCodes.includes(code)) { validReferralCodes.push(code); localStorage.setItem('valid_referral_codes', JSON.stringify(validReferralCodes)); showToast(`推荐码 ${code} 已添加`); } else showToast("推荐码已存在"); } };
+        document.querySelector('#adminListCodes').onclick = () => { alert(`当前有效推荐码：\n${validReferralCodes.join(', ')}`); };
+        const getTarget = () => modalDiv.querySelector('#adminTargetUser').value;
+        const getAmt = () => parseInt(modalDiv.querySelector('#adminAmount').value) || 0;
+        modalDiv.querySelector('#adminAdd').onclick = () => { let t = getTarget(), a = getAmt(); if (a <= 0) { showToast("金额>0"); return; } usersData[t].balance += a; saveUsers(); showToast(`${t} +${a}`); if (t === currentUser.phone) { currentUser.balance = usersData[t].balance; let b = document.getElementById("userBalanceDisplay"); if (b) b.innerText = currentUser.balance.toFixed(2); } modalDiv.remove(); showAdminPanel(); };
+        modalDiv.querySelector('#adminSub').onclick = () => { let t = getTarget(), a = getAmt(); if (a <= 0) { showToast("金额>0"); return; } if (usersData[t].balance < a) { showToast("余额不足"); return; } usersData[t].balance -= a; saveUsers(); showToast(`${t} -${a}`); if (t === currentUser.phone) { currentUser.balance = usersData[t].balance; let b = document.getElementById("userBalanceDisplay"); if (b) b.innerText = currentUser.balance.toFixed(2); } modalDiv.remove(); showAdminPanel(); };
+        modalDiv.querySelector('#adminQuery').onclick = () => { let t = getTarget(); showToast(`${t} 余额: ${usersData[t].balance.toFixed(2)}`); };
+        modalDiv.querySelector('#adminReset').onclick = () => { if (confirm("重置为1000文？")) { let t = getTarget(); usersData[t].balance = 1000; saveUsers(); showToast(`${t} 已重置`); if (t === currentUser.phone) { currentUser.balance = 1000; let b = document.getElementById("userBalanceDisplay"); if (b) b.innerText = "1000.00"; } modalDiv.remove(); showAdminPanel(); } };
+        modalDiv.querySelector('#adminSetBanker').onclick = () => { let newAmt = parseFloat(prompt("骰宝系统庄家新余额:", systemBankerBalance)); if (!isNaN(newAmt) && newAmt >= 0) { systemBankerBalance = newAmt; saveSystemBanker(); showToast(`骰宝庄家余额已设为 ${newAmt.toFixed(2)}`); let b2 = document.getElementById('diceBankerDisplay'); if (b2) b2.innerText = newAmt.toFixed(2); } else showToast("无效"); };
+        modalDiv.querySelector('#adminChangePwd').onclick = () => { let old = prompt("当前密码:"); if (old !== adminPassword) { showToast("密码错误"); return; } let newPwd = prompt("新密码(≥4位):"); if (newPwd && newPwd.length >= 4) { adminPassword = newPwd; localStorage.setItem('admin_pwd', newPwd); showToast("修改成功"); } else if (newPwd) showToast("至少4位"); };
+        modalDiv.querySelector('#adminSaveFactor').onclick = () => {
+            let newVal = parseFloat(modalDiv.querySelector('#adminAdjustFactor').value);
+            if (!isNaN(newVal) && newVal >= 0) {
+                saveAdjustFactor(newVal);
+                showToast(`全局赔付调节系数已设为 ${newVal}`);
+                modalDiv.remove();
+                showAdminPanel();
+            } else { showToast("无效的系数"); }
+        };
+        modalDiv.querySelector('#adminClose').onclick = () => modalDiv.remove();
+    }
+
+    // ==================== 葫芦鱼（抢庄模式，布局紧凑） ====================
+    let fishDestroy = null;
+    function initFishGame(container) {
+        if (fishDestroy) { fishDestroy(); fishDestroy = null; }
+        container.innerHTML = '';
+
+        // 六门图片配置（请根据实际文件名修改）
+        const patternImages = [
+            { i
