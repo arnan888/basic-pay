@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>霓虹三游戏 · 鱼虾蟹骰子 + 完整后台</title>
+    <title>霓虹三游戏 · 3D骰子完整版</title>
     <style>
         * {
             margin: 0;
@@ -233,7 +233,7 @@
             background: linear-gradient(135deg, #ff00ff, #ff44aa);
             color: white;
         }
-        /* 3D 骰子样式（鱼虾蟹专用） */
+        /* 3D 骰子通用样式 */
         .dice-3d-area {
             display: flex;
             justify-content: center;
@@ -260,9 +260,36 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3rem;
             font-weight: bold;
             backface-visibility: visible;
+        }
+        /* 骰子圆点样式 */
+        .pip {
+            width: 14px;
+            height: 14px;
+            background: #00ffff;
+            border-radius: 50%;
+            margin: 3px;
+            box-shadow: 0 0 4px cyan;
+        }
+        .pip-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+        .pip-tl { position: absolute; top: 12px; left: 12px; }
+        .pip-tr { position: absolute; top: 12px; right: 12px; }
+        .pip-bl { position: absolute; bottom: 12px; left: 12px; }
+        .pip-br { position: absolute; bottom: 12px; right: 12px; }
+        .pip-mid { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+        .pip-l1, .pip-l2, .pip-l3 { position: absolute; left: 12px; }
+        .pip-l1 { top: 12px; }
+        .pip-l2 { top: 50%; transform: translateY(-50%); }
+        .pip-l3 { bottom: 12px; }
+        .pip-r1, .pip-r2, .pip-r3 { position: absolute; right: 12px; }
+        .pip-r1 { top: 12px; }
+        .pip-r2 { top: 50%; transform: translateY(-50%); }
+        .pip-r3 { bottom: 12px; }
+        /* 鱼虾蟹骰子面文字样式 */
+        .dice-face-text {
+            font-size: 2.5rem;
+            text-shadow: 0 0 5px cyan;
         }
         .front { transform: translateZ(40px); }
         .back { transform: rotateY(180deg) translateZ(40px); }
@@ -278,7 +305,9 @@
             .left { transform: rotateY(-90deg) translateZ(32px); }
             .top { transform: rotateX(90deg) translateZ(32px); }
             .bottom { transform: rotateX(-90deg) translateZ(32px); }
-            .dice-face { font-size: 2rem; }
+            .dice-face-text { font-size: 2rem; }
+            .pip { width: 10px; height: 10px; }
+            .pip-tl, .pip-tr, .pip-bl, .pip-br, .pip-l1, .pip-l2, .pip-l3, .pip-r1, .pip-r2, .pip-r3 { margin: 0; }
         }
         .fish-pattern-grid {
             display: grid;
@@ -464,7 +493,7 @@
     }
     function showServiceModal() { alert("客服微信: game_kf_888"); }
 
-    // ==================== 功能强大的管理员后台 ====================
+    // ==================== 管理员后台 ====================
     let adminPassword = "admin888";
     function openAdminModal() {
         let pwd = prompt("管理员密码:");
@@ -641,7 +670,7 @@
         saveUsers();
     }
 
-    // ==================== 葫芦鱼（鱼虾蟹骰子完整3D图片版） ====================
+    // ==================== 葫芦鱼（鱼虾蟹3D骰子） ====================
     let fishDestroy = null;
     function initFishGame(container) {
         if (fishDestroy) fishDestroy();
@@ -671,16 +700,13 @@
                 <div id="fishPhaseHint" style="text-align:center; margin-top:12px; background:rgba(0,0,0,0.5); border-radius:30px; padding:8px;">🎲 下注阶段 · 25秒</div>
             </div>
         `;
-        // 鱼虾蟹六种图案（使用 emoji 模拟图片，视觉效果清晰）
         const patternNames = ["鱼","虾","蟹","葫芦","金钱","鸡"];
         const patternEmojis = ["🐟", "🦐", "🦀", "🎃", "💰", "🐔"];
         
-        // 构建3D骰子（每个面显示对应的 emoji）
         function buildFishDice(diceDiv) {
             if (!diceDiv) return;
             diceDiv.innerHTML = '';
             const faces = ['front', 'back', 'right', 'left', 'top', 'bottom'];
-            // 六个面的图案顺序固定（鱼虾蟹葫芦金钱鸡）
             const facePatterns = patternEmojis;
             faces.forEach((face, idx) => {
                 let fd = document.createElement('div');
@@ -696,16 +722,13 @@
                 fd.innerText = facePatterns[idx];
                 diceDiv.appendChild(fd);
             });
-            // 初始随机旋转一个角度
             const randX = Math.floor(Math.random() * 360);
             const randY = Math.floor(Math.random() * 360);
             diceDiv.style.transform = `rotateX(${randX}deg) rotateY(${randY}deg)`;
         }
         
-        // 根据图案名称设置骰子的旋转角度（让对应图案朝前）
         function setFishDiceValue(diceDiv, patternName) {
             const index = patternNames.indexOf(patternName);
-            // 旋转角度映射：索引0鱼=0°;1虾=-90°;2蟹=180°;3葫芦=90°;4金钱=-90°X;5鸡=90°X
             let rotateX = 0, rotateY = 0;
             switch(index) {
                 case 0: rotateX = 0; rotateY = 0; break;
@@ -715,7 +738,6 @@
                 case 4: rotateX = -90; rotateY = 0; break;
                 case 5: rotateX = 90; rotateY = 0; break;
             }
-            // 增加多圈旋转使动画更自然（但最终要停在目标角度）
             const extraX = 360 * (1 + Math.floor(Math.random() * 2));
             const extraY = 360 * (1 + Math.floor(Math.random() * 2));
             diceDiv.style.transform = `rotateX(${rotateX + extraX}deg) rotateY(${rotateY + extraY}deg)`;
@@ -777,9 +799,7 @@
             updateFishUI();
         }
         
-        // 骰子滚动动画（纯旋转，不改变面内容）
         async function rollFishDiceWithAnimation(finalPatterns) {
-            // 快速随机旋转多圈
             for (let i=0;i<3;i++) {
                 fishDice[i].style.transition = 'none';
                 const randX = Math.floor(Math.random() * 360);
@@ -788,7 +808,6 @@
             }
             await new Promise(r => setTimeout(r, 50));
             for (let i=0;i<3;i++) fishDice[i].style.transition = 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-            // 多步随机旋转
             for (let step=0; step<12; step++) {
                 for (let i=0;i<3;i++) {
                     const randX = Math.random() * 360;
@@ -797,7 +816,6 @@
                 }
                 await new Promise(r => setTimeout(r, 80));
             }
-            // 最终定格到目标图案
             for (let i=0;i<3;i++) {
                 setFishDiceValue(fishDice[i], finalPatterns[i]);
             }
@@ -905,7 +923,7 @@
         return fishDestroy;
     }
 
-    // ==================== 至尊骰宝（完整） ====================
+    // ==================== 至尊骰宝（3D点数骰子） ====================
     let diceDestroy = null;
     function initDiceGame(container) {
         if (diceDestroy) diceDestroy();
@@ -915,8 +933,10 @@
                     <div style="flex:1; background:rgba(0,0,0,0.5); border-radius:24px; padding:8px;"><div>🏦 庄家</div><div id="diceBankerDisplay">${systemBankerBalance}</div></div>
                     <div style="flex:1; background:rgba(0,0,0,0.5); border-radius:24px; padding:8px;"><div>🎲 总押注</div><div id="totalBetDice">0</div></div>
                 </div>
-                <div class="dice-3d-area" style="display:flex; gap:16px; justify-content:center; margin:12px 0;">
-                    <div class="dice-cube" id="dice1">⚀</div><div class="dice-cube" id="dice2">⚀</div><div class="dice-cube" id="dice3">⚀</div>
+                <div class="dice-3d-area">
+                    <div class="dice-cube" id="dice1"></div>
+                    <div class="dice-cube" id="dice2"></div>
+                    <div class="dice-cube" id="dice3"></div>
                 </div>
                 <div style="text-align:center; font-size:1.5rem; margin:8px 0;"><span id="totalPoints">3</span></div>
                 <div><span>🎲 本局中奖: <span id="rollingWinNumber">0</span></span></div>
@@ -940,6 +960,7 @@
                 <button id="diceHistoryBtn" class="exec-btn" style="width:100%; margin-top:12px;">📜 开奖记录</button>
             </div>
         `;
+        // 构建投注网格
         let pointsHtml = '';
         for(let i=4;i<=17;i++) pointsHtml += `<div class="bet-card point-card" data-point="${i}">${i}点</div>`;
         document.getElementById('pointsGrid').innerHTML = pointsHtml;
@@ -947,28 +968,102 @@
         for(let i=1;i<=6;i++) trioHtml += `<div class="bet-card trio-card" data-type="TRIPLE_${i}">${i}围</div>`;
         trioHtml += `<div class="bet-card trio-card" data-type="ALL_TRIPLE">豹子</div>`;
         document.getElementById('trioGrid').innerHTML = trioHtml;
+
+        // 构建3D点数骰子
+        function buildDiceCube(diceDiv) {
+            if (!diceDiv) return;
+            diceDiv.innerHTML = '';
+            const faces = ['front', 'back', 'right', 'left', 'top', 'bottom'];
+            const valMap = { front:1, back:6, right:4, left:3, top:2, bottom:5 };
+            faces.forEach(face => {
+                let num = valMap[face];
+                let fd = document.createElement('div');
+                fd.className = `dice-face ${face}`;
+                // 根据点数绘制圆点
+                let pipHtml = '';
+                if (num === 1) pipHtml = '<div class="pip pip-center"></div>';
+                else if (num === 2) pipHtml = '<div class="pip pip-tl"></div><div class="pip pip-br"></div>';
+                else if (num === 3) pipHtml = '<div class="pip pip-tl"></div><div class="pip pip-center"></div><div class="pip pip-br"></div>';
+                else if (num === 4) pipHtml = '<div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div>';
+                else if (num === 5) pipHtml = '<div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-mid"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div>';
+                else pipHtml = '<div class="pip pip-l1"></div><div class="pip pip-l2"></div><div class="pip pip-l3"></div><div class="pip pip-r1"></div><div class="pip pip-r2"></div><div class="pip pip-r3"></div>';
+                fd.innerHTML = pipHtml;
+                diceDiv.appendChild(fd);
+            });
+            // 初始随机旋转
+            const randX = Math.floor(Math.random() * 360);
+            const randY = Math.floor(Math.random() * 360);
+            diceDiv.style.transform = `rotateX(${randX}deg) rotateY(${randY}deg)`;
+        }
+        
+        function setCubeValue(dice, val) {
+            const rot = { 1:'rotateX(0deg) rotateY(0deg)', 2:'rotateX(-90deg) rotateY(0deg)', 3:'rotateY(90deg)', 4:'rotateY(-90deg)', 5:'rotateX(90deg)', 6:'rotateX(180deg)' };
+            // 增加多圈旋转使动画更自然
+            const extraX = 360 * (1 + Math.floor(Math.random() * 2));
+            const extraY = 360 * (1 + Math.floor(Math.random() * 2));
+            let baseRot = rot[val];
+            // 解析baseRot
+            let rotateX = 0, rotateY = 0;
+            if (baseRot.includes('rotateX')) {
+                let match = baseRot.match(/rotateX\(([-\d]+)deg\)/);
+                if (match) rotateX = parseInt(match[1]);
+            }
+            if (baseRot.includes('rotateY')) {
+                let match = baseRot.match(/rotateY\(([-\d]+)deg\)/);
+                if (match) rotateY = parseInt(match[1]);
+            }
+            dice.style.transform = `rotateX(${rotateX + extraX}deg) rotateY(${rotateY + extraY}deg)`;
+        }
+        
+        const diceEls = [document.getElementById('dice1'), document.getElementById('dice2'), document.getElementById('dice3')];
+        diceEls.forEach(d => buildDiceCube(d));
+        
         let bets = { BIG:0,SMALL:0,ODD:0,EVEN:0 };
         for(let i=4;i<=17;i++) bets[i]=0;
         for(let i=1;i<=6;i++) bets[`TRIPLE_${i}`]=0;
         bets['ALL_TRIPLE']=0;
         let selectedChip=0, currentBalance=getUserBalance(), isBetLocked=false, countdownInterval=null, lastBet=null;
-        const diceEls = [document.getElementById('dice1'), document.getElementById('dice2'), document.getElementById('dice3')];
-        function setDiceValue(idx, val) {
-            const symbols = {1:'⚀',2:'⚁',3:'⚂',4:'⚃',5:'⚄',6:'⚅'};
-            diceEls[idx].innerText = symbols[val];
-        }
+        const totalEl = document.getElementById('totalPoints');
+        const rollingWinEl = document.getElementById('rollingWinNumber');
+        const totalBetEl = document.getElementById('totalBetDice');
+        
         function updateUIDice() {
             for(let k in bets) { let el = document.getElementById(`bet_${k}`); if(el) el.innerText = bets[k]; }
-            document.getElementById('totalBetDice').innerText = Object.values(bets).reduce((a,b)=>a+b,0);
-            document.getElementById('userBalanceDisplay').innerText = getUserBalance().toFixed(2);
+            totalBetEl.innerText = Object.values(bets).reduce((a,b)=>a+b,0);
+            document.getElementById('diceBankerDisplay').innerText = systemBankerBalance.toFixed(2);
+            document.getElementById("userBalanceDisplay").innerText = getUserBalance().toFixed(2);
         }
-        async function startRolling(finalVals) {
-            for(let step=0;step<10;step++) {
-                for(let i=0;i<3;i++) setDiceValue(i, Math.floor(Math.random()*6)+1);
-                await new Promise(r=>setTimeout(r, 100));
+        
+        async function startRollingLong(finalVals, duration=5000) {
+            return new Promise(resolve => {
+                let steps=30, step=0, interval=duration/steps;
+                let iv = setInterval(()=>{
+                    diceEls.forEach(d => {
+                        const randVal = Math.floor(Math.random()*6)+1;
+                        setCubeValue(d, randVal);
+                    });
+                    step++;
+                    if(step>=steps){
+                        clearInterval(iv);
+                        diceEls.forEach((d,i)=>setCubeValue(d, finalVals[i]));
+                        resolve();
+                    }
+                }, interval);
+            });
+        }
+        
+        function startRollingNumber(finalAmount) {
+            if(window.rollingAnimation) cancelAnimationFrame(window.rollingAnimation);
+            let start=performance.now(), startVal=parseFloat(rollingWinEl.innerText)||0;
+            function update(now){
+                let p=Math.min(1,(now-start)/5000), ease=1-Math.pow(1-p,2), cur=startVal+(finalAmount-startVal)*ease;
+                rollingWinEl.innerText=cur.toFixed(2);
+                if(p<1) window.rollingAnimation=requestAnimationFrame(update);
+                else { rollingWinEl.innerText=finalAmount.toFixed(2); window.rollingAnimation=null; }
             }
-            for(let i=0;i<3;i++) setDiceValue(i, finalVals[i]);
+            window.rollingAnimation=requestAnimationFrame(update);
         }
+        
         function getResultInfo(d1,d2,d3){
             let total=d1+d2+d3, types=[];
             if(total>=11 && total<=17) types.push('BIG'); else types.push('SMALL');
@@ -976,6 +1071,7 @@
             if(d1===d2 && d2===d3) { types.push(`TRIPLE_${d1}`); types.push('ALL_TRIPLE'); }
             return {total, types};
         }
+        
         async function addBetDice(type){
             if(isBetLocked) { showToast("开奖中"); return; }
             if(selectedChip<=0){ showToast("选筹码"); return; }
@@ -983,11 +1079,13 @@
             currentBalance-=selectedChip; setUserBalance(currentBalance);
             bets[type]+=selectedChip; updateUIDice();
         }
+        
         async function clearAllBetsDice(){
             let total=Object.values(bets).reduce((a,b)=>a+b,0);
             currentBalance+=total; setUserBalance(currentBalance);
             for(let k in bets) bets[k]=0; updateUIDice();
         }
+        
         async function repeatLastBetDice(){
             if(!lastBet){ showToast("无续押"); return; }
             let need=Object.values(lastBet).reduce((a,b)=>a+b,0);
@@ -998,7 +1096,14 @@
             updateUIDice();
             if(!isBetLocked) startAutoDrawDice();
         }
+        
         let gameRecordsDice=[];
+        function addRecord(d1,d2,d3,winAmount,totalBetVal){
+            gameRecordsDice.unshift({ time:new Date().toLocaleTimeString(), dice:`${d1},${d2},${d3}`, result:winAmount>0?`赢${winAmount}`:`输${totalBetVal}`, win:winAmount });
+            if(gameRecordsDice.length>50) gameRecordsDice.pop();
+            addGameRecord(currentUser.account, '至尊骰宝', `总注${totalBetVal}`, `${d1}+${d2}+${d3}=${d1+d2+d3}`, winAmount, totalBetVal);
+        }
+        
         async function startAutoDrawDice(){
             if(isBetLocked) return;
             let totalBetVal=Object.values(bets).reduce((a,b)=>a+b,0);
@@ -1016,48 +1121,56 @@
                 for(let t of types){ if(t.startsWith('TRIPLE_') && bets[t]) winAmount+=bets[t]*150; if(t==='ALL_TRIPLE' && bets.ALL_TRIPLE) winAmount+=bets.ALL_TRIPLE*30; }
                 winAmount = winAmount * adjustFactor;
             }
-            document.getElementById('rollingWinNumber').innerText = winAmount.toFixed(2);
-            await startRolling([d1,d2,d3]);
-            document.getElementById('totalPoints').innerText = total;
+            startRollingNumber(winAmount);
+            await startRollingLong([d1,d2,d3], 5000);
+            totalEl.innerText = total;
             if(totalBetVal>0){
                 if(winAmount>0) currentBalance+=winAmount;
                 setUserBalance(currentBalance);
                 let netToBanker=(totalBetVal-winAmount)*adjustFactor;
                 systemBankerBalance=Math.max(0,systemBankerBalance+netToBanker);
+                localStorage.setItem('neon_system_banker', systemBankerBalance);
                 document.getElementById('diceBankerDisplay').innerText=systemBankerBalance.toFixed(2);
             }
-            gameRecordsDice.unshift({ time:new Date().toLocaleTimeString(), dice:`${d1},${d2},${d3}`, result:winAmount>0?`赢${winAmount}`:`输${totalBetVal}` });
+            addRecord(d1,d2,d3,winAmount,totalBetVal);
             for(let k in bets) bets[k]=0;
             lastBet = JSON.parse(JSON.stringify(bets));
             updateUIDice();
-            let pop=document.createElement('div'); pop.className='result-popup'; pop.innerText=winAmount>0?`🎉 赢 ${winAmount.toFixed(2)}`:`😭 输 ${totalBetVal}`; document.body.appendChild(pop); setTimeout(()=>pop.remove(),2000);
+            let pop=document.createElement('div'); pop.className='result-popup'; pop.innerText=winAmount>0?`🎉 赢 ${winAmount.toFixed(2)} 🎉`:(totalBetVal>0?`😭 输 ${totalBetVal} 😭`:`🎲 点数 ${total} 无人下注`); document.body.appendChild(pop); setTimeout(()=>pop.remove(),2000);
             isBetLocked=false;
             startCountdownDice(25);
         }
+        
         function startCountdownDice(sec){
             if(countdownInterval) clearInterval(countdownInterval);
             let c=sec, cdSpan=document.getElementById('countdownNumDice');
-            cdSpan.innerText=c;
+            cdSpan.innerText=c; isBetLocked=false;
             countdownInterval = setInterval(()=>{
-                if(c<=1){ clearInterval(countdownInterval); startAutoDrawDice(); }
-                else { c--; cdSpan.innerText=c; }
+                if(c<=1){ clearInterval(countdownInterval); countdownInterval=null; isBetLocked=true; startAutoDrawDice(); }
+                else { c--; cdSpan.innerText=c; if(c<=5) cdSpan.classList.add('countdown-warning'); else cdSpan.classList.remove('countdown-warning'); }
             },1000);
         }
+        
+        async function refreshBalance(){ currentBalance=getUserBalance(); updateUIDice(); showToast("刷新"); }
+        
         document.querySelectorAll('#diceChips .chip').forEach(chip=>{
             chip.onclick=function(){ selectedChip=parseInt(this.dataset.val); document.getElementById('selectedChipDice').innerText=selectedChip; document.querySelectorAll('#diceChips .chip').forEach(c=>c.classList.remove('selected')); this.classList.add('selected'); };
         });
         document.querySelectorAll('.bet-card').forEach(c=>{ c.onclick=()=>addBetDice(c.dataset.type||c.dataset.point); });
         document.getElementById('clearAllBtnDice').onclick=clearAllBetsDice;
         document.getElementById('repeatBtnDice').onclick=repeatLastBetDice;
-        document.getElementById('refreshBtnDice').onclick=()=>{ currentBalance=getUserBalance(); updateUIDice(); showToast("刷新"); };
+        document.getElementById('refreshBtnDice').onclick=refreshBalance;
         document.getElementById('diceHistoryBtn').onclick=()=>{
-            let html='<div>'+gameRecordsDice.map(r=>`<div>${r.time} 🎲 ${r.dice} ${r.result}</div>`).join('')+'</div><button id="closeRec" class="auth-btn">关闭</button>';
+            if(gameRecordsDice.length===0){ showToast("暂无记录"); return; }
+            let html='<div style="max-height:350px; overflow-y:auto;">'+gameRecordsDice.map(r=>`<div style="margin:6px; padding:6px;">${r.time} 🎲 ${r.dice} ${r.result}</div>`).join('')+'</div><button id="closeRec" class="auth-btn">关闭</button>';
             let m=document.createElement('div'); m.className='modal'; m.innerHTML=`<div class="modal-content">${html}</div>`; document.body.appendChild(m); m.querySelector('#closeRec').onclick=()=>m.remove();
         };
-        for(let i=0;i<3;i++) setDiceValue(i,1);
+        // 初始设置所有骰子为1点
+        diceEls.forEach(d=>setCubeValue(d,1));
+        totalEl.innerText=3;
         updateUIDice();
         startCountdownDice(25);
-        diceDestroy = () => { if(countdownInterval) clearInterval(countdownInterval); container.innerHTML=''; };
+        diceDestroy = () => { if(countdownInterval) clearInterval(countdownInterval); if(window.rollingAnimation) cancelAnimationFrame(window.rollingAnimation); container.innerHTML=''; };
         return diceDestroy;
     }
 
