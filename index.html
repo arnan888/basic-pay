@@ -26,7 +26,6 @@
             box-shadow: 0 20px 35px rgba(0,0,0,0.6);
             overflow: hidden;
         }
-        /* 公共样式 */
         .auth-panel, .user-section, .game-nav { padding: 12px 16px; }
         .game-nav {
             display: flex;
@@ -121,7 +120,6 @@
         .dice-wrapper .bet-odds { font-size: 0.7rem; color: #ffb347; background: rgba(0,0,0,0.4); display: inline-block; padding: 0px 6px; border-radius: 40px; margin-top: 2px; }
         .dice-wrapper .bet-amount { font-size: 1rem; font-weight: 800; background: #00000066; border-radius: 40px; margin-top: 5px; padding: 2px 0; color: #f7d44a; }
 
-        /* 筹码样式 - 立体金片 */
         .chips, .fish-chips {
             display: flex;
             flex-wrap: wrap;
@@ -150,11 +148,9 @@
         }
         .chip:active { transform: translateY(2px); box-shadow: 0 2px 0 #7a3e0e; }
 
-        /* 倒计时闪烁 */
         .countdown-warning { color: #ff7777; text-shadow: 0 0 4px red; animation: pulse 0.8s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } }
 
-        /* 3D骰子通用 */
         .dice-3d-area {
             display: flex;
             justify-content: center;
@@ -225,7 +221,6 @@
             .chip { width: 55px; font-size: 1rem; }
         }
 
-        /* 葫芦鱼样式 */
         .fish-wrapper .fish-pattern-img {
             width: 45px;
             height: 45px;
@@ -267,7 +262,6 @@
             display: flex;
             justify-content: space-between;
         }
-        /* 弹窗 */
         .result-popup {
             position: fixed;
             bottom: 30%;
@@ -351,6 +345,25 @@
             border-bottom: 1px solid #d4a373;
             text-align: left;
         }
+        .withdraw-input, .withdraw-select {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            border-radius: 40px;
+            background: #1a1a1a;
+            border: 1px solid #d49c3f;
+            color: #ffdd99;
+        }
+        .confirm-btn {
+            background: #d49c3f;
+            border: none;
+            border-radius: 40px;
+            padding: 8px;
+            width: 100%;
+            margin-top: 12px;
+            font-weight: bold;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -362,6 +375,9 @@
     let validReferralCodes = ["VIP666", "888VIP", "GOLD2025", "LUCKY8", "DICE100"];
     let usersData = JSON.parse(localStorage.getItem('dice_users')) || {};
     let currentUser = null;
+
+    // 提现记录存储
+    let withdrawRecords = JSON.parse(localStorage.getItem('withdraw_records')) || [];
 
     function saveUsers() { localStorage.setItem('dice_users', JSON.stringify(usersData)); }
     function getUserBalance() { return currentUser ? (usersData[currentUser.phone]?.balance || 0) : 0; }
@@ -390,7 +406,7 @@
         if (bankerSpan) bankerSpan.innerText = systemBankerBalance.toFixed(2);
     }
     
-    // 充值弹窗（集成微信+支付宝收款码）
+    // 充值弹窗（微信+支付宝收款码）
     function showRechargeModal() {
         let modalDiv = document.createElement('div'); modalDiv.className = 'modal';
         modalDiv.innerHTML = `
@@ -399,11 +415,11 @@
                 <p style="margin:10px 0; text-align:center;"><strong>1元 = 1000文</strong>，扫码支付后联系客服上分</p>
                 <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:20px;">
                     <div style="text-align:center;">
-                        <img class="qr-img" id="wechatQr" alt="微信收款码" src="mmexport1776247819360.jpg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E%E5%BE%AE%E4%BF%A1%E6%94%B6%E6%AC%BE%E7%A0%81%3C/text%3E%3C/svg%3E'">
+                        <img class="qr-img" alt="微信收款码" src="mmexport1776247819360.jpg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E%E5%BE%AE%E4%BF%A1%E6%94%B6%E6%AC%BE%E7%A0%81%3C/text%3E%3C/svg%3E'">
                         <p>📱 微信收款码</p>
                     </div>
                     <div style="text-align:center;">
-                        <img class="qr-img" id="alipayQr" alt="支付宝收款码" src="mmexport1776247823872.jpg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E%E6%94%AF%E4%BB%98%E5%AE%9D%E6%94%B6%E6%AC%BE%E7%A0%81%3C/text%3E%3C/svg%3E'">
+                        <img class="qr-img" alt="支付宝收款码" src="mmexport1776247823872.jpg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E%E6%94%AF%E4%BB%98%E5%AE%9D%E6%94%B6%E6%AC%BE%E7%A0%81%3C/text%3E%3C/svg%3E'">
                         <p>📱 支付宝收款码</p>
                     </div>
                 </div>
@@ -414,13 +430,13 @@
         document.body.appendChild(modalDiv);
         modalDiv.querySelector('#closeRecharge').onclick = () => modalDiv.remove();
     }
-    // 客服弹窗（预留客服二维码位置，可替换图片文件）
+    // 客服弹窗（预留二维码）
     function showServiceModal() {
         let modalDiv = document.createElement('div'); modalDiv.className = 'modal';
         modalDiv.innerHTML = `
             <div class="modal-content">
                 <h3 style="text-align:center;">📞 客服微信</h3>
-                <img class="qr-img" id="kefuQr" alt="客服微信二维码" src="kefu_qr.png" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E%E5%AE%A2%E6%9C%8D%E5%BE%AE%E4%BF%A1%E4%BA%8C%E7%BB%B4%E7%A0%81%3C/text%3E%3C/svg%3E'">
+                <img class="qr-img" alt="客服微信二维码" src="kefu_qr.png" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E%E5%AE%A2%E6%9C%8D%E5%BE%AE%E4%BF%A1%E4%BA%8C%E7%BB%B4%E7%A0%81%3C/text%3E%3C/svg%3E'">
                 <p style="margin-top:10px; text-align:center;">微信号: game_kf_888</p>
                 <button id="closeSvc" style="background:#c47c3a; margin-top:15px; padding:8px; border-radius:40px; width:100%;">关闭</button>
             </div>
@@ -429,9 +445,83 @@
         modalDiv.querySelector('#closeSvc').onclick = () => modalDiv.remove();
     }
     function recharge() { showRechargeModal(); }
-    function withdraw() { showToast("提现请联系客服微信: game_kf_888"); }
 
-    // 管理员后台（参照截图样式优化）
+    // ======================== 提现功能（完整版：金额限制 + 绑定收款方式） ========================
+    function withdraw() {
+        let currentBalance = getUserBalance();
+        if (currentBalance <= 0) {
+            showToast("余额为0，无法提现");
+            return;
+        }
+        let modalDiv = document.createElement('div'); modalDiv.className = 'modal';
+        modalDiv.innerHTML = `
+            <div class="modal-content">
+                <h3 style="text-align:center;">💰 提现申请</h3>
+                <div style="margin:12px 0;">
+                    <label>当前余额: <strong style="color:#ffcc44;">${currentBalance.toFixed(2)} 文</strong></label>
+                </div>
+                <div style="margin:12px 0;">
+                    <label>提现金额 (1文 = 0.001元)</label>
+                    <input type="number" id="withdrawAmount" class="withdraw-input" placeholder="请输入提现金额" min="1" max="${currentBalance}" step="1">
+                </div>
+                <div style="margin:12px 0;">
+                    <label>收款方式</label>
+                    <select id="withdrawType" class="withdraw-select">
+                        <option value="微信">微信</option>
+                        <option value="支付宝">支付宝</option>
+                    </select>
+                </div>
+                <div style="margin:12px 0;">
+                    <label>收款账号</label>
+                    <input type="text" id="withdrawAccount" class="withdraw-input" placeholder="请输入微信/支付宝账号" required>
+                </div>
+                <button id="confirmWithdraw" class="confirm-btn">确认提现</button>
+                <button id="cancelWithdraw" style="background:#734c2e; margin-top:8px; padding:8px; border-radius:40px; width:100%;">取消</button>
+            </div>
+        `;
+        document.body.appendChild(modalDiv);
+        const amountInput = modalDiv.querySelector('#withdrawAmount');
+        const typeSelect = modalDiv.querySelector('#withdrawType');
+        const accountInput = modalDiv.querySelector('#withdrawAccount');
+        const confirmBtn = modalDiv.querySelector('#confirmWithdraw');
+        const cancelBtn = modalDiv.querySelector('#cancelWithdraw');
+        confirmBtn.onclick = () => {
+            let amount = parseFloat(amountInput.value);
+            let account = accountInput.value.trim();
+            let payType = typeSelect.value;
+            if (isNaN(amount) || amount <= 0) {
+                showToast("请输入有效的提现金额");
+                return;
+            }
+            if (amount > currentBalance) {
+                showToast("提现金额不能超过余额");
+                return;
+            }
+            if (!account) {
+                showToast("请填写收款账号");
+                return;
+            }
+            // 扣减余额
+            setUserBalance(currentBalance - amount);
+            // 记录提现申请
+            let record = {
+                phone: currentUser.phone,
+                amount: amount,
+                type: payType,
+                account: account,
+                time: new Date().toLocaleString(),
+                status: "待处理"
+            };
+            withdrawRecords.push(record);
+            localStorage.setItem('withdraw_records', JSON.stringify(withdrawRecords));
+            showToast(`提现申请已提交！${amount}文将处理到您的${payType}账号 ${account}`);
+            modalDiv.remove();
+            updateAllBalance();
+        };
+        cancelBtn.onclick = () => modalDiv.remove();
+    }
+
+    // 管理员后台（含提现记录查看）
     let adminClickCount = 0, adminClickTimer = null;
     let adminPassword = "admin888";
     function openAdminModal() {
@@ -447,7 +537,7 @@
                     <button id="adminSearchBtn" style="background:#2980b9; border-radius:40px; padding:6px 12px;">🔍 搜索</button>
                     <button id="adminResetSearch" style="background:#555; border-radius:40px; padding:6px 12px;">重置</button>
                 </div>
-                <div style="max-height:240px; overflow-y:auto; margin-bottom:12px;">
+                <div style="max-height:200px; overflow-y:auto; margin-bottom:12px;">
                     <table class="admin-table">
                         <thead><tr><th>手机号</th><th>余额</th><th>推荐码</th><th>注册时间</th></tr></thead>
                         <tbody id="adminUserTableBody"></tbody>
@@ -469,6 +559,7 @@
                     <button id="adminListCodes" style="background:#16a085; border-radius:40px; padding:6px 12px;">📜 查看推荐码</button>
                     <button id="adminSetBanker" style="background:#e67e22; border-radius:40px; padding:6px 12px;">🏦 设置庄家</button>
                     <button id="adminChangePwd" style="background:#9b59b6; border-radius:40px; padding:6px 12px;">🔑 改密</button>
+                    <button id="adminViewWithdraw" style="background:#c0392b; border-radius:40px; padding:6px 12px;">📋 提现记录</button>
                 </div>
                 <div style="margin:12px 0; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                     <span>🎛️ 全局赔付调节系数:</span>
@@ -568,6 +659,23 @@
                 showToast(`全局赔付系数已设为 ${adjustFactor}`);
             } else showToast("系数范围0.2~3.0");
         };
+        // 查看提现记录
+        modalDiv.querySelector('#adminViewWithdraw').onclick = () => {
+            let records = JSON.parse(localStorage.getItem('withdraw_records')) || [];
+            if (records.length === 0) {
+                alert("暂无提现记录");
+                return;
+            }
+            let recordHtml = '<div style="max-height:300px; overflow-y:auto;"><table class="admin-table"><thead><tr><th>手机号</th><th>金额</th><th>方式</th><th>账号</th><th>时间</th><th>状态</th></tr></thead><tbody>';
+            records.forEach(r => {
+                recordHtml += `<tr><td>${r.phone}</td><td>${r.amount}</td><td>${r.type}</td><td>${r.account}</td><td>${r.time}</td><td>${r.status}</td></tr>`;
+            });
+            recordHtml += '</tbody></table></div><button id="closeRecord" style="margin-top:12px; background:#d49c3f; border-radius:40px; padding:8px;">关闭</button>';
+            let recModal = document.createElement('div'); recModal.className = 'modal';
+            recModal.innerHTML = `<div class="modal-content">${recordHtml}</div>`;
+            document.body.appendChild(recModal);
+            recModal.querySelector('#closeRecord').onclick = () => recModal.remove();
+        };
         modalDiv.querySelector('#adminCloseBtn').onclick = () => modalDiv.remove();
     }
 
@@ -604,7 +712,6 @@
                 </div>
             </div>
         `;
-        // 葫芦鱼骰子图案
         const patternNames = ["鱼","虾","蟹","葫芦","金钱","鸡"];
         function buildFishDice(diceDiv, initPattern) {
             if (!diceDiv) return;
@@ -632,7 +739,6 @@
         }
         const fishDice = [document.getElementById('fishDice0'), document.getElementById('fishDice1'), document.getElementById('fishDice2')];
         fishDice.forEach(d => buildFishDice(d, "鱼"));
-        // 游戏状态
         let patternBets = { 鱼:0,虾:0,蟹:0,葫芦:0,金钱:0,鸡:0 };
         let specialDouble = 0;
         let currentChip = 10;
@@ -1033,7 +1139,7 @@
         document.getElementById('logoutBtn').onclick = () => { currentUser = null; renderAuthUI(); };
         document.getElementById('serviceBtn').onclick = showServiceModal;
         document.getElementById('rechargeBtn').onclick = recharge;
-        document.getElementById('withdrawBtn').onclick = withdraw;
+        document.getElementById('withdrawBtn').onclick = withdraw;   // 增强版提现
         const gamePanel = document.getElementById('gamePanel');
         let currentDestroy = null;
         const inits = { fish: initFishGame, dice: initDiceGame, game3: initGame3, game4: initGame4 };
