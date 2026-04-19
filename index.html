@@ -4,7 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>双游戏大厅 | 抢庄+系统坐庄 | 紧凑布局  | 全局调节系数</title>
-      <style>
+ <!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>游戏大厅</title>
+<style>
         * {
             margin: 0;
             padding: 0;
@@ -266,8 +272,8 @@
             gap: 8px;
         }
 
-        /* 右侧骰子区域：420x420，靠右留1px边线 */
-        .dice-panel {
+        /* 右侧骰子区域：独立命名，避免冲突 */
+        .yuxiaxie-dice-panel {
             width: 420px;
             height: 420px;
             background: #005a32;
@@ -282,60 +288,45 @@
             background-position: center;
         }
 
-        /* ✅ 修正后的父容器，简化参数避免层级错乱 */
-        .dice-wrapper {
-            perspective: 1000px;
-            transform-style: preserve-3d;
+        /* ✅ 鱼虾蟹骰子模块 - 独立命名，不影响其他游戏 */
+        .yuxiaxie-dice-wrapper {
             position: relative;
-            width: 60px;
-            height: 60px;
+            width: 80px;
+            height: 80px;
+            background: #fff;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            border-radius: 4px;
+            overflow: hidden;
+            border: 2px solid #aa6f30;
         }
 
-        .points-grid, .trio-grid, .special-grid { display: grid; gap: 8px; margin-bottom: 12px; }
-        .points-grid { grid-template-columns: repeat(4,1fr); }
-        .trio-grid { grid-template-columns: repeat(4,1fr); }
-        .special-grid { grid-template-columns: repeat(4,1fr); }
-
-        /* ✅ 修正本体，去掉多余属性 */
-        .dice-wrapper .dice { 
-            width: 60px; 
-            height: 60px; 
-            transform-style: preserve-3d; 
-            position: relative;
-            box-shadow: 0 10px 18px -4px rgba(255, 140, 70, 1), 0 0 4px rgba(0,0,0,0.2);
-            border-radius: 2px;
-        }
-
-        /* ✅ 修正面样式，保证显示 */
-        .dice-wrapper .dice-face { 
+        .yuxiaxie-dice-face {
             position: absolute;
-            width: 60px; 
-            height: 60px; 
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            border: 1px solid #998870;
-            box-shadow: inset 0 3px 6px rgba(0,0,0,0.2);
-            backface-visibility: visible !important; /* 强制显示背面，防止消失 */
-            border-radius: 1px;
-            box-sizing: border-box;
+            display: none;
         }
 
-        /* ✅ 修正旋转顺序：先旋转再位移，标准3D坐标，厚度30px刚好匹配 */
-        .dice-wrapper .front  { transform: translateZ(30px); background-image: url('1776322917299(3).png'); } /* 1点葫芦 */
-        .dice-wrapper .back   { transform: rotateY(180deg) translateZ(30px); background-image: url('1776322917299(2).png'); } /* 6点蟹 */
-        .dice-wrapper .right  { transform: rotateY(90deg) translateZ(30px); background-image: url('1776322917299.png'); } /* 2点鱼 */
-        .dice-wrapper .left   { transform: rotateY(-90deg) translateZ(30px); background-image: url('1776322917299(4).png'); } /* 5点金钱 */
-        .dice-wrapper .top    { transform: rotateX(90deg) translateZ(30px); background-image: url('1776322917299(5).png'); } /* 3点鸡 */
-        .dice-wrapper .bottom { transform: rotateX(-90deg) translateZ(30px); background-image: url('1776322917299(1).png'); } /* 4点虾 */
+        /* 对应你的图片 */
+        .yuxiaxie-face1 { background-image: url('1776322917299(3).png'); display: block; } /* 葫芦 */
+        .yuxiaxie-face2 { background-image: url('1776322917299.png'); } /* 鱼 */
+        .yuxiaxie-face3 { background-image: url('1776322917299(5).png'); } /* 鸡 */
+        .yuxiaxie-face4 { background-image: url('1776322917299(1).png'); } /* 虾 */
+        .yuxiaxie-face5 { background-image: url('1776322917299(4).png'); } /* 金钱 */
+        .yuxiaxie-face6 { background-image: url('1776322917299(2).png'); } /* 蟹 */
 
-        /* 隐藏圆点 */
+        /* 隐藏多余元素 */
         .pip, .face-1 .pip-center, .face-2 .pip-tl, .face-2 .pip-br, .face-3 .pip-tl, 
         .face-3 .pip-center, .face-3 .pip-br, .face-4 .pip-tl, .face-4 .pip-tr, 
         .face-4 .pip-bl, .face-4 .pip-br, .face-5 .pip-tl, .face-5 .pip-tr, 
         .face-5 .pip-mid, .face-5 .pip-bl, .face-5 .pip-br, .face-6 .pip-l1, 
         .face-6 .pip-l2, .face-6 .pip-l3, .face-6 .pip-r1, .face-6 .pip-r2, 
-        .face-6 .pip-r3 { display: none; }
+        .face-6 .pip-r3, .points-grid, .trio-grid, .special-grid { display: none; }
 
         .countdown-warning { animation: warning 0.5s infinite; color: #ff3300 !important; }
         @keyframes warning { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
@@ -347,303 +338,84 @@
             padding: 12px;
         }
 
+        /* ✅ 其他游戏容器 - 预留位置，后续直接加 */
+        .game-module {
+            display: none; /* 默认隐藏，切换tab时显示对应模块 */
+        }
+        .game-module.active {
+            display: block;
+        }
+
         @media (max-width: 550px) {
-            .dice-panel { width: 100%; height: auto; aspect-ratio: 1 / 1; max-width: 420px; margin: 0 auto 0 auto; }
+            .yuxiaxie-dice-panel { width: 100%; height: auto; aspect-ratio: 1 / 1; max-width: 420px; margin: 0 auto 0 auto; }
             .fish-layout { flex-direction: column; }
             .left-panel { width: 100%; flex-direction: row; flex-wrap: wrap; gap: 6px; }
             .left-panel .chip, .left-panel .action-btn, .left-panel .grab-btn, .left-panel .double-bet-btn { width: auto; flex: 1; }
-            
-            .dice-wrapper {
-                width: 80px;
-                height: 80px;
-            }
-            .dice { 
-                width: 80px; 
-                height: 80px; 
-                transform-style: preserve-3d;
-                box-shadow: 0 10px 18px -4px rgba(255, 140, 70, 1);
-            }
-            .dice-face {
-                background-size: cover;
-                background-position: center;
-                border: 1px solid #998870;
-                box-shadow: inset 0 3px 6px rgba(0,0,0,0.2);
-                backface-visibility: visible !important;
-            }
-            .front  { transform: translateZ(40px); }
-            .back   { transform: rotateY(180deg) translateZ(40px); }
-            .right  { transform: rotateY(90deg) translateZ(40px); }
-            .left   { transform: rotateY(-90deg) translateZ(40px); }
-            .top    { transform: rotateX(90deg) translateZ(40px); }
-            .bottom { transform: rotateX(-90deg) translateZ(40px)
         }
-        /* 六门网格在下方 */
-        .bet-sections {
-            padding: 0 12px 12px;
-            clear: both;
-        }
+</style>
+</head>
+<body>
+    <div class="app">
+        <!-- 导航栏 - 游戏切换 -->
+        <div class="game-nav">
+            <button class="game-tab active" data-game="yuxiaxie">鱼虾蟹</button>
+            <button class="game-tab" data-game="other1">其他游戏1</button>
+            <button class="game-tab" data-game="other2">其他游戏2</button>
+        </div>
 
-        .fish-pattern-img {
-            width: 40px;
-            height: 40px;
-            object-fit: contain;
-            margin: 2px auto;
-            display: block;
-            background: #2a1f16;
-            border-radius: 2px;
-            padding: 3px;
-        }
+        <!-- 用户区 -->
+        <div class="user-section">
+            <div class="user-info-row">
+                <span>余额：</span>
+                <span id="userBalanceDisplay">0</span>
+            </div>
+            <div class="btn-group">
+                <button class="logout-btn">退出</button>
+                <button class="service-btn">客服</button>
+            </div>
+            <div class="charge-withdraw-row">
+                <button class="charge-btn">充值</button>
+                <button class="withdraw-btn">提现</button>
+            </div>
+        </div>
 
-        .fish-wrapper .bet-card {
-            background: #660099;
-            border-radius: 2px;
-            padding: 6px 2px;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-            border: 1px solid #005a32;
-            transition: all 0.1s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 85px;
-            width: 100%;
-            box-sizing: border-box;
-        }
+        <!-- 登录界面 -->
+        <div class="auth-panel" id="authPanel">
+            <h2>请先登录</h2>
+            <input type="text" class="auth-input" placeholder="账号">
+            <input type="password" class="auth-input" placeholder="密码">
+            <div class="auth-buttons">
+                <button class="auth-btn">登录</button>
+                <button class="auth-btn">注册</button>
+            </div>
+            <p class="auth-note">登录后即可开始游戏</p>
+        </div>
 
-        .fish-wrapper .bet-name {
-            font-size: 0.75rem;
-            font-weight: bold;
-            color: #bb77ff;
-            margin: 2px 0;
-        }
-
-        .fish-wrapper .bet-amount {
-            background: #0c0907;
-            border-radius: 2px;
-            padding: 2px 6px;
-            margin: 4px 4px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 4px;
-            font-size: 1rem;
-            font-weight: bold;
-            color: #ffcc66;
-            width: calc(100% - 8px);
-            box-sizing: border-box;
-        }
-
-        .fish-wrapper .bet-amount span {
-            font-size: 1rem;
-            font-weight: bold;
-            color: #ffdd88;
-            min-width: 28px;
-            text-align: center;
-        }
-
-        #patternGrid {
-            display: grid !important;
-            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-            gap: 8px !important;
-            margin: 8px 0 !important;
-            width: 100%;
-        }
-
-        .online-count-box {
-            background: #2a1f16;
-            margin: 10px;
-            padding: 6px 12px;
-            border-radius: 2px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.8rem;
-            color: #ffdd99;
-            border: 1px solid #ffaa44;
-        }
-
-        .online-number {
-            font-size: 1.3rem;
-            font-weight: 900;
-            color: #ffaa44;
-            margin-left: 6px;
-        }
-
-        /* 弹窗 */
-        .result-popup {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.6);
-            background: linear-gradient(145deg, #ffcc44, #ff9933);
-            color: #1a1a2a;
-            padding: 18px 30px;
-            border-radius: 60px;
-            font-size: 2rem;
-            font-weight: 900;
-            z-index: 2000;
-            opacity: 0;
-            transition: 0.2s;
-            pointer-events: none;
-            white-space: nowrap;
-        }
-
-        .result-popup.show {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-        }
-
-        .toast-message {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #000000cc;
-            color: #ffcc44;
-            padding: 6px 12px;
-            border-radius: 40px;
-            z-index: 2001;
-            animation: fadeInOut 2s forwards;
-            font-size: 0.8rem;
-            font-weight: bold;
-            white-space: nowrap;
-        }
-
-        @keyframes fadeInOut {
-            0% {
-                opacity: 0;
-                transform: translateX(-50%) translateY(20px);
-            }
-
-            15% {
-                opacity: 1;
-                transform: translateX(-50%) translateY(0);
-            }
-
-            85% {
-                opacity: 1;
-            }
-
-            100% {
-                opacity: 0;
-                transform: translateX(-50%) translateY(-20px);
-            }
-        }
-
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(8px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 3000;
-        }
-
-        .modal-content {
-            background: #1a2a1a;
-            border-radius: 48px;
-            padding: 20px;
-            border: 2px solid #ffaa44;
-            width: 85%;
-            max-width: 500px;
-            text-align: center;
-            color: #ffdd99;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .qr-img {
-            width: 140px;
-            height: 140px;
-            margin: 8px auto;
-            display: block;
-            background: white;
-            border-radius: 20px;
-            padding: 8px;
-            object-fit: contain;
-        }
-
-        #fishBankerDisplay,
-        #totalBetValue,
-        #lastWinValue,
-        #bet_special_doubleBet {
-            font-size: 1rem;
-            font-weight: 900;
-            color: #ffcc44;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 0 6px;
-            border-radius: 2px;
-            display: inline-block;
-        }
-
-        @media (max-width: 550px) {
-            .dice-panel {
-                width: 100%;
-                height: auto;
-                aspect-ratio: 1 / 1;
-                max-width: 420px;
-                margin: 0 auto 0 auto;
-            }
-
-            .fish-layout {
-                flex-direction: column;
-            }
-
-            .left-panel {
-                width: 100%;
-                flex-direction: row;
-                flex-wrap: wrap;
-                gap: 6px;
-            }
-
-            .left-panel .chip,
-            .left-panel .action-btn,
-            .left-panel .grab-btn,
-            .left-panel .double-bet-btn {
-                width: auto;
-                flex: 1;
-            }
-
-            .dice {
-                width: 80px;
-                height: 80px;
-            }
-
-            .front,
-            .back,
-            .right,
-            .left,
-            .top,
-            .bottom {
-                transform: translateZ(40px);
-            }
-
-            .back {
-                transform: translateZ(40px) rotateY(180deg);
-            }
-
-            .right {
-                transform: translateZ(40px) rotateY(90deg);
-            }
-
-            .left {
-                transform: translateZ(40px) rotateY(-90deg);
-            }
-
-            .top {
-                transform: translateZ(40px) rotateX(90deg);
-            }
-
-            .bottom {
-                transform: translateZ(40px) rotateX(-90deg);
-            }
-        }
+        <!-- 游戏容器 -->
+        <div class="game-container">
+            <!-- ✅ 鱼虾蟹模块 - 独立包裹 -->
+            <div class="game-module active" id="yuxiaxie">
+                <div class="fish-layout">
+                    <div class="left-panel">
+                        <button class="chip">1倍</button>
+                        <button class="chip">2倍</button>
+                        <button class="grab-btn">开始</button>
+                        <button class="record-btn">记录</button>
+                        <button class="rules-btn">规则</button>
+                    </div>
+                    <div class="yuxiaxie-dice-panel">
+                        <!-- 骰子元素 -->
+                        <div class="yuxiaxie-dice-wrapper">
+                            <div class="yuxiaxie-dice-face yuxiaxie-face1"></div>
+                            <div class="yuxiaxie-dice-face yuxiaxie-face2"></div>
+                            <div class="yuxiaxie-dice-face yuxiaxie-face3"></div>
+                            <div class="yuxiaxie-dice-face yuxiaxie-face4"></div>
+                            <div class="yuxiaxie-dice-face yuxiaxie-face5"></div>
+                            <div class="yuxiaxie-dice-face yuxiaxie-face6"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
     </style>
 </head>
 <body>
