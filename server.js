@@ -156,7 +156,6 @@ app.post('/api/withdraw', (req, res) => {
     writeData(data);
     res.json({ success: true });
 });
-
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ 后端运行成功！同网访问: http://192.168.100.24:${PORT}`);
 });
