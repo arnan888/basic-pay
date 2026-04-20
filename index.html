@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>金辉四游戏 · 最终完整版</title>
+    <title>金辉四游戏 · 完整充值版</title>
     <style>
         * {
             margin: 0;
@@ -482,6 +482,14 @@
             color: white;
             border-color: #e09d32;
         }
+        .qr-img {
+            width: 140px;
+            height: 140px;
+            background: white;
+            border-radius: 20px;
+            padding: 8px;
+            object-fit: contain;
+        }
         @media (max-width: 480px) {
             .players-container {
                 grid-template-columns: 1fr;
@@ -494,6 +502,10 @@
                 width: 55px;
                 height: 55px;
                 font-size: 1.5rem;
+            }
+            .qr-img {
+                width: 100px;
+                height: 100px;
             }
         }
     </style>
@@ -551,13 +563,37 @@
         document.body.appendChild(t);
         setTimeout(() => t.remove(), 2000);
     }
+    // 充值：显示收款码，不自动加余额
     function recharge() {
-        let yuan = prompt(t('recharge') + " (1元 = 1余额)", "10");
+        let yuan = prompt("请输入充值金额（元）", "10");
         if (!yuan) return;
-        let num = parseFloat(yuan);
-        if (isNaN(num) || num <= 0) { showToast("请输入正数"); return; }
-        setUserBalance(getUserBalance() + num);
-        showToast(`${t('recharge')} +${num.toFixed(2)} 元`);
+        let yuanNum = parseFloat(yuan);
+        if (isNaN(yuanNum) || yuanNum <= 0) {
+            showToast("请输入正数");
+            return;
+        }
+        let modalDiv = document.createElement('div');
+        modalDiv.className = 'modal';
+        modalDiv.innerHTML = `
+            <div class="modal-content" style="text-align:center;">
+                <h3>💎 充值 ${yuanNum} 元</h3>
+                <p style="margin:10px 0;">请使用微信或支付宝扫码支付，支付后联系客服上分</p>
+                <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:20px; margin:16px 0;">
+                    <div style="text-align:center;">
+                        <img class="qr-img" src="mmexport1776247819360.jpg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 fill=%22%23999%22%3E%E5%BE%AE%E4%BF%A1%E6%94%B6%E6%AC%BE%E7%A0%81%3C/text%3E%3C/svg%3E'">
+                        <p>📱 微信收款码</p>
+                    </div>
+                    <div style="text-align:center;">
+                        <img class="qr-img" src="mmexport1776247823872.jpg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 fill=%22%23999%22%3E%E6%94%AF%E4%BB%98%E5%AE%9D%E6%94%B6%E6%AC%BE%E7%A0%81%3C/text%3E%3C/svg%3E'">
+                        <p>📱 支付宝收款码</p>
+                    </div>
+                </div>
+                <p style="margin-top:10px;">📞 客服微信: <strong>game_kf_888</strong> (支付后截图联系，提供充值账号)</p>
+                <button id="closeRecharge" class="auth-btn" style="margin-top:16px;">关闭</button>
+            </div>
+        `;
+        document.body.appendChild(modalDiv);
+        modalDiv.querySelector('#closeRecharge').onclick = () => modalDiv.remove();
     }
     function withdraw() {
         let bal = getUserBalance();
@@ -574,7 +610,19 @@
         localStorage.setItem('gold_withdraw', JSON.stringify(records));
         showToast(`提现申请已提交！${amount}元将处理到${type}账号 ${account}`);
     }
-    function showServiceModal() { alert("客服微信: game_kf_888"); }
+    function showServiceModal() {
+        let modalDiv = document.createElement('div'); modalDiv.className = 'modal';
+        modalDiv.innerHTML = `
+            <div class="modal-content" style="text-align:center;">
+                <h3>📞 客服微信</h3>
+                <img class="qr-img" src="kefu_qr.png" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 fill=%22%23999%22%3E%E5%AE%A2%E6%9C%8D%E5%BE%AE%E4%BF%A1%3C/text%3E%3C/svg%3E'">
+                <p style="margin-top:10px;">微信号: game_kf_888</p>
+                <button id="closeSvc" class="auth-btn">关闭</button>
+            </div>
+        `;
+        document.body.appendChild(modalDiv);
+        modalDiv.querySelector('#closeSvc').onclick = () => modalDiv.remove();
+    }
 
     // ==================== 管理员后台 ====================
     let adminPassword = "admin888";
@@ -752,7 +800,7 @@
         saveUsers();
     }
 
-    // ==================== 葫芦鱼（完整功能，3D骰子动画） ====================
+    // ==================== 葫芦鱼（完整功能） ====================
     let fishDestroy = null;
     function initFishGame(container) {
         if (fishDestroy) fishDestroy();
@@ -782,7 +830,6 @@
                 <div id="fishPhaseHint" style="text-align:center; margin-top:12px; background:#fff0e0; border-radius:30px; padding:8px;">🎲 下注阶段 · 25秒</div>
             </div>
         `;
-        // 简化的鱼虾蟹逻辑（演示动画，实际可玩）
         const patternNames = ["鱼","虾","蟹","葫芦","金钱","鸡"];
         let patternBets = { 鱼:0,虾:0,蟹:0,葫芦:0,金钱:0,鸡:0 };
         let specialDouble = 0;
@@ -935,7 +982,7 @@
         return fishDestroy;
     }
 
-    // ==================== 至尊骰宝（简化但完整） ====================
+    // ==================== 至尊骰宝（完整） ====================
     let diceDestroy = null;
     function initDiceGame(container) {
         if (diceDestroy) diceDestroy();
@@ -1097,7 +1144,7 @@
         return diceDestroy;
     }
 
-    // ==================== 龙虎斗（简化界面，动画保留） ====================
+    // ==================== 龙虎斗 ====================
     let dragonTigerDestroy = null;
     function initDragonTigerGame(container) {
         if (dragonTigerDestroy) dragonTigerDestroy();
@@ -1299,7 +1346,7 @@
         return dragonTigerDestroy;
     }
 
-    // ==================== 多人牛牛（庄家牌型+最大牌，逐张发牌） ====================
+    // ==================== 多人牛牛（庄家牌型+最大牌） ====================
     let niuniuDestroy = null;
     function initNiuNiuGame(container) {
         if (niuniuDestroy) niuniuDestroy();
