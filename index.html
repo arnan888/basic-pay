@@ -524,12 +524,13 @@
     function getCurrentUser() { return currentUserAccount || sessionStorage.getItem('currentUser'); }
 
     async function request(url, options = {}) {
-        const headers = { 'Content-Type': 'application/json', ...options.headers };
-        if (authToken) headers['Authorization'] = authToken;
-        const res = await fetch(API_BASE + url, { ...options, headers });
-        return res.json();
-    }
-
+    // 自动补上/api前缀，之前就是少了这个导致接口全错
+    const fullUrl = url.startsWith('/api') ? url : '/api' + url;
+    const headers = { 'Content-Type': 'application/json', ...options.headers };
+    if (authToken) headers['Authorization'] = authToken;
+    const res = await fetch(API_BASE + fullUrl, { ...options, headers });
+    return res.json();
+}
     async function apiLogin(account, password) {
         const data = await request('/login', { method: 'POST', body: JSON.stringify({ account, password }) });
         if (data.success) { setAuthToken(data.token); setCurrentUser(data.account); currentBalance = data.balance; updateBalanceDisplay(); }
