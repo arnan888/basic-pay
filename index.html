@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>金辉游戏 · 葫芦鱼+管理员后台</title>
+    <title>金辉葫芦鱼 · 完整管理员后台</title>
     <style>
         * {
             margin: 0;
@@ -150,7 +150,7 @@
             cursor: pointer;
             margin-left: 8px;
         }
-        /* 游戏导航 */
+        /* 游戏导航 - 只保留葫芦鱼 */
         .game-nav {
             display: flex;
             gap: 8px;
@@ -373,6 +373,28 @@
             padding: 8px;
             object-fit: contain;
         }
+        /* 筹码和倒计时行 */
+        .chips-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 12px 0;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .chips-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .timer-box {
+            background: #fff0e0;
+            border-radius: 40px;
+            padding: 6px 16px;
+            border: 1px solid #ffd9a5;
+            font-weight: bold;
+            white-space: nowrap;
+        }
         @media (max-width: 480px) {
             .qr-img { width: 100px; height: 100px; }
         }
@@ -388,7 +410,7 @@
             phoneOrEmail: "手机号 / 邮箱", password: "密码 (≥4位)", referralCode: "推荐码 (必填)", remember: "记住账号",
             login: "登录", register: "注册", referralNote: "推荐码: VIP666,888VIP,GOLD2025,LUCKY8,DICE100",
             getCode: "获取验证码", verifyCode: "验证码", registerNow: "注册新账户",
-            gameFish: "🐟 葫芦鱼", gameDice: "🎲 至尊骰宝", gameDT: "🐉 龙虎斗", gameNN: "🃏 至尊牛牛",
+            gameFish: "🐟 葫芦鱼",
             fishRoll: "🎲 开骰", fishClear: "清空", fishGrab: "🎲 抢庄", fishDouble: "🎯 双押",
         },
         th: {
@@ -396,7 +418,7 @@
             phoneOrEmail: "เบอร์โทร / อีเมล", password: "รหัสผ่าน (≥4)", referralCode: "รหัสแนะนำ", remember: "จำฉัน",
             login: "เข้าสู่ระบบ", register: "สมัคร", referralNote: "รหัส: VIP666,888VIP,GOLD2025,LUCKY8,DICE100",
             getCode: "รับรหัส", verifyCode: "รหัสยืนยัน", registerNow: "สมัครสมาชิก",
-            gameFish: "🐟 ปลาหมึก", gameDice: "🎲 เซียนเต๋า", gameDT: "🐉 มังกรเสือ", gameNN: "🃏 แบล็คแจ็ค",
+            gameFish: "🐟 ปลาหมึก",
             fishRoll: "🎲 เปิด", fishClear: "ล้าง", fishGrab: "🎲 รับเจ้ามือ", fishDouble: "🎯 เดิมพันคู่",
         }
     };
@@ -711,8 +733,18 @@
                     <div style="flex:1; background:#fff0e0; border-radius:24px; padding:8px; text-align:center;"><div>🎲 总押注</div><div id="fishTotalBet">0</div></div>
                     <div style="flex:1; background:#fff0e0; border-radius:24px; padding:8px; text-align:center;"><div>🏆 上局净利</div><div id="fishLastWin">0</div></div>
                 </div>
-                <div id="fishChips" style="margin:8px 0;">
-                    <span class="chip" data-chip="2">2</span><span class="chip" data-chip="5">5</span><span class="chip selected" data-chip="10">10</span><span class="chip" data-chip="50">50</span><span class="chip" data-chip="100">100</span>
+                <!-- 筹码和倒计时行 -->
+                <div class="chips-row">
+                    <div class="chips-group">
+                        <span class="chip" data-chip="10">10</span>
+                        <span class="chip" data-chip="50">50</span>
+                        <span class="chip selected" data-chip="100">100</span>
+                        <span class="chip" data-chip="500">500</span>
+                        <span class="chip" data-chip="1000">1000</span>
+                    </div>
+                    <div class="timer-box">
+                        ⏱️ 下注 <span id="fishPhaseTimer">25</span> 秒
+                    </div>
                 </div>
                 <div style="display:flex; gap:8px; margin:12px 0;">
                     <button id="fishRollBtn" class="exec-btn">${t('fishRoll')}</button>
@@ -774,7 +806,7 @@
         fishDice.forEach(d => buildFishDice(d));
         let patternBets = { 鱼:0,虾:0,蟹:0,葫芦:0,金钱:0,鸡:0 };
         let specialDouble = 0;
-        let currentChip = 10;
+        let currentChip = 100;
         let hasGrabbed = false;
         let playerBankerBalance = 0;
         let gameRecords = [];
@@ -883,10 +915,13 @@
             if (countdownTimer) clearInterval(countdownTimer);
             let remaining=25;
             let hintDiv = document.getElementById('fishPhaseHint');
+            let timerSpan = document.getElementById('fishPhaseTimer');
             if(hintDiv) hintDiv.innerText = `🎲 下注阶段 · ${remaining}秒`;
+            if(timerSpan) timerSpan.innerText = remaining;
             countdownTimer = setInterval(()=>{
                 remaining--;
                 if(hintDiv) hintDiv.innerText = `🎲 下注阶段 · ${remaining}秒`;
+                if(timerSpan) timerSpan.innerText = remaining;
                 if(remaining<=0){
                     clearInterval(countdownTimer);
                     if(!isRolling && roundActive) settleFish();
@@ -900,8 +935,8 @@
             card.innerHTML = `<div style="font-size:1.6rem; margin-bottom:4px;">${emoji}</div><div>${p}</div><div><button class="quick-bet sub-pat" data-pat="${p}">-</button><span id="fishBet_${p}" style="margin:0 12px; font-weight:bold;">0</span><button class="quick-bet add-pat" data-pat="${p}">+</button></div>`;
             gridDiv.appendChild(card);
         });
-        document.querySelectorAll('#fishChips .chip').forEach(chip=>{
-            chip.onclick=function(){ currentChip=parseInt(this.dataset.chip); document.querySelectorAll('#fishChips .chip').forEach(c=>c.classList.remove('selected')); this.classList.add('selected'); };
+        document.querySelectorAll('.chip').forEach(chip=>{
+            chip.onclick=function(){ currentChip=parseInt(this.dataset.chip); document.querySelectorAll('.chip').forEach(c=>c.classList.remove('selected')); this.classList.add('selected'); };
         });
         document.getElementById('fishGrabBtn').onclick=()=>{
             if(hasGrabbed){ showToast("已是庄家"); return; }
@@ -938,12 +973,8 @@
         return fishDestroy;
     }
 
-    // 其他游戏（骰宝、龙虎斗、牛牛）简化演示版
-    let diceDestroy = null, dragonTigerDestroy = null, niuniuDestroy = null;
-    function initDiceGame(container) { if(diceDestroy) diceDestroy(); container.innerHTML = `<div class="game-card"><div style="padding:20px; text-align:center;">🎲 至尊骰宝（3D动画完整）</div><button class="exec-btn" onclick="showToast('至尊骰宝3D骰子动画已集成')">演示</button></div>`; diceDestroy=()=>{}; return diceDestroy; }
-    function initDragonTigerGame(container) { if(dragonTigerDestroy) dragonTigerDestroy(); container.innerHTML = `<div class="game-card"><div style="padding:20px; text-align:center;">🐉 龙虎斗（开奖动画）</div><button class="exec-btn" onclick="showToast('龙虎斗开奖动画已集成')">演示</button></div>`; dragonTigerDestroy=()=>{}; return dragonTigerDestroy; }
-    function initNiuNiuGame(container) { if(niuniuDestroy) niuniuDestroy(); container.innerHTML = `<div class="game-card"><div style="padding:20px; text-align:center;">🃏 至尊牛牛（完整版）</div><button class="exec-btn" onclick="showToast('牛牛完整版已集成')">演示</button></div>`; niuniuDestroy=()=>{}; return niuniuDestroy; }
-    function initGame4(container) { container.innerHTML = `<div class="game-card" style="text-align:center; padding:40px;">♠️ 游戏4</div>`; return ()=>{}; }
+    // 其他游戏占位（只保留葫芦鱼，其他标签隐藏）
+    function initPlaceholder(container) { container.innerHTML = `<div class="game-card" style="text-align:center; padding:40px;">🎮 敬请期待</div>`; return ()=>{}; }
 
     // ==================== 认证界面 ====================
     function renderAuthUI() {
@@ -952,7 +983,7 @@
         const remChecked = localStorage.getItem('gold_remember_me') === 'true';
         document.getElementById('app').innerHTML = `
             <div class="auth-panel">
-                <h2>🎲 金辉游戏大厅</h2>
+                <h2>🎲 金辉葫芦鱼</h2>
                 <div>
                     <input type="text" id="loginAccount" class="auth-input" placeholder="${t('phoneOrEmail')}" value="${savedAcc}">
                     <input type="password" id="loginPassword" class="auth-input" placeholder="${t('password')}" value="${savedPwd}">
@@ -1034,9 +1065,6 @@
             </div>
             <div class="game-nav">
                 <button class="game-tab active" data-game="fish">${t('gameFish')}</button>
-                <button class="game-tab" data-game="dice">${t('gameDice')}</button>
-                <button class="game-tab" data-game="dragonTiger">${t('gameDT')}</button>
-                <button class="game-tab" data-game="niuniu">${t('gameNN')}</button>
             </div>
             <div class="game-container" id="gamePanel"></div>
         `;
@@ -1051,7 +1079,7 @@
         };
         const gamePanel = document.getElementById('gamePanel');
         let currentDestroy = null;
-        const inits = { fish: initFishGame, dice: initDiceGame, dragonTiger: initDragonTigerGame, niuniu: initNiuNiuGame };
+        const inits = { fish: initFishGame };
         async function switchGame(id) { if (currentDestroy) currentDestroy(); gamePanel.innerHTML = ''; currentDestroy = await inits[id](gamePanel); }
         document.querySelectorAll('.game-tab').forEach(btn => {
             btn.onclick = () => {
