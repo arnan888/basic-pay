@@ -1062,14 +1062,14 @@
 
     // ==================== 龙虎斗（紧凑，倒计时顶部） ====================
     let dragonTigerDestroy = null;
-    function initDragonTigerGame(container) {
+   function initDragonTigerGame(container) {
     if (dragonTigerDestroy) dragonTigerDestroy();
 
-    // 扑克牌映射：1=A, 11=J, 12=Q, 13=K, 14=A作为最大（但牌面显示A）
+    // 扑克牌映射
     const cardNames = {1:"A",2:"2",3:"3",4:"4",5:"5",6:"6",7:"7",8:"8",9:"9",10:"10",11:"J",12:"Q",13:"K",14:"A"};
     const cardSuits = ["♥","♦","♣","♠"];
     function getRandomCard() {
-        let val = Math.floor(Math.random() * 13) + 1; // 1-13, 但我们将1视为A（14点），方便比大小
+        let val = Math.floor(Math.random() * 13) + 1; // 1-13
         let points = (val === 1) ? 14 : val;
         let suit = cardSuits[Math.floor(Math.random() * 4)];
         return { val, points, suit, display: (val===1?"A":(val===11?"J":(val===12?"Q":(val===13?"K":val)))) + suit };
@@ -1077,7 +1077,7 @@
 
     container.innerHTML = `
         <div class="game-card">
-            <!-- 顶部：龙虎VS动画区（扑克牌区域） -->
+            <!-- 扑克牌VS动画区 -->
             <div style="background:rgba(0,0,0,0.4); border-radius:28px; padding:12px 8px; margin-bottom:8px; text-align:center;">
                 <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
                     <div id="dragonCardArea" style="flex:1; background:#2a1e12; border-radius:20px; padding:8px; box-shadow:0 0 10px rgba(255,170,51,0.3);">
@@ -1093,7 +1093,7 @@
                 <div id="dtBattleResult" style="margin-top:8px; font-size:0.9rem; background:rgba(0,0,0,0.5); border-radius:30px; padding:4px;">⚔️ 等待开牌</div>
             </div>
 
-            <!-- 倒计时（顶部统一） -->
+            <!-- 倒计时（顶部） -->
             <div class="countdown-area" id="countdownAreaDT">⏱️ 下一局: <span id="countdownNumDT">30</span> s</div>
 
             <!-- 长龙提示器 -->
@@ -1101,13 +1101,10 @@
                 🔥 当前长龙: <span id="currentStreak">无</span>
             </div>
 
-            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <!-- 用户栏（只显示账号和记录按钮） -->
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
                 <div>👤 <span id="currentUserId">${currentUser.account}</span></div>
-                <div><button id="myHistoryBtnDT" class="quick-bet" style="padding:2px 8px;">记录</button><button id="newUserBtnDT" class="quick-bet" style="padding:2px 8px;">新用户</button></div>
-            </div>
-            <div style="display:flex;gap:6px;margin:6px 0;">
-                <input type="text" id="switchUserIdInputDT" placeholder="切换账号" style="flex:1; background:rgba(0,0,0,0.6); border:1px solid #ffaa33; border-radius:30px; padding:6px; color:#ffd966; font-size:0.8rem;">
-                <button id="switchUserBtnDT" class="quick-bet" style="padding:4px 12px;">登录</button>
+                <div><button id="myHistoryBtnDT" class="quick-bet" style="padding:2px 8px;">记录</button></div>
             </div>
 
             <!-- 投注区 -->
@@ -1128,23 +1125,29 @@
                 <div>📊 总押注: <span id="totalBetAmountDT">0</span></div>
                 <div>🏆 预计奖金: <span id="valWinDT">0</span></div>
             </div>
+
+            <!-- 倍速按钮 -->
             <div style="display:flex;gap:8px;margin:6px 0;">
                 <span class="speed-btn" data-speed="1" style="background:#ffaa33; padding:2px 8px; border-radius:20px; cursor:pointer;">1X</span>
                 <span class="speed-btn" data-speed="2" style="padding:2px 8px; border-radius:20px; cursor:pointer;">2X</span>
                 <span class="speed-btn" data-speed="3" style="padding:2px 8px; border-radius:20px; cursor:pointer;">3X</span>
             </div>
 
-            <div class="history-area">
-                <div>最近10局</div>
-                <div id="historyGridDT" class="history-grid" style="display:flex; gap:4px; margin:4px 0;"></div>
-                <div id="recordListDT"></div>
-            </div>
-            <div style="display:flex;gap:6px;margin-top:8px;">
+            <!-- 四个操作按钮（已上移） -->
+            <div style="display:flex;gap:6px;margin:6px 0;">
                 <button id="refreshBtnDT" class="exec-btn" style="padding:4px 10px;">刷新</button>
                 <button id="repeatBtnDT" class="exec-btn" style="padding:4px 10px;">续押</button>
                 <button id="cancelBtnDT" class="exec-btn" style="padding:4px 10px;">取消</button>
                 <button id="fightBtnDT" class="exec-btn main-go" style="padding:4px 10px;">确认</button>
             </div>
+
+            <!-- 历史区域 -->
+            <div class="history-area">
+                <div>最近10局</div>
+                <div id="historyGridDT" class="history-grid" style="display:flex; gap:4px; margin:4px 0;"></div>
+                <div id="recordListDT"></div>
+            </div>
+
             <div style="display:flex;gap:8px;margin-top:6px;">
                 <div>💰 余额: <span id="balanceDisplayDT">${getUserBalance().toFixed(2)}</span></div>
                 <div>🎲 彩金池: 50000</div>
@@ -1161,9 +1164,8 @@
         countdownInterval: null
     };
     let lastBet = null;
-    // 历史结果数组，用于计算长龙
     let resultHistory = usersData[currentUser.account]?.resultHistory || [];
-    // 长龙提示更新函数
+
     function updateStreakDisplay() {
         if (!resultHistory.length) {
             document.getElementById('currentStreak').innerText = '无';
@@ -1222,25 +1224,22 @@
         });
     }
 
-    // 开牌主逻辑（扑克牌比大小）
+    // 开奖主逻辑（无弹窗，只靠动画和结果文字）
     async function placeBetDT(type, amount) {
         if (state.betRolling) return;
         state.betRolling = true;
-        // 随机生成龙和虎的扑克牌
         let dragonCard = getRandomCard();
         let tigerCard = getRandomCard();
         let result = '';
-        let win = 0;
         if (dragonCard.points > tigerCard.points) result = '龙';
         else if (tigerCard.points > dragonCard.points) result = '虎';
         else result = '和';
 
-        // 计算输赢
+        let win = 0;
         if ((type === 'DRAGON' && result === '龙') || (type === 'TIGER' && result === '虎') || (type === 'TIE' && result === '和')) {
             win = amount * (result === '和' ? 8 : 2);
         }
 
-        // 动画：翻转扑克牌
         const dragonCardDiv = document.getElementById('dragonCard');
         const tigerCardDiv = document.getElementById('tigerCard');
         const dragonCardText = `${dragonCard.display}`;
@@ -1248,17 +1247,14 @@
         await flipCardAnimation(dragonCardDiv, dragonCardText, result === '龙');
         await flipCardAnimation(tigerCardDiv, tigerCardText, result === '虎');
 
-        // 显示比大小结果
         const battleDiv = document.getElementById('dtBattleResult');
         battleDiv.innerHTML = `🐉 ${dragonCard.display}  vs  ${tigerCard.display} 🐯<br>🏆 ${result}方胜利`;
 
-        // 结算
         let newBalance = getUserBalance() - amount + win;
         setUserBalance(newBalance);
         let betTypeName = type === 'DRAGON' ? '龙' : (type === 'TIGER' ? '虎' : '和');
         addGameRecord(currentUser.account, '金辉龙虎斗', betTypeName, result, win, amount);
         
-        // 更新历史记录和长龙
         let rec = usersData[currentUser.account].records || [];
         rec.unshift({ time: new Date().toLocaleString(), game: '金辉龙虎斗', bet: betTypeName, result, win, amount });
         if (rec.length > 50) rec.pop();
@@ -1268,17 +1264,14 @@
         usersData[currentUser.account].resultHistory = resultHistory;
         saveUsers();
         
-        // 刷新历史走势图
         updateHistoryDisplayDT();
         updateRecordDisplayDT();
         updateStreakDisplay();
 
-        // 显示弹窗结果
-        showResultModalDT(result, win, () => {
-            state.betRolling = false;
-            if (state.countdownInterval) clearInterval(state.countdownInterval);
-            startCountdownDT(getCountdownSec());
-        });
+        // 没有弹窗，直接重置并开始下一轮倒计时
+        state.betRolling = false;
+        if (state.countdownInterval) clearInterval(state.countdownInterval);
+        startCountdownDT(getCountdownSec());
         state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 };
         updateUIDT();
     }
@@ -1369,14 +1362,6 @@
         });
     }
 
-    function showResultModalDT(result, winAmount, callback) {
-        let overlay = document.createElement('div');
-        overlay.className = 'modal';
-        overlay.innerHTML = `<div class="modal-content"><div style="font-size:2rem;">${result === '龙' ? '🐉' : (result === '虎' ? '🐯' : '⚖️')}</div><div>${result}</div><div>${winAmount > 0 ? `🎉 中奖 +${winAmount}` : '😞 未中奖'}</div><button id="closeAnim" class="auth-btn">关闭</button></div>`;
-        document.body.appendChild(overlay);
-        overlay.querySelector('#closeAnim').onclick = () => { overlay.remove(); if (callback) callback(); };
-    }
-
     function showMyHistoryDT() {
         let recs = usersData[currentUser.account]?.records || [];
         let html = '<div style="max-height:200px; overflow-y:auto;">' + recs.map(r => `<div>${r.time} 押${r.bet}→${r.result} ${r.win > 0 ? '赢' + r.win : '输' + r.amount}</div>`).join('') + '</div><button id="closeHist" class="auth-btn">关闭</button>';
@@ -1385,34 +1370,6 @@
         m.innerHTML = `<div class="modal-content">${html}</div>`;
         document.body.appendChild(m);
         m.querySelector('#closeHist').onclick = () => m.remove();
-    }
-
-    function newUserDT() {
-        let newId = prompt("新账号（手机号/邮箱）:");
-        if (!newId) return;
-        if (usersData[newId]) { showToast("账号已存在"); return; }
-        usersData[newId] = { balance: 0, password: "123456", records: [], resultHistory: [], registerTime: new Date().toLocaleString() };
-        saveUsers();
-        showToast(`新账号 ${newId} 创建成功，密码123456`);
-        document.getElementById('switchUserIdInputDT').value = newId;
-        switchUserDT();
-    }
-
-    function switchUserDT() {
-        let newId = document.getElementById('switchUserIdInputDT').value.trim();
-        if (!newId) return;
-        if (!usersData[newId]) { showToast("账号不存在"); return; }
-        currentUser = { account: newId, ...usersData[newId] };
-        document.getElementById('currentUserId').innerText = newId;
-        document.getElementById("userBalanceDisplay").innerText = getUserBalance().toFixed(2);
-        resultHistory = usersData[currentUser.account]?.resultHistory || [];
-        updateUIDT();
-        updateHistoryDisplayDT();
-        updateRecordDisplayDT();
-        updateStreakDisplay();
-        clearCountdownDT();
-        startCountdownDT(getCountdownSec());
-        showToast(`已切换到 ${newId}`);
     }
 
     function refreshBalanceDT() { updateUIDT(); showToast("刷新"); }
@@ -1432,8 +1389,6 @@
     document.getElementById('repeatBtnDT').onclick = repeatLastBetDT;
     document.getElementById('refreshBtnDT').onclick = refreshBalanceDT;
     document.getElementById('myHistoryBtnDT').onclick = showMyHistoryDT;
-    document.getElementById('newUserBtnDT').onclick = newUserDT;
-    document.getElementById('switchUserBtnDT').onclick = switchUserDT;
     document.querySelectorAll('.speed-btn').forEach(btn => {
         btn.onclick = () => setSpeedDT(parseInt(btn.dataset.speed));
     });
@@ -1443,7 +1398,6 @@
     updateHistoryDisplayDT();
     updateRecordDisplayDT();
     startCountdownDT(30);
-    // 设置初始扑克牌背面
     document.getElementById('dragonCard').innerText = '🃟';
     document.getElementById('tigerCard').innerText = '🃟';
 
