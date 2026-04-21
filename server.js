@@ -157,5 +157,5 @@ app.post('/api/withdraw', (req, res) => {
     res.json({ success: true });
 });
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ 后端运行成功！同网访问: http://192.168.100.24:${PORT}`);
+    console.log(`✅ 后端运行成功！同网访问: http://192.168.100.216:${PORT}`);
 });
