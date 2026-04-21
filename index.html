@@ -1062,17 +1062,17 @@
 
     // ==================== 龙虎斗（紧凑，倒计时顶部） ====================
     let dragonTigerDestroy = null;
-   function initDragonTigerGame(container) {
+  function initDragonTigerGame(container) {
     if (dragonTigerDestroy) dragonTigerDestroy();
 
     // 扑克牌映射
-    const cardNames = {1:"A",2:"2",3:"3",4:"4",5:"5",6:"6",7:"7",8:"8",9:"9",10:"10",11:"J",12:"Q",13:"K",14:"A"};
     const cardSuits = ["♥","♦","♣","♠"];
     function getRandomCard() {
         let val = Math.floor(Math.random() * 13) + 1; // 1-13
         let points = (val === 1) ? 14 : val;
         let suit = cardSuits[Math.floor(Math.random() * 4)];
-        return { val, points, suit, display: (val===1?"A":(val===11?"J":(val===12?"Q":(val===13?"K":val)))) + suit };
+        let display = (val===1?"A":(val===11?"J":(val===12?"Q":(val===13?"K":val)))) + suit;
+        return { val, points, suit, display };
     }
 
     container.innerHTML = `
@@ -1100,7 +1100,8 @@
             <div id="streakIndicator" style="background:rgba(0,0,0,0.5); border-radius:20px; padding:4px 8px; margin-bottom:8px; text-align:center; font-size:0.75rem;">
                 🔥 当前长龙: <span id="currentStreak">无</span>
             </div>
-            <!-- 投注区 -->
+
+            <!-- 投注区（龙的押注） -->
             <div class="multi-bet-item" data-type="DRAGON" style="background:rgba(0,0,0,0.5); border-radius:20px; padding:6px; margin-bottom:6px;">
                 <div>🐉 龙</div><div class="bet-amount" id="betDragonAmount">0</div>
                 <div><button class="quick-bet" data-type="DRAGON" data-amount="10">+10</button><button class="quick-bet" data-type="DRAGON" data-amount="20">+20</button><button class="quick-bet" data-type="DRAGON" data-amount="50">+50</button><button class="quick-bet" data-type="DRAGON" data-amount="100">+100</button><button class="clear-bet" data-type="DRAGON">清空</button></div>
@@ -1217,7 +1218,7 @@
         });
     }
 
-    // 开奖主逻辑（无弹窗，只靠动画和结果文字）
+    // 开奖主逻辑（无弹窗）
     async function placeBetDT(type, amount) {
         if (state.betRolling) return;
         state.betRolling = true;
@@ -1235,10 +1236,8 @@
 
         const dragonCardDiv = document.getElementById('dragonCard');
         const tigerCardDiv = document.getElementById('tigerCard');
-        const dragonCardText = `${dragonCard.display}`;
-        const tigerCardText = `${tigerCard.display}`;
-        await flipCardAnimation(dragonCardDiv, dragonCardText, result === '龙');
-        await flipCardAnimation(tigerCardDiv, tigerCardText, result === '虎');
+        await flipCardAnimation(dragonCardDiv, dragonCard.display, result === '龙');
+        await flipCardAnimation(tigerCardDiv, tigerCard.display, result === '虎');
 
         const battleDiv = document.getElementById('dtBattleResult');
         battleDiv.innerHTML = `🐉 ${dragonCard.display}  vs  ${tigerCard.display} 🐯<br>🏆 ${result}方胜利`;
@@ -1261,7 +1260,6 @@
         updateRecordDisplayDT();
         updateStreakDisplay();
 
-        // 没有弹窗，直接重置并开始下一轮倒计时
         state.betRolling = false;
         if (state.countdownInterval) clearInterval(state.countdownInterval);
         startCountdownDT(getCountdownSec());
@@ -1355,19 +1353,9 @@
         });
     }
 
-    function showMyHistoryDT() {
-        let recs = usersData[currentUser.account]?.records || [];
-        let html = '<div style="max-height:200px; overflow-y:auto;">' + recs.map(r => `<div>${r.time} 押${r.bet}→${r.result} ${r.win > 0 ? '赢' + r.win : '输' + r.amount}</div>`).join('') + '</div><button id="closeHist" class="auth-btn">关闭</button>';
-        let m = document.createElement('div');
-        m.className = 'modal';
-        m.innerHTML = `<div class="modal-content">${html}</div>`;
-        document.body.appendChild(m);
-        m.querySelector('#closeHist').onclick = () => m.remove();
-    }
-
     function refreshBalanceDT() { updateUIDT(); showToast("刷新"); }
 
-    // 绑定事件
+    // 绑定事件（没有记录按钮）
     document.querySelectorAll('.quick-bet').forEach(btn => {
         btn.onclick = () => {
             let type = btn.dataset.type, amt = parseInt(btn.dataset.amount);
@@ -1381,7 +1369,6 @@
     document.getElementById('cancelBtnDT').onclick = cancelAllBetsDT;
     document.getElementById('repeatBtnDT').onclick = repeatLastBetDT;
     document.getElementById('refreshBtnDT').onclick = refreshBalanceDT;
-    document.getElementById('myHistoryBtnDT').onclick = showMyHistoryDT;
     document.querySelectorAll('.speed-btn').forEach(btn => {
         btn.onclick = () => setSpeedDT(parseInt(btn.dataset.speed));
     });
