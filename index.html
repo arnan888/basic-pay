@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>霓虹三游戏 · 双押15组合最终版</title>
+    <title>霓虹三游戏 · 倒计时置顶最终版</title>
     <style>
         * {
             margin: 0;
@@ -25,7 +25,6 @@
             backdrop-filter: blur(12px);
             border-radius: 48px;
             border: 1px solid rgba(0, 255, 255, 0.2);
-            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(0,255,255,0.1);
             overflow: hidden;
         }
         .auth-panel {
@@ -51,10 +50,6 @@
             color: #00ffff;
             font-size: 1rem;
             outline: none;
-        }
-        .auth-input:focus {
-            border-color: #ff00ff;
-            box-shadow: 0 0 0 3px rgba(255,0,255,0.2);
         }
         .flex-row {
             display: flex;
@@ -83,7 +78,6 @@
             margin-top: 12px;
             font-size: 1rem;
         }
-        .auth-btn:active, .code-btn:active { transform: scale(0.98); }
         hr {
             margin: 24px 0;
             border-color: #00ffff;
@@ -165,7 +159,6 @@
             font-size: 0.85rem;
             color: #00ffff;
             cursor: pointer;
-            transition: 0.2s;
         }
         .game-tab.active {
             background: linear-gradient(135deg, #ff00ff, #ff44aa);
@@ -181,7 +174,6 @@
             border-radius: 32px;
             padding: 20px;
             border: 1px solid #00ffff;
-            box-shadow: 0 0 15px rgba(0,255,255,0.2);
         }
         .chip {
             background: linear-gradient(145deg, #00aaff, #0088cc);
@@ -235,7 +227,6 @@
             position: relative;
             transform-style: preserve-3d;
             transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
-            cursor: default;
         }
         .dice-face {
             position: absolute;
@@ -244,11 +235,9 @@
             background: #1e1e2a;
             border-radius: 16px;
             border: 2px solid #00ffff;
-            box-shadow: 0 0 8px cyan;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
             backface-visibility: visible;
         }
         .pip {
@@ -257,7 +246,6 @@
             background: #00ffff;
             border-radius: 50%;
             margin: 3px;
-            box-shadow: 0 0 4px cyan;
         }
         .pip-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
         .pip-tl { position: absolute; top: 12px; left: 12px; }
@@ -282,26 +270,31 @@
         @media (max-width: 480px) {
             .dice-cube { width: 65px; height: 65px; }
             .front, .back, .right, .left, .top, .bottom { transform: translateZ(32px); }
-            .back { transform: rotateY(180deg) translateZ(32px); }
-            .right { transform: rotateY(90deg) translateZ(32px); }
-            .left { transform: rotateY(-90deg) translateZ(32px); }
-            .top { transform: rotateX(90deg) translateZ(32px); }
-            .bottom { transform: rotateX(-90deg) translateZ(32px); }
-            .dice-face-text { font-size: 2rem; }
-            .pip { width: 10px; height: 10px; }
         }
         .fish-pattern-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin: 16px 0;
+            gap: 6px;
+            margin: 12px 0;
         }
         .fish-bet-card {
             background: rgba(0,0,0,0.6);
-            border-radius: 20px;
-            padding: 8px;
+            border-radius: 16px;
+            padding: 6px 4px;
             text-align: center;
             border: 1px solid #00ffff;
+            font-size: 0.75rem;
+        }
+        .fish-bet-card .bet-icon {
+            font-size: 1.2rem;
+        }
+        .fish-bet-card .bet-name {
+            font-size: 0.7rem;
+        }
+        .fish-bet-card .quick-bet {
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            margin: 2px;
         }
         .bet-card {
             background: rgba(0,0,0,0.6);
@@ -310,7 +303,6 @@
             text-align: center;
             cursor: pointer;
             border: 1px solid #00ffff;
-            transition: 0.1s;
         }
         .bet-card:active { background: #00ffff22; transform: scale(0.96); }
         .history-cell {
@@ -370,7 +362,6 @@
             font-weight: bold;
             font-size: 1.2rem;
             z-index: 1500;
-            box-shadow: 0 0 20px magenta;
         }
         .points-grid, .trio-grid {
             display: grid;
@@ -417,7 +408,7 @@
 <body>
 <div id="app"></div>
 <script>
-    // ==================== 双语词库 ====================
+    // ==================== 双语 ====================
     const lang = {
         zh: {
             recharge: "💎 充值", withdraw: "💰 提现", service: "📞 客服", logout: "退出", balance: "余额",
@@ -551,17 +542,21 @@
         modalDiv.querySelector('#adminCloseBtn').onclick = () => modalDiv.remove();
     }
 
-    // ==================== 葫芦鱼（单选+双押15组合，续押，抢庄） ====================
+    // ==================== 葫芦鱼（单选+双押15组合，续押，抢庄，倒计时移至总押注下方） ====================
     let fishDestroy = null;
     function initFishGame(container) {
         if(fishDestroy) fishDestroy();
         container.innerHTML = `
             <div class="game-card">
+                <!-- 三卡片：庄家余额、总押注、上局净利 -->
                 <div style="display:flex; gap:12px; margin-bottom:16px;">
                     <div style="flex:1; background:rgba(0,0,0,0.5); border-radius:24px; padding:8px; text-align:center;"><div>🏦 庄家余额</div><div id="fishBankerDisplay">∞</div></div>
                     <div style="flex:1; background:rgba(0,0,0,0.5); border-radius:24px; padding:8px; text-align:center;"><div>🎲 总押注</div><div id="fishTotalBet">0</div></div>
                     <div style="flex:1; background:rgba(0,0,0,0.5); border-radius:24px; padding:8px; text-align:center;"><div>🏆 上局净利</div><div id="fishLastWin">0</div></div>
                 </div>
+                <!-- 倒计时放在总押注下方 -->
+                <div id="fishPhaseHint" style="text-align:center; margin-bottom:12px; background:rgba(0,0,0,0.5); border-radius:30px; padding:8px;">🎲 下注阶段 · 25秒</div>
+                
                 <div id="fishChips" style="margin:8px 0;"><span class="chip" data-chip="2">2</span><span class="chip" data-chip="5">5</span><span class="chip selected" data-chip="10">10</span><span class="chip" data-chip="50">50</span><span class="chip" data-chip="100">100</span></div>
                 <div style="display:flex; gap:8px; margin:12px 0;">
                     <button id="fishRollBtn" class="exec-btn">${t('fishRoll')}</button>
@@ -578,7 +573,6 @@
                 <div id="fishDoubleGrid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;"></div>
                 
                 <button id="fishRecordBtn" class="exec-btn" style="width:100%; margin-top:8px;">📜 记录</button>
-                <div id="fishPhaseHint" style="text-align:center; margin-top:12px; background:rgba(0,0,0,0.5); border-radius:30px; padding:8px;">🎲 下注阶段 · 25秒</div>
                 <div id="fishPlayersPanel" style="margin-top:12px; background:rgba(0,0,0,0.4); border-radius:20px; padding:10px;"><strong>👥 闲家押注</strong><div id="fishPlayerBetsList"></div></div>
             </div>
         `;
@@ -709,7 +703,6 @@
                 addGameRecord(currentUser.account, '葫芦鱼', betInfo, `${r1},${r2},${r3}`, winAmount, totalBet);
             } else lastWinAmount=0;
             gameRecords.unshift({ time:new Date().toLocaleTimeString(), dice:`${r1},${r2},${r3}`, result:winAmount>0?`赢${winAmount}`:`输${totalBet}` });
-            // 保留押注（续押功能）
             updateFishUI();
             let pop=document.createElement('div'); pop.className='result-popup'; pop.innerText=winAmount>0?`🎉 赢 ${winAmount.toFixed(2)} 🎉`:`😭 输 ${totalBet} 😭`; document.body.appendChild(pop); setTimeout(()=>pop.remove(),2000);
             isRolling=false;
@@ -727,7 +720,7 @@
         patternNames.forEach(p => {
             let card = document.createElement('div'); card.className = 'fish-bet-card';
             let emoji = patternEmojis[patternNames.indexOf(p)];
-            card.innerHTML = `<div style="font-size:1.4rem;">${emoji}</div><div style="font-size:0.8rem;">${p}</div><div><button class="quick-bet sub-pat" data-pat="${p}" style="padding:2px 6px;">-</button><span id="fishBet_${p}" style="margin:0 6px; font-weight:bold;">0</span><button class="quick-bet add-pat" data-pat="${p}" style="padding:2px 6px;">+</button></div>`;
+            card.innerHTML = `<div style="font-size:1.2rem;">${emoji}</div><div style="font-size:0.65rem;">${p}</div><div><button class="quick-bet sub-pat" data-pat="${p}" style="padding:2px 6px; font-size:0.7rem;">-</button><span id="fishBet_${p}" style="margin:0 4px; font-weight:bold; font-size:0.8rem;">0</span><button class="quick-bet add-pat" data-pat="${p}" style="padding:2px 6px; font-size:0.7rem;">+</button></div>`;
             gridDiv.appendChild(card);
         });
         // 构建双押组合网格
@@ -759,7 +752,7 @@
         return fishDestroy;
     }
 
-    // ==================== 至尊骰宝 ====================
+    // ==================== 至尊骰宝（保持原样） ====================
     let diceDestroy = null;
     function initDiceGame(container) {
         if(diceDestroy) diceDestroy();
