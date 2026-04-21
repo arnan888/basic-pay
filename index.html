@@ -1702,8 +1702,70 @@
                 <button id="registerBtn" class="auth-btn">注册</button>
                 <div class="auth-note">推荐码: VIP666,888VIP,GOLD2025,LUCKY8,DICE100</div>
             </div>
-        `;
-        document.getElementById('loginBtn').onclick = async () => {
+        `;      document.getElementById('loginBtn').onclick = async () => {
+    let acc = document.getElementById('loginAccount').value.trim();
+    let pwd = document.getElementById('loginPassword').value;
+    let rem = document.getElementById('rememberCheckbox').checked;
+    if (!acc || !pwd) { showToast("请填写账号和密码"); return; }
+    const res = await apiLogin(acc, pwd);
+    if (res.success) {
+        if (rem) { 
+            localStorage.setItem('gold_saved_account', acc); 
+            localStorage.setItem('gold_saved_password', pwd); 
+            localStorage.setItem('gold_remember_me', 'true'); 
+        } else { 
+            localStorage.removeItem('gold_saved_account'); 
+            localStorage.removeItem('gold_saved_password'); 
+            localStorage.setItem('gold_remember_me', 'false'); 
+        }
+        showToast(`欢迎 ${acc}`);
+        renderGameLobby();
+    } else { 
+        showToast(res.message || "登录失败"); 
+    }
+};
+
+// 补全getCodeBtn，去掉错误async括号，加随机验证码
+document.getElementById('getCodeBtn').onclick = () => {
+    let acc = document.getElementById('regAccount').value.trim();
+    if (!acc) { showToast("请填写手机号或邮箱"); return; }
+    // 生成随机6位验证码，你之前改的随机数逻辑
+    const randomCode = Math.floor(100000 + Math.random() * 900000);
+    window.currentVerifyCode = randomCode;
+    alert(`【验证码】您的验证码是：${randomCode}，5分钟内有效。`);
+    showToast("验证码已发送");
+};
+
+// 补全registerBtn，修复空验证码、笔误，加跳转回填
+document.getElementById('registerBtn').onclick = async () => {
+    let acc = document.getElementById('regAccount').value.trim();
+    let code = document.getElementById('regCode').value.trim();
+    let pwd = document.getElementById('regPassword').value;
+    let ref = document.getElementById('regReferral').value.trim().toUpperCase();
+    if (!acc || !code || !pwd || !ref) { showToast("请填写完整信息"); return; }
+    if (!validReferralCodes.includes(ref)) { showToast("推荐码无效"); return; }
+    // 改成和随机验证码匹配的校验
+    if (Number(code) !== window.currentVerifyCode) { showToast("验证码错误"); return; }
+    if (pwd.length < 4) { showToast("密码至少4位"); return; }
+    const res = await apiRegister(acc, pwd, ref, code);
+    if (res.success) {
+        showToast("注册成功！请登录");
+        // 跳转回填逻辑，解决跳转问题
+        document.getElementById('loginAccount').value = acc;
+        document.getElementById('regAccount').value = '';
+        document.getElementById('regCode').value = '';
+        document.getElementById('regPassword').value = '';
+        document.getElementById('regReferral').value = '';
+        document.querySelector('h2').scrollIntoView({behavior: 'smooth'});
+    } else { 
+        showToast(res.message || "注册失败"); 
+    }
+};
+
+
+
+
+document.getElementById('loginBtn').onclick = async () => {
             let acc = document.getElementById('loginAccount').value.trim();
             let pwd = document.getElementById('loginPassword').value;
             let rem = document.getElementById('rememberCheckbox').checked;
@@ -1716,29 +1778,6 @@
                 renderGameLobby();
             } else { showToast(res.message || "登录失败"); }
         };
-        document.getElementById('getCodeBtn').onclick = (async) => {
-            let acc = document.getElementById('regAccount').value.trim();
-            if (!acc) { showToast("请填写手机号或邮箱"); return; }try
-        };
-        document.getElementById('registerBtn').onclick = async () => {
-            let acc = document.getElementById('regAccount').value.trim();
-            let code = document.getElementById('regCode').value.trim();
-            let pwd = document.getElementById('regPassword').value;
-            let ref = document.getElementById('regReferral').value.trim().toUpperCase();
-            if (!acc || !code || !pwd || !ref) { showToast("请填写完整信息"); return; }
-            if (!validReferralCodes.includes(ref)) { showToast("推荐码无效"); return; }
-            if (code !== '      ') { showToast("验证码错误"); return; }
-            if (pwd.length < 4) { showToast("密码至少4位"); return; }
-            const res = await apiRegister(acc, pwd, ref, code);
-            if (res.success) {
-                showToast("验证码以发送");
-                document.getElementById('regAccount').value = '';
-                document.getElementById('regCode').value = '';
-                document.getElementById('regPassword').value = '';
-                document.getElementById('regReferral').value = '';
-            } else { showToast(res.message || "注册失败"); }
-        };
-    }
 
     async function renderGameLobby() {
         document.getElementById('app').innerHTML = `
