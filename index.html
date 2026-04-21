@@ -1387,9 +1387,280 @@
     };
     return dragonTigerDestroy;
 }
-    function initGame4(container) { container.innerHTML=`<div class="game-card" style="text-align:center;padding:20px;">♠️ 游戏4 · 百人牛牛筹备中</div>`; return ()=>{}; }
+    function initGame4(container) {
+    if (window.niuNiuDestroy) window.niuNiuDestroy();
 
-    // ==================== 认证界面 ====================
+    // 扑克牌生成器
+    function createDeck() {
+        let suits = ['♥', '♦', '♣', '♠'];
+        let values = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+        let deck = [];
+        for (let suit of suits) {
+            for (let i = 0; i < values.length; i++) {
+                let val = values[i];
+                let points = (val === 'A') ? 1 : (val === 'J' || val === 'Q' || val === 'K') ? 10 : parseInt(val);
+                deck.push({ suit, value: val, points });
+            }
+        }
+        return deck;
+    }
+    function shuffle(deck) { for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; } return deck; }
+    
+    // 计算牛牛牌型
+    function calcNiuType(cards) {
+        let points = cards.map(c => c.points);
+        let total = points.reduce((a,b)=>a+b,0);
+        let hasNiu = false;
+        let niuValue = 0;
+        for (let i = 0; i < 5; i++) {
+            for (let j = i+1; j < 5; j++) {
+                for (let k = j+1; k < 5; k++) {
+                    let sum = points[i] + points[j] + points[k];
+                    if (sum % 10 === 0) {
+                        let restSum = total - sum;
+                        niuValue = restSum % 10;
+                        hasNiu = true;
+                        break;
+                    }
+                }
+                if (hasNiu) break;
+            }
+            if (hasNiu) break;
+        }
+        if (!hasNiu) return { type: '无牛', multiplier: 0, display: '无牛' };
+        if (niuValue === 0) {
+            let hasFiveTen = points.every(p => p === 10);
+            if (hasFiveTen) return { type: '五花牛', multiplier: 5, display: '五花牛' };
+            let countMap = {};
+            points.forEach(p => countMap[p] = (countMap[p]||0)+1);
+            if (Object.values(countMap).some(c => c === 4)) return { type: '四炸', multiplier: 8, display: '四炸' };
+            return { type: '牛牛', multiplier: 3, display: '牛牛' };
+        }
+        return { type: `牛${niuValue}`, multiplier: 1, display: `牛${niuValue}` };
+    }
+
+    container.innerHTML = `
+        <div class="game-card">
+            <!-- 庄家区域 -->
+            <div style="background:rgba(0,0,0,0.4); border-radius:24px; padding:8px; margin-bottom:12px;">
+                <div style="font-size:0.8rem; margin-bottom:4px;">🏦 庄家（电脑）</div>
+                <div id="bankerHand" class="niu-hand">🃟 🃟 🃟 🃟 🃟</div>
+                <div id="bankerType" style="text-align:center; font-size:0.8rem;">?</div>
+            </div>
+
+            <!-- 闲家区域 -->
+            <div style="background:rgba(0,0,0,0.4); border-radius:24px; padding:8px; margin-bottom:12px;">
+                <div style="font-size:0.8rem; margin-bottom:4px;">👤 闲家（您）</div>
+                <div id="playerHand" class="niu-hand">🃟 🃟 🃟 🃟 🃟</div>
+                <div id="playerType" style="text-align:center; font-size:0.8rem;">?</div>
+            </div>
+
+            <!-- 倒计时与盈亏 -->
+            <div class="countdown-area" id="niuCountdownArea">⏱️ 下注 <span id="niuCountdownNum">25</span> s</div>
+            <div style="display:flex; justify-content:space-between; margin:6px 0;">
+                <span>🎲 本局中奖: <span id="niuWinAmount">0</span></span>
+                <span>📊 盈亏: <span id="niuProfitLoss">0</span></span>
+            </div>
+
+            <!-- 筹码 -->
+            <div id="niuChips"><span class="chip" data-chip="10">10</span><span class="chip" data-chip="20">20</span><span class="chip selected" data-chip="50">50</span><span class="chip" data-chip="100">100</span><span class="chip" data-chip="500">500</span></div>
+
+            <!-- 投注项（每个按钮显示押注金额） -->
+            <div style="display:flex; gap:8px; margin:10px 0;">
+                <div class="bet-card" data-bet="PLAYER" style="flex:1; text-align:center;">闲家赢<br><span id="bet_PLAYER" style="color:#ffaa33;">0</span></div>
+                <div class="bet-card" data-bet="BANKER" style="flex:1; text-align:center;">庄家赢<br><span id="bet_BANKER" style="color:#ffaa33;">0</span></div>
+                <div class="bet-card" data-bet="TIE" style="flex:1; text-align:center;">和<br><span id="bet_TIE" style="color:#ffaa33;">0</span></div>
+            </div>
+            <div style="display:flex; gap:8px; margin:10px 0;">
+                <div class="bet-card" data-bet="NIU_NIU" style="flex:1; text-align:center;">闲家牛牛<br><span id="bet_NIU_NIU" style="color:#ffaa33;">0</span></div>
+                <div class="bet-card" data-bet="WU_HUA" style="flex:1; text-align:center;">闲家五花牛<br><span id="bet_WU_HUA" style="color:#ffaa33;">0</span></div>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div style="display:flex; gap:6px; margin:8px 0;">
+                <button id="niuClearBtn" class="exec-btn">清空</button>
+                <button id="niuRepeatBtn" class="exec-btn">续押</button>
+                <button id="niuRefreshBtn" class="exec-btn">刷新</button>
+                <button id="niuDealBtn" class="exec-btn main-go">🐮 发牌</button>
+            </div>
+
+            <div style="display:flex; gap:8px; margin-top:8px;">
+                <div>💰 余额: <span id="niuBalance">${getUserBalance().toFixed(2)}</span></div>
+                <div>📊 总押注: <span id="niuTotalBet">0</span></div>
+            </div>
+            <div id="niuResultMsg" style="margin-top:8px; text-align:center; background:rgba(0,0,0,0.5); border-radius:20px; padding:6px;"></div>
+        </div>
+    `;
+
+    // 游戏状态
+    let bets = { PLAYER: 0, BANKER: 0, TIE: 0, NIU_NIU: 0, WU_HUA: 0 };
+    let selectedChip = 50;
+    let currentBalance = getUserBalance();
+    let isRolling = false;
+    let countdownTimer = null;
+    let lastBetSnapshot = null;
+    let remainingSec = 25;
+
+    function updateUI() {
+        for (let k in bets) {
+            let span = document.getElementById(`bet_${k}`);
+            if (span) span.innerText = bets[k];
+        }
+        let total = Object.values(bets).reduce((a,b)=>a+b,0);
+        document.getElementById('niuTotalBet').innerText = total;
+        document.getElementById('niuBalance').innerText = getUserBalance().toFixed(2);
+    }
+    function saveLastBet() { lastBetSnapshot = JSON.parse(JSON.stringify(bets)); }
+    function clearAllBets() {
+        let total = Object.values(bets).reduce((a,b)=>a+b,0);
+        if (total > 0) setUserBalance(getUserBalance() + total);
+        for (let k in bets) bets[k] = 0;
+        updateUI();
+        saveLastBet();
+        showToast("已清空押注");
+    }
+    function repeatLastBet() {
+        if (!lastBetSnapshot) { showToast("无续押记录"); return; }
+        let need = Object.values(lastBetSnapshot).reduce((a,b)=>a+b,0);
+        if (need > getUserBalance()) { showToast("余额不足"); return; }
+        let oldTotal = Object.values(bets).reduce((a,b)=>a+b,0);
+        if (oldTotal > 0) setUserBalance(getUserBalance() + oldTotal);
+        for (let k in bets) bets[k] = 0;
+        for (let k in lastBetSnapshot) bets[k] = lastBetSnapshot[k];
+        setUserBalance(getUserBalance() - need);
+        updateUI();
+        showToast("续押成功");
+    }
+    function addBet(betType) {
+        if (isRolling) { showToast("开奖中"); return; }
+        if (selectedChip <= 0) { showToast("选筹码"); return; }
+        if (selectedChip > getUserBalance()) { showToast("余额不足"); return; }
+        setUserBalance(getUserBalance() - selectedChip);
+        bets[betType] += selectedChip;
+        updateUI();
+        saveLastBet();
+        showToast(`+${selectedChip} ${betType}`);
+    }
+
+    // 发牌动画（逐张显示）
+    async function revealCards(handDiv, cards, delay = 200) {
+        handDiv.innerHTML = '';
+        for (let card of cards) {
+            let cardDiv = document.createElement('div');
+            cardDiv.className = 'niu-card';
+            cardDiv.setAttribute('data-suit', card.suit);
+            cardDiv.style.transform = 'rotateY(90deg)';
+            cardDiv.style.transition = 'transform 0.2s';
+            cardDiv.innerText = card.value + card.suit;
+            handDiv.appendChild(cardDiv);
+            setTimeout(() => { cardDiv.style.transform = 'rotateY(0deg)'; }, 50);
+            await new Promise(r => setTimeout(r, delay));
+        }
+    }
+
+    async function startGame() {
+        if (isRolling) return;
+        let totalBet = Object.values(bets).reduce((a,b)=>a+b,0);
+        if (totalBet === 0) { showToast("请先下注"); return; }
+        if (totalBet > getUserBalance()) { showToast("余额不足，请重新下注"); return; }
+        isRolling = true;
+        if (countdownTimer) clearInterval(countdownTimer);
+
+        let deck = shuffle(createDeck());
+        let playerCards = deck.slice(0, 5);
+        let bankerCards = deck.slice(5, 10);
+        let playerType = calcNiuType(playerCards);
+        let bankerType = calcNiuType(bankerCards);
+
+        const playerHandDiv = document.getElementById('playerHand');
+        const bankerHandDiv = document.getElementById('bankerHand');
+        await revealCards(playerHandDiv, playerCards, 150);
+        await revealCards(bankerHandDiv, bankerCards, 150);
+        document.getElementById('playerType').innerHTML = `${playerType.display} ${playerType.multiplier>1 ? `(赔率${playerType.multiplier})` : ''}`;
+        document.getElementById('bankerType').innerHTML = `${bankerType.display} ${bankerType.multiplier>1 ? `(赔率${bankerType.multiplier})` : ''}`;
+
+        let result = '';
+        let winAmount = 0;
+        let playerScore = playerType.multiplier === 0 ? 0 : (playerType.multiplier === 1 ? 1 : playerType.multiplier);
+        let bankerScore = bankerType.multiplier === 0 ? 0 : (bankerType.multiplier === 1 ? 1 : bankerType.multiplier);
+        if (playerScore > bankerScore) result = 'PLAYER';
+        else if (bankerScore > playerScore) result = 'BANKER';
+        else result = 'TIE';
+
+        if (result === 'PLAYER' && bets.PLAYER > 0) winAmount += bets.PLAYER * 2;
+        if (result === 'BANKER' && bets.BANKER > 0) winAmount += bets.BANKER * 2;
+        if (result === 'TIE' && bets.TIE > 0) winAmount += bets.TIE * 8;
+        if (playerType.type === '牛牛' && bets.NIU_NIU > 0) winAmount += bets.NIU_NIU * (playerType.multiplier + 1);
+        if (playerType.type === '五花牛' && bets.WU_HUA > 0) winAmount += bets.WU_HUA * (playerType.multiplier + 1);
+
+        winAmount = winAmount * adjustFactor;
+        let profit = winAmount - totalBet;
+        setUserBalance(getUserBalance() + winAmount);
+        document.getElementById('niuWinAmount').innerText = winAmount.toFixed(2);
+        document.getElementById('niuProfitLoss').innerText = profit.toFixed(2);
+        let msgDiv = document.getElementById('niuResultMsg');
+        msgDiv.innerHTML = `${playerType.display} vs ${bankerType.display}<br>${result === 'PLAYER' ? '闲家胜' : (result === 'BANKER' ? '庄家胜' : '和局')} ${winAmount>0 ? ` 赢得 ${winAmount.toFixed(2)}` : ''}`;
+
+        addGameRecord(currentUser.account, '金辉牛牛', `总注${totalBet}`, `${playerType.display} vs ${bankerType.display}`, winAmount, totalBet);
+
+        for (let k in bets) bets[k] = 0;
+        updateUI();
+        saveLastBet();
+
+        isRolling = false;
+        startCountdown(25);
+    }
+
+    function startCountdown(sec) {
+        if (countdownTimer) clearInterval(countdownTimer);
+        remainingSec = sec;
+        let cdSpan = document.getElementById('niuCountdownNum');
+        cdSpan.innerText = remainingSec;
+        countdownTimer = setInterval(() => {
+            if (remainingSec <= 1) {
+                clearInterval(countdownTimer);
+                countdownTimer = null;
+                if (!isRolling) startGame();
+            } else {
+                remainingSec--;
+                cdSpan.innerText = remainingSec;
+            }
+        }, 1000);
+    }
+
+    function refreshBalance() {
+        currentBalance = getUserBalance();
+        updateUI();
+        showToast("刷新");
+    }
+
+    // 绑定事件
+    document.querySelectorAll('#niuChips .chip').forEach(chip => {
+        chip.onclick = function() {
+            selectedChip = parseInt(this.dataset.chip);
+            document.querySelectorAll('#niuChips .chip').forEach(c => c.classList.remove('selected'));
+            this.classList.add('selected');
+        };
+    });
+    document.querySelectorAll('.bet-card[data-bet]').forEach(card => {
+        card.onclick = () => addBet(card.dataset.bet);
+    });
+    document.getElementById('niuClearBtn').onclick = clearAllBets;
+    document.getElementById('niuRepeatBtn').onclick = repeatLastBet;
+    document.getElementById('niuRefreshBtn').onclick = refreshBalance;
+    document.getElementById('niuDealBtn').onclick = () => { if (!isRolling) startGame(); };
+
+    updateUI();
+    startCountdown(25);
+    saveLastBet();
+
+    window.niuNiuDestroy = () => {
+        if (countdownTimer) clearInterval(countdownTimer);
+        container.innerHTML = '';
+    };
+    return window.niuNiuDestroy;
+}
+   // ==================== 认证界面 ====================
     function renderAuthUI() {
         const savedAcc=localStorage.getItem('neon_saved_account')||'';
         const savedPwd=localStorage.getItem('neon_saved_password')||'';
