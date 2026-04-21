@@ -3,26 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>鱼虾蟹·至尊骰宝 | 双游戏修复版</title>
+    <title>鱼虾蟹·至尊骰宝 | 动画倒计时修复版</title>
     <style>
+        /* 样式与之前基本相同，略作优化，为了节省篇幅这里保留核心样式，但保证骰子3D有效 */
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
-        body {
-            background: radial-gradient(circle at 20% 30%, #0a0f1e, #03060c);
-            font-family: 'Inter', system-ui, sans-serif;
-            padding: 16px;
-            min-height: 100vh;
-            color: #eef2ff;
-        }
-        #app {
-            max-width: 560px;
-            margin: 0 auto;
-            background: rgba(15, 23, 42, 0.65);
-            backdrop-filter: blur(12px);
-            border-radius: 48px;
-            border: 1px solid rgba(0, 255, 255, 0.2);
-            overflow: hidden;
-        }
-        /* 登录样式省略（与之前相同，稍后完整提供）*/
+        body { background: radial-gradient(circle at 20% 30%, #0a0f1e, #03060c); font-family: 'Inter', system-ui, sans-serif; padding: 16px; min-height: 100vh; color: #eef2ff; }
+        #app { max-width: 560px; margin: 0 auto; background: rgba(15,23,42,0.65); backdrop-filter: blur(12px); border-radius: 48px; border: 1px solid rgba(0,255,255,0.2); overflow: hidden; }
         .auth-panel { padding: 32px 24px; background: rgba(10,14,23,0.7); }
         .auth-panel h2, .auth-panel h3 { text-align: center; margin-bottom: 20px; background: linear-gradient(135deg,#00ffff,#ff00ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .auth-input { width: 100%; padding: 14px 18px; margin: 8px 0; background: rgba(0,0,0,0.6); border: 1px solid #00ffff; border-radius: 32px; color: #00ffff; }
@@ -46,7 +32,7 @@
         .quick-bet, .clear-bet { background: rgba(0,255,255,0.2); border: 1px solid #00ffff; border-radius: 30px; padding: 6px 14px; margin: 4px; cursor: pointer; color: #00ffff; }
         .exec-btn { background: linear-gradient(135deg,#00ffff,#00aaff); border: none; border-radius: 40px; padding: 10px 16px; color: black; font-weight: bold; cursor: pointer; margin: 4px; }
         .main-go { background: linear-gradient(135deg,#ff00ff,#ff44aa); color: white; }
-        /* 3D骰子修复 */
+        /* 3D骰子样式修复 */
         .dice-3d-area {
             display: flex;
             justify-content: center;
@@ -59,7 +45,7 @@
             height: 80px;
             position: relative;
             transform-style: preserve-3d;
-            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform 0.1s linear;
             cursor: pointer;
         }
         .dice-face {
@@ -73,7 +59,7 @@
             align-items: center;
             justify-content: center;
             backface-visibility: visible;
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: bold;
             color: #00ffff;
             text-shadow: 0 0 5px cyan;
@@ -93,7 +79,6 @@
             .top { transform: rotateX(90deg) translateZ(32px); }
             .bottom { transform: rotateX(-90deg) translateZ(32px); }
         }
-        /* 鱼虾蟹单选网格（紧凑） */
         .fish-pattern-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -204,24 +189,8 @@
 <script>
     // ==================== 双语 ====================
     const lang = {
-        zh: {
-            recharge: "💎 充值", withdraw: "💰 提现", service: "📞 客服", logout: "退出", balance: "余额",
-            phoneOrEmail: "手机号 / 邮箱", password: "密码 (≥4位)", referralCode: "推荐码 (必填)", remember: "记住账号",
-            login: "登录", register: "注册", referralNote: "推荐码: VIP666,888VIP,GOLD2025,LUCKY8,DICE100",
-            getCode: "获取验证码", verifyCode: "验证码", registerNow: "注册新账户",
-            gameFish: "🐟 葫芦鱼", gameDice: "🎲 至尊骰宝",
-            fishRoll: "🎲 开骰", fishClear: "清空", fishGrab: "🎲 抢庄", fishDouble: "🎯 双押",
-            diceClear: "清空", diceRepeat: "续押", diceRefresh: "刷新", diceRoll: "🎲 手动掷骰"
-        },
-        th: {
-            recharge: "💎 เติมเงิน", withdraw: "💰 ถอนเงิน", service: "📞 บริการ", logout: "ออก", balance: "ยอดเงิน",
-            phoneOrEmail: "เบอร์โทร / อีเมล", password: "รหัสผ่าน (≥4)", referralCode: "รหัสแนะนำ", remember: "จำฉัน",
-            login: "เข้าสู่ระบบ", register: "สมัคร", referralNote: "รหัส: VIP666,888VIP,GOLD2025,LUCKY8,DICE100",
-            getCode: "รับรหัส", verifyCode: "รหัสยืนยัน", registerNow: "สมัครสมาชิก",
-            gameFish: "🐟 ปลาหมึก", gameDice: "🎲 เซียนเต๋า",
-            fishRoll: "🎲 เปิด", fishClear: "ล้าง", fishGrab: "🎲 รับเจ้ามือ", fishDouble: "🎯 เดิมพันคู่",
-            diceClear: "ล้าง", diceRepeat: "เล่นซ้ำ", diceRefresh: "รีเฟรช", diceRoll: "🎲 ทอยลูกเต๋า"
-        }
+        zh: { recharge:"💎 充值", withdraw:"💰 提现", service:"📞 客服", logout:"退出", balance:"余额", phoneOrEmail:"手机号 / 邮箱", password:"密码 (≥4位)", referralCode:"推荐码 (必填)", remember:"记住账号", login:"登录", register:"注册", referralNote:"推荐码: VIP666,888VIP,GOLD2025,LUCKY8,DICE100", getCode:"获取验证码", verifyCode:"验证码", registerNow:"注册新账户", gameFish:"🐟 葫芦鱼", gameDice:"🎲 至尊骰宝", fishRoll:"🎲 开骰", fishClear:"清空", fishGrab:"🎲 抢庄", fishDouble:"🎯 双押", diceClear:"清空", diceRepeat:"续押", diceRefresh:"刷新", diceRoll:"🎲 手动掷骰" },
+        th: { recharge:"💎 เติมเงิน", withdraw:"💰 ถอนเงิน", service:"📞 บริการ", logout:"ออก", balance:"ยอดเงิน", phoneOrEmail:"เบอร์โทร / อีเมล", password:"รหัสผ่าน (≥4)", referralCode:"รหัสแนะนำ", remember:"จำฉัน", login:"เข้าสู่ระบบ", register:"สมัคร", referralNote:"รหัส: VIP666,888VIP,GOLD2025,LUCKY8,DICE100", getCode:"รับรหัส", verifyCode:"รหัสยืนยัน", registerNow:"สมัครสมาชิก", gameFish:"🐟 ปลาหมึก", gameDice:"🎲 เซียนเต๋า", fishRoll:"🎲 เปิด", fishClear:"ล้าง", fishGrab:"🎲 รับเจ้ามือ", fishDouble:"🎯 เดิมพันคู่", diceClear:"ล้าง", diceRepeat:"เล่นซ้ำ", diceRefresh:"รีเฟรช", diceRoll:"🎲 ทอยลูกเต๋า" }
     };
     let currentLang = 'zh';
     function t(key) { return lang[currentLang][key] || lang.zh[key] || key; }
@@ -247,7 +216,7 @@
     function showServiceModal() { alert("客服微信: game_kf_888"); }
     function addGameRecord(account, gameName, betInfo, result, winAmount, betAmount) { if(!usersData[account]) return; let rec = usersData[account].records||[]; rec.unshift({ time: new Date().toLocaleString(), game: gameName, bet: betInfo, result, win: winAmount, amount: betAmount }); if(rec.length>100) rec.pop(); usersData[account].records = rec; saveUsers(); }
 
-    // ==================== 管理员后台（精简） ====================
+    // 管理员后台（简化但保留核心）
     let adminPassword = localStorage.getItem('neon_admin_pwd') || "admin888";
     function openAdminModal() {
         let pwd = prompt("管理员密码:");
@@ -264,7 +233,7 @@
         modalDiv.querySelector('#adminCloseBtn').onclick=()=>modalDiv.remove();
     }
 
-    // ==================== 鱼虾蟹（修复骰子3D显示） ====================
+    // ==================== 鱼虾蟹（修复版，保证骰子3D显示） ====================
     let fishDestroy = null;
     function initFishGame(container) {
         if(fishDestroy) fishDestroy();
@@ -304,7 +273,6 @@
             ["蟹","葫芦"],["蟹","金钱"],["蟹","鸡"],
             ["葫芦","金钱"],["葫芦","鸡"],["金钱","鸡"]
         ];
-        // 构建3D骰子每个面（图案）
         function buildFishDice(diceDiv) {
             if(!diceDiv) return;
             diceDiv.innerHTML = '';
@@ -316,7 +284,6 @@
                 fd.innerText = patternEmojis[idx % 6];
                 diceDiv.appendChild(fd);
             });
-            // 随机初始角度
             const randX = Math.floor(Math.random() * 360);
             const randY = Math.floor(Math.random() * 360);
             diceDiv.style.transform = `rotateX(${randX}deg) rotateY(${randY}deg)`;
@@ -454,14 +421,12 @@
             if(hintDiv) hintDiv.innerText = `🎲 下注阶段 · ${remaining}秒`;
             countdownTimer = setInterval(()=>{ remaining--; if(hintDiv) hintDiv.innerText=`🎲 下注阶段 · ${remaining}秒`; if(remaining<=0){ clearInterval(countdownTimer); if(!isRolling && roundActive) settleFish(); } },1000);
         }
-        // 构建单选
         let gridDiv = document.getElementById('fishPatternGrid');
         patternNames.forEach(p => {
             let card = document.createElement('div'); card.className = 'fish-bet-card';
             card.innerHTML = `<div style="font-size:1.2rem;">${patternEmojis[patternNames.indexOf(p)]}</div><div>${p}</div><div><button class="quick-bet sub-pat" data-pat="${p}">-</button><span id="fishBet_${p}" style="margin:0 6px;">0</span><button class="quick-bet add-pat" data-pat="${p}">+</button></div>`;
             gridDiv.appendChild(card);
         });
-        // 构建双押
         let doubleGrid = document.getElementById('fishDoubleGrid');
         doubleCombos.forEach(combo => {
             let key = combo.join(',');
@@ -487,7 +452,7 @@
         return fishDestroy;
     }
 
-    // ==================== 至尊骰宝（修复动画 + 手动掷骰按钮） ====================
+    // ==================== 至尊骰宝（彻底修复倒计时+动画） ====================
     let diceDestroy = null;
     function initDiceGame(container) {
         if(diceDestroy) diceDestroy();
@@ -507,6 +472,7 @@
             <div><strong>围骰/豹子</strong></div><div id="trioGrid" class="trio-grid"></div>
             <button id="diceHistoryBtn" class="exec-btn" style="width:100%;margin-top:12px;">📜 开奖记录</button>
         </div>`;
+        
         let pointsHtml=''; for(let i=4;i<=17;i++) pointsHtml+=`<div class="bet-card point-card" data-point="${i}">${i}点</div>`; document.getElementById('pointsGrid').innerHTML=pointsHtml;
         let trioHtml=''; for(let i=1;i<=6;i++) trioHtml+=`<div class="bet-card trio-card" data-type="TRIPLE_${i}">${i}围</div>`; trioHtml+=`<div class="bet-card trio-card" data-type="ALL_TRIPLE">豹子</div>`; document.getElementById('trioGrid').innerHTML=trioHtml;
         
@@ -550,20 +516,54 @@
         const totalEl=document.getElementById('totalPoints'); const rollingWinEl=document.getElementById('rollingWinNumber'); const totalBetEl=document.getElementById('totalBetDice');
         function updateUIDice(){ for(let k in bets){ let el=document.getElementById(`bet_${k}`); if(el) el.innerText=bets[k]; } totalBetEl.innerText=Object.values(bets).reduce((a,b)=>a+b,0); document.getElementById('diceBankerDisplay').innerText=systemBankerBalance.toFixed(2); document.getElementById("userBalanceDisplay").innerText=getUserBalance().toFixed(2); }
         function saveLastBet(){ lastBetSnapshot=JSON.parse(JSON.stringify(bets)); }
-        async function startRollingLong(finalVals, duration=2500) {
-            return new Promise(resolve=>{
-                let steps=25, step=0, interval=duration/steps;
-                let iv=setInterval(()=>{
-                    diceEls.forEach(d=>{ const randVal=Math.floor(Math.random()*6)+1; setCubeValue(d,randVal); });
-                    step++;
-                    if(step>=steps){
-                        clearInterval(iv);
-                        diceEls.forEach((d,i)=>setCubeValue(d,finalVals[i]));
+        
+        // 骰子旋转动画函数 - 使用 requestAnimationFrame 实现流畅旋转
+        async function animateDiceRoll(finalVals, duration=2000) {
+            const startTime = performance.now();
+            const diceElements = diceEls;
+            // 记录每个骰子的起始旋转角度（当前 transform 值）
+            const startRotations = diceElements.map(dice => {
+                const transform = dice.style.transform;
+                const matchX = transform.match(/rotateX\(([-\d]+)deg\)/);
+                const matchY = transform.match(/rotateY\(([-\d]+)deg\)/);
+                return { x: matchX ? parseInt(matchX[1]) : 0, y: matchY ? parseInt(matchY[1]) : 0 };
+            });
+            // 最终目标旋转角度（通过 setCubeValue 得到）
+            const endRotations = finalVals.map(val => {
+                const rot={1:'rotateX(0deg) rotateY(0deg)',2:'rotateX(-90deg) rotateY(0deg)',3:'rotateY(90deg)',4:'rotateY(-90deg)',5:'rotateX(90deg)',6:'rotateX(180deg)'};
+                let rx=0, ry=0;
+                if(rot[val].includes('rotateX')){ let match=rot[val].match(/rotateX\(([-\d]+)deg\)/); if(match) rx=parseInt(match[1]); }
+                if(rot[val].includes('rotateY')){ let match=rot[val].match(/rotateY\(([-\d]+)deg\)/); if(match) ry=parseInt(match[1]); }
+                // 增加多圈旋转效果
+                const extraX = 360 * (2 + Math.floor(Math.random() * 2));
+                const extraY = 360 * (2 + Math.floor(Math.random() * 2));
+                return { x: rx + extraX, y: ry + extraY };
+            });
+            return new Promise((resolve) => {
+                function step(now) {
+                    const elapsed = now - startTime;
+                    const t = Math.min(1, elapsed / duration);
+                    // 缓动曲线 easeOutCubic
+                    const ease = 1 - Math.pow(1 - t, 3);
+                    diceElements.forEach((dice, idx) => {
+                        const start = startRotations[idx];
+                        const end = endRotations[idx];
+                        const curX = start.x + (end.x - start.x) * ease;
+                        const curY = start.y + (end.y - start.y) * ease;
+                        dice.style.transform = `rotateX(${curX}deg) rotateY(${curY}deg)`;
+                    });
+                    if (t < 1) {
+                        requestAnimationFrame(step);
+                    } else {
+                        // 动画结束，精准设置最终值
+                        finalVals.forEach((val, idx) => setCubeValue(diceElements[idx], val));
                         resolve();
                     }
-                }, interval);
+                }
+                requestAnimationFrame(step);
             });
         }
+        
         function startRollingNumber(finalAmount){
             if(window.rollingAnimation) cancelAnimationFrame(window.rollingAnimation);
             let start=performance.now(), startVal=parseFloat(rollingWinEl.innerText)||0;
@@ -627,7 +627,7 @@
                 winAmount = winAmount * adjustFactor;
             }
             startRollingNumber(winAmount);
-            await startRollingLong([d1,d2,d3], 2500);
+            await animateDiceRoll([d1,d2,d3], 2500);
             totalEl.innerText = total;
             if(totalBetVal>0){
                 if(winAmount>0) currentBalance+=winAmount;
@@ -646,12 +646,21 @@
         }
         function startCountdownDice(sec){
             if(countdownInterval) clearInterval(countdownInterval);
-            let c=sec, cdSpan=document.getElementById('countdownNumDice');
-            cdSpan.innerText=c; isBetLocked=false;
+            let c=sec;
+            let cdSpan=document.getElementById('countdownNumDice');
+            if(cdSpan) cdSpan.innerText = c;
+            isBetLocked=false;
             countdownInterval = setInterval(()=>{
-                if(c<=1){ clearInterval(countdownInterval); countdownInterval=null; isBetLocked=true; startAutoDrawDice(); }
-                else { c--; cdSpan.innerText=c; }
-            },1000);
+                if(c<=1){
+                    clearInterval(countdownInterval);
+                    countdownInterval=null;
+                    if(!isBetLocked) startAutoDrawDice();
+                } else {
+                    c--;
+                    if(cdSpan) cdSpan.innerText = c;
+                }
+            }, 1000);
+            console.log("倒计时已启动，剩余", sec, "秒");
         }
         async function refreshBalanceDice(){ currentBalance=getUserBalance(); updateUIDice(); showToast("刷新"); }
         async function manualRoll(){
@@ -673,7 +682,7 @@
                 winAmount = winAmount * adjustFactor;
             }
             startRollingNumber(winAmount);
-            await startRollingLong([d1,d2,d3], 2500);
+            await animateDiceRoll([d1,d2,d3], 2500);
             totalEl.innerText = total;
             if(totalBetVal>0){
                 if(winAmount>0) currentBalance+=winAmount;
@@ -702,7 +711,7 @@
         return diceDestroy;
     }
 
-    // ==================== 认证界面 ====================
+    // ==================== 认证与大厅 ====================
     function renderAuthUI() {
         const savedAcc=localStorage.getItem('neon_saved_account')||'';
         const savedPwd=localStorage.getItem('neon_saved_password')||'';
