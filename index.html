@@ -702,7 +702,6 @@ function withdraw() {
 function showServiceModal() {
     alert("客服微信: game_kf_888");
 }
-   
 // ==================== 管理员后台 ====================
 let adminPassword = localStorage.getItem('neon_admin_pwd') || "admin888";
 
@@ -839,6 +838,80 @@ function openAdminModal() {
     modalDiv.querySelector('#adminCloseBtn').onclick = () => modalDiv.remove();
 }
 
+// ========== 隐藏超级统计面板（只读） ==========
+function openSecretStatsModal() {
+    let allUsers = Object.keys(usersData).map(acc => {
+        let user = usersData[acc];
+        let records = user.records || [];
+        let totalBet = 0, totalWin = 0;
+        records.forEach(r => {
+            if (r.amount) totalBet += r.amount;
+            if (r.win && r.win > 0) totalWin += r.win;
+        });
+        let withdrawRecords = JSON.parse(localStorage.getItem('neon_withdraw')) || [];
+        let totalWithdraw = withdrawRecords.filter(w => w.phone === acc).reduce((sum, w) => sum + w.amount, 0);
+        let netProfit = totalWin - totalBet;
+        return {
+            account: acc,
+            balance: user.balance,
+            totalBet: totalBet,
+            totalWin: totalWin,
+            netProfit: netProfit,
+            totalWithdraw: totalWithdraw,
+            regTime: user.registerTime || '未知'
+        };
+    });
+    
+    let platformTotal = allUsers.reduce((sum, u) => {
+        sum.balance += u.balance;
+        sum.totalBet += u.totalBet;
+        sum.totalWin += u.totalWin;
+        sum.netProfit += u.netProfit;
+        sum.totalWithdraw += u.totalWithdraw;
+        return sum;
+    }, { balance: 0, totalBet: 0, totalWin: 0, netProfit: 0, totalWithdraw: 0 });
+    
+    let modalDiv = document.createElement('div'); modalDiv.className = 'modal';
+    modalDiv.innerHTML = `
+        <div class="modal-content" style="max-width:700px;">
+            <h3 style="text-align:center; color:#ffaa33;">📊 超级统计面板（只读）</h3>
+            <div style="background:#1a1008; border-radius:20px; padding:10px; margin-bottom:12px;">
+                <h4>📈 平台总览</h4>
+                <div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between;">
+                    <div>💰 总余额: ${platformTotal.balance.toFixed(2)}</div>
+                    <div>🎲 总投注: ${platformTotal.totalBet.toFixed(2)}</div>
+                    <div>🏆 总赢额: ${platformTotal.totalWin.toFixed(2)}</div>
+                    <div>📊 平台净盈利: ${platformTotal.netProfit.toFixed(2)}</div>
+                    <div>💸 总提现: ${platformTotal.totalWithdraw.toFixed(2)}</div>
+                </div>
+            </div>
+            <div style="max-height:400px; overflow-y:auto;">
+                <table class="admin-table" style="width:100%;">
+                    <thead>
+                        <tr><th>账号</th><th>余额</th><th>总投注</th><th>总赢额</th><th>净盈利</th><th>提现总额</th><th>注册时间</th></tr>
+                    </thead>
+                    <tbody>
+                        ${allUsers.map(u => `
+                            <tr>
+                                <td>${u.account}</td>
+                                <td>💰 ${u.balance.toFixed(2)}</td>
+                                <td>🎲 ${u.totalBet.toFixed(2)}</td>
+                                <td>🏆 ${u.totalWin.toFixed(2)}</td>
+                                <td style="color:${u.netProfit>=0?'#0f0':'#f0f'}">${u.netProfit.toFixed(2)}</td>
+                                <td>💸 ${u.totalWithdraw.toFixed(2)}</td>
+                                <td>${u.regTime}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <button id="closeStatsBtn" class="auth-btn" style="background:#ffaa33; margin-top:12px;">关闭</button>
+        </div>
+    `;
+    document.body.appendChild(modalDiv);
+    modalDiv.querySelector('#closeStatsBtn').onclick = () => modalDiv.remove();
+}
+    
 // ========== 隐藏超级统计面板（只读） ==========
 function openSecretStatsModal() {
     let allUsers = Object.keys(usersData).map(acc => {
