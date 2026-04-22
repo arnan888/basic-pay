@@ -680,24 +680,7 @@
 
     // ==================== 管理员后台 ====================
     let adminPassword = localStorage.getItem('neon_admin_pwd') || "admin888";
-    function openAdminModal() {
-        let pwd = prompt("管理员密码:");
-        if (pwd !== adminPassword) { showToast("密码错误"); return; }
-        let allUsers = Object.keys(usersData).map(acc => ({ account: acc, balance: usersData[acc].balance, regTime: usersData[acc].registerTime || '未知' }));
-        let modalDiv = document.createElement('div'); modalDiv.className = 'modal';
-        modalDiv.innerHTML = `<div class="modal-content"><h3>🎛️ 管理员后台</h3><select id="adminTargetUser">${allUsers.map(u=>`<option value="${u.account}">${u.account} (${u.balance.toFixed(2)}元)</option>`).join('')}</select><div><input id="adminAmount" placeholder="金额" value="0"><button id="adminAddBalance">上分</button><button id="adminSubBalance">下分</button></div><div><label>赔付系数: <input id="adminAdjustFactor" value="${adjustFactor}" step="0.01"></label><button id="adminSaveFactor">保存</button></div><button id="adminCloseBtn">关闭</button></div>`;
-        document.body.appendChild(modalDiv);
-        const getTarget=()=>modalDiv.querySelector('#adminTargetUser').value;
-        const getAmt=()=>parseFloat(modalDiv.querySelector('#adminAmount').value)||0;
-        modalDiv.querySelector('#adminAddBalance').onclick=()=>{ let t=getTarget(), a=getAmt(); if(a<=0)return; usersData[t].balance+=a; saveUsers(); if(currentUser?.account===t) setUserBalance(usersData[t].balance); showToast(`${t}+${a}`); modalDiv.remove(); openAdminModal(); };
-        modalDiv.querySelector('#adminSubBalance').onclick=()=>{ let t=getTarget(), a=getAmt(); if(a<=0||usersData[t].balance<a)return; usersData[t].balance-=a; saveUsers(); if(currentUser?.account===t) setUserBalance(usersData[t].balance); showToast(`${t}-${a}`); modalDiv.remove(); openAdminModal(); };
-        modalDiv.querySelector('#adminSaveFactor').onclick=()=>{ let newFac=parseFloat(modalDiv.querySelector('#adminAdjustFactor').value); if(!isNaN(newFac)&&newFac>=0.2&&newFac<=3){ adjustFactor=newFac; localStorage.setItem('neon_adjustFactor',adjustFactor); showToast(`系数 ${adjustFactor}`); } };
-        modalDiv.querySelector('#adminCloseBtn').onclick=()=>modalDiv.remove();
-    }
-
-    // ==================== 鱼虾蟹游戏 ====================
-    let fishDestroy = null;
-    function initFishGame(container) {
+   function initFishGame(container) {
     if(fishDestroy) fishDestroy();
     container.innerHTML = `
         <div class="game-card">
@@ -708,7 +691,7 @@
                 <div style="flex:1; background:rgba(0,0,0,0.5); border-radius:20px; padding:6px; text-align:center;"><div style="font-size:0.7rem;">🏆 上局净利</div><div id="fishLastWin">0</div></div>
             </div>
             <div class="countdown-area" id="fishPhaseHint">🎲 下注阶段 · 25秒</div>
-            <div id="fishChips" style="margin:6px 0;"><span class="chip" data-chip="5">5</span><span class="chip" data-chip="10">10</span><span class="chip selected" data-chip="50">50</span><span class="chip" data-chip="`100">100</span><span class="chip" data-chip="500">500</span></div>
+            <div id="fishChips" style="margin:6px 0;"><span class="chip" data-chip="2">2</span><span class="chip" data-chip="5">5</span><span class="chip selected" data-chip="10">10</span><span class="chip" data-chip="50">50</span><span class="chip" data-chip="100">100</span></div>
             <div style="display:flex; gap:6px; margin:8px 0;">
                 <button id="fishRollBtn" class="exec-btn">${t('gameFish')} 开骰</button>
                 <button id="fishClearBtn" class="exec-btn" style="background:#aa6600;">清空</button>
@@ -812,7 +795,7 @@
     function addPatternBet(pattern, val) {
         if(hasGrabbed) { showToast("庄家不能下注"); return; }
         let total = Object.values(patternBets).reduce((a,b)=>a+b,0) + Object.values(doubleBets).reduce((a,b)=>a+b,0);
-        if(val>1000 || total+val>5000) { showToast("超上限"); return; }
+        if(val>500 || total+val>2000) { showToast("超上限"); return; }
         if(val > getUserBalance()) { showToast("余额不足"); return; }
         setUserBalance(getUserBalance()-val);
         patternBets[pattern] += val;
@@ -824,7 +807,7 @@
         if(hasGrabbed) { showToast("庄家不能下注"); return; }
         let val = currentChip;
         let total = Object.values(patternBets).reduce((a,b)=>a+b,0) + Object.values(doubleBets).reduce((a,b)=>a+b,0);
-        if(val>1000 || total+val>5000) { showToast("超上限"); return; }
+        if(val>500 || total+val>2000) { showToast("超上限"); return; }
         if(val > getUserBalance()) { showToast("余额不足"); return; }
         setUserBalance(getUserBalance()-val);
         doubleBets[comboKey] += val;
@@ -987,8 +970,8 @@
         container.innerHTML=''; 
     };
     window.currentFishReset = ()=>{ hasGrabbed=false; playerBankerBalance=0; localStorage.removeItem('neon_fish_banker'); updateFishUI(); };
-    return fishDestroy;  
- )
+    return fishDestroy;
+}
     // ==================== 骰宝游戏（独立3D骰子，带金额显示和盈亏） ====================
     let diceDestroy = null;
     function initDiceGame(container) {
