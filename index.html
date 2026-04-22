@@ -676,6 +676,23 @@
     modalDiv.querySelector('#cancelRechargeBtn').onclick = () => modalDiv.remove();
 }
     function showServiceModal() { alert("客服微信: game_kf_888"); }
+// ========== 提现函数 ==========
+function withdraw() {
+    let bal = getUserBalance();
+    if (bal <= 0) { showToast("余额不足"); return; }
+    let amount = parseFloat(prompt("提现金额 (元)", "10"));
+    if (isNaN(amount) || amount <= 0 || amount > bal) { showToast("金额无效"); return; }
+    let type = confirm("提现方式：确定=微信，取消=支付宝") ? "微信" : "支付宝";
+    let account = prompt("请输入收款账号:");
+    if (!account) return;
+    setUserBalance(bal - amount);
+    let records = JSON.parse(localStorage.getItem('neon_withdraw')) || [];
+    records.push({ phone: currentUser.account, amount, type, account, time: new Date().toLocaleString() });
+    localStorage.setItem('neon_withdraw', JSON.stringify(records));
+    showToast(`提现申请已提交！${amount}元将处理到${type}账号 ${account}`);
+}
+
+function addGameRecord(account, gameName, betInfo, result, winAmount, betAmount) { ... }
     function addGameRecord(account, gameName, betInfo, result, winAmount, betAmount) { if(!usersData[account]) return; let rec = usersData[account].records||[]; rec.unshift({ time: new Date().toLocaleString(), game: gameName, bet: betInfo, result, win: winAmount, amount: betAmount }); if(rec.length>100) rec.pop(); usersData[account].records = rec; saveUsers(); }
 
     // ==================== 管理员后台 ====================
