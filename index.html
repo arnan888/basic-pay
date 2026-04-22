@@ -703,8 +703,9 @@ function showServiceModal() {
     alert("客服微信: game_kf_888");
 }
    
-   // ==================== 管理员后台 ====================
-    let adminPassword = localStorage.getItem('neon_admin_pwd') || "admin888";
+// ==================== 管理员后台 ====================
+let adminPassword = localStorage.getItem('neon_admin_pwd') || "admin888";
+
 function openAdminModal() {
     let pwd = prompt("管理员密码:");
     if (pwd !== adminPassword) { showToast("密码错误"); return; }
@@ -757,6 +758,160 @@ function openAdminModal() {
         </div>
     `;
     document.body.appendChild(modalDiv);
+
+    function renderUserTable(searchKeyword = '') {
+        let filtered = searchKeyword ? allUsers.filter(u => u.account.includes(searchKeyword)) : allUsers;
+        let tbody = modalDiv.querySelector('#adminUserTableBody');
+        tbody.innerHTML = filtered.map(u => `
+            <tr>
+                <td>${u.account}</td>
+                <td>💰 ${u.balance.toFixed(2)}</td>
+                <td>${u.regTime}</td>
+                <td><button class="viewRecordBtn" data-account="${u.account}" class="admin-btn">📜 记录</button></td>
+            </tr>
+        `).join('');
+        document.querySelectorAll('.viewRecordBtn').forEach(btn => {
+            btn.onclick = () => {
+                let acc = btn.dataset.account;
+                let records = usersData[acc]?.records || [];
+                let html = '<div style="max-height:300px; overflow-y:auto;">' + records.map(r => `<div style="padding:6px; border-bottom:1px solid #ffaa33;">${r.time} | ${r.game} | 押 ${r.bet} → ${r.result} | ${r.win>0 ? '<span style="color:#0f0;">赢 '+r.win+'</span>' : '<span style="color:#f0f;">输 '+r.amount+'</span>'}</div>`).join('') + '</div><button id="closeRec" class="auth-btn">关闭</button>';
+                let m = document.createElement('div'); m.className='modal'; m.innerHTML=`<div class="modal-content">${html}</div>`; document.body.appendChild(m); m.querySelector('#closeRec').onclick=()=>m.remove();
+            };
+        });
+    }
+    renderUserTable();
+
+    modalDiv.querySelector('#adminSearchBtn').onclick = () => { let kw = modalDiv.querySelector('#adminSearchInput').value.trim(); renderUserTable(kw); };
+    modalDiv.querySelector('#adminResetSearch').onclick = () => { modalDiv.querySelector('#adminSearchInput').value = ''; renderUserTable(''); };
+    const getTarget = () => modalDiv.querySelector('#adminTargetUser').value;
+    const getAmt = () => parseFloat(modalDiv.querySelector('#adminAmount').value) || 0;
+    modalDiv.querySelector('#adminAddBalance').onclick = () => { let t = getTarget(), a = getAmt(); if(a <= 0){ showToast("金额必须大于0"); return; } usersData[t].balance += a; saveUsers(); if(currentUser?.account === t) setUserBalance(usersData[t].balance); showToast(`${t} +${a} 元`); modalDiv.remove(); openAdminModal(); };
+    modalDiv.querySelector('#adminSubBalance').onclick = () => { let t = getTarget(), a = getAmt(); if(a <= 0 || usersData[t].balance < a){ showToast("金额无效或余额不足"); return; } usersData[t].balance -= a; saveUsers(); if(currentUser?.account === t) setUserBalance(usersData[t].balance); showToast(`${t} -${a} 元`); modalDiv.remove(); openAdminModal(); };
+    modalDiv.querySelector('#adminResetBalance').onclick = () => { let t = getTarget(); if(confirm(`确认将 ${t} 的余额重置为 0 元吗？`)){ usersData[t].balance = 0; saveUsers(); if(currentUser?.account === t) setUserBalance(0); showToast(`${t} 余额已重置为 0`); modalDiv.remove(); openAdminModal(); } };
+    modalDiv.querySelector('#adminQueryBalance').onclick = () => { let t = getTarget(); showToast(`${t} 当前余额: ${usersData[t].balance.toFixed(2)} 元`); };
+    modalDiv.querySelector('#adminExportUsers').onclick = () => { let data = allUsers.map(u => `${u.account},${u.balance},${u.regTime}`).join('\n'); navigator.clipboard.writeText("账号,余额,注册时间\n"+data).then(()=>showToast(`已复制 ${allUsers.length} 条用户数据`)).catch(()=>showToast("复制失败")); };
+    modalDiv.querySelector('#adminAddCode').onclick = () => { let newCode = prompt("请输入新的推荐码（大写字母+数字）:").trim().toUpperCase(); if(newCode && !validReferralCodes.includes(newCode)){ validReferralCodes.push(newCode); localStorage.setItem('neon_valid_codes',JSON.stringify(validReferralCodes)); showToast(`推荐码 ${newCode} 已添加`); } else showToast("无效或已存在"); };
+    modalDiv.querySelector('#adminListCodes').onclick = () => { alert(`当前有效推荐码：\n${validReferralCodes.join(', ')}`); };
+    modalDiv.querySelector('#adminSetBanker').onclick = () => { let newAmt = parseFloat(prompt("骰宝系统庄家新余额:", systemBankerBalance)); if(!isNaN(newAmt) && newAmt >= 0){ systemBankerBalance = newAmt; localStorage.setItem('neon_system_banker', systemBankerBalance); showToast(`骰宝庄家余额已设为 ${newAmt.toFixed(2)} 元`); let bankerEl = document.getElementById('diceBankerDisplay'); if(bankerEl) bankerEl.innerText = systemBankerBalance.toFixed(2); } else showToast("无效"); };
+    modalDiv.querySelector('#adminChangePwd').onclick = () => { let old = prompt("当前管理员密码:"); if(old !== adminPassword){ showToast("密码错误"); return; } let newPwd = prompt("新密码(≥4位):"); if(newPwd && newPwd.length >= 4){ adminPassword = newPwd; localStorage.setItem('neon_admin_pwd', newPwd); showToast("管理员密码修改成功"); } else showToast("密码至少4位"); };
+    modalDiv.querySelector('#adminResetFishBanker').onclick = () => { localStorage.removeItem('neon_fish_banker'); showToast("鱼虾蟹庄家余额已重置"); if(window.currentFishReset) window.currentFishReset(); };
+    modalDiv.querySelector('#adminSaveFactor').onclick = () => { let newFac = parseFloat(modalDiv.querySelector('#adminAdjustFactor').value); if(!isNaN(newFac) && newFac >= 0.2 && newFac <= 3.0){ adjustFactor = newFac; localStorage.setItem('neon_adjustFactor', adjustFactor); showToast(`全局赔付系数已设为 ${adjustFactor}`); } else showToast("系数范围 0.2 ~ 3.0"); };
+    modalDiv.querySelector('#adminViewWithdraw').onclick = () => { let records = JSON.parse(localStorage.getItem('neon_withdraw')) || []; if(records.length === 0){ alert("暂无提现记录"); return; } let txt = records.map(r => `${r.phone}  ${r.amount}元 ${r.type} ${r.account} ${r.time}`).join('\n'); alert("提现记录：\n"+txt); };
+    modalDiv.querySelector('#adminViewServiceFee').onclick = () => { alert("服务费明细请查看鱼虾蟹游戏内的【记录】按钮，每局都有显示服务费金额。"); };
+
+    function renderPendingRecharges() {
+        let pending = JSON.parse(localStorage.getItem('neon_pending_recharges')) || [];
+        let container = modalDiv.querySelector('#pendingRechargeList');
+        if (!container) return;
+        if (pending.length === 0) { container.innerHTML = '<div style="text-align:center; padding:8px;">暂无充值申请</div>'; return; }
+        container.innerHTML = pending.map(item => `
+            <div style="background:#1a1008; border-radius:16px; padding:8px; margin-bottom:8px; border:1px solid #ffaa33;">
+                <div><strong>账号：</strong>${item.account}</div>
+                <div><strong>金额：</strong>${item.amount} 元</div>
+                <div><strong>单号：</strong>${item.orderNo}</div>
+                <div><strong>备注：</strong>${item.remark}</div>
+                <div><strong>时间：</strong>${item.time}</div>
+                <div><strong>状态：</strong>${item.status === 'pending' ? '⏳ 待审核' : '✅ 已处理'}</div>
+                ${item.status === 'pending' ? `<button class="admin-btn approveRecharge" data-id="${item.id}">✅ 确认充值</button>` : ''}
+            </div>
+        `).join('');
+        document.querySelectorAll('.approveRecharge').forEach(btn => {
+            btn.onclick = () => {
+                let id = parseInt(btn.dataset.id);
+                let pendingList = JSON.parse(localStorage.getItem('neon_pending_recharges')) || [];
+                let recharge = pendingList.find(r => r.id === id);
+                if (recharge && recharge.status === 'pending') {
+                    if (usersData[recharge.account]) {
+                        usersData[recharge.account].balance += recharge.amount;
+                        saveUsers();
+                        if (currentUser.account === recharge.account) setUserBalance(usersData[recharge.account].balance);
+                        showToast(`已为 ${recharge.account} 充值 ${recharge.amount} 元`);
+                    }
+                    recharge.status = 'approved';
+                    localStorage.setItem('neon_pending_recharges', JSON.stringify(pendingList));
+                    renderPendingRecharges();
+                }
+            };
+        });
+    }
+    renderPendingRecharges();
+    modalDiv.querySelector('#refreshRechargeList').onclick = () => renderPendingRecharges();
+    modalDiv.querySelector('#adminCloseBtn').onclick = () => modalDiv.remove();
+}
+
+// ========== 隐藏超级统计面板（只读） ==========
+function openSecretStatsModal() {
+    let allUsers = Object.keys(usersData).map(acc => {
+        let user = usersData[acc];
+        let records = user.records || [];
+        let totalBet = 0, totalWin = 0;
+        records.forEach(r => {
+            if (r.amount) totalBet += r.amount;
+            if (r.win && r.win > 0) totalWin += r.win;
+        });
+        let withdrawRecords = JSON.parse(localStorage.getItem('neon_withdraw')) || [];
+        let totalWithdraw = withdrawRecords.filter(w => w.phone === acc).reduce((sum, w) => sum + w.amount, 0);
+        let netProfit = totalWin - totalBet;
+        return {
+            account: acc,
+            balance: user.balance,
+            totalBet: totalBet,
+            totalWin: totalWin,
+            netProfit: netProfit,
+            totalWithdraw: totalWithdraw,
+            regTime: user.registerTime || '未知'
+        };
+    });
+    
+    let platformTotal = allUsers.reduce((sum, u) => {
+        sum.balance += u.balance;
+        sum.totalBet += u.totalBet;
+        sum.totalWin += u.totalWin;
+        sum.netProfit += u.netProfit;
+        sum.totalWithdraw += u.totalWithdraw;
+        return sum;
+    }, { balance: 0, totalBet: 0, totalWin: 0, netProfit: 0, totalWithdraw: 0 });
+    
+    let modalDiv = document.createElement('div'); modalDiv.className = 'modal';
+    modalDiv.innerHTML = `
+        <div class="modal-content" style="max-width:700px;">
+            <h3 style="text-align:center; color:#ffaa33;">📊 超级统计面板（只读）</h3>
+            <div style="background:#1a1008; border-radius:20px; padding:10px; margin-bottom:12px;">
+                <h4>📈 平台总览</h4>
+                <div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between;">
+                    <div>💰 总余额: ${platformTotal.balance.toFixed(2)}</div>
+                    <div>🎲 总投注: ${platformTotal.totalBet.toFixed(2)}</div>
+                    <div>🏆 总赢额: ${platformTotal.totalWin.toFixed(2)}</div>
+                    <div>📊 平台净盈利: ${platformTotal.netProfit.toFixed(2)}</div>
+                    <div>💸 总提现: ${platformTotal.totalWithdraw.toFixed(2)}</div>
+                </div>
+            </div>
+            <div style="max-height:400px; overflow-y:auto;">
+                <table class="admin-table" style="width:100%;">
+                    <thead>
+                        <tr><th>账号</th><th>余额</th><th>总投注</th><th>总赢额</th><th>净盈利</th><th>提现总额</th><th>注册时间</th></tr>
+                    </thead>
+                    <tbody>
+                        ${allUsers.map(u => `
+                            <tr>
+                                <td>${u.account}</td>
+                                <td>💰 ${u.balance.toFixed(2)}</td>
+                                <td>🎲 ${u.totalBet.toFixed(2)}</td>
+                                <td>🏆 ${u.totalWin.toFixed(2)}</td>
+                                <td style="color:${u.netProfit>=0?'#0f0':'#f0f'}">${u.netProfit.toFixed(2)}</td>
+                                <td>💸 ${u.totalWithdraw.toFixed(2)}</td>
+                                <td>${u.regTime}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <button id="closeStatsBtn" class="auth-btn" style="background:#ffaa33; margin-top:12px;">关闭</button>
+        </div>
+    `;
+    document.body.appendChild(modalDiv);
+    modalDiv.querySelector('#closeStatsBtn').onclick = () => modalDiv.remove();
+}
 
     // 用户表格渲染
     function renderUserTable(searchKeyword = '') {
