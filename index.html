@@ -368,9 +368,10 @@
 <div id="app"></div>
 <script>
     // ==================== Supabase 配置 ====================
-    const SUPABASE_URL = 'https://spjmfifgzzqjritklgxm.supabase.co';  // 你的项目 URL
+    const SUPABASE_URL = 'https://spjmfifgzzqjritklgxm.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwam1maWZnenpxanJpdGtsZ3htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5NDQ5MjIsImV4cCI6MjA5MjUyMDkyMn0.lzqdVmNEGHjkdr_Pbj23J_PrSEKnEmVkTAWEZ1Qa6QQ';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // 修复：改用 supabaseClient，避免与全局 supabase 冲突
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ==================== 双语 ====================
     const lang = {
@@ -393,7 +394,7 @@
     function t(key) { return lang[currentLang][key] || lang.zh[key] || key; }
 
     // ==================== 全局变量 ====================
-    let currentUser = null;          // 当前登录用户对象 (包含 id, account, balance 等)
+    let currentUser = null;
     let systemBankerBalance = 50000;
     let adjustFactor = 1.0;
     let validReferralCodes = ["VIP666","888VIP","GOLD2025","LUCKY8","DICE100"];
@@ -409,7 +410,7 @@
     // ==================== 加载系统配置 ====================
     async function loadSystemConfig() {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('system_config')
                 .select('*');
             if (error) throw error;
@@ -425,7 +426,7 @@
     // ==================== 用户操作（Supabase 版） ====================
     async function login(account, password) {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('users')
                 .select('*')
                 .eq('account', account)
@@ -447,7 +448,7 @@
             return false;
         }
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('users')
                 .select('account')
                 .eq('account', account)
@@ -456,7 +457,7 @@
                 showToast("账号已存在");
                 return false;
             }
-            const { error: insertError } = await supabase
+            const { error: insertError } = await supabaseClient
                 .from('users')
                 .insert({
                     account: account,
@@ -476,7 +477,7 @@
 
     async function getUserBalance() {
         if (!currentUser) return 0;
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('users')
             .select('balance')
             .eq('id', currentUser.id)
@@ -490,7 +491,7 @@
 
     async function setUserBalance(amount) {
         if (!currentUser) return;
-        const { error } = await supabase
+        const { error } = await supabaseClient
             .from('users')
             .update({ balance: amount })
             .eq('id', currentUser.id);
@@ -505,7 +506,7 @@
 
     async function addGameRecord(account, gameName, betInfo, result, winAmount, betAmount) {
         try {
-            const { data: user, error: fetchError } = await supabase
+            const { data: user, error: fetchError } = await supabaseClient
                 .from('users')
                 .select('records')
                 .eq('account', account)
@@ -521,7 +522,7 @@
                 amount: betAmount
             });
             if (records.length > 100) records.pop();
-            const { error: updateError } = await supabase
+            const { error: updateError } = await supabaseClient
                 .from('users')
                 .update({ records: records })
                 .eq('account', account);
@@ -560,7 +561,7 @@
             let orderNo = modalDiv.querySelector('#rechargeOrderNo').value.trim();
             let remark = modalDiv.querySelector('#rechargeRemark').value.trim();
             try {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('pending_recharges')
                     .insert({
                         account: currentUser.account,
@@ -590,7 +591,7 @@
         let account = prompt("请输入收款账号:");
         if (!account) return;
         try {
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('withdraws')
                 .insert({
                     account: currentUser.account,
@@ -615,12 +616,12 @@
         let pwd = prompt("管理员密码:");
         if (pwd !== adminPassword) { showToast("密码错误"); return; }
         // 获取所有用户
-        let { data: allUsers, error: userError } = await supabase
+        let { data: allUsers, error: userError } = await supabaseClient
             .from('users')
             .select('*');
         if (userError) { showToast("获取用户列表失败"); return; }
         // 获取充值申请
-        let { data: pendingRecharges, error: rechargeError } = await supabase
+        let { data: pendingRecharges, error: rechargeError } = await supabaseClient
             .from('pending_recharges')
             .select('*')
             .eq('status', 'pending');
@@ -688,7 +689,7 @@
             document.querySelectorAll('.viewRecordBtn').forEach(btn => {
                 btn.onclick = async () => {
                     let userId = btn.dataset.id;
-                    let { data: user, error } = await supabase
+                    let { data: user, error } = await supabaseClient
                         .from('users')
                         .select('records')
                         .eq('id', userId)
@@ -707,14 +708,14 @@
         modalDiv.querySelector('#adminAddBalance').onclick = async () => {
             let userId = getTargetUserId(), a = getAmt();
             if (a <= 0) { showToast("金额必须大于0"); return; }
-            let { data: user, error: fetchErr } = await supabase
+            let { data: user, error: fetchErr } = await supabaseClient
                 .from('users')
                 .select('balance')
                 .eq('id', userId)
                 .single();
             if (fetchErr) { showToast("用户不存在"); return; }
             let newBalance = user.balance + a;
-            let { error: updateErr } = await supabase
+            let { error: updateErr } = await supabaseClient
                 .from('users')
                 .update({ balance: newBalance })
                 .eq('id', userId);
@@ -727,14 +728,14 @@
         modalDiv.querySelector('#adminSubBalance').onclick = async () => {
             let userId = getTargetUserId(), a = getAmt();
             if (a <= 0) { showToast("金额必须大于0"); return; }
-            let { data: user, error: fetchErr } = await supabase
+            let { data: user, error: fetchErr } = await supabaseClient
                 .from('users')
                 .select('balance')
                 .eq('id', userId)
                 .single();
             if (fetchErr || user.balance < a) { showToast("余额不足"); return; }
             let newBalance = user.balance - a;
-            let { error: updateErr } = await supabase
+            let { error: updateErr } = await supabaseClient
                 .from('users')
                 .update({ balance: newBalance })
                 .eq('id', userId);
@@ -747,7 +748,7 @@
         modalDiv.querySelector('#adminResetBalance').onclick = async () => {
             let userId = getTargetUserId();
             if (confirm(`确认将余额重置为 0 元吗？`)) {
-                let { error } = await supabase
+                let { error } = await supabaseClient
                     .from('users')
                     .update({ balance: 0 })
                     .eq('id', userId);
@@ -760,7 +761,7 @@
         };
         modalDiv.querySelector('#adminQueryBalance').onclick = async () => {
             let userId = getTargetUserId();
-            let { data: user, error } = await supabase
+            let { data: user, error } = await supabaseClient
                 .from('users')
                 .select('balance')
                 .eq('id', userId)
@@ -775,7 +776,7 @@
             let newAmt = parseFloat(prompt("骰宝系统庄家新余额:", systemBankerBalance));
             if (!isNaN(newAmt) && newAmt >= 0) {
                 systemBankerBalance = newAmt;
-                let { error } = await supabase
+                let { error } = await supabaseClient
                     .from('system_config')
                     .upsert({ key: 'systemBankerBalance', value: newAmt }, { onConflict: 'key' });
                 if (!error) showToast(`骰宝庄家余额已设为 ${newAmt.toFixed(2)} 元`);
@@ -797,7 +798,7 @@
             let newFac = parseFloat(modalDiv.querySelector('#adminAdjustFactor').value);
             if (!isNaN(newFac) && newFac >= 0.2 && newFac <= 3.0) {
                 adjustFactor = newFac;
-                let { error } = await supabase
+                let { error } = await supabaseClient
                     .from('system_config')
                     .upsert({ key: 'adjustFactor', value: newFac }, { onConflict: 'key' });
                 if (!error) showToast(`全局赔付系数已设为 ${adjustFactor}`);
@@ -805,7 +806,7 @@
             } else showToast("系数范围 0.2 ~ 3.0");
         };
         modalDiv.querySelector('#adminViewWithdraw').onclick = async () => {
-            let { data: withdraws, error } = await supabase
+            let { data: withdraws, error } = await supabaseClient
                 .from('withdraws')
                 .select('*');
             if (error || withdraws.length === 0) { alert("暂无提现记录"); return; }
@@ -813,7 +814,7 @@
             alert("提现记录：\n"+txt);
         };
         async function renderPendingRecharges() {
-            let { data: pending, error } = await supabase
+            let { data: pending, error } = await supabaseClient
                 .from('pending_recharges')
                 .select('*')
                 .eq('status', 'pending');
@@ -834,31 +835,31 @@
             document.querySelectorAll('.approveRecharge').forEach(btn => {
                 btn.onclick = async () => {
                     let id = parseInt(btn.dataset.id);
-                    let { data: rechargeItem, error: fetchErr } = await supabase
+                    let { data: rechargeItem, error: fetchErr } = await supabaseClient
                         .from('pending_recharges')
                         .select('*')
                         .eq('id', id)
                         .single();
                     if (fetchErr) { showToast("申请不存在"); return; }
-                    let { data: user, error: userErr } = await supabase
+                    let { data: user, error: userErr } = await supabaseClient
                         .from('users')
                         .select('balance')
                         .eq('account', rechargeItem.account)
                         .single();
                     if (userErr) { showToast("用户不存在"); return; }
                     let newBalance = user.balance + rechargeItem.amount;
-                    await supabase
+                    await supabaseClient
                         .from('users')
                         .update({ balance: newBalance })
                         .eq('account', rechargeItem.account);
-                    await supabase
+                    await supabaseClient
                         .from('pending_recharges')
                         .update({ status: 'approved' })
                         .eq('id', id);
                     showToast(`已为 ${rechargeItem.account} 充值 ${rechargeItem.amount} 元`);
                     renderPendingRecharges();
                     // 刷新用户列表
-                    let { data: freshUsers } = await supabase.from('users').select('*');
+                    let { data: freshUsers } = await supabaseClient.from('users').select('*');
                     allUsers.length = 0;
                     allUsers.push(...freshUsers);
                     renderUserTable(modalDiv.querySelector('#adminSearchInput').value.trim());
@@ -872,7 +873,7 @@
 
     // ==================== 隐藏超级统计面板（只读） ====================
     async function openSecretStatsModal() {
-        let { data: allUsers, error } = await supabase.from('users').select('*');
+        let { data: allUsers, error } = await supabaseClient.from('users').select('*');
         if (error) return;
         let platformTotal = { balance: 0, totalBet: 0, totalWin: 0 };
         for (let u of allUsers) {
@@ -1367,7 +1368,7 @@
         function clearBet(type) { state.bets[type] = 0; updateUIDT(); }
         function cancelAllBetsDT() { state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 }; updateUIDT(); }
         function flipCardAnimation(element, cardText, isWinner) { return new Promise(resolve => { element.style.transition = 'transform 0.3s'; element.style.transform = 'rotateY(90deg)'; setTimeout(() => { element.innerText = cardText; element.style.transform = 'rotateY(0deg)'; if (isWinner) { element.style.boxShadow = '0 0 15px gold'; setTimeout(() => element.style.boxShadow = '', 800); } setTimeout(resolve, 200); }, 150); }); }
-        async function placeBetDT(type, amount) { if (state.betRolling) return; state.betRolling = true; let dragonCard = getRandomCard(); let tigerCard = getRandomCard(); let result = ''; if (dragonCard.points > tigerCard.points) result = '龙'; else if (tigerCard.points > dragonCard.points) result = '虎'; else result = '和'; let win = 0; if ((type === 'DRAGON' && result === '龙') || (type === 'TIGER' && result === '虎') || (type === 'TIE' && result === '和')) win = amount * (result === '和' ? 8 : 2); const dragonCardDiv = document.getElementById('dragonCard'); const tigerCardDiv = document.getElementById('tigerCard'); await flipCardAnimation(dragonCardDiv, dragonCard.display, result === '龙'); await flipCardAnimation(tigerCardDiv, tigerCard.display, result === '虎'); document.getElementById('dtBattleResult').innerHTML = `🐉 ${dragonCard.display}  vs  ${tigerCard.display} 🐯<br>🏆 ${result}方胜利`; let newBalance = await getUserBalance() - amount + win; await setUserBalance(newBalance); let betTypeName = type === 'DRAGON' ? '龙' : (type === 'TIGER' ? '虎' : '和'); await addGameRecord(currentUser.account, '金辉龙虎斗', betTypeName, result, win, amount); let rec = currentUser.records || []; rec.unshift({ time: new Date().toLocaleString(), game: '金辉龙虎斗', bet: betTypeName, result, win, amount }); if (rec.length > 50) rec.pop(); currentUser.records = rec; resultHistory.unshift(result); if (resultHistory.length > 10) resultHistory.pop(); currentUser.result_history = resultHistory; await supabase.from('users').update({ records: rec, result_history: resultHistory }).eq('id', currentUser.id); updateHistoryDisplayDT(); updateRecordDisplayDT(); updateStreakDisplay(); state.betRolling = false; if (state.countdownInterval) clearInterval(state.countdownInterval); startCountdownDT(getCountdownSec()); state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 }; updateUIDT(); }
+        async function placeBetDT(type, amount) { if (state.betRolling) return; state.betRolling = true; let dragonCard = getRandomCard(); let tigerCard = getRandomCard(); let result = ''; if (dragonCard.points > tigerCard.points) result = '龙'; else if (tigerCard.points > dragonCard.points) result = '虎'; else result = '和'; let win = 0; if ((type === 'DRAGON' && result === '龙') || (type === 'TIGER' && result === '虎') || (type === 'TIE' && result === '和')) win = amount * (result === '和' ? 8 : 2); const dragonCardDiv = document.getElementById('dragonCard'); const tigerCardDiv = document.getElementById('tigerCard'); await flipCardAnimation(dragonCardDiv, dragonCard.display, result === '龙'); await flipCardAnimation(tigerCardDiv, tigerCard.display, result === '虎'); document.getElementById('dtBattleResult').innerHTML = `🐉 ${dragonCard.display}  vs  ${tigerCard.display} 🐯<br>🏆 ${result}方胜利`; let newBalance = await getUserBalance() - amount + win; await setUserBalance(newBalance); let betTypeName = type === 'DRAGON' ? '龙' : (type === 'TIGER' ? '虎' : '和'); await addGameRecord(currentUser.account, '金辉龙虎斗', betTypeName, result, win, amount); let rec = currentUser.records || []; rec.unshift({ time: new Date().toLocaleString(), game: '金辉龙虎斗', bet: betTypeName, result, win, amount }); if (rec.length > 50) rec.pop(); currentUser.records = rec; resultHistory.unshift(result); if (resultHistory.length > 10) resultHistory.pop(); currentUser.result_history = resultHistory; await supabaseClient.from('users').update({ records: rec, result_history: resultHistory }).eq('id', currentUser.id); updateHistoryDisplayDT(); updateRecordDisplayDT(); updateStreakDisplay(); state.betRolling = false; if (state.countdownInterval) clearInterval(state.countdownInterval); startCountdownDT(getCountdownSec()); state.bets = { DRAGON: 0, TIGER: 0, TIE: 0 }; updateUIDT(); }
         function executeBetDT() { if (state.betRolling) return; let selected = null, maxAmt = 0; if (state.bets.DRAGON > maxAmt) { selected = 'DRAGON'; maxAmt = state.bets.DRAGON; } if (state.bets.TIGER > maxAmt) { selected = 'TIGER'; maxAmt = state.bets.TIGER; } if (state.bets.TIE > maxAmt) { selected = 'TIE'; maxAmt = state.bets.TIE; } if (!selected) return; if (maxAmt > getUserBalance()) { showToast("余额不足"); cancelAllBetsDT(); return; } lastBet = { type: selected, amount: maxAmt }; clearCountdownDT(); placeBetDT(selected, maxAmt); }
         function repeatLastBetDT() { if (lastBet && !state.betRolling) placeBetDT(lastBet.type, lastBet.amount); }
         function startCountdownDT(sec) { if (state.countdownInterval) clearInterval(state.countdownInterval); state.countdown = sec; document.getElementById('countdownNumDT').innerText = state.countdown; state.countdownInterval = setInterval(() => { if (state.countdown <= 1) { clearInterval(state.countdownInterval); state.countdownInterval = null; let total = state.bets.DRAGON + state.bets.TIGER + state.bets.TIE; if (total > 0) executeBetDT(); else startCountdownDT(getCountdownSec()); } else { state.countdown--; document.getElementById('countdownNumDT').innerText = state.countdown; } }, 1000); }
@@ -1535,7 +1536,7 @@
                 if (newPwd !== confirmPwd) { showToast("两次输入的新密码不一致"); return; }
                 if (newPwd.length < 4) { showToast("新密码至少4位"); return; }
                 if (currentUser.password !== oldPwd) { showToast("旧密码错误"); return; }
-                let { error } = await supabase
+                let { error } = await supabaseClient
                     .from('users')
                     .update({ password: newPwd })
                     .eq('id', currentUser.id);
