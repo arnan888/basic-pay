@@ -1,162 +1,159 @@
 const express = require('express');
+const { Pool } = require('pg');
+const bcrypt = require('bcrypt');
 const cors = require('cors');
-const sqlite3 = require('sqlite3').verbose();
-const http = require('http');
-const WebSocket = require('ws');
+const bodyParser = require('body-parser');
 
 const app = express();
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const port = 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
 
-const db = new sqlite3.Database('./game.db');
-
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-        phone TEXT PRIMARY KEY,
-        password TEXT NOT NULL,
-        balance REAL DEFAULT 1000,
-        referral_code TEXT,
-        register_time TEXT
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS valid_referral_codes (
-        code TEXT PRIMARY KEY
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS system_banker (
-        id INTEGER PRIMARY KEY,
-        balance REAL DEFAULT 100000
-    )`);
-    db.run(`CREATE TABLE IF NOT EXISTS online_count (
-        count INTEGER DEFAULT 0
-    )`);
-    db.get(`SELECT * FROM system_banker WHERE id=1`, (err, row) => {
-        if (!row) db.run(`INSERT INTO system_banker (id, balance) VALUES (1, 100000)`);
-    });
-    const defaultCodes = ['VIP888', 'ABC123', 'GAME2024', 'TEST001'];
-    defaultCodes.forEach(code => {
-        db.run(`INSERT OR IGNORE INTO valid_referral_codes (code) VALUES (?)`, [code]);
-    });
+// ========== 修改下面的数据库连接信息 ==========
+const pool = new Pool({
+    user: 'postgres',      // 你的数据库用户名
+    host: 'localhost',
+    database: 'your_db',   // 你的数据库名
+    password: 'your_password', // 你的密码
+    port: 5432,
 });
 
-let onlineSet = new Set();
-wss.on('connection', (ws) => {
-    onlineSet.add(ws);
-    updateOnlineCount();
-    ws.on('close', () => {
-        onlineSet.delete(ws);
-        updateOnlineCount();
-    });
-});
-function updateOnlineCount() {
-    const count = onlineSet.size;
-    db.run(`UPDATE online_count SET count = ?`, [count]);
-    wss.clients.forEach(client => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({ type: 'online', count }));
-        }
-    });
+// 辅助：获取当前时间字符串
+function nowStr() {
+    return new Date().toLocaleString('zh-CN', { hour12: false });
 }
 
-app.get('/getOnlineCount', (req, res) => {
-    db.get(`SELECT count FROM online_count`, (err, row) => {
-        res.json({ count: row ? row.count : 0 });
-    });
+// ========== 注册 ==========
+app.post('/api/register', async (req, res) => {
+    const { account, password } = req.body;
+    if (!account || !password) return res.status(400).json({ error: '账号密码不能为空' });
+    try {
+        const exist = await pool.query('SELECT id FROM users WHERE account = $1', [account]);
+        if (exist.rows.length > 0) return res.status(400).json({ error: '账号已存在' });
+        const hashed = await bcrypt.hash(password, 10);
+        await pool.query(
+            `INSERT INTO users (account, password, register_time, balance, records, result_history)
+             VALUES ($1, $2, $3, 0, '[]', '[]')`,
+            [account, hashed, nowStr()]
+        );
+        res.json({ success: true, message: '注册成功' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: '服务器错误' });
+    }
 });
 
-app.post('/register', (req, res) => {
-    const { phone, password, referralCode } = req.body;
-    if (!phone || !password || !referralCode) return res.status(400).json({ error: '缺少字段' });
-    db.get(`SELECT * FROM valid_referral_codes WHERE code = ?`, [referralCode], (err, row) => {
-        if (!row) return res.status(400).json({ error: '推荐码无效' });
-        db.get(`SELECT * FROM users WHERE phone = ?`, [phone], (err, user) => {
-            if (user) return res.status(400).json({ error: '手机号已注册' });
-            db.run(`INSERT INTO users (phone, password, balance, referral_code, register_time) VALUES (?, ?, 1000, ?, ?)`,
-                [phone, password, referralCode, new Date().toISOString()], (err) => {
-                    if (err) return res.status(500).json({ error: err.message });
-                    res.json({ success: true });
-                });
-        });
-    });
+// ========== 登录 ==========
+app.post('/api/login', async (req, res) => {
+    const { account, password } = req.body;
+    if (!account || !password) return res.status(400).json({ error: '账号密码不能为空' });
+    try {
+        const result = await pool.query('SELECT account, password, balance FROM users WHERE account = $1', [account]);
+        if (result.rows.length === 0) return res.status(401).json({ error: '账号不存在' });
+        const user = result.rows[0];
+        const match = await bcrypt.compare(password, user.password);
+        if (!match) return res.status(401).json({ error: '密码错误' });
+        res.json({ success: true, account: user.account, balance: user.balance });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: '服务器错误' });
+    }
 });
 
-app.post('/login', (req, res) => {
-    const { phone, password } = req.body;
-    db.get(`SELECT * FROM users WHERE phone = ? AND password = ?`, [phone, password], (err, user) => {
-        if (!user) return res.status(401).json({ error: '账号或密码错误' });
-        res.json({ phone: user.phone, balance: user.balance, referralCode: user.referral_code });
-    });
+// ========== 获取用户信息 ==========
+app.get('/api/user/:account', async (req, res) => {
+    const { account } = req.params;
+    try {
+        const result = await pool.query('SELECT account, balance FROM users WHERE account = $1', [account]);
+        if (result.rows.length === 0) return res.status(404).json({ error: '用户不存在' });
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: '服务器错误' });
+    }
 });
 
-app.get('/user/:phone', (req, res) => {
-    db.get(`SELECT balance FROM users WHERE phone = ?`, [req.params.phone], (err, row) => {
-        res.json({ balance: row ? row.balance : 0 });
-    });
+// ========== 充值 ==========
+app.post('/api/recharge', async (req, res) => {
+    const { account, amount, remark = '' } = req.body;
+    if (!account || !amount || amount <= 0) return res.status(400).json({ error: '金额无效' });
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const update = await client.query(
+            'UPDATE users SET balance = balance + $1 WHERE account = $2 RETURNING balance',
+            [amount, account]
+        );
+        if (update.rowCount === 0) throw new Error('账号不存在');
+        const newBalance = update.rows[0].balance;
+        const orderNo = `R${Date.now()}`;
+        await client.query(
+            `INSERT INTO pending_recharges (account, amount, order_no, remark, time, status)
+             VALUES ($1, $2, $3, $4, $5, 'approved')`,
+            [account, amount, orderNo, remark, nowStr()]
+        );
+        // 追加 records
+        const recordItem = { type: 'recharge', amount, time: nowStr(), orderNo };
+        await client.query(
+            `UPDATE users SET records = records || $1::jsonb WHERE account = $2`,
+            [JSON.stringify([recordItem]), account]
+        );
+        await client.query('COMMIT');
+        res.json({ success: true, newBalance, message: `充值 ${amount} 成功` });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(err);
+        res.status(500).json({ error: err.message || '充值失败' });
+    } finally {
+        client.release();
+    }
 });
 
-app.post('/user/balance', (req, res) => {
-    const { phone, delta } = req.body;
-    db.run(`UPDATE users SET balance = balance + ? WHERE phone = ?`, [delta, phone], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        db.get(`SELECT balance FROM users WHERE phone = ?`, [phone], (err, row) => {
-            res.json({ balance: row.balance });
-        });
-    });
+// ========== 提现 ==========
+app.post('/api/withdraw', async (req, res) => {
+    const { account, amount, type = 'USDT', accountNo = '' } = req.body;
+    if (!account || !amount || amount <= 0) return res.status(400).json({ error: '金额无效' });
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const userRes = await client.query('SELECT balance FROM users WHERE account = $1', [account]);
+        if (userRes.rowCount === 0) throw new Error('账号不存在');
+        const currentBalance = userRes.rows[0].balance;
+        if (currentBalance < amount) throw new Error('余额不足');
+        const update = await client.query(
+            'UPDATE users SET balance = balance - $1 WHERE account = $2 RETURNING balance',
+            [amount, account]
+        );
+        const newBalance = update.rows[0].balance;
+        await client.query(
+            `INSERT INTO withdraws (account, amount, type, account_no, time)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [account, amount, type, accountNo, nowStr()]
+        );
+        const recordItem = { type: 'withdraw', amount, time: nowStr(), accountNo };
+        await client.query(
+            `UPDATE users SET records = records || $1::jsonb WHERE account = $2`,
+            [JSON.stringify([recordItem]), account]
+        );
+        await client.query('COMMIT');
+        res.json({ success: true, newBalance, message: `提现 ${amount} 成功` });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(err);
+        res.status(400).json({ error: err.message });
+    } finally {
+        client.release();
+    }
 });
 
-app.get('/banker', (req, res) => {
-    db.get(`SELECT balance FROM system_banker WHERE id=1`, (err, row) => {
-        res.json({ balance: row ? row.balance : 100000 });
-    });
+app.listen(port, () => {
+    console.log(`✅ 后端运行在 http://localhost:${port}`);
 });
 
-app.post('/banker', (req, res) => {
-    const { delta } = req.body;
-    db.run(`UPDATE system_banker SET balance = balance + ? WHERE id=1`, [delta], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        db.get(`SELECT balance FROM system_banker WHERE id=1`, (err, row) => {
-            res.json({ balance: row.balance });
-        });
-    });
-});
 
-app.get('/admin/users', (req, res) => {
-    db.all(`SELECT phone, balance, referral_code, register_time FROM users`, (err, rows) => {
-        res.json(rows);
-    });
-});
 
-app.post('/admin/user/balance', (req, res) => {
-    const { phone, newBalance } = req.body;
-    db.run(`UPDATE users SET balance = ? WHERE phone = ?`, [newBalance, phone], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true });
-    });
-});
 
-app.get('/admin/referral-codes', (req, res) => {
-    db.all(`SELECT code FROM valid_referral_codes`, (err, rows) => {
-        res.json(rows.map(r => r.code));
-    });
-});
 
-app.post('/admin/referral-codes', (req, res) => {
-    const { code } = req.body;
-    db.run(`INSERT OR IGNORE INTO valid_referral_codes (code) VALUES (?)`, [code], (err) => {
-        res.json({ success: !err });
-    });
-});
 
-app.post('/admin/banker', (req, res) => {
-    const { balance } = req.body;
-    db.run(`UPDATE system_banker SET balance = ? WHERE id=1`, [balance], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true });
-    });
-});
 
-const PORT = 8090;
-server.listen(PORT, () => {
-    console.log(`后端服务运行在 http://localhost:${PORT}`);
-});
+
