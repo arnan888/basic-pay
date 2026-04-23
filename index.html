@@ -173,39 +173,49 @@
         }
     }
     async function register(account, password, code) {
-        if(!validReferralCodes.includes(code)) return { success: false, msg: "推荐码无效" };
-        try {
-            const { data: existing } = await supabaseClient.from('users').select('account').eq('account', account).maybeSingle();
-            if(existing) return { success: false, msg: "账号已存在" };
-            const { error } = await supabaseClient.from('users').insert({ account, password, balance:0, register_time: new Date().toLocaleString(), records:[], result_history:[] });
-            if(error) throw error;
-            return { success: true, msg: "注册成功" };
-        } catch(err){
-            console.error(err);
-            return { success: false, msg: "注册失败: " + (err.message || "请检查网络") };
+    async function register(account, password, code) {
+    if (!validReferralCodes.includes(code)) {
+        showToast("❌ 推荐码无效，请使用: VIP666,888VIP,GOLD2025,LUCKY8,DICE100", true);
+        return { success: false, msg: "推荐码无效" };
+    }
+    try {
+        // 检查账号是否存在
+        const { data: existing, error: checkErr } = await supabaseClient
+            .from('users')
+            .select('account')
+            .eq('account', account)
+            .maybeSingle();
+        if (checkErr) {
+            console.error(checkErr);
+            showToast("❌ 网络错误: " + checkErr.message, true);
+            return { success: false, msg: checkErr.message };
         }
-    }
-    async function getUserBalance() {
-        if(!currentUser) return 0;
-        const { data, error } = await supabaseClient.from('users').select('balance').eq('id', currentUser.id).single();
-        if(!error && data) { currentUser.balance = data.balance; return data.balance; }
-        return currentUser.balance;
-    }
-    async function setUserBalance(amount) {
-        if(!currentUser) return;
-        await supabaseClient.from('users').update({ balance: amount }).eq('id', currentUser.id);
-        currentUser.balance = amount;
-        let span = document.getElementById("userBalanceDisplay");
-        if(span) span.innerText = amount.toFixed(2);
-    }
-    async function addGameRecord(account, gameName, betInfo, result, winAmount, betAmount) {
-        try {
-            const { data: user } = await supabaseClient.from('users').select('records').eq('account', account).single();
-            let records = user?.records || [];
-            records.unshift({ time: new Date().toLocaleString(), game: gameName, bet: betInfo, result, win: winAmount, amount: betAmount });
-            if(records.length > 100) records.pop();
-            await supabaseClient.from('users').update({ records }).eq('account', account);
-        } catch(e){ console.warn(e); }
+        if (existing) {
+            showToast("❌ 账号已存在，请直接登录", true);
+            return { success: false, msg: "账号已存在" };
+        }
+        // 插入新用户
+        const { error: insertError } = await supabaseClient
+            .from('users')
+            .insert({
+                account: account,
+                password: password,
+                balance: 0,
+                register_time: new Date().toLocaleString(),
+                records: [],
+                result_history: []
+            });
+        if (insertError) {
+            console.error(insertError);
+            showToast("❌ 注册失败: " + insertError.message, true);
+            return { success: false, msg: insertError.message };
+        }
+        showToast("✅ 注册成功！请登录", false);
+        return { success: true, msg: "注册成功" };
+    } catch (err) {
+        console.error(err);
+        showToast("❌ 注册失败: " + (err.message || "未知错误"), true);
+        return { success: false, msg: err.message };
     }
 
     async function recharge() {
