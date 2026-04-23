@@ -105,7 +105,7 @@
 <body>
 <div id="app"></div>
 <script>
-    // ==================== 检查 supabase 并初始化客户端 ====================
+    // 检查并初始化 Supabase 客户端（修复重复声明）
     if (typeof supabase === 'undefined') {
         alert("网络错误：Supabase SDK 加载失败，请刷新页面重试。");
         throw new Error("Supabase SDK not loaded");
@@ -114,7 +114,7 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNwam1maWZnenpxanJpdGtsZ3htIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5NDQ5MjIsImV4cCI6MjA5MjUyMDkyMn0.lzqdVmNEGHjkdr_Pbj23J_PrSEKnEmVkTAWEZ1Qa6QQ';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // ==================== 双语 ====================
+    // 双语
     const lang = {
         zh: { recharge:"💎 充值", withdraw:"💰 提现", service:"📞 客服", logout:"退出", balance:"余额", phoneOrEmail:"手机号 / 邮箱", password:"密码 (≥4位)", referralCode:"推荐码 (必填)", remember:"记住账号", login:"登录", register:"注册", referralNote:"推荐码: VIP666,888VIP,GOLD2025,LUCKY8,DICE100", getCode:"获取验证码", verifyCode:"验证码", registerNow:"注册新账户", gameFish:"🐟 金辉鱼虾蟹", gameDice:"🎲 金辉骰宝", gameDT:"🐉 金辉龙虎斗", game4:"🐮 金辉牛牛" },
         th: { recharge:"💎 เติมเงิน", withdraw:"💰 ถอนเงิน", service:"📞 บริการ", logout:"ออก", balance:"ยอดเงิน", phoneOrEmail:"เบอร์โทร / อีเมล", password:"รหัสผ่าน (≥4)", referralCode:"รหัสแนะนำ", remember:"จำฉัน", login:"เข้าสู่ระบบ", register:"สมัคร", referralNote:"รหัส: VIP666,888VIP,GOLD2025,LUCKY8,DICE100", getCode:"รับรหัส", verifyCode:"รหัสยืนยัน", registerNow:"สมัครสมาชิก", gameFish:"🐟 ปลาหมึกทอง", gameDice:"🎲 เซียนเต๋าทอง", gameDT:"🐉 มังกรเสือทอง", game4:"🐮 กระบือทอง" }
@@ -122,7 +122,6 @@
     let currentLang = 'zh';
     function t(key) { return lang[currentLang][key] || lang.zh[key] || key; }
 
-    // ==================== 全局变量 ====================
     let currentUser = null;
     let systemBankerBalance = 50000;
     let adjustFactor = 1.0;
@@ -147,7 +146,6 @@
         } else if(existing) existing.remove();
     }
 
-    // ==================== 加载系统配置 ====================
     async function loadSystemConfig() {
         try {
             const { data, error } = await supabaseClient.from('system_config').select('*');
@@ -159,7 +157,6 @@
         } catch(e){ console.warn(e); }
     }
 
-    // ==================== 用户操作 ====================
     async function login(account, password) {
         try {
             const { data, error } = await supabaseClient.from('users').select('*').eq('account', account).maybeSingle();
@@ -211,7 +208,6 @@
         } catch(e){ console.warn(e); }
     }
 
-    // ==================== 充值/提现/客服/管理员 ====================
     async function recharge() {
         let modalDiv = document.createElement('div'); modalDiv.className = 'modal';
         modalDiv.innerHTML = `<div class="modal-content"><h3>💎 金辉充值</h3><div style="display:flex; gap:15px; margin:12px 0;"><div><img class="qr-img" alt="微信收款码" src="mmexport1776247819360.jpg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E%E5%BE%AE%E4%BF%A1%E6%94%B6%E6%AC%BE%E7%A0%81%3C/text%3E%3C/svg%3E'"><p>微信支付</p></div><div><img class="qr-img" alt="支付宝收款码" src="mmexport1776247823872.jpg" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ddd%22/%3E%3Ctext x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E%E6%94%AF%E4%BB%98%E5%AE%9D%E6%94%B6%E6%AC%BE%E7%A0%81%3C/text%3E%3C/svg%3E'"><p>支付宝支付</p></div></div><div style="background:#1a1008; border-radius:18px; padding:12px;"><p>请扫码支付后，填写以下信息提交审核</p></div><input type="number" id="rechargeAmount" placeholder="充值金额（元）" style="width:100%; padding:8px; margin:8px 0; border-radius:40px;"><input type="text" id="rechargeOrderNo" placeholder="支付单号（选填）" style="width:100%; padding:8px; margin:8px 0; border-radius:40px;"><textarea id="rechargeRemark" placeholder="备注" rows="2" style="width:100%; padding:8px; margin:8px 0; border-radius:20px;"></textarea><button id="submitRechargeBtn" class="auth-btn">提交充值申请</button><button id="cancelRechargeBtn" class="auth-btn" style="margin-top:8px;">取消</button></div>`;
@@ -285,7 +281,7 @@
         modalDiv.querySelector('#adminCloseBtn').onclick = () => modalDiv.remove();
     }
 
-    // 以下为游戏函数（完整保留，包括葫芦鱼等等）
+    // 鱼虾蟹游戏（完整保留，包含葫芦）
     let fishDestroy = null;
     function initFishGame(container) {
         if(fishDestroy) fishDestroy();
@@ -469,12 +465,12 @@
         updateFishUI(); startFishRound();
         let updatePlayersBet=()=>{ if(hasGrabbed){ playersList.forEach(p=>{ p.bet=Math.floor(Math.random()*500)+50; }); updateFishUI(); } };
         setInterval(()=>{ if(hasGrabbed&&roundActive&&!isRolling) updatePlayersBet(); },10000);
-        fishDestroy=()=>{ if(clearTimer) clearTimeout(clearTimer); roundActive=false; if(countdownTimer) clearInterval(countdownTimer); container.innerHTML=''; };
         function resetCountdown(){ if(countdownTimer) clearInterval(countdownTimer); startFishRound(); }
+        fishDestroy=()=>{ if(clearTimer) clearTimeout(clearTimer); roundActive=false; if(countdownTimer) clearInterval(countdownTimer); container.innerHTML=''; };
         return fishDestroy;
     }
 
-    // ==================== 骰宝游戏 ====================
+    // 骰宝游戏（完整保留）
     let diceDestroy = null;
     function initDiceGame(container) {
         if(diceDestroy) diceDestroy();
@@ -536,7 +532,7 @@
         return diceDestroy;
     }
 
-    // ==================== 龙虎斗 ====================
+    // 龙虎斗游戏（完整保留）
     let dragonTigerDestroy = null;
     function initDragonTigerGame(container) {
         if(dragonTigerDestroy) dragonTigerDestroy();
@@ -573,7 +569,7 @@
         return dragonTigerDestroy;
     }
 
-    // ==================== 牛牛游戏 ====================
+    // 牛牛游戏（完整保留）
     let niuNiuDestroy = null;
     function initGame4(container) {
         if(niuNiuDestroy) niuNiuDestroy();
@@ -603,7 +599,7 @@
         return niuNiuDestroy;
     }
 
-    // ==================== 游戏大厅渲染 ====================
+    // 游戏大厅渲染
     async function renderGameLobby() {
         if (!currentUser) { renderAuthUI(); return; }
         const balance = await getUserBalance();
@@ -691,7 +687,7 @@
         }
         let net=totalWin-totalBet;
         let modalDiv=document.createElement('div'); modalDiv.className='modal';
-        modalDiv.innerHTML=`<div class="modal-content"><h3>📊 超级统计面板</h3><div>💰 总余额:${totalBalance.toFixed(2)}</div><div>🎲 总投注:${totalBet.toFixed(2)}</div><div>🏆 总赢额:${totalWin.toFixed(2)}</div><div>📊 平台净盈利:${net.toFixed(2)}</div><div style="max-height:300px;overflow:auto;"><table class="admin-table"><tr><th>账号</th><th>余额</th><th>总投注</th><th>总赢额</th><th>净盈利</th></tr>${allUsers.map(u=>{ let bet=0,win=0; (u.records||[]).forEach(r=>{ bet+=r.amount; if(r.win>0) win+=r.win; }); let profit=win-bet; return `<tr><td>${u.account}</td><td>${u.balance.toFixed(2)}</td><td>${bet.toFixed(2)}</td><td>${win.toFixed(2)}</td><td style="color:${profit>=0?'#0f0':'#f0f'}">${profit.toFixed(2)}</td></tr>`; }).join('')}</table></div><button id="closeStats" class="auth-btn">关闭</button></div>`;
+        modalDiv.innerHTML=`<div class="modal-content"><h3>📊 超级统计面板</h3><div>💰 总余额:${totalBalance.toFixed(2)}</div><div>🎲 总投注:${totalBet.toFixed(2)}</div><div>🏆 总赢额:${totalWin.toFixed(2)}</div><div>📊 平台净盈利:${net.toFixed(2)}</div><div style="max-height:300px;overflow:auto;"><table class="admin-table"><tr><th>账号</th><th>余额</th><th>总投注</th><th>总赢额</th><th>净盈利</th></tr>${allUsers.map(u=>{ let bet=0,win=0; (u.records||[]).forEach(r=>{ bet+=r.amount; if(r.win>0) win+=r.win; }); let profit=win-bet; return `<tr><td>${u.account}</td><td>${u.balance.toFixed(2)}</td><td>${bet.toFixed(2)}</td><td>${win.toFixed(2)}</td><td style="color:${profit>=0?'#0f0':'#f0f'}">${profit.toFixed(2)}</td>`; }).join('')}</table></div><button id="closeStats" class="auth-btn">关闭</button></div>`;
         document.body.appendChild(modalDiv);
         modalDiv.querySelector('#closeStats').onclick=()=>modalDiv.remove();
     }
@@ -757,7 +753,7 @@
         };
     }
 
-    // 启动应用
+    // 启动
     (async () => {
         await loadSystemConfig();
         renderAuthUI();
@@ -765,9 +761,3 @@
 </script>
 </body>
 </html>
-
-
-
-
-
-
