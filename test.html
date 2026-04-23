@@ -1,1 +1,367 @@
- 
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>金辉娱乐城 · 极速版</title>
+    <style>
+        * { box-sizing: border-box; user-select: none; }
+        body { background: linear-gradient(145deg, #1a120b 0%, #2a1e12 100%); font-family: 'Segoe UI', system-ui; margin: 0; padding: 16px; color: #ffecb3; }
+        #app { max-width: 560px; margin: 0 auto; background: rgba(30,20,12,0.8); backdrop-filter: blur(12px); border-radius: 48px; overflow: hidden; border: 1px solid #ffaa33; }
+        .auth-panel { padding: 28px 20px; background: rgba(20,12,6,0.9); }
+        .auth-panel h2, .auth-panel h3 { text-align: center; background: linear-gradient(135deg,#ffd966,#ffaa33); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .auth-input, .auth-btn { width: 100%; padding: 12px 16px; margin: 8px 0; border-radius: 40px; border: none; font-size: 1rem; }
+        .auth-input { background: #0a0a0a; color: #ffd966; border: 1px solid #ffaa33; }
+        .auth-btn { background: linear-gradient(135deg,#ffaa33,#ff884d); color: #2a1a0a; font-weight: bold; cursor: pointer; }
+        .user-section { padding: 12px 16px; background: rgba(0,0,0,0.4); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .game-nav { display: flex; gap: 6px; padding: 12px; }
+        .game-tab { flex:1; background: #1e2a3a; border: none; padding: 8px; border-radius: 40px; color: #ffaa33; cursor: pointer; }
+        .game-tab.active { background: #ffaa33; color: #2a1a0a; }
+        .game-container { padding: 12px; }
+        .game-card { background: rgba(0,0,0,0.5); border-radius: 32px; padding: 16px; border: 1px solid #ffaa33; }
+        .chip { background: #aa6600; display: inline-block; padding: 6px 14px; border-radius: 36px; margin: 3px; cursor: pointer; }
+        .chip.selected { background: #ffaa33; color: #2a1a0a; }
+        .exec-btn { background: #ffaa33; border: none; border-radius: 36px; padding: 8px 14px; margin: 3px; cursor: pointer; font-weight: bold; }
+        .countdown-area { text-align: center; margin: 8px 0; background: #00000066; border-radius: 40px; padding: 6px; }
+        .dice-3d-area { display: flex; justify-content: center; gap: 20px; margin: 20px 0; perspective: 1200px; }
+        .dice-cube { width: 70px; height: 70px; position: relative; transform-style: preserve-3d; transition: transform 0.4s; }
+        .dice-face { position: absolute; width: 100%; height: 100%; background: #2a1e12; border: 2px solid #ffaa33; border-radius: 16px; display: flex; align-items: center; justify-content: center; backface-visibility: visible; font-size: 2rem; }
+        .front { transform: translateZ(35px); } .back { transform: rotateY(180deg) translateZ(35px); }
+        .right { transform: rotateY(90deg) translateZ(35px); } .left { transform: rotateY(-90deg) translateZ(35px); }
+        .top { transform: rotateX(90deg) translateZ(35px); } .bottom { transform: rotateX(-90deg) translateZ(35px); }
+        .bet-card { background: rgba(0,0,0,0.5); border-radius: 18px; padding: 6px; text-align: center; cursor: pointer; border: 1px solid #ffaa33; margin: 4px; }
+        .toast-message { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #2a1a0a; padding: 6px 16px; border-radius: 40px; z-index: 2000; border: 1px solid #ffaa33; }
+        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: #2a1e12; border-radius: 36px; padding: 20px; max-width: 90%; color: #ffd966; border: 1px solid #ffaa33; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+    const API_BASE = 'http://localhost:3000/api';
+    let currentUser = null;
+
+    function showToast(msg, isError = false) {
+        let t = document.createElement('div');
+        t.className = 'toast-message';
+        t.innerText = msg;
+        t.style.borderLeftColor = isError ? '#ff6b6b' : '#ffaa33';
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 3000);
+    }
+
+    async function apiFetch(path, options = {}) {
+        const headers = { 'Content-Type': 'application/json' };
+        if (currentUser) headers['X-User-Account'] = currentUser.account;
+        const res = await fetch(API_BASE + path, { ...options, headers });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || '请求失败');
+        return data;
+    }
+
+    // 游戏结算接口
+    async function gameSettle(totalBet, winAmount) {
+        try {
+            const result = await apiFetch('/game/settle', {
+                method: 'POST',
+                body: JSON.stringify({ account: currentUser.account, totalBet, winAmount })
+            });
+            if (result.success) {
+                currentUser.balance = result.newBalance;
+                const span = document.getElementById('userBalanceDisplay');
+                if (span) span.innerText = currentUser.balance.toFixed(2);
+                return true;
+            }
+            return false;
+        } catch (e) {
+            showToast(e.message, true);
+            return false;
+        }
+    }
+
+    // 游戏大厅（简易版：骰宝演示，其他游戏类似可扩展）
+    let diceDestroy = null;
+    function initDiceGame(container) {
+        if (diceDestroy) diceDestroy();
+        container.innerHTML = `<div class="game-card">
+            <div style="display:flex; gap:8px;"><div style="flex:1;">🏦 庄家</div><div style="flex:1;">🎲 总押注: <span id="totalBetDice">0</span></div></div>
+            <div class="countdown-area">⏱️ 下注 <span id="countdownNumDice">25</span> s</div>
+            <div class="dice-3d-area"><div class="dice-cube" id="dice1"></div><div class="dice-cube" id="dice2"></div><div class="dice-cube" id="dice3"></div></div>
+            <div style="text-align:center;font-size:1.2rem;"><span id="totalPoints">3</span></div>
+            <div><span>🎲 本局中奖: <span id="rollingWinNumber">0</span></span><span>📊 盈亏: <span id="diceProfitLoss">0</span></span></div>
+            <div><button id="clearAllBtnDice" class="exec-btn">清空</button><button id="repeatBtnDice" class="exec-btn">续押</button><button id="manualRollBtn" class="exec-btn main-go">手动掷骰</button></div>
+            <div id="diceChips"><span class="chip" data-val="10">10</span><span class="chip" data-val="20">20</span><span class="chip selected" data-val="50">50</span><span class="chip" data-val="100">100</span><span class="chip" data-val="500">500</span></div>
+            <div style="display:flex; gap:8px;"><div class="bet-card" data-type="BIG">大<br><span id="bet_BIG">0</span></div><div class="bet-card" data-type="SMALL">小<br><span id="bet_SMALL">0</span></div></div>
+            <button id="diceHistoryBtn" class="exec-btn">📜 记录</button>
+        </div>`;
+        function buildDiceCube(d) {
+            d.innerHTML = '';
+            const faces = ['front', 'back', 'right', 'left', 'top', 'bottom'];
+            const valMap = { front: 1, back: 6, right: 4, left: 3, top: 2, bottom: 5 };
+            faces.forEach(face => {
+                let num = valMap[face];
+                let fd = document.createElement('div');
+                fd.className = `dice-face ${face}`;
+                let html = '';
+                if (num === 1) html = '<div style="background:#ffaa33; width:12px;height:12px;border-radius:50%;"></div>';
+                else if (num === 2) html = '<div style="display:flex;gap:6px;"><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div></div>';
+                else if (num === 3) html = '<div style="display:flex;gap:6px;"><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div></div>';
+                else if (num === 4) html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div></div>';
+                else if (num === 5) html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div></div>';
+                else html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;"><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div><div style="background:#ffaa33; width:8px;height:8px;border-radius:50%;"></div></div>';
+                fd.innerHTML = html;
+                d.appendChild(fd);
+            });
+            d.style.transform = `rotateX(${Math.random() * 360}deg) rotateY(${Math.random() * 360}deg)`;
+        }
+        function setCubeValue(d, val) {
+            const rot = { 1: 'rotateX(0deg) rotateY(0deg)', 2: 'rotateX(-90deg) rotateY(0deg)', 3: 'rotateY(90deg)', 4: 'rotateY(-90deg)', 5: 'rotateX(90deg)', 6: 'rotateX(180deg)' };
+            let rx = 0, ry = 0;
+            if (rot[val].includes('rotateX')) rx = parseInt(rot[val].match(/rotateX\(([-\d]+)deg\)/)[1]);
+            if (rot[val].includes('rotateY')) ry = parseInt(rot[val].match(/rotateY\(([-\d]+)deg\)/)[1]);
+            d.style.transform = `rotateX(${rx + 360 * (1 + Math.floor(Math.random() * 2))}deg) rotateY(${ry + 360 * (1 + Math.floor(Math.random() * 2))}deg)`;
+        }
+        let dice = [document.getElementById('dice1'), document.getElementById('dice2'), document.getElementById('dice3')];
+        dice.forEach(buildDiceCube);
+        let bets = { BIG: 0, SMALL: 0 };
+        let selectedChip = 50;
+        let currentBalance = currentUser.balance;
+        let isBetLocked = false;
+        let countdownInterval = null;
+        let lastBetSnapshot = null;
+
+        async function updateUI() {
+            document.getElementById('bet_BIG').innerText = bets.BIG;
+            document.getElementById('bet_SMALL').innerText = bets.SMALL;
+            document.getElementById('totalBetDice').innerText = bets.BIG + bets.SMALL;
+            currentBalance = currentUser.balance;
+        }
+        function saveLastBet() { lastBetSnapshot = JSON.parse(JSON.stringify(bets)); }
+        async function addBet(type) {
+            if (isBetLocked) return showToast("开奖中");
+            if (selectedChip > currentBalance) return showToast("余额不足");
+            let success = await gameSettle(selectedChip, 0);
+            if (!success) return;
+            bets[type] += selectedChip;
+            updateUI();
+            saveLastBet();
+            showToast(`+${selectedChip} ${type}`);
+        }
+        async function clearAllBets() {
+            let total = bets.BIG + bets.SMALL;
+            if (total > 0) await gameSettle(-total, 0);
+            bets = { BIG: 0, SMALL: 0 };
+            updateUI();
+            saveLastBet();
+            showToast("已清空");
+        }
+        async function repeatLastBet() {
+            if (!lastBetSnapshot) return showToast("无续押记录");
+            let need = lastBetSnapshot.BIG + lastBetSnapshot.SMALL;
+            if (need > currentBalance) return showToast("余额不足");
+            await clearAllBets();
+            bets = { ...lastBetSnapshot };
+            await gameSettle(need, 0);
+            updateUI();
+            showToast("续押成功");
+        }
+        async function startAutoDraw() {
+            if (isBetLocked) return;
+            let totalBet = bets.BIG + bets.SMALL;
+            isBetLocked = true;
+            let d1 = Math.floor(Math.random() * 6) + 1;
+            let d2 = Math.floor(Math.random() * 6) + 1;
+            let d3 = Math.floor(Math.random() * 6) + 1;
+            let total = d1 + d2 + d3;
+            let isBig = total >= 11;
+            let winAmount = 0;
+            if (totalBet > 0) {
+                if (isBig && bets.BIG > 0) winAmount += bets.BIG * 2;
+                if (!isBig && bets.SMALL > 0) winAmount += bets.SMALL * 2;
+            }
+            // 动画
+            for (let i = 0; i < 10; i++) {
+                for (let d of dice) setCubeValue(d, Math.floor(Math.random() * 6) + 1);
+                await new Promise(r => setTimeout(r, 50));
+            }
+            setCubeValue(dice[0], d1);
+            setCubeValue(dice[1], d2);
+            setCubeValue(dice[2], d3);
+            document.getElementById('totalPoints').innerText = total;
+            let profit = winAmount - totalBet;
+            document.getElementById('rollingWinNumber').innerText = winAmount.toFixed(2);
+            document.getElementById('diceProfitLoss').innerText = profit.toFixed(2);
+            await gameSettle(totalBet, winAmount);
+            let pop = document.createElement('div');
+            pop.className = 'result-popup';
+            pop.innerText = profit > 0 ? `🎉 赢 ${profit.toFixed(2)}` : `😭 输 ${-profit}`;
+            document.body.appendChild(pop);
+            setTimeout(() => pop.remove(), 1800);
+            bets = { BIG: 0, SMALL: 0 };
+            updateUI();
+            isBetLocked = false;
+            startCountdown(25);
+        }
+        function startCountdown(sec) {
+            if (countdownInterval) clearInterval(countdownInterval);
+            let c = sec;
+            let cd = document.getElementById('countdownNumDice');
+            cd.innerText = c;
+            isBetLocked = false;
+            countdownInterval = setInterval(() => {
+                if (c <= 1) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                    startAutoDraw();
+                } else {
+                    c--;
+                    cd.innerText = c;
+                }
+            }, 1000);
+        }
+        document.querySelectorAll('#diceChips .chip').forEach(chip => {
+            chip.onclick = function () {
+                selectedChip = parseInt(this.dataset.val);
+                document.querySelectorAll('#diceChips .chip').forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+            };
+        });
+        document.querySelectorAll('.bet-card').forEach(card => {
+            card.onclick = () => addBet(card.dataset.type);
+        });
+        document.getElementById('clearAllBtnDice').onclick = clearAllBets;
+        document.getElementById('repeatBtnDice').onclick = repeatLastBet;
+        document.getElementById('manualRollBtn').onclick = () => {
+            if (!isBetLocked) startAutoDraw();
+        };
+        document.getElementById('diceHistoryBtn').onclick = () => showToast("记录功能暂略");
+        updateUI();
+        startCountdown(25);
+        diceDestroy = () => {
+            if (countdownInterval) clearInterval(countdownInterval);
+            container.innerHTML = '';
+        };
+        return diceDestroy;
+    }
+
+    // 游戏大厅（包含充值提现入口）
+    async function renderGameLobby() {
+        if (!currentUser) { renderAuthUI(); return; }
+        document.getElementById('app').innerHTML = `
+            <div style="text-align:center; padding:16px; background:#2a1e12; border-bottom:1px solid #ffaa33;">
+                <h1>金辉娱乐城</h1>
+            </div>
+            <div class="user-section">
+                <span>👤 ${currentUser.account} | 💰 余额: <span id="userBalanceDisplay">${currentUser.balance.toFixed(2)}</span></span>
+                <div>
+                    <button id="rechargeBtn" style="background:#ffaa33; border:none; border-radius:20px; padding:6px 12px;">💎 充值</button>
+                    <button id="withdrawBtn" style="background:#ffaa33; border:none; border-radius:20px; padding:6px 12px;">💰 提现</button>
+                    <button id="logoutBtn" style="background:#ffaa33; border:none; border-radius:20px; padding:6px 12px;">🚪 退出</button>
+                </div>
+            </div>
+            <div class="game-nav">
+                <button class="game-tab active" data-game="dice">🎲 骰宝</button>
+            </div>
+            <div class="game-container" id="gamePanel"></div>
+        `;
+        document.getElementById('rechargeBtn').onclick = async () => {
+            let amount = parseFloat(prompt("充值金额（元）", "100"));
+            if (isNaN(amount) || amount <= 0) return;
+            try {
+                await apiFetch('/recharge', { method: 'POST', body: JSON.stringify({ account: currentUser.account, amount, usdt_amount: amount, tx_hash: '' }) });
+                showToast("充值申请已提交，等待管理员审核");
+            } catch (e) { showToast(e.message, true); }
+        };
+        document.getElementById('withdrawBtn').onclick = async () => {
+            let amount = parseFloat(prompt("提现金额（元）", "10"));
+            if (isNaN(amount) || amount <= 0) return;
+            let address = prompt("USDT 收款地址");
+            if (!address) return;
+            try {
+                await apiFetch('/withdraw', { method: 'POST', body: JSON.stringify({ account: currentUser.account, amount, usdt_address: address }) });
+                showToast("提现申请已提交");
+            } catch (e) { showToast(e.message, true); }
+        };
+        document.getElementById('logoutBtn').onclick = () => { currentUser = null; renderAuthUI(); };
+        const gamePanel = document.getElementById('gamePanel');
+        let currentDestroy = null;
+        async function switchGame() {
+            if (currentDestroy) currentDestroy();
+            gamePanel.innerHTML = '';
+            currentDestroy = await initDiceGame(gamePanel);
+        }
+        switchGame();
+    }
+
+    // 登录注册界面（无验证码，只有推荐码）
+    function renderAuthUI() {
+        document.getElementById('app').innerHTML = `
+            <div class="auth-panel">
+                <h2>金辉娱乐城</h2>
+                <div>
+                    <h3>注册</h3>
+                    <input type="text" id="regAccount" class="auth-input" placeholder="账号">
+                    <input type="password" id="regPassword" class="auth-input" placeholder="密码 (≥4位)">
+                    <input type="text" id="regReferral" class="auth-input" placeholder="推荐码 (VIP666)">
+                    <button id="registerBtn" class="auth-btn">注册</button>
+                </div>
+                <hr>
+                <div>
+                    <h3>登录</h3>
+                    <input type="text" id="loginAccount" class="auth-input" placeholder="账号">
+                    <input type="password" id="loginPassword" class="auth-input" placeholder="密码">
+                    <button id="loginBtn" class="auth-btn">登录</button>
+                </div>
+            </div>
+        `;
+        document.getElementById('registerBtn').onclick = async () => {
+            let acc = document.getElementById('regAccount').value.trim();
+            let pwd = document.getElementById('regPassword').value;
+            let ref = document.getElementById('regReferral').value.trim().toUpperCase();
+            if (!acc || !pwd || !ref) return showToast("请填写完整", true);
+            if (!['VIP666', '888VIP', 'GOLD2025', 'LUCKY8', 'DICE100'].includes(ref)) return showToast("推荐码无效", true);
+            if (pwd.length < 4) return showToast("密码至少4位", true);
+            try {
+                const res = await fetch(API_BASE + '/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ account: acc, password: pwd })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast("注册成功！请登录");
+                } else {
+                    showToast(data.error || "注册失败", true);
+                }
+            } catch (e) {
+                showToast(e.message, true);
+            }
+        };
+        document.getElementById('loginBtn').onclick = async () => {
+            let acc = document.getElementById('loginAccount').value.trim();
+            let pwd = document.getElementById('loginPassword').value;
+            if (!acc || !pwd) return showToast("请输入账号密码", true);
+            try {
+                const res = await fetch(API_BASE + '/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ account: acc, password: pwd })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    currentUser = { account: data.account, balance: data.balance };
+                    renderGameLobby();
+                } else {
+                    showToast(data.error || "登录失败", true);
+                }
+            } catch (e) {
+                showToast(e.message, true);
+            }
+        };
+    }
+
+    renderAuthUI();
+</script>
+</body>
+</html> 
