@@ -83,7 +83,7 @@
 <body>
 <div id="app"></div>
 <script>
-    // 全局配置（相对路径，无硬编码）
+    // 全局配置（相对路径，生产环境通过nginx代理/api）
     const API_BASE = '/api';
     let token = localStorage.getItem('jwt_token');
     let currentUser = null;
@@ -159,6 +159,7 @@
             showLoading(false);
         }
     }
+
     // ==================== 鱼虾蟹游戏 ====================
     let fishDestroy = null;
     function initFishGame(container) {
@@ -275,15 +276,12 @@
             let occurs = {鱼:0,虾:0,蟹:0,葫芦:0,金钱:0,鸡:0};
             [r1,r2,r3].forEach(p => occurs[p]++);
             let winAmount = 0;
-            // 单选结算：出现次数 * 押注金额
             for(let p in patternBets) {
                 let cnt = occurs[p];
                 if(cnt > 0) {
                     winAmount += patternBets[p] * cnt;
                 }
-                // 没出现的，押注已经扣除，不再额外扣
             }
-            // 双押结算：需要两个图案各自至少出现1次 → 赢 5 倍押注
             for(let combo of doubleCombos) {
                 let key = combo.join(',');
                 let bet = doubleBets[key];
@@ -294,20 +292,16 @@
                     }
                 }
             }
-            // 注：totalBet 已经在押注时通过 gameSettle 扣除了，这里 winAmount 是总收入
             let netProfit = winAmount - totalBet;
             lastWinAmount = netProfit;
-            // 结算到后端
             let success = await gameSettle(totalBet, winAmount);
             if(!success) { isRolling=false; startFishRound(); return; }
             let pop=document.createElement('div'); pop.className='result-popup'; pop.innerText=netProfit>0?`🎉 赢 ${netProfit.toFixed(2)}`:`😭 输 ${-netProfit}`; document.body.appendChild(pop); setTimeout(()=>pop.remove(),1800);
             gameRecords.unshift({time:new Date().toLocaleTimeString(), dice:`${r1},${r2},${r3}`, result:netProfit>0?`赢${netProfit.toFixed(2)}`:`输${-netProfit}`});
-            // 清空押注
             patternBets={鱼:0,虾:0,蟹:0,葫芦:0,金钱:0,鸡:0};
             for(let k in doubleBets) doubleBets[k]=0;
             updateFishUI(); saveLastBetState();
             isRolling=false;
-            // 抢庄只生效一局，结算后清除庄家状态
             isGrabbed = false;
             playerBankerBalance = 0;
             localStorage.removeItem('neon_fish_banker');
@@ -329,7 +323,6 @@
                 }
             }, 1000);
         }
-        // 构建单选网格
         let gridDiv = document.getElementById('fishPatternGrid');
         patternNames.forEach(p => {
             let div = document.createElement('div'); div.className = 'fish-bet-card';
@@ -351,12 +344,10 @@
                 this.classList.add('selected');
             };
         });
-        // 抢庄按钮
         document.getElementById('fishGrabBtn').onclick = async () => {
             if(isGrabbed) { showToast("已有人抢庄，请等待下一局"); return; }
             let bal = currentUser.balance;
             if(bal < 2000) { showToast("余额不足2000，无法抢庄"); return; }
-            // 扣除2000作为庄家押金
             await gameSettle(2000, 0);
             isGrabbed = true;
             playerBankerBalance = 2000;
@@ -383,6 +374,7 @@
         fishDestroy = () => { if(clearTimer) clearTimeout(clearTimer); roundActive=false; if(countdownTimer) clearInterval(countdownTimer); container.innerHTML=''; };
         return fishDestroy;
     }
+
     // ==================== 骰宝游戏 ====================
     let diceDestroy = null;
     function initDiceGame(container) {
@@ -499,6 +491,7 @@
         dragonTigerDestroy=()=>{ if(state.countdownInterval) clearInterval(state.countdownInterval); container.innerHTML=''; };
         return dragonTigerDestroy;
     }
+
     // ==================== 牛牛游戏 ====================
     let niuNiuDestroy = null;
     function initGame4(container) {
@@ -552,7 +545,6 @@
     }
     function showServiceModal() { alert("客服微信: game_kf_888"); }
 
-    // 管理员后台（点击余额3次，密码 admin888 从后端校验）
     async function openAdminModal() {
         let pwd = prompt("管理员密码:");
         if(!pwd) return;
@@ -743,6 +735,3 @@
 </script>
 </body>
 </html>
-
-
-
