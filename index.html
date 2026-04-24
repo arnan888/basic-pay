@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>金辉娱乐城 · 运营完整版</title>
+    <title>金辉娱乐城 · 全功能自动开奖版</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         body { background: linear-gradient(145deg, #0a0f1e 0%, #0c1222 100%); font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif; padding: 12px; min-height: 100vh; color: #ffecb3; }
@@ -83,314 +83,91 @@
 <body>
 <div id="app"></div>
 <script>
-    // ==================== 本地存储 Key ====================
+    // ==================== 存储KEY和全局配置 ====================
     const STORAGE = {
-        users: 'jinhui_users_full',
-        recharge: 'jinhui_recharge_orders',
-        withdraw: 'jinhui_withdraw_orders',
-        config: 'jinhui_system_config'
+        users: 'jinhui_users_full_v2',
+        recharge: 'jinhui_recharge_orders_v2',
+        withdraw: 'jinhui_withdraw_orders_v2',
+        config: 'jinhui_system_config_v2'
     };
-
-    // 系统配置（庄家池、赔付系数）
-    let systemConfig = {
-        bankerBalance: 100000,
-        adjustFactor: 1.0
-    };
-    function loadConfig() {
-        let saved = localStorage.getItem(STORAGE.config);
-        if (saved) systemConfig = JSON.parse(saved);
-        else localStorage.setItem(STORAGE.config, JSON.stringify(systemConfig));
-    }
+    let systemConfig = { bankerBalance: 100000, adjustFactor: 1.0 };
+    function loadConfig() { let s = localStorage.getItem(STORAGE.config); if(s) systemConfig = JSON.parse(s); else localStorage.setItem(STORAGE.config, JSON.stringify(systemConfig)); }
     function saveConfig() { localStorage.setItem(STORAGE.config, JSON.stringify(systemConfig)); }
 
-    // 用户数据
-    function loadUsers() {
-        let users = localStorage.getItem(STORAGE.users);
-        if (!users) {
-            let init = [{ account: "admin", password: "admin888", balance: 0, register_time: new Date().toLocaleString(), records: [], result_history: [] }];
-            localStorage.setItem(STORAGE.users, JSON.stringify(init));
-            return init;
-        }
-        return JSON.parse(users);
-    }
+    function loadUsers() { let u = localStorage.getItem(STORAGE.users); if(!u) { let init = [{ account: "admin", password: "admin888", balance: 0, register_time: new Date().toLocaleString(), records: [], result_history: [] }]; localStorage.setItem(STORAGE.users, JSON.stringify(init)); return init; } return JSON.parse(u); }
     function saveUsers(users) { localStorage.setItem(STORAGE.users, JSON.stringify(users)); }
 
     let currentUser = null;
+    function updateBalance(account, newBal) { let users = loadUsers(); let idx = users.findIndex(u => u.account === account); if(idx !== -1) { users[idx].balance = newBal; saveUsers(users); if(currentUser && currentUser.account === account) currentUser.balance = newBal; let span = document.getElementById("userBalanceDisplay"); if(span) span.innerText = newBal.toFixed(2); } }
 
-    function updateUserBalance(account, newBalance) {
-        let users = loadUsers();
-        let idx = users.findIndex(u => u.account === account);
-        if (idx !== -1) {
-            users[idx].balance = newBalance;
-            saveUsers(users);
-            if (currentUser && currentUser.account === account) currentUser.balance = newBalance;
-            let span = document.getElementById("userBalanceDisplay");
-            if (span) span.innerText = newBalance.toFixed(2);
-        }
-    }
+    function addGameRecord(account, game, betInfo, result, win, bet) { let users = loadUsers(); let u = users.find(u=>u.account===account); if(u){ u.records = u.records||[]; u.records.unshift({time:new Date().toLocaleString(), game, bet:betInfo, result, win, amount:bet}); if(u.records.length>100) u.records.pop(); saveUsers(users); if(currentUser && currentUser.account===account) currentUser.records = u.records; } }
 
-    function addGameRecord(account, gameName, betInfo, result, winAmount, betAmount) {
-        let users = loadUsers();
-        let user = users.find(u => u.account === account);
-        if (user) {
-            user.records = user.records || [];
-            user.records.unshift({ time: new Date().toLocaleString(), game: gameName, bet: betInfo, result, win: winAmount, amount: betAmount });
-            if (user.records.length > 100) user.records.pop();
-            saveUsers(users);
-            if (currentUser && currentUser.account === account) currentUser.records = user.records;
-        }
-    }
+    function showToast(msg, isErr=false) { let t=document.createElement('div'); t.className='toast-message'; t.innerText=msg; t.style.borderLeftColor=isErr?'#ff6b6b':'#ffaa33'; document.body.appendChild(t); setTimeout(()=>t.remove(),3000); }
+    function showLoading(show, text="处理中...") { let ex=document.querySelector('.loading-overlay'); if(show){ if(ex) ex.remove(); let d=document.createElement('div'); d.className='loading-overlay'; d.innerHTML=`<div style="background:#2a1e12; padding:16px; border-radius:40px;">⏳ ${text}</div>`; document.body.appendChild(d); } else if(ex) ex.remove(); }
 
-    // 充值申请（前台）
-    function applyRecharge() {
-        let amount = parseFloat(prompt("充值金额（元）", "100"));
-        if (isNaN(amount) || amount <= 0) { showToast("金额无效"); return; }
-        let orders = JSON.parse(localStorage.getItem(STORAGE.recharge) || '[]');
-        orders.push({
-            id: Date.now(),
-            account: currentUser.account,
-            amount: amount,
-            status: 'pending',
-            time: new Date().toLocaleString()
-        });
-        localStorage.setItem(STORAGE.recharge, JSON.stringify(orders));
-        showToast(`充值申请已提交，金额 ${amount} 元，等待管理员审核`);
-    }
-
-    // 提现申请（前台）
-    function applyWithdraw() {
-        let amount = parseFloat(prompt("提现金额（元）", "10"));
-        if (isNaN(amount) || amount <= 0) { showToast("金额无效"); return; }
-        if (currentUser.balance < amount) { showToast("余额不足"); return; }
-        let address = prompt("USDT 收款地址");
-        if (!address) return;
-        let orders = JSON.parse(localStorage.getItem(STORAGE.withdraw) || '[]');
-        orders.push({
-            id: Date.now(),
-            account: currentUser.account,
-            amount: amount,
-            address: address,
-            status: 'pending',
-            time: new Date().toLocaleString()
-        });
-        localStorage.setItem(STORAGE.withdraw, JSON.stringify(orders));
-        showToast(`提现申请已提交，金额 ${amount} 元，等待管理员处理`);
-    }
-
-    // 游戏结算（影响庄家池）
-    function gameSettle(totalBet, winAmount) {
-        if (!currentUser) return false;
-        if (currentUser.balance < totalBet) { showToast("余额不足", true); return false; }
+    async function gameSettle(totalBet, winAmount) {
+        if(!currentUser) return false;
+        if(currentUser.balance < totalBet) { showToast("余额不足", true); return false; }
         let bankerDelta = totalBet - winAmount;
         let newBanker = systemConfig.bankerBalance + bankerDelta;
-        if (newBanker < 0) { showToast("平台资金不足，无法赔付", true); return false; }
+        if(newBanker < 0) { showToast("平台资金不足，无法赔付", true); return false; }
         systemConfig.bankerBalance = newBanker;
         saveConfig();
-        let newBalance = currentUser.balance - totalBet + winAmount;
-        updateUserBalance(currentUser.account, newBalance);
-        showToast(`结算完成，余额 ${currentUser.balance.toFixed(2)}`);
+        let newBal = currentUser.balance - totalBet + winAmount;
+        updateBalance(currentUser.account, newBal);
+        showToast(`结算完成，余额 ${newBal.toFixed(2)}`);
         return true;
     }
 
-    // 登录注册
-    function login(account, password) {
-        let users = loadUsers();
-        let user = users.find(u => u.account === account);
-        if (!user) return { success: false, msg: "账号不存在" };
-        if (user.password !== password) return { success: false, msg: "密码错误" };
-        currentUser = user;
-        localStorage.setItem('jinhui_current_account', account);
-        return { success: true, msg: "登录成功" };
-    }
-    function register(account, password, code) {
-        let validCodes = ["VIP666","888VIP","GOLD2025","LUCKY8","DICE100"];
-        if (!validCodes.includes(code)) return { success: false, msg: "推荐码无效" };
-        let users = loadUsers();
-        if (users.find(u => u.account === account)) return { success: false, msg: "账号已存在" };
-        let newUser = { account, password, balance: 0, register_time: new Date().toLocaleString(), records: [], result_history: [] };
-        users.push(newUser);
-        saveUsers(users);
-        return { success: true, msg: "注册成功" };
-    }
+    function applyRecharge() { let amt = parseFloat(prompt("充值金额（元）","100")); if(isNaN(amt)||amt<=0) return showToast("金额无效"); let orders = JSON.parse(localStorage.getItem(STORAGE.recharge)||'[]'); orders.push({id:Date.now(), account:currentUser.account, amount:amt, status:'pending', time:new Date().toLocaleString()}); localStorage.setItem(STORAGE.recharge, JSON.stringify(orders)); showToast(`充值申请已提交，等待管理员审核`); }
+    function applyWithdraw() { let amt = parseFloat(prompt("提现金额（元）","10")); if(isNaN(amt)||amt<=0) return showToast("金额无效"); if(currentUser.balance<amt) return showToast("余额不足",true); let addr = prompt("USDT 收款地址"); if(!addr) return; let orders = JSON.parse(localStorage.getItem(STORAGE.withdraw)||'[]'); orders.push({id:Date.now(), account:currentUser.account, amount:amt, address:addr, status:'pending', time:new Date().toLocaleString()}); localStorage.setItem(STORAGE.withdraw, JSON.stringify(orders)); showToast(`提现申请已提交，等待管理员审核`); }
+    function showServiceModal() { alert("客服微信: game_kf_888"); }
 
-    // 管理员后台（密码 admin888，点击余额3次）
     function openAdminModal() {
         let pwd = prompt("管理员密码:");
-        if (pwd !== "admin888") { showToast("密码错误"); return; }
+        if(pwd !== "admin888") { showToast("密码错误"); return; }
         let users = loadUsers();
-        let rechargeOrders = JSON.parse(localStorage.getItem(STORAGE.recharge) || '[]');
-        let withdrawOrders = JSON.parse(localStorage.getItem(STORAGE.withdraw) || '[]');
-        let pendingRecharges = rechargeOrders.filter(o => o.status === 'pending');
-        let pendingWithdraws = withdrawOrders.filter(o => o.status === 'pending');
-
-        let modalDiv = document.createElement('div'); modalDiv.className = 'modal';
-        modalDiv.innerHTML = `
-            <div class="modal-content" style="max-width:650px;">
-                <h3>🎛️ 管理员后台</h3>
-                <div>🏦 庄家资金池: ${systemConfig.bankerBalance.toFixed(2)} <button id="addBankerBtn">➕ 充值庄家池</button></div>
-                <div>🎲 赔付系数: <input id="factorInput" type="number" step="0.01" value="${systemConfig.adjustFactor}"> <button id="saveFactorBtn">保存</button></div>
-                <hr>
-                <div><strong>📥 充值申请</strong><div id="rechargeList"></div></div>
-                <div><strong>📤 提现申请</strong><div id="withdrawList"></div></div>
-                <div><strong>👥 用户管理</strong><select id="userSelect">${users.map(u=>`<option value="${u.account}">${u.account} (余额 ${u.balance.toFixed(2)})</option>`).join('')}</select>
-                <input id="amountInput" placeholder="金额" type="number" style="width:100px;"> <button id="addBalanceBtn">➕ 上分</button> <button id="subBalanceBtn">➖ 下分</button></div>
-                <button id="closeAdminBtn">关闭</button>
-            </div>
-        `;
+        let rechargeOrders = JSON.parse(localStorage.getItem(STORAGE.recharge)||'[]');
+        let withdrawOrders = JSON.parse(localStorage.getItem(STORAGE.withdraw)||'[]');
+        let pendingRecharges = rechargeOrders.filter(o=>o.status==='pending');
+        let pendingWithdraws = withdrawOrders.filter(o=>o.status==='pending');
+        let modalDiv = document.createElement('div'); modalDiv.className='modal';
+        modalDiv.innerHTML = `<div class="modal-content" style="max-width:650px;">
+            <h3>🎛️ 管理员后台</h3>
+            <div>🏦 庄家资金池: ${systemConfig.bankerBalance.toFixed(2)} <button id="addBankerBtn">➕ 充值庄家池</button></div>
+            <div>🎲 赔付系数: <input id="factorInput" type="number" step="0.01" value="${systemConfig.adjustFactor}"> <button id="saveFactorBtn">保存</button></div>
+            <hr><div><strong>📥 充值申请</strong><div id="rechargeList"></div></div>
+            <div><strong>📤 提现申请</strong><div id="withdrawList"></div></div>
+            <div><strong>👥 用户管理</strong><select id="userSelect">${users.map(u=>`<option value="${u.account}">${u.account} (余额 ${u.balance.toFixed(2)})</option>`).join('')}</select>
+            <input id="amountInput" placeholder="金额" type="number" style="width:100px;"> <button id="addBalanceBtn">➕ 上分</button> <button id="subBalanceBtn">➖ 下分</button></div>
+            <button id="closeAdminBtn">关闭</button></div>`;
         document.body.appendChild(modalDiv);
-        // 充值审核
-        function refreshRecharge() {
+        function refreshRecharge(){
             let container = modalDiv.querySelector('#rechargeList');
-            if (pendingRecharges.length === 0) { container.innerHTML = '<div>暂无待审核充值</div>'; return; }
-            container.innerHTML = pendingRecharges.map(o => `
-                <div style="border:1px solid #ffaa33; margin:6px; padding:6px;">
-                    ${o.account} 申请充值 ${o.amount} 元<br>时间: ${o.time}<br>
-                    <button class="admin-btn approveRecharge" data-id="${o.id}">✅ 确认充值</button>
-                    <button class="admin-btn rejectRecharge" data-id="${o.id}">❌ 拒绝</button>
-                </div>
-            `).join('');
-            document.querySelectorAll('.approveRecharge').forEach(btn => {
-                btn.onclick = () => {
-                    let id = parseInt(btn.dataset.id);
-                    let order = rechargeOrders.find(o => o.id === id);
-                    if (order && order.status === 'pending') {
-                        let user = users.find(u => u.account === order.account);
-                        if (user) {
-                            user.balance += order.amount;
-                            saveUsers(users);
-                            order.status = 'approved';
-                            localStorage.setItem(STORAGE.recharge, JSON.stringify(rechargeOrders));
-                            showToast(`已为 ${order.account} 充值 ${order.amount} 元`);
-                            modalDiv.remove(); openAdminModal();
-                        }
-                    }
-                };
-            });
-            document.querySelectorAll('.rejectRecharge').forEach(btn => {
-                btn.onclick = () => {
-                    let id = parseInt(btn.dataset.id);
-                    let order = rechargeOrders.find(o => o.id === id);
-                    if (order) {
-                        order.status = 'rejected';
-                        localStorage.setItem(STORAGE.recharge, JSON.stringify(rechargeOrders));
-                        showToast(`已拒绝 ${order.account} 的充值申请`);
-                        modalDiv.remove(); openAdminModal();
-                    }
-                };
-            });
+            if(pendingRecharges.length===0){ container.innerHTML='<div>暂无待审核充值</div>'; return; }
+            container.innerHTML = pendingRecharges.map(o=>`<div style="border:1px solid #ffaa33; margin:6px; padding:6px;">${o.account} 申请充值 ${o.amount} 元<br>时间: ${o.time}<br><button class="admin-btn approveRecharge" data-id="${o.id}">✅ 确认充值</button><button class="admin-btn rejectRecharge" data-id="${o.id}">❌ 拒绝</button></div>`).join('');
+            document.querySelectorAll('.approveRecharge').forEach(btn=>{ btn.onclick=()=>{ let id=parseInt(btn.dataset.id); let order=rechargeOrders.find(o=>o.id===id); if(order && order.status==='pending'){ let user=users.find(u=>u.account===order.account); if(user){ user.balance+=order.amount; saveUsers(users); order.status='approved'; localStorage.setItem(STORAGE.recharge,JSON.stringify(rechargeOrders)); showToast(`已为 ${order.account} 充值 ${order.amount} 元`); modalDiv.remove(); openAdminModal(); } } }; });
+            document.querySelectorAll('.rejectRecharge').forEach(btn=>{ btn.onclick=()=>{ let id=parseInt(btn.dataset.id); let order=rechargeOrders.find(o=>o.id===id); if(order){ order.status='rejected'; localStorage.setItem(STORAGE.recharge,JSON.stringify(rechargeOrders)); showToast(`已拒绝 ${order.account} 的充值申请`); modalDiv.remove(); openAdminModal(); } }; });
         }
-        function refreshWithdraw() {
+        function refreshWithdraw(){
             let container = modalDiv.querySelector('#withdrawList');
-            if (pendingWithdraws.length === 0) { container.innerHTML = '<div>暂无待处理提现</div>'; return; }
-            container.innerHTML = pendingWithdraws.map(o => `
-                <div style="border:1px solid #ffaa33; margin:6px; padding:6px;">
-                    ${o.account} 申请提现 ${o.amount} 元<br>地址: ${o.address}<br>
-                    <button class="admin-btn approveWithdraw" data-id="${o.id}">✅ 确认打款</button>
-                    <button class="admin-btn rejectWithdraw" data-id="${o.id}">❌ 拒绝</button>
-                </div>
-            `).join('');
-            document.querySelectorAll('.approveWithdraw').forEach(btn => {
-                btn.onclick = () => {
-                    let id = parseInt(btn.dataset.id);
-                    let order = withdrawOrders.find(o => o.id === id);
-                    if (order && order.status === 'pending') {
-                        let user = users.find(u => u.account === order.account);
-                        if (user && user.balance >= order.amount) {
-                            user.balance -= order.amount;
-                            saveUsers(users);
-                            order.status = 'approved';
-                            localStorage.setItem(STORAGE.withdraw, JSON.stringify(withdrawOrders));
-                            showToast(`已处理 ${order.account} 提现 ${order.amount} 元`);
-                            modalDiv.remove(); openAdminModal();
-                        } else {
-                            showToast("用户余额不足", true);
-                        }
-                    }
-                };
-            });
-            document.querySelectorAll('.rejectWithdraw').forEach(btn => {
-                btn.onclick = () => {
-                    let id = parseInt(btn.dataset.id);
-                    let order = withdrawOrders.find(o => o.id === id);
-                    if (order) {
-                        order.status = 'rejected';
-                        localStorage.setItem(STORAGE.withdraw, JSON.stringify(withdrawOrders));
-                        showToast(`已拒绝 ${order.account} 的提现申请`);
-                        modalDiv.remove(); openAdminModal();
-                    }
-                };
-            });
+            if(pendingWithdraws.length===0){ container.innerHTML='<div>暂无待处理提现</div>'; return; }
+            container.innerHTML = pendingWithdraws.map(o=>`<div style="border:1px solid #ffaa33; margin:6px; padding:6px;">${o.account} 申请提现 ${o.amount} 元<br>地址: ${o.address}<br><button class="admin-btn approveWithdraw" data-id="${o.id}">✅ 确认打款</button><button class="admin-btn rejectWithdraw" data-id="${o.id}">❌ 拒绝</button></div>`).join('');
+            document.querySelectorAll('.approveWithdraw').forEach(btn=>{ btn.onclick=()=>{ let id=parseInt(btn.dataset.id); let order=withdrawOrders.find(o=>o.id===id); if(order && order.status==='pending'){ let user=users.find(u=>u.account===order.account); if(user && user.balance>=order.amount){ user.balance-=order.amount; saveUsers(users); order.status='approved'; localStorage.setItem(STORAGE.withdraw,JSON.stringify(withdrawOrders)); showToast(`已处理 ${order.account} 提现 ${order.amount} 元`); modalDiv.remove(); openAdminModal(); } else showToast("用户余额不足",true); } }; });
+            document.querySelectorAll('.rejectWithdraw').forEach(btn=>{ btn.onclick=()=>{ let id=parseInt(btn.dataset.id); let order=withdrawOrders.find(o=>o.id===id); if(order){ order.status='rejected'; localStorage.setItem(STORAGE.withdraw,JSON.stringify(withdrawOrders)); showToast(`已拒绝 ${order.account} 的提现申请`); modalDiv.remove(); openAdminModal(); } }; });
         }
         refreshRecharge(); refreshWithdraw();
-
-        modalDiv.querySelector('#addBankerBtn').onclick = () => {
-            let amt = parseFloat(prompt("给庄家池增加金额:", "10000"));
-            if (!isNaN(amt) && amt > 0) {
-                systemConfig.bankerBalance += amt;
-                saveConfig();
-                showToast(`庄家池 +${amt}，当前 ${systemConfig.bankerBalance.toFixed(2)}`);
-                modalDiv.remove(); openAdminModal();
-            }
-        };
-        modalDiv.querySelector('#saveFactorBtn').onclick = () => {
-            let val = parseFloat(modalDiv.querySelector('#factorInput').value);
-            if (!isNaN(val) && val >= 0.5 && val <= 1.5) {
-                systemConfig.adjustFactor = val;
-                saveConfig();
-                showToast(`赔付系数已设为 ${val}`);
-                modalDiv.remove(); openAdminModal();
-            }
-        };
-        modalDiv.querySelector('#addBalanceBtn').onclick = () => {
-            let acc = modalDiv.querySelector('#userSelect').value;
-            let amt = parseFloat(modalDiv.querySelector('#amountInput').value);
-            if (isNaN(amt) || amt <= 0) { showToast("金额无效"); return; }
-            let user = users.find(u => u.account === acc);
-            if (user) {
-                user.balance += amt;
-                saveUsers(users);
-                if (currentUser && currentUser.account === acc) currentUser.balance = user.balance;
-                showToast(`给 ${acc} 上分 ${amt} 元`);
-                modalDiv.remove(); openAdminModal();
-            }
-        };
-        modalDiv.querySelector('#subBalanceBtn').onclick = () => {
-            let acc = modalDiv.querySelector('#userSelect').value;
-            let amt = parseFloat(modalDiv.querySelector('#amountInput').value);
-            if (isNaN(amt) || amt <= 0) { showToast("金额无效"); return; }
-            let user = users.find(u => u.account === acc);
-            if (user && user.balance >= amt) {
-                user.balance -= amt;
-                saveUsers(users);
-                if (currentUser && currentUser.account === acc) currentUser.balance = user.balance;
-                showToast(`给 ${acc} 下分 ${amt} 元`);
-                modalDiv.remove(); openAdminModal();
-            } else { showToast("余额不足", true); }
-        };
-        modalDiv.querySelector('#closeAdminBtn').onclick = () => modalDiv.remove();
+        modalDiv.querySelector('#addBankerBtn').onclick=()=>{ let amt=parseFloat(prompt("给庄家池增加金额:","10000")); if(!isNaN(amt)&&amt>0){ systemConfig.bankerBalance+=amt; saveConfig(); showToast(`庄家池 +${amt}，当前 ${systemConfig.bankerBalance.toFixed(2)}`); modalDiv.remove(); openAdminModal(); } };
+        modalDiv.querySelector('#saveFactorBtn').onclick=()=>{ let val=parseFloat(modalDiv.querySelector('#factorInput').value); if(!isNaN(val)&&val>=0.5&&val<=1.5){ systemConfig.adjustFactor=val; saveConfig(); showToast(`赔付系数已设为 ${val}`); modalDiv.remove(); openAdminModal(); } else showToast("系数范围0.5~1.5",true); };
+        modalDiv.querySelector('#addBalanceBtn').onclick=()=>{ let acc=modalDiv.querySelector('#userSelect').value; let amt=parseFloat(modalDiv.querySelector('#amountInput').value); if(isNaN(amt)||amt<=0) return showToast("金额无效"); let u=users.find(u=>u.account===acc); if(u){ u.balance+=amt; saveUsers(users); if(currentUser && currentUser.account===acc) currentUser.balance=u.balance; showToast(`给 ${acc} 上分 ${amt} 元`); modalDiv.remove(); openAdminModal(); } };
+        modalDiv.querySelector('#subBalanceBtn').onclick=()=>{ let acc=modalDiv.querySelector('#userSelect').value; let amt=parseFloat(modalDiv.querySelector('#amountInput').value); if(isNaN(amt)||amt<=0) return showToast("金额无效"); let u=users.find(u=>u.account===acc); if(u && u.balance>=amt){ u.balance-=amt; saveUsers(users); if(currentUser && currentUser.account===acc) currentUser.balance=u.balance; showToast(`给 ${acc} 下分 ${amt} 元`); modalDiv.remove(); openAdminModal(); } else showToast("余额不足",true); };
+        modalDiv.querySelector('#closeAdminBtn').onclick=()=>modalDiv.remove();
     }
 
-    function showToast(msg, isError=false) {
-        let t = document.createElement('div');
-        t.className = 'toast-message';
-        t.innerText = msg;
-        t.style.borderLeftColor = isError ? '#ff6b6b' : '#ffaa33';
-        document.body.appendChild(t);
-        setTimeout(() => t.remove(), 3000);
-    }
-    function showLoading(show, text="处理中...") {
-        let existing = document.querySelector('.loading-overlay');
-        if(show){
-            if(existing) existing.remove();
-            let div = document.createElement('div');
-            div.className = 'loading-overlay';
-            div.innerHTML = `<div>⏳ ${text}</div>`;
-            document.body.appendChild(div);
-        } else if(existing) existing.remove();
-    }
+    function login(account, password) { let users=loadUsers(); let u=users.find(u=>u.account===account); if(!u) return {success:false,msg:"账号不存在"}; if(u.password!==password) return {success:false,msg:"密码错误"}; currentUser=u; localStorage.setItem('curr_acc',account); return {success:true,msg:"登录成功"}; }
+    function register(account,password,code) { let valid=["VIP666","888VIP","GOLD2025","LUCKY8","DICE100"]; if(!valid.includes(code)) return {success:false,msg:"推荐码无效"}; let users=loadUsers(); if(users.find(u=>u.account===account)) return {success:false,msg:"账号已存在"}; let newUser={account,password,balance:0,register_time:new Date().toLocaleString(),records:[],result_history:[]}; users.push(newUser); saveUsers(users); return {success:true,msg:"注册成功"}; }
 
-    // ==================== 以下为四个游戏的完整代码（基于之前已修复3D骰子的版本，仅替换结算调用）====================
-    // 鱼虾蟹游戏
+    // ==================== 鱼虾蟹游戏 ====================
     let fishDestroy = null;
     function initFishGame(container) {
         if(fishDestroy) fishDestroy();
@@ -422,14 +199,13 @@
             if(idx===0){rx=0;ry=0;}else if(idx===1){rx=0;ry=-90;}else if(idx===2){rx=0;ry=180;}else if(idx===3){rx=0;ry=90;}else if(idx===4){rx=-90;ry=0;}else if(idx===5){rx=90;ry=0;}
             diceDiv.style.transform=`rotateX(${rx+360*(1+Math.floor(Math.random()*2))}deg) rotateY(${ry+360*(1+Math.floor(Math.random()*2))}deg)`;
         }
-        let fishDice=[document.getElementById('fishDice0'),document.getElementById('fishDice1'),document.getElementById('fishDice2')];
+        let fishDice = [document.getElementById('fishDice0'),document.getElementById('fishDice1'),document.getElementById('fishDice2')];
         fishDice.forEach(buildFishDice);
         let patternBets={鱼:0,虾:0,蟹:0,葫芦:0,金钱:0,鸡:0};
         let doubleBets={}; doubleCombos.forEach(c=>doubleBets[c.join(',')]=0);
         let currentChip=10, isGrabbed=false, gameRecords=[], isRolling=false, roundActive=true, countdownTimer=null, lastWinAmount=0;
         let playersList=[{name:"闲家A",bet:0},{name:"闲家B",bet:0},{name:"闲家C",bet:0}];
         let lastBetState=null, clearTimer=null;
-
         function updateFishUI(){
             for(let p in patternBets){ let sp=document.getElementById(`fishBet_${p}`); if(sp) sp.innerText=patternBets[p]; }
             for(let c of doubleCombos){ let key=c.join(','); let sp=document.getElementById(`doubleBet_${key.replace(/,/g,'_')}`); if(sp) sp.innerText=doubleBets[key]; }
@@ -454,7 +230,7 @@
             updateFishUI(); showToast("续押成功");
         }
         async function addPatternBet(p,v){
-            if(isGrabbed) return showToast("庄家不能下注");
+            if(isGrabbed) { showToast("庄家不能下注"); return; }
             let total=Object.values(patternBets).reduce((a,b)=>a+b,0)+Object.values(doubleBets).reduce((a,b)=>a+b,0);
             if(v>500||total+v>2000) return showToast("超上限");
             let bal=currentUser.balance;
@@ -573,13 +349,13 @@
         return fishDestroy;
     }
 
-    // 骰宝游戏（完整版，3D骰子，结算调用gameSettle）
+    // ==================== 骰宝游戏 ====================
     let diceDestroy = null;
     function initDiceGame(container) {
         if(diceDestroy) diceDestroy();
         container.innerHTML = `<div class="game-card">
             <div style="display:flex;gap:8px;"><div style="flex:1;text-align:center;">🏦 庄家<div id="diceBankerDisplay">${systemConfig.bankerBalance.toFixed(2)}</div></div><div style="flex:1;text-align:center;">🎲 总押注<div id="totalBetDice">0</div></div></div>
-            <div class="countdown-area">⏱️ 下注 <span id="countdownNumDice">25</span> s</div>
+            <div class="countdown-area" id="countdownAreaDice">⏱️ 下注 <span id="countdownNumDice">25</span> s</div>
             <div class="dice-3d-area"><div class="dice-cube" id="dice1"></div><div class="dice-cube" id="dice2"></div><div class="dice-cube" id="dice3"></div></div>
             <div style="text-align:center;font-size:1.2rem;"><span id="totalPoints">3</span></div>
             <div><span>🎲 本局中奖: <span id="rollingWinNumber">0</span></span><span>📊 盈亏: <span id="diceProfitLoss">0</span></span></div>
@@ -595,7 +371,7 @@
         document.getElementById('trioGrid').innerHTML += `<div class="bet-card trio-card" data-type="ALL_TRIPLE">豹子<br><span id="bet_ALL_TRIPLE">0</span></div>`;
         function buildDiceCube(d){
             d.innerHTML=''; const faces=['front','back','right','left','top','bottom']; const valMap={front:1,back:6,right:4,left:3,top:2,bottom:5};
-            faces.forEach(face=>{ let num=valMap[face], fd=document.createElement('div'); fd.className=`dice-face ${face}`; let h=''; if(num===1) h='<div class="pip pip-center"></div>'; else if(num===2) h='<div class="pip pip-tl"></div><div class="pip pip-br"></div>'; else if(num===3) h='<div class="pip pip-tl"></div><div class="pip pip-center"></div><div class="pip pip-br"></div>'; else if(num===4) h='<div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div>'; else if(num===5) h='<div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-mid"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div>'; else h='<div class="pip pip-l1"></div><div class="pip pip-l2"></div><div class="pip pip-l3"></div><div class="pip pip-r1"></div><div class="pip pip-r2"></div><div class="pip pip-r3"></div>'; fd.innerHTML=h; d.appendChild(fd); });
+            faces.forEach(face=>{ let num=valMap[face], fd=document.createElement('div'); fd.className=`dice-face ${face}`; let html=''; if(num===1) html='<div class="pip pip-center"></div>'; else if(num===2) html='<div class="pip pip-tl"></div><div class="pip pip-br"></div>'; else if(num===3) html='<div class="pip pip-tl"></div><div class="pip pip-center"></div><div class="pip pip-br"></div>'; else if(num===4) html='<div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div>'; else if(num===5) html='<div class="pip pip-tl"></div><div class="pip pip-tr"></div><div class="pip pip-mid"></div><div class="pip pip-bl"></div><div class="pip pip-br"></div>'; else html='<div class="pip pip-l1"></div><div class="pip pip-l2"></div><div class="pip pip-l3"></div><div class="pip pip-r1"></div><div class="pip pip-r2"></div><div class="pip pip-r3"></div>'; fd.innerHTML=html; d.appendChild(fd); });
             d.style.transform=`rotateX(${Math.random()*360}deg) rotateY(${Math.random()*360}deg)`;
         }
         function setCubeValue(d,val){
@@ -654,13 +430,13 @@
         return diceDestroy;
     }
 
-    // 龙虎斗（简化但完整，结算调用gameSettle）
+    // ==================== 龙虎斗 ====================
     let dragonTigerDestroy = null;
     function initDragonTigerGame(container) {
         if(dragonTigerDestroy) dragonTigerDestroy();
         const cardSuits=["♥","♦","♣","♠"];
         function getRandomCard(){ let val=Math.floor(Math.random()*13)+1; let points=(val===1)?14:val; let suit=cardSuits[Math.floor(Math.random()*4)]; let display=(val===1?"A":(val===11?"J":(val===12?"Q":(val===13?"K":val))))+suit; return {points,display}; }
-        container.innerHTML = `<div class="game-card"><div style="display:flex;justify-content:space-between;"><div><div>🐉 龙</div><div id="dragonCard" style="font-size:2rem;">🃟</div></div><div>VS</div><div><div>🐯 虎</div><div id="tigerCard" style="font-size:2rem;">🃟</div></div></div><div id="dtBattleResult" class="countdown-area">⚔️ 等待开牌</div><div class="countdown-area">⏱️ 下一局: <span id="countdownNumDT">30</span> s</div><div id="streakIndicator">🔥 当前长龙: <span id="currentStreak">无</span></div><div><div>🐉 龙 <span id="betDragonAmount">0</span> <button class="quick-bet" data-type="DRAGON" data-amount="10">+10</button> <button class="clear-bet" data-type="DRAGON">清空</button></div><div>⚖️ 和 <span id="betTieAmount">0</span> <button class="quick-bet" data-type="TIE" data-amount="10">+10</button> <button class="clear-bet" data-type="TIE">清空</button></div><div>🐯 虎 <span id="betTigerAmount">0</span> <button class="quick-bet" data-type="TIGER" data-amount="10">+10</button> <button class="clear-bet" data-type="TIGER">清空</button></div></div><div>总押注: <span id="totalBetAmountDT">0</span> 预计奖金: <span id="valWinDT">0</span></div><div><button id="refreshBtnDT">刷新</button><button id="repeatBtnDT">续押</button><button id="cancelBtnDT">取消</button><button id="fightBtnDT" class="main-go">确认</button></div><div>最近10局<div id="historyGridDT" style="display:flex;gap:4px;"></div></div><div>💰 余额: <span id="balanceDisplayDT">0</span></div></div>`;
+        container.innerHTML = `<div class="game-card"><div style="display:flex;justify-content:space-between;"><div><div>🐉 龙</div><div id="dragonCard" style="font-size:2rem;">🃟</div></div><div>VS</div><div><div>🐯 虎</div><div id="tigerCard" style="font-size:2rem;">🃟</div></div></div><div id="dtBattleResult" class="countdown-area">⚔️ 等待开牌</div><div class="countdown-area" id="countdownAreaDT">⏱️ 下一局: <span id="countdownNumDT">30</span> s</div><div id="streakIndicator">🔥 当前长龙: <span id="currentStreak">无</span></div><div><div>🐉 龙 <span id="betDragonAmount">0</span> <button class="quick-bet" data-type="DRAGON" data-amount="10">+10</button> <button class="clear-bet" data-type="DRAGON">清空</button></div><div>⚖️ 和 <span id="betTieAmount">0</span> <button class="quick-bet" data-type="TIE" data-amount="10">+10</button> <button class="clear-bet" data-type="TIE">清空</button></div><div>🐯 虎 <span id="betTigerAmount">0</span> <button class="quick-bet" data-type="TIGER" data-amount="10">+10</button> <button class="clear-bet" data-type="TIGER">清空</button></div></div><div>总押注: <span id="totalBetAmountDT">0</span> 预计奖金: <span id="valWinDT">0</span></div><div><button id="refreshBtnDT">刷新</button><button id="repeatBtnDT">续押</button><button id="cancelBtnDT">取消</button><button id="fightBtnDT" class="main-go">确认</button></div><div>最近10局<div id="historyGridDT" style="display:flex;gap:4px;"></div></div><div>💰 余额: <span id="balanceDisplayDT">0</span></div></div>`;
         let state={ bets:{ DRAGON:0, TIGER:0, TIE:0 }, betRolling:false, countdown:30, countdownInterval:null };
         let lastBet=null, resultHistory=currentUser?.result_history||[];
         function updateStreakDisplay(){ if(!resultHistory.length){ document.getElementById('currentStreak').innerText='无'; return; } let streak=resultHistory[0], cnt=1; for(let i=1;i<resultHistory.length;i++){ if(resultHistory[i]===streak) cnt++; else break; } let txt=streak==='龙'?`🐉 龙 ${cnt}连开`:(streak==='虎'?`🐯 虎 ${cnt}连开`:`⚖️ 和 ${cnt}连开`); document.getElementById('currentStreak').innerText=txt; }
@@ -688,14 +464,14 @@
         return dragonTigerDestroy;
     }
 
-    // 牛牛游戏（简化，结算调用gameSettle）
+    // ==================== 牛牛游戏 ====================
     let niuNiuDestroy = null;
     function initGame4(container) {
         if(niuNiuDestroy) niuNiuDestroy();
         function createDeck(){ let suits=['♥','♦','♣','♠']; let values=['A','2','3','4','5','6','7','8','9','10','J','Q','K']; let deck=[]; for(let s of suits) for(let i=0;i<values.length;i++){ let v=values[i]; let p=(v==='A')?1:(v==='J'||v==='Q'||v==='K')?10:parseInt(v); deck.push({suit:s,value:v,points:p}); } return deck; }
         function shuffle(deck){ for(let i=deck.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; } return deck; }
         function calcNiuType(cards){ let pts=cards.map(c=>c.points), sum=pts.reduce((a,b)=>a+b,0); let hasNiu=false,niuVal=0; for(let i=0;i<5;i++) for(let j=i+1;j<5;j++) for(let k=j+1;k<5;k++){ let s=pts[i]+pts[j]+pts[k]; if(s%10===0){ let rest=sum-s; niuVal=rest%10; hasNiu=true; break; } if(hasNiu) break; if(hasNiu) break; } if(!hasNiu) return {type:'无牛',multiplier:0,display:'无牛'}; if(niuVal===0){ let allTen=pts.every(p=>p===10); if(allTen) return {type:'五花牛',multiplier:5,display:'五花牛'}; let cnt={}; pts.forEach(p=>cnt[p]=(cnt[p]||0)+1); if(Object.values(cnt).some(c=>c===4)) return {type:'四炸',multiplier:8,display:'四炸'}; return {type:'牛牛',multiplier:3,display:'牛牛'}; } return {type:`牛${niuVal}`,multiplier:1,display:`牛${niuVal}`}; }
-        container.innerHTML = `<div class="game-card"><div>🏦 庄家（电脑）</div><div id="bankerHand" class="niu-hand">🃟 🃟 🃟 🃟 🃟</div><div id="bankerType">?</div><div>👤 闲家（您）</div><div id="playerHand" class="niu-hand">🃟 🃟 🃟 🃟 🃟</div><div id="playerType">?</div><div class="countdown-area">⏱️ 下注 <span id="niuCountdownNum">25</span> s</div><div><span>🎲 本局中奖: <span id="niuWinAmount">0</span></span><span>📊 盈亏: <span id="niuProfitLoss">0</span></span></div><div id="niuChips"><span class="chip" data-chip="10">10</span><span class="chip" data-chip="20">20</span><span class="chip selected" data-chip="50">50</span><span class="chip" data-chip="100">100</span><span class="chip" data-chip="500">500</span></div><div style="display:flex;gap:8px;"><div class="bet-card" data-bet="PLAYER">闲家赢<br><span id="bet_PLAYER">0</span></div><div class="bet-card" data-bet="BANKER">庄家赢<br><span id="bet_BANKER">0</span></div><div class="bet-card" data-bet="TIE">和<br><span id="bet_TIE">0</span></div></div><div style="display:flex;gap:8px;"><div class="bet-card" data-bet="NIU_NIU">闲家牛牛<br><span id="bet_NIU_NIU">0</span></div><div class="bet-card" data-bet="WU_HUA">闲家五花牛<br><span id="bet_WU_HUA">0</span></div></div><div><button id="niuClearBtn" class="exec-btn">清空</button><button id="niuRepeatBtn" class="exec-btn">续押</button><button id="niuRefreshBtn" class="exec-btn">刷新</button><button id="niuDealBtn" class="exec-btn main-go">🐮 发牌</button></div><div>💰 余额: <span id="niuBalance">0</span> 总押注: <span id="niuTotalBet">0</span></div><div id="niuResultMsg"></div></div>`;
+        container.innerHTML = `<div class="game-card"><div>🏦 庄家（电脑）</div><div id="bankerHand" class="niu-hand">🃟 🃟 🃟 🃟 🃟</div><div id="bankerType">?</div><div>👤 闲家（您）</div><div id="playerHand" class="niu-hand">🃟 🃟 🃟 🃟 🃟</div><div id="playerType">?</div><div class="countdown-area" id="niuCountdownArea">⏱️ 下注 <span id="niuCountdownNum">25</span> s</div><div><span>🎲 本局中奖: <span id="niuWinAmount">0</span></span><span>📊 盈亏: <span id="niuProfitLoss">0</span></span></div><div id="niuChips"><span class="chip" data-chip="10">10</span><span class="chip" data-chip="20">20</span><span class="chip selected" data-chip="50">50</span><span class="chip" data-chip="100">100</span><span class="chip" data-chip="500">500</span></div><div style="display:flex;gap:8px;"><div class="bet-card" data-bet="PLAYER">闲家赢<br><span id="bet_PLAYER">0</span></div><div class="bet-card" data-bet="BANKER">庄家赢<br><span id="bet_BANKER">0</span></div><div class="bet-card" data-bet="TIE">和<br><span id="bet_TIE">0</span></div></div><div style="display:flex;gap:8px;"><div class="bet-card" data-bet="NIU_NIU">闲家牛牛<br><span id="bet_NIU_NIU">0</span></div><div class="bet-card" data-bet="WU_HUA">闲家五花牛<br><span id="bet_WU_HUA">0</span></div></div><div><button id="niuClearBtn" class="exec-btn">清空</button><button id="niuRepeatBtn" class="exec-btn">续押</button><button id="niuRefreshBtn" class="exec-btn">刷新</button><button id="niuDealBtn" class="exec-btn main-go">🐮 发牌</button></div><div>💰 余额: <span id="niuBalance">0</span> 总押注: <span id="niuTotalBet">0</span></div><div id="niuResultMsg"></div></div>`;
         let bets={ PLAYER:0, BANKER:0, TIE:0, NIU_NIU:0, WU_HUA:0 };
         let selectedChip=50, currentBalance=currentUser?currentUser.balance:0, isRolling=false, countdownTimer=null, lastBetSnapshot=null, remainingSec=25;
         async function updateUI(){ for(let k in bets){ let sp=document.getElementById(`bet_${k}`); if(sp) sp.innerText=bets[k]; } let total=Object.values(bets).reduce((a,b)=>a+b,0); document.getElementById('niuTotalBet').innerText=total; if(currentUser) document.getElementById('niuBalance').innerText=currentUser.balance.toFixed(2); }
@@ -724,7 +500,7 @@
         if (!currentUser) return renderAuthUI();
         document.getElementById('app').innerHTML = `
             <div style="text-align:center; padding:16px 12px 8px; background:linear-gradient(135deg,#2a1e12,#1a120b); border-bottom:2px solid #ffaa33;">
-                <div><h1 style="font-size:1.6rem;">金辉娱乐城</h1><p>全功能运营版</p></div>
+                <div><h1 style="font-size:1.6rem;">金辉娱乐城</h1><p>全自动开奖版</p></div>
             </div>
             <div class="user-section">
                 <div class="user-info-row">
@@ -746,7 +522,7 @@
             </div>
             <div class="game-container" id="gamePanel"></div>
         `;
-        document.getElementById('logoutBtn').onclick = () => { currentUser = null; localStorage.removeItem('jinhui_current_account'); renderAuthUI(); };
+        document.getElementById('logoutBtn').onclick = () => { currentUser = null; localStorage.removeItem('curr_acc'); renderAuthUI(); };
         document.getElementById('serviceBtn').onclick = showServiceModal;
         document.getElementById('rechargeBtn').onclick = applyRecharge;
         document.getElementById('withdrawBtn').onclick = applyWithdraw;
@@ -773,7 +549,6 @@
     let currentLang = 'zh';
     function t(key) { return lang[currentLang][key] || lang.zh[key] || key; }
 
-    // 登录注册UI
     function renderAuthUI() {
         const savedAcc = localStorage.getItem('neon_saved_account') || '';
         const savedPwd = localStorage.getItem('neon_saved_password') || '';
@@ -827,12 +602,13 @@
         };
     }
 
-    // 启动
     loadConfig();
-    let saved = getCurrentUser();
-    if (saved) {
-        currentUser = saved;
-        renderGameLobby();
+    let savedUser = localStorage.getItem('curr_acc');
+    if (savedUser) {
+        let users = loadUsers();
+        let u = users.find(u=>u.account===savedUser);
+        if (u) { currentUser = u; renderGameLobby(); }
+        else renderAuthUI();
     } else renderAuthUI();
 </script>
 </body>
