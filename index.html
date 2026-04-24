@@ -83,7 +83,7 @@
 <body>
 <div id="app"></div>
 <script>
-    // 全局配置
+    // 全局配置（相对路径，无硬编码）
     const API_BASE = '/api';
     let token = localStorage.getItem('jwt_token');
     let currentUser = null;
@@ -159,8 +159,7 @@
             showLoading(false);
         }
     }
-
-    // ==================== 鱼虾蟹游戏（修正规则） ====================
+    // ==================== 鱼虾蟹游戏 ====================
     let fishDestroy = null;
     function initFishGame(container) {
         if(fishDestroy) fishDestroy();
@@ -281,9 +280,8 @@
                 let cnt = occurs[p];
                 if(cnt > 0) {
                     winAmount += patternBets[p] * cnt;
-                } else {
-                    // 没出现，输掉押注金额（已在押注时扣除，此处在结算时不再重复扣）
                 }
+                // 没出现的，押注已经扣除，不再额外扣
             }
             // 双押结算：需要两个图案各自至少出现1次 → 赢 5 倍押注
             for(let combo of doubleCombos) {
@@ -296,10 +294,10 @@
                     }
                 }
             }
-            // 扣掉已经扣过的押注，winAmount 已经包含了应得的总收入，不需要减去 totalBet
+            // 注：totalBet 已经在押注时通过 gameSettle 扣除了，这里 winAmount 是总收入
             let netProfit = winAmount - totalBet;
             lastWinAmount = netProfit;
-            // 结算到后端（传递 totalBet 和 winAmount）
+            // 结算到后端
             let success = await gameSettle(totalBet, winAmount);
             if(!success) { isRolling=false; startFishRound(); return; }
             let pop=document.createElement('div'); pop.className='result-popup'; pop.innerText=netProfit>0?`🎉 赢 ${netProfit.toFixed(2)}`:`😭 输 ${-netProfit}`; document.body.appendChild(pop); setTimeout(()=>pop.remove(),1800);
@@ -309,11 +307,10 @@
             for(let k in doubleBets) doubleBets[k]=0;
             updateFishUI(); saveLastBetState();
             isRolling=false;
-            // 重置庄家状态（抢庄只生效一局）
+            // 抢庄只生效一局，结算后清除庄家状态
             isGrabbed = false;
             playerBankerBalance = 0;
             localStorage.removeItem('neon_fish_banker');
-            // 重新开始倒计时
             if(countdownTimer) clearInterval(countdownTimer);
             startFishRound();
         }
@@ -386,7 +383,6 @@
         fishDestroy = () => { if(clearTimer) clearTimeout(clearTimer); roundActive=false; if(countdownTimer) clearInterval(countdownTimer); container.innerHTML=''; };
         return fishDestroy;
     }
-
     // ==================== 骰宝游戏 ====================
     let diceDestroy = null;
     function initDiceGame(container) {
@@ -503,11 +499,250 @@
         dragonTigerDestroy=()=>{ if(state.countdownInterval) clearInterval(state.countdownInterval); container.innerHTML=''; };
         return dragonTigerDestroy;
     }
-
     // ==================== 牛牛游戏 ====================
     let niuNiuDestroy = null;
     function initGame4(container) {
         if(niuNiuDestroy) niuNiuDestroy();
         function createDeck(){ let suits=['♥','♦','♣','♠']; let values=['A','2','3','4','5','6','7','8','9','10','J','Q','K']; let deck=[]; for(let s of suits) for(let i=0;i<values.length;i++){ let v=values[i]; let p=(v==='A')?1:(v==='J'||v==='Q'||v==='K')?10:parseInt(v); deck.push({suit:s,value:v,points:p}); } return deck; }
         function shuffle(deck){ for(let i=deck.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; } return deck; }
-        function calcNiuType(cards){ let pts=cards.map(c=>c.points), sum=pts.reduce((a,b)=>a+b,0); let hasNiu=false,niuVal=0; for(let i=0;i<5;i++) for(let j=i+1;j<5;j++) for(let k=j+1;k<5;k++){ let s=pts[i]+pts[j]+pts[k]; if(s%10===0){ let rest=sum-s; niuVal=rest%10; hasNiu=true; break; } if(hasNiu) break; if(hasNiu) break; } if(!hasNiu) return {type:'无牛',multiplier:0,display:'无牛'}; if(niuVal===0){ let allTen=pts.every(p=>p===10); if(allTen) return {type:'五花牛',multiplier:5,display:'五花牛'}; let cnt={}; pts.forEach(p=>cnt[p]=(cnt[p]||0)+1); if(Object.values(cnt).some(c=>c===4)) return {type:'四炸',multiplier:8,display:'四炸'}; return {type:'牛牛',multiplier:3,display:'牛
+        function calcNiuType(cards){ let pts=cards.map(c=>c.points), sum=pts.reduce((a,b)=>a+b,0); let hasNiu=false,niuVal=0; for(let i=0;i<5;i++) for(let j=i+1;j<5;j++) for(let k=j+1;k<5;k++){ let s=pts[i]+pts[j]+pts[k]; if(s%10===0){ let rest=sum-s; niuVal=rest%10; hasNiu=true; break; } if(hasNiu) break; if(hasNiu) break; } if(!hasNiu) return {type:'无牛',multiplier:0,display:'无牛'}; if(niuVal===0){ let allTen=pts.every(p=>p===10); if(allTen) return {type:'五花牛',multiplier:5,display:'五花牛'}; let cnt={}; pts.forEach(p=>cnt[p]=(cnt[p]||0)+1); if(Object.values(cnt).some(c=>c===4)) return {type:'四炸',multiplier:8,display:'四炸'}; return {type:'牛牛',multiplier:3,display:'牛牛'}; } return {type:`牛${niuVal}`,multiplier:1,display:`牛${niuVal}`}; }
+        container.innerHTML = `<div class="game-card"><div>🏦 庄家（电脑）</div><div id="bankerHand" class="niu-hand">🃟 🃟 🃟 🃟 🃟</div><div id="bankerType">?</div><div>👤 闲家（您）</div><div id="playerHand" class="niu-hand">🃟 🃟 🃟 🃟 🃟</div><div id="playerType">?</div><div class="countdown-area">⏱️ 下注 <span id="niuCountdownNum">25</span> s</div><div><span>🎲 本局中奖: <span id="niuWinAmount">0</span></span><span>📊 盈亏: <span id="niuProfitLoss">0</span></span></div><div id="niuChips"><span class="chip" data-chip="10">10</span><span class="chip" data-chip="20">20</span><span class="chip selected" data-chip="50">50</span><span class="chip" data-chip="100">100</span><span class="chip" data-chip="500">500</span></div><div style="display:flex;gap:8px;"><div class="bet-card" data-bet="PLAYER">闲家赢<br><span id="bet_PLAYER">0</span></div><div class="bet-card" data-bet="BANKER">庄家赢<br><span id="bet_BANKER">0</span></div><div class="bet-card" data-bet="TIE">和<br><span id="bet_TIE">0</span></div></div><div style="display:flex;gap:8px;"><div class="bet-card" data-bet="NIU_NIU">闲家牛牛<br><span id="bet_NIU_NIU">0</span></div><div class="bet-card" data-bet="WU_HUA">闲家五花牛<br><span id="bet_WU_HUA">0</span></div></div><div><button id="niuClearBtn" class="exec-btn">清空</button><button id="niuRepeatBtn" class="exec-btn">续押</button><button id="niuRefreshBtn" class="exec-btn">刷新</button><button id="niuDealBtn" class="exec-btn main-go">🐮 发牌</button></div><div>💰 余额: <span id="niuBalance">0</span> 总押注: <span id="niuTotalBet">0</span></div><div id="niuResultMsg"></div></div>`;
+        let bets={ PLAYER:0, BANKER:0, TIE:0, NIU_NIU:0, WU_HUA:0 };
+        let selectedChip=50, currentBalance=currentUser?currentUser.balance:0, isRolling=false, countdownTimer=null, lastBetSnapshot=null, remainingSec=25;
+        async function updateUI(){ for(let k in bets){ let sp=document.getElementById(`bet_${k}`); if(sp) sp.innerText=bets[k]; } let total=Object.values(bets).reduce((a,b)=>a+b,0); document.getElementById('niuTotalBet').innerText=total; if(currentUser) document.getElementById('niuBalance').innerText=currentUser.balance.toFixed(2); }
+        function saveLastBet(){ lastBetSnapshot=JSON.parse(JSON.stringify(bets)); }
+        async function clearAllBets(){ let total=Object.values(bets).reduce((a,b)=>a+b,0); if(total>0) await gameSettle(-total, 0); for(let k in bets) bets[k]=0; updateUI(); saveLastBet(); showToast("已清空押注"); }
+        async function repeatLastBet(){ if(!lastBetSnapshot) return showToast("无续押记录"); let need=Object.values(lastBetSnapshot).reduce((a,b)=>a+b,0); if(need>currentBalance) return showToast("余额不足"); let oldTotal=Object.values(bets).reduce((a,b)=>a+b,0); if(oldTotal>0) await gameSettle(-oldTotal, 0); for(let k in bets) bets[k]=0; for(let k in lastBetSnapshot) bets[k]=lastBetSnapshot[k]; await gameSettle(need, 0); updateUI(); showToast("续押成功"); }
+        async function addBet(betType){ if(isRolling) return showToast("开奖中"); if(selectedChip<=0) return showToast("选筹码"); if(selectedChip>currentBalance) return showToast("余额不足"); let success = await gameSettle(selectedChip, 0); if(!success) return; bets[betType]+=selectedChip; updateUI(); saveLastBet(); showToast(`+${selectedChip} ${betType}`); }
+        async function revealCards(handDiv,cards,delay=150){ handDiv.innerHTML=''; for(let card of cards){ let cd=document.createElement('div'); cd.className='niu-card'; cd.setAttribute('data-suit',card.suit); cd.style.transform='rotateY(90deg)'; cd.style.transition='transform 0.2s'; cd.innerText=card.value+card.suit; handDiv.appendChild(cd); setTimeout(()=>{ cd.style.transform='rotateY(0deg)'; },30); await new Promise(r=>setTimeout(r,delay)); } }
+        async function startGame(){ if(isRolling) return; let totalBet=Object.values(bets).reduce((a,b)=>a+b,0); if(totalBet===0) return showToast("请先下注"); if(totalBet>currentBalance) return showToast("余额不足"); isRolling=true; if(countdownTimer) clearInterval(countdownTimer); let deck=shuffle(createDeck()); let playerCards=deck.slice(0,5), bankerCards=deck.slice(5,10); let playerType=calcNiuType(playerCards), bankerType=calcNiuType(bankerCards); await revealCards(document.getElementById('playerHand'),playerCards,120); await revealCards(document.getElementById('bankerHand'),bankerCards,120); document.getElementById('playerType').innerHTML=`${playerType.display} ${playerType.multiplier>1?`(赔率${playerType.multiplier})`:''}`; document.getElementById('bankerType').innerHTML=`${bankerType.display} ${bankerType.multiplier>1?`(赔率${bankerType.multiplier})`:''}`; let result='', winAmount=0; let pScore=playerType.multiplier===0?0:(playerType.multiplier===1?1:playerType.multiplier); let bScore=bankerType.multiplier===0?0:(bankerType.multiplier===1?1:bankerType.multiplier); if(pScore>bScore) result='PLAYER'; else if(bScore>pScore) result='BANKER'; else result='TIE'; if(result==='PLAYER'&&bets.PLAYER>0) winAmount+=bets.PLAYER*2; if(result==='BANKER'&&bets.BANKER>0) winAmount+=bets.BANKER*2; if(result==='TIE'&&bets.TIE>0) winAmount+=bets.TIE*8; if(playerType.type==='牛牛'&&bets.NIU_NIU>0) winAmount+=bets.NIU_NIU*(playerType.multiplier+1); if(playerType.type==='五花牛'&&bets.WU_HUA>0) winAmount+=bets.WU_HUA*(playerType.multiplier+1); let profit = winAmount - totalBet; await gameSettle(totalBet, winAmount); document.getElementById('niuWinAmount').innerText=winAmount.toFixed(2); document.getElementById('niuProfitLoss').innerText=profit.toFixed(2); document.getElementById('niuResultMsg').innerHTML=`${playerType.display} vs ${bankerType.display}<br>${result==='PLAYER'?'闲家胜':(result==='BANKER'?'庄家胜':'和局')} ${profit>0?` 赢得 ${profit.toFixed(2)}`:''}`; for(let k in bets) bets[k]=0; updateUI(); saveLastBet(); isRolling=false; startCountdown(25); }
+        function startCountdown(sec){ if(countdownTimer) clearInterval(countdownTimer); remainingSec=sec; let cd=document.getElementById('niuCountdownNum'); cd.innerText=remainingSec; countdownTimer=setInterval(()=>{ if(remainingSec<=1){ clearInterval(countdownTimer); countdownTimer=null; if(!isRolling) startGame(); }else{ remainingSec--; cd.innerText=remainingSec; } },1000); }
+        async function refreshBalance(){ await updateUI(); showToast("刷新"); }
+        document.querySelectorAll('#niuChips .chip').forEach(c=>{ c.onclick=function(){ selectedChip=parseInt(this.dataset.chip); document.querySelectorAll('#niuChips .chip').forEach(cc=>cc.classList.remove('selected')); this.classList.add('selected'); }; });
+        document.querySelectorAll('.bet-card[data-bet]').forEach(c=>{ c.onclick=()=>addBet(c.dataset.bet); });
+        document.getElementById('niuClearBtn').onclick=clearAllBets;
+        document.getElementById('niuRepeatBtn').onclick=repeatLastBet;
+        document.getElementById('niuRefreshBtn').onclick=refreshBalance;
+        document.getElementById('niuDealBtn').onclick=()=>{ if(!isRolling) startGame(); };
+        updateUI(); startCountdown(25); saveLastBet();
+        niuNiuDestroy=()=>{ if(countdownTimer) clearInterval(countdownTimer); container.innerHTML=''; };
+        return niuNiuDestroy;
+    }
+
+    // ==================== 充值提现管理员 ====================
+    async function recharge() {
+        let amount = parseFloat(prompt("充值金额（元）", "100"));
+        if(isNaN(amount) || amount <= 0) return showToast("金额无效");
+        let txHash = prompt("USDT 转账哈希（可选）", "");
+        try {
+            await apiFetch('/recharge', { method: 'POST', body: JSON.stringify({ amount, tx_hash: txHash }) });
+            showToast("充值申请已提交，等待管理员审核");
+        } catch(e) { showToast(e.message, true); }
+    }
+    async function withdraw() {
+        let amount = parseFloat(prompt("提现金额（元）", "10"));
+        if(isNaN(amount) || amount <= 0) return showToast("金额无效");
+        if(amount > currentUser.balance) return showToast("余额不足");
+        let address = prompt("USDT 收款地址");
+        if(!address) return;
+        try {
+            await apiFetch('/withdraw', { method: 'POST', body: JSON.stringify({ amount, address }) });
+            showToast("提现申请已提交，等待管理员处理");
+        } catch(e) { showToast(e.message, true); }
+    }
+    function showServiceModal() { alert("客服微信: game_kf_888"); }
+
+    // 管理员后台（点击余额3次，密码 admin888 从后端校验）
+    async function openAdminModal() {
+        let pwd = prompt("管理员密码:");
+        if(!pwd) return;
+        try {
+            let adminRes = await fetch(API_BASE + '/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pwd }) });
+            let adminData = await adminRes.json();
+            if(!adminData.success) throw new Error('密码错误');
+            let adminToken = adminData.token;
+            let users = await fetch(API_BASE + '/api/admin/users', { headers: { 'Authorization': `Bearer ${adminToken}` } }).then(r=>r.json());
+            let rechargeOrders = await fetch(API_BASE + '/api/admin/recharge_orders', { headers: { 'Authorization': `Bearer ${adminToken}` } }).then(r=>r.json());
+            let withdrawOrders = await fetch(API_BASE + '/api/admin/withdraw_orders', { headers: { 'Authorization': `Bearer ${adminToken}` } }).then(r=>r.json());
+            let modalDiv = document.createElement('div'); modalDiv.className = 'modal';
+            modalDiv.innerHTML = `<div class="modal-content" style="max-width:650px;">
+                <h3>🎛️ 管理员后台</h3>
+                <div><strong>📥 充值申请</strong><div id="rechargeListAdmin"></div></div>
+                <div><strong>📤 提现申请</strong><div id="withdrawListAdmin"></div></div>
+                <div><strong>👥 用户管理</strong><select id="userSelect">${users.map(u=>`<option value="${u.id}">${u.account} (余额 ${u.balance})</option>`).join('')}</select>
+                <input id="amountInput" placeholder="金额" type="number"><button id="addBalanceBtn">➕ 上分</button><button id="subBalanceBtn">➖ 下分</button></div>
+                <button id="closeAdminBtn">关闭</button></div>`;
+            document.body.appendChild(modalDiv);
+            function renderRecharge(){
+                let container = modalDiv.querySelector('#rechargeListAdmin');
+                if(rechargeOrders.length===0) { container.innerHTML='<div>无待审核充值</div>'; return; }
+                container.innerHTML = rechargeOrders.map(o=>`<div>${o.account} 申请充值 ${o.amount} USDT<br><button class="admin-btn approveRecharge" data-id="${o.id}">✅ 通过</button><button class="admin-btn rejectRecharge" data-id="${o.id}">❌ 拒绝</button></div>`).join('');
+                document.querySelectorAll('.approveRecharge').forEach(btn=>{
+                    btn.onclick = async () => { await fetch(API_BASE + '/api/admin/approve_recharge', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` }, body: JSON.stringify({ orderId: btn.dataset.id }) }); showToast("已通过"); modalDiv.remove(); openAdminModal(); };
+                });
+                document.querySelectorAll('.rejectRecharge').forEach(btn=>{
+                    btn.onclick = async () => { await fetch(API_BASE + '/api/admin/reject_recharge', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` }, body: JSON.stringify({ orderId: btn.dataset.id }) }); showToast("已拒绝"); modalDiv.remove(); openAdminModal(); };
+                });
+            }
+            function renderWithdraw(){
+                let container = modalDiv.querySelector('#withdrawListAdmin');
+                if(withdrawOrders.length===0) { container.innerHTML='<div>无待处理提现</div>'; return; }
+                container.innerHTML = withdrawOrders.map(o=>`<div>${o.account} 申请提现 ${o.amount} USDT<br><button class="admin-btn approveWithdraw" data-id="${o.id}">✅ 确认打款</button><button class="admin-btn rejectWithdraw" data-id="${o.id}">❌ 拒绝</button></div>`).join('');
+                document.querySelectorAll('.approveWithdraw').forEach(btn=>{
+                    btn.onclick = async () => { await fetch(API_BASE + '/api/admin/approve_withdraw', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` }, body: JSON.stringify({ orderId: btn.dataset.id }) }); showToast("已确认"); modalDiv.remove(); openAdminModal(); };
+                });
+                document.querySelectorAll('.rejectWithdraw').forEach(btn=>{
+                    btn.onclick = async () => { await fetch(API_BASE + '/api/admin/reject_withdraw', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${adminToken}` }, body: JSON.stringify({ orderId: btn.dataset.id }) }); showToast("已拒绝"); modalDiv.remove(); openAdminModal(); };
+                });
+            }
+            renderRecharge(); renderWithdraw();
+            modalDiv.querySelector('#addBalanceBtn').onclick = () => showToast("请通过充值申请功能上分", true);
+            modalDiv.querySelector('#subBalanceBtn').onclick = () => showToast("请通过提现审核下分", true);
+            modalDiv.querySelector('#closeAdminBtn').onclick = () => modalDiv.remove();
+        } catch(e) { showToast(e.message, true); }
+    }
+
+    // ==================== 游戏大厅 ====================
+    async function renderGameLobby() {
+        if (!currentUser) { renderAuthUI(); return; }
+        document.getElementById('app').innerHTML = `
+            <div style="text-align:center; padding:16px 12px 8px; background:linear-gradient(135deg,#2a1e12,#1a120b); border-bottom:2px solid #ffaa33;">
+                <div><h1 style="font-size:1.6rem;">金辉娱乐城</h1><p>至尊版·全游戏同步</p></div>
+            </div>
+            <div class="user-section">
+                <div class="user-info-row">
+                    <span>📱 ${currentUser.account} | 💰 余额: <span id="userBalanceDisplay">${currentUser.balance.toFixed(2)}</span></span>
+                    <div class="btn-group">
+                        <button id="serviceBtn" class="btn-sm">📞 客服</button>
+                        <button id="logoutBtn" class="btn-sm">🚪 退出</button>
+                        <button id="langSwitchBtn" class="lang-switch">ภาษาไทย</button>
+                        <button id="themeToggleBtn" class="theme-switch">🌙 夜间</button>
+                    </div>
+                </div>
+                <div style="margin-top:8px;">
+                    <button id="rechargeBtn" class="charge-btn">💎 充值</button>
+                    <button id="withdrawBtn" class="withdraw-btn">💰 提现</button>
+                </div>
+            </div>
+            <div class="game-nav">
+                <button class="game-tab active" data-game="fish">🐟 潮汕葫芦鱼</button>
+                <button class="game-tab" data-game="dice">🎲 3D骰宝</button>
+                <button class="game-tab" data-game="dragonTiger">🐉 龙虎斗</button>
+                <button class="game-tab" data-game="game4">🐮 百家乐牛牛</button>
+            </div>
+            <div class="game-container" id="gamePanel"></div>
+        `;
+        document.getElementById('logoutBtn').onclick = () => { currentUser = null; token = null; localStorage.removeItem('jwt_token'); renderAuthUI(); };
+        document.getElementById('serviceBtn').onclick = showServiceModal;
+        document.getElementById('rechargeBtn').onclick = recharge;
+        document.getElementById('withdrawBtn').onclick = withdraw;
+        document.getElementById('langSwitchBtn').onclick = () => { currentLang = currentLang === 'zh' ? 'th' : 'zh'; renderGameLobby(); };
+        const themeBtn = document.getElementById('themeToggleBtn');
+        const savedTheme = localStorage.getItem('neon_theme');
+        if(savedTheme === 'light'){ document.body.classList.add('light-mode'); themeBtn.innerHTML='☀️ 日间'; }
+        themeBtn.onclick = () => { document.body.classList.toggle('light-mode'); let isLight=document.body.classList.contains('light-mode'); localStorage.setItem('neon_theme',isLight?'light':'dark'); themeBtn.innerHTML=isLight?'☀️ 日间':'🌙 夜间'; };
+        const gamePanel = document.getElementById('gamePanel');
+        let currentDestroy = null;
+        const inits = { fish: initFishGame, dice: initDiceGame, dragonTiger: initDragonTigerGame, game4: initGame4 };
+        async function switchGame(id){ if(currentDestroy) currentDestroy(); gamePanel.innerHTML = ''; currentDestroy = await inits[id](gamePanel); }
+        document.querySelectorAll('.game-tab').forEach(btn => { btn.onclick = () => { document.querySelectorAll('.game-tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); switchGame(btn.dataset.game); }; });
+        switchGame('fish');
+        let adminClickCount=0;
+        document.getElementById('userBalanceDisplay').addEventListener('click',()=>{ adminClickCount++; setTimeout(()=>{ adminClickCount=0; },1000); if(adminClickCount>=3){ adminClickCount=0; openAdminModal(); } });
+    }
+
+    // ==================== 双语 ====================
+    const lang = {
+        zh: { recharge:"💎 充值", withdraw:"💰 提现", service:"📞 客服", logout:"退出", balance:"余额", phoneOrEmail:"账号", password:"密码 (≥4位)", referralCode:"推荐码", remember:"记住账号", login:"登录", register:"注册", referralNote:"推荐码: VIP666,888VIP,GOLD2025,LUCKY8,DICE100", getCode:"获取验证码", verifyCode:"验证码", registerNow:"注册新账户" },
+        th: { recharge:"💎 เติมเงิน", withdraw:"💰 ถอนเงิน", service:"📞 บริการ", logout:"ออก", balance:"ยอดเงิน", phoneOrEmail:"บัญชี", password:"รหัสผ่าน (≥4)", referralCode:"รหัสแนะนำ", remember:"จำฉัน", login:"เข้าสู่ระบบ", register:"สมัคร", referralNote:"รหัส: VIP666,888VIP,GOLD2025,LUCKY8,DICE100", getCode:"รับรหัส", verifyCode:"รหัสยืนยัน", registerNow:"สมัครสมาชิก" }
+    };
+    let currentLang = 'zh';
+    function t(key) { return lang[currentLang][key] || lang.zh[key] || key; }
+
+    // ==================== 登录注册界面 ====================
+    function renderAuthUI() {
+        const savedAcc = localStorage.getItem('neon_saved_account') || '';
+        const savedPwd = localStorage.getItem('neon_saved_password') || '';
+        const remChecked = localStorage.getItem('neon_remember_me') === 'true';
+        document.getElementById('app').innerHTML = `<div class="auth-panel"><h2>🏆 金辉娱乐城</h2><div><input type="text" id="loginAccount" class="auth-input" placeholder="${t('phoneOrEmail')}" value="${savedAcc}"><input type="password" id="loginPassword" class="auth-input" placeholder="${t('password')}" value="${savedPwd}"><div class="flex-row"><input type="checkbox" id="rememberCheckbox" ${remChecked ? 'checked' : ''}> <label>${t('remember')}</label></div><button id="loginBtn" class="auth-btn">${t('login')}</button></div><hr><h3>${t('registerNow')}</h3><input type="text" id="regAccount" class="auth-input" placeholder="${t('phoneOrEmail')}"><div class="flex-row"><input type="text" id="regCode" class="auth-input" placeholder="${t('verifyCode')}"><button id="getCodeBtn" class="code-btn">${t('getCode')}</button></div><input type="password" id="regPassword" class="auth-input" placeholder="${t('password')}"><input type="text" id="regReferral" class="auth-input" placeholder="${t('referralCode')}"><button id="registerBtn" class="auth-btn">${t('register')}</button><div class="auth-note">${t('referralNote')}</div></div>`;
+        document.getElementById('loginBtn').onclick = async () => {
+            let acc = document.getElementById('loginAccount').value.trim();
+            let pwd = document.getElementById('loginPassword').value;
+            let rem = document.getElementById('rememberCheckbox').checked;
+            if (!acc || !pwd) { showToast("请填写账号和密码", true); return; }
+            showLoading(true, "登录中...");
+            try {
+                const data = await apiFetch('/login', { method: 'POST', body: JSON.stringify({ account: acc, password: pwd }) });
+                token = data.token;
+                localStorage.setItem('jwt_token', token);
+                currentUser = { account: data.account, balance: data.balance };
+                if (rem) {
+                    localStorage.setItem('neon_saved_account', acc);
+                    localStorage.setItem('neon_saved_password', pwd);
+                    localStorage.setItem('neon_remember_me', 'true');
+                } else {
+                    localStorage.removeItem('neon_saved_account');
+                    localStorage.removeItem('neon_saved_password');
+                    localStorage.setItem('neon_remember_me', 'false');
+                }
+                showToast(`欢迎 ${acc}`);
+                renderGameLobby();
+            } catch(e) {
+                showToast(e.message, true);
+            } finally {
+                showLoading(false);
+            }
+        };
+        document.getElementById('getCodeBtn').onclick = () => {
+            let acc = document.getElementById('regAccount').value.trim();
+            if (!acc) { showToast("请填写手机号或邮箱", true); return; }
+            let code = Math.floor(100000 + Math.random() * 900000);
+            window.tempCode = { acc, code, expire: Date.now() + 5*60*1000 };
+            alert(`【验证码】您的验证码是：${code}，5分钟内有效。`);
+            showToast("验证码已发送");
+        };
+        document.getElementById('registerBtn').onclick = async () => {
+            let acc = document.getElementById('regAccount').value.trim();
+            let code = document.getElementById('regCode').value.trim();
+            let pwd = document.getElementById('regPassword').value;
+            let ref = document.getElementById('regReferral').value.trim().toUpperCase();
+            if (!acc || !code || !pwd || !ref) { showToast("请填写完整信息", true); return; }
+            if (!['VIP666','888VIP','GOLD2025','LUCKY8','DICE100'].includes(ref)) { showToast("推荐码无效", true); return; }
+            if (!window.tempCode || window.tempCode.acc !== acc || window.tempCode.code != code || Date.now() > window.tempCode.expire) { showToast("验证码错误或已过期", true); return; }
+            if (pwd.length < 4) { showToast("密码至少4位", true); return; }
+            showLoading(true, "注册中...");
+            try {
+                await apiFetch('/register', { method: 'POST', body: JSON.stringify({ account: acc, password: pwd }) });
+                showToast("注册成功！请登录");
+                document.getElementById('regAccount').value = '';
+                document.getElementById('regCode').value = '';
+                document.getElementById('regPassword').value = '';
+                document.getElementById('regReferral').value = '';
+            } catch(e) {
+                showToast(e.message, true);
+            } finally {
+                showLoading(false);
+            }
+        };
+    }
+
+    // 启动应用
+    (async () => {
+        if(token) {
+            try {
+                const user = await fetchUser();
+                if(user) {
+                    currentUser = user;
+                    renderGameLobby();
+                    return;
+                }
+            } catch(e) {}
+        }
+        renderAuthUI();
+    })();
+</script>
+</body>
+</html>
+
+
+
