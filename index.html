@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>金辉娱乐城 · 终极版</title>
+    <title>金辉娱乐城 · 终极修复版</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         body { background: linear-gradient(145deg, #0a0f1e 0%, #0c1222 100%); font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif; padding: 12px; min-height: 100vh; color: #ffecb3; }
@@ -84,7 +84,7 @@
 <div id="app"></div>
 <script>
     // ==================== 存储与全局 ====================
-    const STORAGE = { users: 'jinhui_users_v3', recharge: 'jinhui_recharge_v3', withdraw: 'jinhui_withdraw_v3', config: 'jinhui_config_v3' };
+    const STORAGE = { users: 'jinhui_users_final', recharge: 'jinhui_recharge_final', withdraw: 'jinhui_withdraw_final', config: 'jinhui_config_final' };
     let systemConfig = { bankerBalance: 200000, adjustFactor: 0.98 };
     function loadConfig() { let s = localStorage.getItem(STORAGE.config); if(s) systemConfig = JSON.parse(s); else localStorage.setItem(STORAGE.config, JSON.stringify(systemConfig)); }
     function saveConfig() { localStorage.setItem(STORAGE.config, JSON.stringify(systemConfig)); }
@@ -146,7 +146,7 @@
     function login(account, password) { let users=loadUsers(); let u=users.find(u=>u.account===account); if(!u) return {success:false,msg:"账号不存在"}; if(u.password!==password) return {success:false,msg:"密码错误"}; currentUser=u; localStorage.setItem('curr_acc',account); return {success:true,msg:"登录成功"}; }
     function register(account,password,code) { let valid=["VIP666","888VIP","GOLD2025","LUCKY8","DICE100"]; if(!valid.includes(code)) return {success:false,msg:"推荐码无效"}; let users=loadUsers(); if(users.find(u=>u.account===account)) return {success:false,msg:"账号已存在"}; users.push({account,password,balance:0,register_time:new Date().toLocaleString(),records:[],result_history:[]}); saveUsers(users); return {success:true,msg:"注册成功"}; }
 
-    // ==================== 鱼虾蟹游戏（自动开奖，筹码统一） ====================
+    // ==================== 鱼虾蟹游戏 ====================
     let fishDestroy = null;
     function initFishGame(container) {
         if(fishDestroy) fishDestroy();
@@ -245,7 +245,6 @@
         async function settleFish(){
             if(isRolling) return;
             let totalBet = Object.values(patternBets).reduce((a,b)=>a+b,0)+Object.values(doubleBets).reduce((a,b)=>a+b,0);
-            // 即使无人下注，也执行动画但无结算
             isRolling=true;
             let r1=patternNames[Math.floor(Math.random()*6)], r2=patternNames[Math.floor(Math.random()*6)], r3=patternNames[Math.floor(Math.random()*6)];
             await rollFishDiceWithAnimation([r1,r2,r3]);
@@ -328,7 +327,7 @@
         return fishDestroy;
     }
 
-    // ==================== 骰宝游戏（自动开奖，筹码统一） ====================
+    // ==================== 骰宝游戏（自动开奖，倒计时结束强制开奖，筹码统一） ====================
     let diceDestroy = null;
     function initDiceGame(container) {
         if(diceDestroy) diceDestroy();
@@ -338,7 +337,7 @@
             <div class="dice-3d-area"><div class="dice-cube" id="dice1"></div><div class="dice-cube" id="dice2"></div><div class="dice-cube" id="dice3"></div></div>
             <div style="text-align:center;font-size:1.2rem;"><span id="totalPoints">3</span></div>
             <div><span>🎲 本局中奖: <span id="rollingWinNumber">0</span></span><span>📊 盈亏: <span id="diceProfitLoss">0</span></span></div>
-            <div><button id="clearAllBtnDice" class="exec-btn">清空</button><button id="repeatBtnDice" class="exec-btn">续押</button><button id="refreshBtnDice" class="exec-btn">刷新</button><button id="manualRollBtn" class="exec-btn main-go">手动掷骰</button></div>
+            <div><button id="clearAllBtnDice" class="exec-btn">清空</button><button id="repeatBtnDice" class="exec-btn">续押</button><button id="refreshBtnDice" class="exec-btn">刷新</button></div>
             <div id="diceChips"><span class="chip" data-val="10">10</span><span class="chip" data-val="50">50</span><span class="chip selected" data-val="100">100</span><span class="chip" data-val="500">500</span><span class="chip" data-val="1000">1000</span></div>
             <div><strong>大小单双</strong></div><div style="display:flex;gap:8px;"><div class="bet-card" data-type="BIG">大<br><span id="bet_BIG">0</span></div><div class="bet-card" data-type="SMALL">小<br><span id="bet_SMALL">0</span></div><div class="bet-card" data-type="ODD">单<br><span id="bet_ODD">0</span></div><div class="bet-card" data-type="EVEN">双<br><span id="bet_EVEN">0</span></div></div>
             <div><strong>点数4-17</strong></div><div id="pointsGrid" class="points-grid"></div>
@@ -389,38 +388,31 @@
         }
         function startCountdownDice(sec){ if(countdownInterval) clearInterval(countdownInterval); let c=sec, cd=document.getElementById('countdownNumDice'); cd.innerText=c; isBetLocked=false; countdownInterval=setInterval(()=>{ if(c<=1){ clearInterval(countdownInterval); countdownInterval=null; isBetLocked=true; startAutoDrawDice(); }else{ c--; cd.innerText=c; } },1000); }
         async function refreshBalanceDice(){ updateUIDice(); showToast("刷新"); }
-        async function manualRoll(){ if(isBetLocked) return showToast("开奖中"); if(countdownInterval) clearInterval(countdownInterval); isBetLocked=true; let totalBetVal=Object.values(bets).reduce((a,b)=>a+b,0); let d1=Math.floor(Math.random()*6)+1,d2=Math.floor(Math.random()*6)+1,d3=Math.floor(Math.random()*6)+1; let {total,types}=getResultInfo(d1,d2,d3); let winAmount=0; if(totalBetVal>0){ if(types.includes('BIG')&&bets.BIG) winAmount+=bets.BIG*2; if(types.includes('SMALL')&&bets.SMALL) winAmount+=bets.SMALL*2; if(types.includes('ODD')&&bets.ODD) winAmount+=bets.ODD*2; if(types.includes('EVEN')&&bets.EVEN) winAmount+=bets.EVEN*2; const oddsMap={4:60,5:30,6:18,7:12,8:8,9:7,10:6,11:6,12:7,13:8,14:12,15:18,16:30,17:60}; if(bets[total]) winAmount+=bets[total]*oddsMap[total]; for(let t of types){ if(t.startsWith('TRIPLE_')&&bets[t]) winAmount+=bets[t]*150; if(t==='ALL_TRIPLE'&&bets.ALL_TRIPLE) winAmount+=bets.ALL_TRIPLE*30; } winAmount*=systemConfig.adjustFactor; }
-            let profit=winAmount-totalBetVal; await gameSettle(totalBetVal, winAmount);
-            startRollingNumber(winAmount); await startRollingLong([d1,d2,d3],2200); totalPointsSpan.innerText=total;
-            addRecord(d1,d2,d3,winAmount,totalBetVal,profit); if(profitLossSpan) profitLossSpan.innerText=profit.toFixed(2);
-            for(let k in bets) bets[k]=0; updateUIDice();
-            let pop=document.createElement('div'); pop.className='result-popup'; pop.innerText=profit>0?`🎉 赢 ${profit.toFixed(2)}`:(totalBetVal>0?`😭 输 ${-profit}`:`🎲 ${total}点`); document.body.appendChild(pop); setTimeout(()=>pop.remove(),1800);
-            isBetLocked=false; startCountdownDice(25);
-        }
         document.querySelectorAll('#diceChips .chip').forEach(c=>{ c.onclick=function(){ selectedChip=parseInt(this.dataset.val); document.querySelectorAll('#diceChips .chip').forEach(cc=>cc.classList.remove('selected')); this.classList.add('selected'); }; });
         document.querySelectorAll('.bet-card').forEach(c=>{ c.onclick=()=>addBetDice(c.dataset.type||c.dataset.point); });
         document.getElementById('clearAllBtnDice').onclick=clearAllBetsDice;
         document.getElementById('repeatBtnDice').onclick=repeatLastBetDice;
         document.getElementById('refreshBtnDice').onclick=refreshBalanceDice;
-        document.getElementById('manualRollBtn').onclick=manualRoll;
         document.getElementById('diceHistoryBtn').onclick=()=>{ if(gameRecordsDice.length===0) return showToast("暂无记录"); let html='<div style="max-height:200px;overflow:auto;">'+gameRecordsDice.map(r=>`<div>${r.time} 🎲 ${r.dice} ${r.result} (盈亏:${r.profit})</div>`).join('')+'</div><button id="closeRec" class="auth-btn">关闭</button>'; let m=document.createElement('div'); m.className='modal'; m.innerHTML=`<div class="modal-content">${html}</div>`; document.body.appendChild(m); m.querySelector('#closeRec').onclick=()=>m.remove(); };
         dice.forEach(d=>setCubeValue(d,1)); totalPointsSpan.innerText=3; (async ()=>{ updateUIDice(); startCountdownDice(25); })();
         diceDestroy=()=>{ if(countdownInterval) clearInterval(countdownInterval); if(window.rollingAnimation) cancelAnimationFrame(window.rollingAnimation); container.innerHTML=''; };
         return diceDestroy;
     }
 
-    // ==================== 龙虎斗（按钮移至开奖下方） ====================
+    // ==================== 龙虎斗（按钮移至开奖下方，筹码统一） ====================
     let dragonTigerDestroy = null;
     function initDragonTigerGame(container) {
         if(dragonTigerDestroy) dragonTigerDestroy();
         const cardSuits=["♥","♦","♣","♠"];
         function getRandomCard(){ let val=Math.floor(Math.random()*13)+1; let points=(val===1)?14:val; let suit=cardSuits[Math.floor(Math.random()*4)]; let display=(val===1?"A":(val===11?"J":(val===12?"Q":(val===13?"K":val))))+suit; return {points,display}; }
-        container.innerHTML = `<div class="game-card"><div style="display:flex;justify-content:space-between;"><div><div>🐉 龙</div><div id="dragonCard" style="font-size:2rem;">🃟</div></div><div>VS</div><div><div>🐯 虎</div><div id="tigerCard" style="font-size:2rem;">🃟</div></div></div><div id="dtBattleResult" class="countdown-area">⚔️ 等待开牌</div><div class="countdown-area" id="countdownAreaDT">⏱️ 下一局: <span id="countdownNumDT">30</span> s</div><div id="streakIndicator">🔥 当前长龙: <span id="currentStreak">无</span></div><div style="margin-bottom:8px;"><div>🐉 龙 <span id="betDragonAmount">0</span> <button class="quick-bet" data-type="DRAGON" data-amount="10">+10</button> <button class="clear-bet" data-type="DRAGON">清空</button></div><div>⚖️ 和 <span id="betTieAmount">0</span> <button class="quick-bet" data-type="TIE" data-amount="10">+10</button> <button class="clear-bet" data-type="TIE">清空</button></div><div>🐯 虎 <span id="betTigerAmount">0</span> <button class="quick-bet" data-type="TIGER" data-amount="10">+10</button> <button class="clear-bet" data-type="TIGER">清空</button></div></div>
+        container.innerHTML = `<div class="game-card"><div style="display:flex;justify-content:space-between;"><div><div>🐉 龙</div><div id="dragonCard" style="font-size:2rem;">🃟</div></div><div>VS</div><div><div>🐯 虎</div><div id="tigerCard" style="font-size:2rem;">🃟</div></div></div><div id="dtBattleResult" class="countdown-area">⚔️ 等待开牌</div><div class="countdown-area" id="countdownAreaDT">⏱️ 下一局: <span id="countdownNumDT">30</span> s</div><div id="streakIndicator">🔥 当前长龙: <span id="currentStreak">无</span></div>
+            <div style="margin-bottom:8px;"><div>🐉 龙 <span id="betDragonAmount">0</span> <button class="quick-bet" data-type="DRAGON" data-amount="10">+10</button> <button class="clear-bet" data-type="DRAGON">清空</button></div><div>⚖️ 和 <span id="betTieAmount">0</span> <button class="quick-bet" data-type="TIE" data-amount="10">+10</button> <button class="clear-bet" data-type="TIE">清空</button></div><div>🐯 虎 <span id="betTigerAmount">0</span> <button class="quick-bet" data-type="TIGER" data-amount="10">+10</button> <button class="clear-bet" data-type="TIGER">清空</button></div></div>
             <div id="dtControlArea" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin:12px 0;"><button id="refreshBtnDT" class="exec-btn">刷新</button><button id="repeatBtnDT" class="exec-btn">续押</button><button id="cancelBtnDT" class="exec-btn">取消</button><button id="fightBtnDT" class="exec-btn main-go">确认</button></div>
             <div>总押注: <span id="totalBetAmountDT">0</span> 预计奖金: <span id="valWinDT">0</span> &nbsp;💰 余额: <span id="balanceDisplayDT">0</span></div>
             <div class="history-area">最近10局<div id="historyGridDT" style="display:flex; gap:4px; margin:4px 0;"></div></div>
+            <div id="dtChips" style="margin-top:8px;"><span class="chip" data-chip="10">10</span><span class="chip" data-chip="50">50</span><span class="chip selected" data-chip="100">100</span><span class="chip" data-chip="500">500</span><span class="chip" data-chip="1000">1000</span></div>
         </div>`;
-        let state={ bets:{ DRAGON:0, TIGER:0, TIE:0 }, betRolling:false, countdown:30, countdownInterval:null };
+        let state={ bets:{ DRAGON:0, TIGER:0, TIE:0 }, betRolling:false, countdown:30, countdownInterval:null, selectedChip:100 };
         let lastBet=null, resultHistory=currentUser?.result_history||[];
         function updateStreakDisplay(){ if(!resultHistory.length){ document.getElementById('currentStreak').innerText='无'; return; } let streak=resultHistory[0], cnt=1; for(let i=1;i<resultHistory.length;i++){ if(resultHistory[i]===streak) cnt++; else break; } let txt=streak==='龙'?`🐉 龙 ${cnt}连开`:(streak==='虎'?`🐯 虎 ${cnt}连开`:`⚖️ 和 ${cnt}连开`); document.getElementById('currentStreak').innerText=txt; }
         async function updateUIDT(){ document.getElementById('balanceDisplayDT').innerText=currentUser?currentUser.balance.toFixed(2):'0'; document.getElementById('betDragonAmount').innerText=state.bets.DRAGON; document.getElementById('betTigerAmount').innerText=state.bets.TIGER; document.getElementById('betTieAmount').innerText=state.bets.TIE; let total=state.bets.DRAGON+state.bets.TIGER+state.bets.TIE; document.getElementById('totalBetAmountDT').innerText=total; let maxWin=Math.max(state.bets.DRAGON*2, state.bets.TIGER*2, state.bets.TIE*8); document.getElementById('valWinDT').innerText=maxWin.toFixed(2); }
@@ -442,12 +434,15 @@
         document.getElementById('cancelBtnDT').onclick=cancelAllBets;
         document.getElementById('repeatBtnDT').onclick=repeatLastBet;
         document.getElementById('refreshBtnDT').onclick=refreshBalance;
+        document.querySelectorAll('#dtChips .chip').forEach(c=>{ c.onclick=function(){ state.selectedChip=parseInt(this.dataset.chip); document.querySelectorAll('#dtChips .chip').forEach(cc=>cc.classList.remove('selected')); this.classList.add('selected'); }; });
+        // 修改加注按钮使用选中的筹码
+        document.querySelectorAll('.quick-bet[data-amount]').forEach(btn=>{ btn.onclick=()=>{ let type=btn.dataset.type, amt=state.selectedChip; addBetAmount(type,amt); }; });
         updateUIDT(); updateHistoryDisplayDT(); startCountdownDT(30); document.getElementById('dragonCard').innerText='🃟'; document.getElementById('tigerCard').innerText='🃟';
         dragonTigerDestroy=()=>{ if(state.countdownInterval) clearInterval(state.countdownInterval); container.innerHTML=''; };
         return dragonTigerDestroy;
     }
 
-    // ==================== 牛牛游戏（按钮移至开奖下方） ====================
+    // ==================== 牛牛游戏（按钮移至开奖下方，筹码统一） ====================
     let niuNiuDestroy = null;
     function initGame4(container) {
         if(niuNiuDestroy) niuNiuDestroy();
