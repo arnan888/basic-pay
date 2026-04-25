@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>金辉娱乐城 - 最终可运行版</title>
-    <!-- 使用 Three.js UMD 版本，全局 THREE 可用 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <title>金辉娱乐城 - 稳定版</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         body { background: linear-gradient(145deg, #0a0f1e 0%, #0c1222 100%); font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif; padding: 12px; min-height: 100vh; color: #ffecb3; }
         #app { max-width: 560px; margin: 0 auto; background: rgba(18,25,45,0.8); backdrop-filter: blur(12px); border-radius: 48px; border: 1px solid rgba(255,215,0,0.3); overflow: hidden; }
-        /* 闪光动画 4秒 */
+        /* 闪光动画 */
         @keyframes redWinFlash {
             0% { background-color: rgba(255, 50, 50, 0); box-shadow: 0 0 0px #ff3300; border-color: #ffaa33; }
             15% { background-color: rgba(255, 30, 30, 0.9); box-shadow: 0 0 18px #ff2200; border-color: #ff2200; transform: scale(1.02);}
@@ -85,9 +83,12 @@
         .admin-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
         .admin-table th, .admin-table td { padding: 6px 4px; border-bottom: 1px solid #ffaa33; text-align: left; }
         .admin-btn { background: #ffaa33; border: none; border-radius: 20px; padding: 4px 8px; margin: 2px; color: #2a1a0a; font-weight: bold; cursor: pointer; font-size: 0.7rem; }
-        /* 牛牛卡片容器 */
-        .niu-hand { display: flex; flex-direction: row; flex-wrap: nowrap; overflow-x: auto; justify-content: center; gap: 8px; min-height: 85px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 20px; margin: 8px 0; }
-        .card-3d-container { width: 55px; height: 75px; display: inline-block; }
+        /* 卡片样式（简单可靠） */
+        .niu-hand { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 8px; min-height: 85px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 20px; margin: 8px 0; }
+        .simple-card { background: white; width: 55px; height: 75px; border-radius: 8px; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; color: #333; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        .simple-card[data-suit="♥"], .simple-card[data-suit="♦"] { color: #c33; }
+        .simple-card[data-suit="♣"], .simple-card[data-suit="♠"] { color: #333; }
+        .dt-card { background: white; width: 55px; height: 75px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.3); margin: 0 auto; }
     </style>
 </head>
 <body>
@@ -173,63 +174,6 @@
         div.style.top = (rect.top - 10) + 'px';
         document.body.appendChild(div);
         setTimeout(()=> div.remove(), 900);
-    }
-
-    // 3D 卡片渲染函数（使用全局 THREE）
-    function createCardCanvas(value, suit) {
-        const canvas = document.createElement('canvas');
-        canvas.width = 400;
-        canvas.height = 560;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#000';
-        ctx.font = 'bold 100px "Segoe UI"';
-        ctx.fillText(value, 40, 150);
-        ctx.fillText(suit, 40, 280);
-        ctx.font = 'bold 100px "Segoe UI"';
-        ctx.fillText(value, canvas.width - 140, canvas.height - 80);
-        ctx.fillText(suit, canvas.width - 140, canvas.height - 210);
-        return canvas;
-    }
-
-    function render3DCard(container, value, suit, isFaceDown = false) {
-        if (!container) return;
-        while (container.firstChild) container.removeChild(container.firstChild);
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(45, 55 / 75, 0.1, 100);
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        renderer.setSize(55, 75);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        container.appendChild(renderer.domElement);
-        const geometry = new THREE.BoxGeometry(1, 1.4, 0.05);
-        let frontMap = null;
-        if (!isFaceDown) {
-            const canvas = createCardCanvas(value, suit);
-            frontMap = new THREE.CanvasTexture(canvas);
-        }
-        const materials = [
-            new THREE.MeshStandardMaterial({ color: 0xeeeeee }),
-            new THREE.MeshStandardMaterial({ color: 0xeeeeee }),
-            new THREE.MeshStandardMaterial({ color: 0xeeeeee }),
-            new THREE.MeshStandardMaterial({ color: 0xeeeeee }),
-            isFaceDown ? new THREE.MeshStandardMaterial({ color: 0x2244aa }) : new THREE.MeshStandardMaterial({ map: frontMap }),
-            new THREE.MeshStandardMaterial({ color: 0x663300 })
-        ];
-        const card = new THREE.Mesh(geometry, materials);
-        scene.add(card);
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
-        scene.add(ambientLight);
-        const pointLight = new THREE.PointLight(0xffffff, 1.5);
-        pointLight.position.set(2, 2, 5);
-        scene.add(pointLight);
-        camera.position.z = 2.5;
-        function animate() {
-            requestAnimationFrame(animate);
-            card.rotation.y += 0.008;
-            renderer.render(scene, camera);
-        }
-        animate();
     }
 
     function applyRecharge() { let amt = parseFloat(prompt("充值金额（USDT）:", "100")); if(isNaN(amt)||amt<=0) return showToast("金额无效"); let orders = JSON.parse(localStorage.getItem(STORAGE.recharge)||'[]'); orders.push({id:Date.now(), account:currentUser.account, amount:amt, status:'pending', time:new Date().toLocaleString()}); localStorage.setItem(STORAGE.recharge, JSON.stringify(orders)); showToast(`充值申请已提交，等待管理员审核`); }
@@ -638,7 +582,7 @@
         return diceDestroy;
     }
 
-    // ==================== 龙虎斗 ====================
+    // ==================== 龙虎斗（纯CSS卡片，无Three.js） ====================
     let dragonTigerDestroy = null;
     function initDragonTigerGame(container) {
         if(dragonTigerDestroy) dragonTigerDestroy();
@@ -651,7 +595,7 @@
             let display = value+suit;
             return { points, display, value, suit };
         }
-        container.innerHTML = `<div class="game-card"><div style="display:flex;justify-content:space-between;"><div><div>🐉 龙</div><div id="dragonCardContainer" style="width:55px;height:75px;margin:0 auto;"></div></div><div>VS</div><div><div>🐯 虎</div><div id="tigerCardContainer" style="width:55px;height:75px;margin:0 auto;"></div></div></div><div id="dtBattleResult" class="countdown-area">⚔️ 等待开牌</div><div class="countdown-area" id="countdownAreaDT">⏱️ 下一局: <span id="countdownNumDT">30</span> s</div><div id="streakIndicator">🔥 当前长龙: <span id="currentStreak">无</span></div><div><div>🐉 龙 <span id="betDragonAmount">0</span> <button class="quick-bet" data-type="DRAGON" data-amount="10">+10</button> <button class="clear-bet" data-type="DRAGON">清空</button></div><div>⚖️ 和 <span id="betTieAmount">0</span> <button class="quick-bet" data-type="TIE" data-amount="10">+10</button> <button class="clear-bet" data-type="TIE">清空</button></div><div>🐯 虎 <span id="betTigerAmount">0</span> <button class="quick-bet" data-type="TIGER" data-amount="10">+10</button> <button class="clear-bet" data-type="TIGER">清空</button></div></div><div><button id="refreshBtnDT" class="exec-btn">刷新</button><button id="repeatBtnDT" class="exec-btn">续押</button><button id="cancelBtnDT" class="exec-btn">取消</button><button id="fightBtnDT" class="exec-btn main-go">确认</button></div><div>总押注: <span id="totalBetAmountDT">0</span> 预计奖金: <span id="valWinDT">0</span> 💰 余额: <span id="balanceDisplayDT">0</span></div><div>最近10局<div id="historyGridDT" style="display:flex; gap:4px; margin:4px 0;"></div></div><div id="dtChips"><span class="chip" data-chip="10">10</span><span class="chip" data-chip="50">50</span><span class="chip selected" data-chip="100">100</span><span class="chip" data-chip="500">500</span><span class="chip" data-chip="1000">1000</span></div></div>`;
+        container.innerHTML = `<div class="game-card"><div style="display:flex;justify-content:space-between;align-items:center;"><div><div>🐉 龙</div><div id="dragonCardDiv" class="dt-card" style="width:65px;height:85px;font-size:2.2rem;">🃟</div></div><div>VS</div><div><div>🐯 虎</div><div id="tigerCardDiv" class="dt-card" style="width:65px;height:85px;font-size:2.2rem;">🃟</div></div></div><div id="dtBattleResult" class="countdown-area">⚔️ 等待开牌</div><div class="countdown-area" id="countdownAreaDT">⏱️ 下一局: <span id="countdownNumDT">30</span> s</div><div id="streakIndicator">🔥 当前长龙: <span id="currentStreak">无</span></div><div><div>🐉 龙 <span id="betDragonAmount">0</span> <button class="quick-bet" data-type="DRAGON" data-amount="10">+10</button> <button class="clear-bet" data-type="DRAGON">清空</button></div><div>⚖️ 和 <span id="betTieAmount">0</span> <button class="quick-bet" data-type="TIE" data-amount="10">+10</button> <button class="clear-bet" data-type="TIE">清空</button></div><div>🐯 虎 <span id="betTigerAmount">0</span> <button class="quick-bet" data-type="TIGER" data-amount="10">+10</button> <button class="clear-bet" data-type="TIGER">清空</button></div></div><div><button id="refreshBtnDT" class="exec-btn">刷新</button><button id="repeatBtnDT" class="exec-btn">续押</button><button id="cancelBtnDT" class="exec-btn">取消</button><button id="fightBtnDT" class="exec-btn main-go">确认</button></div><div>总押注: <span id="totalBetAmountDT">0</span> 预计奖金: <span id="valWinDT">0</span> 💰 余额: <span id="balanceDisplayDT">0</span></div><div>最近10局<div id="historyGridDT" style="display:flex; gap:4px; margin:4px 0;"></div></div><div id="dtChips"><span class="chip" data-chip="10">10</span><span class="chip" data-chip="50">50</span><span class="chip selected" data-chip="100">100</span><span class="chip" data-chip="500">500</span><span class="chip" data-chip="1000">1000</span></div></div>`;
         let state={ bets:{ DRAGON:0, TIGER:0, TIE:0 }, betRolling:false, countdown:30, countdownInterval:null, selectedChip:100 };
         let lastBet=null, resultHistory=currentUser?.result_history||[];
         function updateStreakDisplay(){ if(!resultHistory.length){ document.getElementById('currentStreak').innerText='无'; return; } let streak=resultHistory[0], cnt=1; for(let i=1;i<resultHistory.length;i++){ if(resultHistory[i]===streak) cnt++; else break; } let txt=streak==='龙'?`🐉 龙 ${cnt}连开`:(streak==='虎'?`🐯 虎 ${cnt}连开`:`⚖️ 和 ${cnt}连开`); document.getElementById('currentStreak').innerText=txt; }
@@ -659,13 +603,7 @@
         async function addBetAmount(type,amt){ if(state.betRolling) return; let newVal=state.bets[type]+amt; if(newVal>currentUser.balance) { showToast("余额不足"); return; } await gameSettle(amt, 0); state.bets[type]=newVal; updateUIDT(); }
         function clearBet(type){ let old=state.bets[type]; if(old===0) return; state.bets[type]=0; gameSettle(-old,0); updateUIDT(); }
         function cancelAllBets(){ let total=state.bets.DRAGON+state.bets.TIGER+state.bets.TIE; if(total>0) gameSettle(-total,0); state.bets={ DRAGON:0, TIGER:0, TIE:0 }; updateUIDT(); }
-        function flipCardAnimation(el,value,suit,win){ 
-            return new Promise(res=>{
-                render3DCard(el, value, suit, false);
-                if(win){ el.style.boxShadow='0 0 15px gold'; setTimeout(()=>el.style.boxShadow='',800); }
-                setTimeout(res,200);
-            });
-        }
+        function flipCardAnimation(el,text,win){ return new Promise(res=>{ el.style.transition='transform 0.3s'; el.style.transform='rotateY(90deg)'; setTimeout(()=>{ el.innerText=text; el.style.transform='rotateY(0deg)'; if(win){ el.style.boxShadow='0 0 15px gold'; setTimeout(()=>el.style.boxShadow='',800); } setTimeout(res,200); },150); }); }
         async function placeBetDT(type,amount){
             if(state.betRolling) return;
             state.betRolling=true;
@@ -678,10 +616,9 @@
             if((type==='DRAGON'&&result==='龙')||(type==='TIGER'&&result==='虎')||(type==='TIE'&&result==='和')) win=amount*(result==='和'?8:2);
             win = win * systemConfig.adjustFactor;
             await gameSettle(amount, win);
-            let dragonContainer = document.getElementById('dragonCardContainer');
-            let tigerContainer = document.getElementById('tigerCardContainer');
-            await flipCardAnimation(dragonContainer, dragon.value, dragon.suit, result==='龙');
-            await flipCardAnimation(tigerContainer, tiger.value, tiger.suit, result==='虎');
+            let dragonDiv=document.getElementById('dragonCardDiv'), tigerDiv=document.getElementById('tigerCardDiv');
+            await flipCardAnimation(dragonDiv, dragon.display, result==='龙');
+            await flipCardAnimation(tigerDiv, tiger.display, result==='虎');
             document.getElementById('dtBattleResult').innerHTML=`🐉 ${dragon.display}  vs  ${tiger.display} 🐯<br>🏆 ${result}方胜利`;
             resultHistory.unshift(result); if(resultHistory.length>10) resultHistory.pop(); updateHistoryDisplayDT(); updateStreakDisplay();
             if(win>0){
@@ -705,13 +642,12 @@
         document.getElementById('refreshBtnDT').onclick=refreshBalance;
         document.querySelectorAll('#dtChips .chip').forEach(c=>{ c.onclick=function(){ state.selectedChip=parseInt(this.dataset.chip); document.querySelectorAll('#dtChips .chip').forEach(cc=>cc.classList.remove('selected')); this.classList.add('selected'); }; });
         updateUIDT(); updateHistoryDisplayDT(); startCountdownDT(30);
-        render3DCard(document.getElementById('dragonCardContainer'), '?', '?', true);
-        render3DCard(document.getElementById('tigerCardContainer'), '?', '?', true);
+        document.getElementById('dragonCardDiv').innerText='🃟'; document.getElementById('tigerCardDiv').innerText='🃟';
         dragonTigerDestroy=()=>{ if(state.countdownInterval) clearInterval(state.countdownInterval); container.innerHTML=''; };
         return dragonTigerDestroy;
     }
 
-    // ==================== 牛牛游戏 ====================
+    // ==================== 牛牛游戏（纯CSS卡片） ====================
     let niuNiuDestroy = null;
     function initGame4(container) {
         if(niuNiuDestroy) niuNiuDestroy();
@@ -741,15 +677,14 @@
             handDiv.innerHTML = '';
             for(let idx=0; idx<cards.length; idx++){
                 let card = cards[idx];
-                let cardContainer = document.createElement('div');
-                cardContainer.style.width = '55px';
-                cardContainer.style.height = '75px';
-                cardContainer.style.display = 'inline-block';
-                cardContainer.classList.add('card-3d-container');
-                handDiv.appendChild(cardContainer);
-                setTimeout(() => {
-                    render3DCard(cardContainer, card.value, card.suit, false);
-                }, idx * delay);
+                let div = document.createElement('div');
+                div.className = 'simple-card';
+                div.setAttribute('data-suit', card.suit);
+                div.innerText = card.display;
+                div.style.transform = 'rotateY(90deg)';
+                div.style.transition = 'transform 0.2s';
+                handDiv.appendChild(div);
+                setTimeout(() => { div.style.transform = 'rotateY(0deg)'; }, idx * delay);
                 await new Promise(r => setTimeout(r, delay));
             }
         }
@@ -845,6 +780,7 @@
         const updateBalance = setInterval(() => { const balSpan = document.getElementById('gameBalanceDisplay'); if (balSpan && currentUser) balSpan.innerText = `${currentUser.balance.toFixed(2)}`; if (document.getElementById('backToLobbyBtn') === null) clearInterval(updateBalance); }, 500);
     }
 
+    // 双语
     const lang = { zh: { phoneOrEmail:"账号", password:"密码", referralCode:"推荐码", remember:"记住", login:"登录", register:"注册", getCode:"获取验证码", verifyCode:"验证码", registerNow:"注册", referralNote:"推荐码: VIP666,888VIP,GOLD2025,LUCKY8,DICE100" }, th: { phoneOrEmail:"บัญชี", password:"รหัส", referralCode:"รหัสแนะนำ", remember:"จำ", login:"เข้าสู่", register:"สมัคร", getCode:"รับรหัส", verifyCode:"รหัส", registerNow:"สมัคร", referralNote:"VIP666,888VIP,GOLD2025,LUCKY8,DICE100" } };
     let currentLang = 'zh';
     function t(key) { return lang[currentLang][key] || lang.zh[key] || key; }
