@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>骰宝测试</title><style>
+    body{background:#0a0f1e;color:#ffecb3;font-family:sans-serif;padding:20px;}
+    #app{max-width:500px;margin:auto;background:#1e2a2a;border-radius:32px;padding:20px;}
+    .dice{display:inline-block;width:60px;height:60px;background:white;color:black;border-radius:16px;text-align:center;line-height:60px;font-size:2rem;margin:5px;}
+    .chip{background:#cc8800;display:inline-block;padding:6px 12px;border-radius:36px;margin:3px;cursor:pointer;}
+    .chip.selected{background:#ffaa33;}
+    .bet-card{background:#3a4a4a;border-radius:18px;padding:6px;display:inline-block;margin:4px;cursor:pointer;}
+    .countdown{background:#00000066;text-align:center;padding:8px;border-radius:40px;margin:10px 0;}
+    .exec-btn{background:#ffaa33;border:none;border-radius:36px;padding:8px 14px;cursor:pointer;margin:5px;}
+</style></head>
+<body><div id="app"></div><script>
+    let balance=10000;
+    const systemConfig={bankerBalance:200000,adjustFactor:0.98};
+    function showToast(msg){alert(msg);}
+    async function gameSettle(totalBet,winAmount){
+        if(balance<totalBet){showToast("余额不足");return false;}
+        balance=balance-totalBet+winAmount;
+        document.getElementById("balance").innerText=balance.toFixed(2);
+        return true;
+    }
+    function flashWinElement(el,winAmount){
+        if(!el)return;
+        el.style.backgroundColor='#ff3300';
+        setTimeout(()=>el.style.backgroundColor='',300);
+        let div=document.createElement('div');
+        div.innerText=`+${winAmount.toFixed(2)}`;
+        div.style.position='fixed';div.style.color='red';div.style.left=(el.getBoundingClientRect().left+30)+'px';div.style.top=(el.getBoundingClientRect().top-20)+'px';
+        document.body.appendChild(div);
+        setTimeout(()=>div.remove(),800);
+    }
+    function initGame(){
+        document.getElementById('app').innerHTML=`
+            <div><div>💰 余额: <span id="balance">${balance.toFixed(2)}</span></div>
+            <div class="countdown">⏱️ 下注 <span id="countdownNum">25</span> 秒</div>
+            <div><div id="dice1" class="dice">?</div><div id="dice2" class="dice">?</div><div id="dice3" class="dice">?</div></div>
+            <div>🎲 总点数: <span id="totalPoints">3</span></div>
+            <div>💰 本局赢额: <span id="winAmount">0</span></div>
+            <div><button id="clearBtn" class="exec-btn">清空</button><button id="repeatBtn" class="exec-btn">续押</button></div>
+            <div id="chips"><span class="chip" data-val="10">10</span><span class="chip" data-val="50">50</span><span class="chip selected" data-val="100">100</span><span class="chip" data-val="500">500</span></div>
+            <div><strong>大小单双</strong></div>
+            <div><div class="bet-card" data-type="BIG">大 <span id="bet_BIG">0</span></div><div class="bet-card" data-type="SMALL">小 <span id="bet_SMALL">0</span></div><div class="bet-card" data-type="ODD">单 <span id="bet_ODD">0</span></div><div class="bet-card" data-type="EVEN">双 <span id="bet_EVEN">0</span></div></div>
+            <div><strong>点数4-17</strong><div id="pointsGrid"></div></div>
+            <div><strong>围骰</strong><div id="tripsGrid"></div></div>
+        `;
+        for(let i=4;i<=17;i++)document.getElementById('pointsGrid').innerHTML+=`<div class="bet-card point-card" data-point="${i}">${i}点 <span id="bet_${i}">0</span></div>`;
+        for(let i=1;i<=6;i++)document.getElementById('tripsGrid').innerHTML+=`<div class="bet-card trip-card" data-type="TRIPLE_${i}">${i}围 <span id="bet_TRIPLE_${i}">0</span></div>`;
+        document.getElementById('tripsGrid').innerHTML+=`<div class="bet-card" data-type="ALL_TRIPLE">豹子 <span id="bet_ALL_TRIPLE">0</span></div>`;
+        let bets={BIG:0,SMALL:0,ODD:0,EVEN:0};
+        for(let i=4;i<=17;i++)bets[i]=0;
+        for(let i=1;i<=6;i++)bets[`TRIPLE_${i}`]=0;
+        bets['ALL_TRIPLE']=0;
+        let selectedChip=100,isBetLocked=false,countdownInterval=null,lastBetSnapshot=null;
+        function updateUI(){for(let k in bets){let el=document.getElementById(`bet_${k}`);if(el)el.innerText=bets[k];}document.getElementById("balance").innerText=balance.toFixed(2);}
+        function saveLastBet(){lastBetSnapshot=JSON.parse(JSON.stringify(bets));}
+        async function addBet(type){if(isBetLocked){showToast("开奖中");return;}if(selectedChip>balance){showToast("余额不足");return;}await gameSettle(selectedChip,0);bets[type]+=selectedChip;updateUI();saveLastBet();}
+        async function clearAllBets(){let total=Object.values(bets).reduce((a,b)=>a+b,0);if(total>0)await gameSettle(-total,0);for(let k in bets)bets[k]=0;updateUI();}
+        async function repeatLastBet(){if(!lastBetSnapshot){showToast("无续押记录");return;}let need=Object.values(lastBetSnapshot).reduce((a,b)=>a+b,0);if(need>balance){showToast("余额不足");return;}for(let k in bets)bets[k]=0;for(let k in lastBetSnapshot)bets[k]=lastBetSnapshot[k];await gameSettle(need,0);updateUI();if(!isBetLocked)startAutoDraw();}
+        function getRandomDice(){return Math.floor(Math.random()*6)+1;}
+        function getResultInfo(d1,d2,d3){let total=d1+d2+d3,types=[];if(total>=11&&total<=17)types.push('BIG');else types.push('SMALL');if(total%2===1)types.push('ODD');else types.push('EVEN');if(d1===d2&&d2===d3){types.push(`TRIPLE_${d1}`);types.push('ALL_TRIPLE');}return{total,types};}
+        async function startAutoDraw(){if(isBetLocked)return;let totalBet=Object.values(bets).reduce((a,b)=>a+b,0);isBetLocked=true;let d1=getRandomDice(),d2=getRandomDice(),d3=getRandomDice();let{total,types}=getResultInfo(d1,d2,d3);let winAmount=0,winTypes=[];if(totalBet>0){if(types.includes('BIG')&&bets.BIG){winAmount+=bets.BIG*2;winTypes.push('BIG');}if(types.includes('SMALL')&&bets.SMALL){winAmount+=bets.SMALL*2;winTypes.push('SMALL');}if(types.includes('ODD')&&bets.ODD){winAmount+=bets.ODD*2;winTypes.push('ODD');}if(types.includes('EVEN')&&bets.EVEN){winAmount+=bets.EVEN*2;winTypes.push('EVEN');}const oddsMap={4:60,5:30,6:18,7:12,8:8,9:7,10:6,11:6,12:7,13:8,14:12,15:18,16:30,17:60};if(bets[total]){winAmount+=bets[total]*oddsMap[total];winTypes.push(total.toString());}for(let t of types){if(t.startsWith('TRIPLE_')&&bets[t]){winAmount+=bets[t]*150;winTypes.push(t);}if(t==='ALL_TRIPLE'&&bets.ALL_TRIPLE){winAmount+=bets.ALL_TRIPLE*30;winTypes.push('ALL_TRIPLE');}}winAmount*=systemConfig.adjustFactor;}let profit=winAmount-totalBet;document.getElementById('dice1').innerText=d1;document.getElementById('dice2').innerText=d2;document.getElementById('dice3').innerText=d3;document.getElementById('totalPoints').innerText=total;document.getElementById('winAmount').innerText=winAmount.toFixed(2);await gameSettle(totalBet,winAmount);for(let wt of winTypes){let el=null;if(wt==='BIG')el=document.querySelector('.bet-card[data-type="BIG"]');else if(wt==='SMALL')el=document.querySelector('.bet-card[data-type="SMALL"]');else if(wt==='ODD')el=document.querySelector('.bet-card[data-type="ODD"]');else if(wt==='EVEN')el=document.querySelector('.bet-card[data-type="EVEN"]');else if(!isNaN(parseInt(wt)))el=document.querySelector(`.bet-card[data-point="${wt}"]`);else if(wt.startsWith('TRIPLE'))el=document.querySelector(`.trip-card[data-type="${wt}"]`);else if(wt==='ALL_TRIPLE')el=document.querySelector(`.bet-card[data-type="ALL_TRIPLE"]`);if(el)flashWinElement(el,winAmount);}for(let k in bets)bets[k]=0;updateUI();isBetLocked=false;startCountdown(25);}
+        function startCountdown(sec){if(countdownInterval)clearInterval(countdownInterval);let c=sec,cd=document.getElementById('countdownNum');cd.innerText=c;isBetLocked=false;countdownInterval=setInterval(()=>{if(c<=1){clearInterval(countdownInterval);isBetLocked=true;startAutoDraw();}else{c--;cd.innerText=c;}},1000);}
+        document.querySelectorAll('#chips .chip').forEach(c=>{c.onclick=function(){selectedChip=parseInt(this.dataset.val);document.querySelectorAll('#chips .chip').forEach(cc=>cc.classList.remove('selected'));this.classList.add('selected');};});
+        document.querySelectorAll('.bet-card').forEach(c=>{c.onclick=()=>addBet(c.dataset.type||c.dataset.point);});
+        document.getElementById('clearBtn').onclick=clearAllBets;document.getElementById('repeatBtn').onclick=repeatLastBet;
+        updateUI();startCountdown(25);
+    }
+    initGame();
+</script></body></html>
