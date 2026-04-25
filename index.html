@@ -339,11 +339,23 @@
         return fishDestroy;
     }
 
-    // ==================== 骰宝游戏（3D，自动开奖） ====================
+        // ==================== 骰宝游戏（强制自动开奖修复版） ====================
     let diceDestroy = null;
     function initDiceGame(container) {
         if(diceDestroy) diceDestroy();
-        container.innerHTML = `<div class="game-card"><div style="display:flex;gap:8px;"><div style="flex:1;text-align:center;">🏦 庄家<div id="diceBankerDisplay">${systemConfig.bankerBalance.toFixed(2)}</div></div><div style="flex:1;text-align:center;">🎲 总押注<div id="totalBetDice">0</div></div></div><div class="countdown-area" id="countdownAreaDice">⏱️ 下注 <span id="countdownNumDice">25</span> s</div><div class="dice-3d-area"><div class="dice-cube" id="dice1"></div><div class="dice-cube" id="dice2"></div><div class="dice-cube" id="dice3"></div></div><div style="text-align:center;font-size:1.2rem;"><span id="totalPoints">3</span></div><div><span>🎲 本局中奖: <span id="rollingWinNumber">0</span></span><span>📊 盈亏: <span id="diceProfitLoss">0</span></span></div><div><button id="clearAllBtnDice" class="exec-btn">清空</button><button id="repeatBtnDice" class="exec-btn">续押</button><button id="refreshBtnDice" class="exec-btn">刷新</button></div><div id="diceChips"><span class="chip" data-val="10">10</span><span class="chip" data-val="50">50</span><span class="chip selected" data-val="100">100</span><span class="chip" data-val="500">500</span><span class="chip" data-val="1000">1000</span></div><div><strong>大小单双</strong></div><div style="display:flex;gap:8px;"><div class="bet-card" data-type="BIG">大<br><span id="bet_BIG">0</span></div><div class="bet-card" data-type="SMALL">小<br><span id="bet_SMALL">0</span></div><div class="bet-card" data-type="ODD">单<br><span id="bet_ODD">0</span></div><div class="bet-card" data-type="EVEN">双<br><span id="bet_EVEN">0</span></div></div><div><strong>点数4-17</strong></div><div id="pointsGrid" class="points-grid"></div><div><strong>围骰/豹子</strong></div><div id="trioGrid" class="trio-grid"></div><button id="diceHistoryBtn" class="exec-btn">📜 记录</button></div>`;
+        container.innerHTML = `<div class="game-card">
+            <div style="display:flex;gap:8px;"><div style="flex:1;text-align:center;">🏦 庄家<div id="diceBankerDisplay">${systemConfig.bankerBalance.toFixed(2)}</div></div><div style="flex:1;text-align:center;">🎲 总押注<div id="totalBetDice">0</div></div></div>
+            <div class="countdown-area" id="countdownAreaDice">⏱️ 下注 <span id="countdownNumDice">25</span> s</div>
+            <div class="dice-3d-area"><div class="dice-cube" id="dice1"></div><div class="dice-cube" id="dice2"></div><div class="dice-cube" id="dice3"></div></div>
+            <div style="text-align:center;font-size:1.2rem;"><span id="totalPoints">3</span></div>
+            <div><span>🎲 本局中奖: <span id="rollingWinNumber">0</span></span><span>📊 盈亏: <span id="diceProfitLoss">0</span></span></div>
+            <div><button id="clearAllBtnDice" class="exec-btn">清空</button><button id="repeatBtnDice" class="exec-btn">续押</button><button id="refreshBtnDice" class="exec-btn">刷新</button></div>
+            <div id="diceChips"><span class="chip" data-val="10">10</span><span class="chip" data-val="50">50</span><span class="chip selected" data-val="100">100</span><span class="chip" data-val="500">500</span><span class="chip" data-val="1000">1000</span></div>
+            <div><strong>大小单双</strong></div><div style="display:flex;gap:8px;"><div class="bet-card" data-type="BIG">大<br><span id="bet_BIG">0</span></div><div class="bet-card" data-type="SMALL">小<br><span id="bet_SMALL">0</span></div><div class="bet-card" data-type="ODD">单<br><span id="bet_ODD">0</span></div><div class="bet-card" data-type="EVEN">双<br><span id="bet_EVEN">0</span></div></div>
+            <div><strong>点数4-17</strong></div><div id="pointsGrid" class="points-grid"></div>
+            <div><strong>围骰/豹子</strong></div><div id="trioGrid" class="trio-grid"></div>
+            <button id="diceHistoryBtn" class="exec-btn">📜 记录</button>
+        </div>`;
         for(let i=4;i<=17;i++) document.getElementById('pointsGrid').innerHTML += `<div class="bet-card point-card" data-point="${i}">${i}点<br><span id="bet_${i}">0</span></div>`;
         for(let i=1;i<=6;i++) document.getElementById('trioGrid').innerHTML += `<div class="bet-card trio-card" data-type="TRIPLE_${i}">${i}围<br><span id="bet_TRIPLE_${i}">0</span></div>`;
         document.getElementById('trioGrid').innerHTML += `<div class="bet-card trio-card" data-type="ALL_TRIPLE">豹子<br><span id="bet_ALL_TRIPLE">0</span></div>`;
@@ -470,6 +482,7 @@
             if(isBetLocked) return;
             let totalBetVal = Object.values(bets).reduce((a,b)=>a+b,0);
             isBetLocked = true;
+            // 生成随机结果（骰子点数）
             let d1 = Math.floor(Math.random()*6)+1, d2 = Math.floor(Math.random()*6)+1, d3 = Math.floor(Math.random()*6)+1;
             let { total, types } = getResultInfo(d1,d2,d3);
             let winAmount = 0;
@@ -488,20 +501,30 @@
             }
             let profit = winAmount - totalBetVal;
             await gameSettle(totalBetVal, winAmount);
-            startRollingNumber(winAmount);
-            await startRollingLong([d1,d2,d3], 2200);
-            totalPointsSpan.innerText = total;
-            addRecord(d1,d2,d3, winAmount, totalBetVal, profit);
-            if(profitLossSpan) profitLossSpan.innerText = profit.toFixed(2);
-            for(let k in bets) bets[k] = 0;
-            updateUIDice();
-            let pop = document.createElement('div');
-            pop.className = 'result-popup';
-            pop.innerText = profit>0 ? `🎉 赢 ${profit.toFixed(2)}` : (totalBetVal>0 ? `😭 输 ${-profit}` : `🎲 ${total}点`);
-            document.body.appendChild(pop);
-            setTimeout(()=>pop.remove(), 1800);
-            isBetLocked = false;
-            startCountdownDice(25);
+            // 动画：轮流快速随机旋转，最后停在目标值
+            let steps = 15;
+            for(let i=0;i<steps;i++){
+                setTimeout(() => {
+                    dice.forEach(d => setCubeValue(d, Math.floor(Math.random()*6)+1));
+                }, i * 80);
+            }
+            setTimeout(async () => {
+                for(let i=0;i<3;i++){
+                    setCubeValue(dice[i], [d1,d2,d3][i]);
+                }
+                totalPointsSpan.innerText = total;
+                addRecord(d1,d2,d3, winAmount, totalBetVal, profit);
+                if(profitLossSpan) profitLossSpan.innerText = profit.toFixed(2);
+                for(let k in bets) bets[k] = 0;
+                updateUIDice();
+                let pop = document.createElement('div');
+                pop.className = 'result-popup';
+                pop.innerText = profit>0 ? `🎉 赢 ${profit.toFixed(2)}` : (totalBetVal>0 ? `😭 输 ${-profit}` : `🎲 ${total}点`);
+                document.body.appendChild(pop);
+                setTimeout(()=>pop.remove(), 1800);
+                isBetLocked = false;
+                startCountdownDice(25);
+            }, steps * 80 + 100);
         }
         function startCountdownDice(sec){
             if(countdownInterval) clearInterval(countdownInterval);
@@ -512,7 +535,6 @@
                 if(c <= 1){
                     clearInterval(countdownInterval);
                     countdownInterval = null;
-                    isBetLocked = true;
                     startAutoDrawDice();
                 } else {
                     c--;
