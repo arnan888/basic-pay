@@ -3,15 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>金辉娱乐城</title>
-    <!-- 引入 Three.js 核心库 -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.128.0/build/three.module.js"
-            }
-        }
-    </script>
+    <title>金辉娱乐城 - 最终可运行版</title>
+    <!-- 使用 Three.js UMD 版本，全局 THREE 可用 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
         body { background: linear-gradient(145deg, #0a0f1e 0%, #0c1222 100%); font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif; padding: 12px; min-height: 100vh; color: #ffecb3; }
@@ -98,10 +92,7 @@
 </head>
 <body>
 <div id="app"></div>
-<script type="module">
-    import * as THREE from 'three';
-    // 将 THREE 挂载到 window 上，方便非模块函数使用
-    window.THREE = THREE;
+<script>
     // ==================== 全局存储 ====================
     const STORAGE = { users: 'jinhui_users_final', recharge: 'jinhui_recharge_final', withdraw: 'jinhui_withdraw_final', config: 'jinhui_config_final' };
     let systemConfig = { bankerBalance: 200000, adjustFactor: 0.98 };
@@ -160,7 +151,6 @@
         return true;
     }
 
-    // 闪光辅助函数（按钮背景+数字+浮动金额）
     function flashWinElement(el, winAmount) {
         if(!el) return;
         el.classList.remove('win-flash');
@@ -185,7 +175,7 @@
         setTimeout(()=> div.remove(), 900);
     }
 
-    // 3D 卡片渲染函数（基于 Three.js）
+    // 3D 卡片渲染函数（使用全局 THREE）
     function createCardCanvas(value, suit) {
         const canvas = document.createElement('canvas');
         canvas.width = 400;
@@ -242,7 +232,6 @@
         animate();
     }
 
-    // 充值提现等辅助
     function applyRecharge() { let amt = parseFloat(prompt("充值金额（USDT）:", "100")); if(isNaN(amt)||amt<=0) return showToast("金额无效"); let orders = JSON.parse(localStorage.getItem(STORAGE.recharge)||'[]'); orders.push({id:Date.now(), account:currentUser.account, amount:amt, status:'pending', time:new Date().toLocaleString()}); localStorage.setItem(STORAGE.recharge, JSON.stringify(orders)); showToast(`充值申请已提交，等待管理员审核`); }
     function applyWithdraw() { let amt = parseFloat(prompt("提现金额（USDT）:", "10")); if(isNaN(amt)||amt<=0) return showToast("金额无效"); if(currentUser.balance<amt) return showToast("余额不足",true); let addr = prompt("USDT收款地址"); if(!addr) return; let orders = JSON.parse(localStorage.getItem(STORAGE.withdraw)||'[]'); orders.push({id:Date.now(), account:currentUser.account, amount:amt, address:addr, status:'pending', time:new Date().toLocaleString()}); localStorage.setItem(STORAGE.withdraw, JSON.stringify(orders)); showToast(`提现申请已提交`); }
     function showServiceModal() { alert("客服微信: jinhui_cs_888"); }
@@ -349,7 +338,8 @@
         saveUsers(users);
         return {success:true,msg:"注册成功"};
     }
-        // ==================== 鱼虾蟹游戏（完全修复） ====================
+
+    // ==================== 鱼虾蟹游戏 ====================
     let fishDestroy = null;
     function initFishGame(container) {
         if(fishDestroy) fishDestroy();
@@ -462,7 +452,7 @@
             let totalBet = Object.values(patternBets).reduce((a,b)=>a+b,0)+Object.values(doubleBets).reduce((a,b)=>a+b,0);
             if(totalBet===0 && !isGrabbed) { showToast("请下注"); return; }
             isRolling=true;
-            saveCurrentBetsAsLastRound(); // ★ 关键：开奖前保存当前押注，用于续押
+            saveCurrentBetsAsLastRound();
             let r1=patternNames[Math.floor(Math.random()*6)], r2=patternNames[Math.floor(Math.random()*6)], r3=patternNames[Math.floor(Math.random()*6)];
             await rollFishDiceWithAnimation([r1,r2,r3]);
             let occurs={鱼:0,虾:0,蟹:0,葫芦:0,金钱:0,鸡:0};
@@ -503,7 +493,7 @@
             isRolling=false;
             isGrabbed=false;
             if(countdownTimer) clearInterval(countdownTimer);
-            startFishRound();  // ★ 自动开始下一轮
+            startFishRound();
         }
         
         function startFishRound(){
@@ -544,7 +534,8 @@
         fishDestroy = ()=>{ if(countdownTimer) clearInterval(countdownTimer); roundActive=false; container.innerHTML=''; };
         return fishDestroy;
     }
-        // ==================== 骰宝游戏（自动开奖正常） ====================
+
+    // ==================== 骰宝游戏 ====================
     let diceDestroy = null;
     function initDiceGame(container) {
         if(diceDestroy) diceDestroy();
@@ -647,7 +638,7 @@
         return diceDestroy;
     }
 
-    // ==================== 龙虎斗（Three.js 3D卡片） ====================
+    // ==================== 龙虎斗 ====================
     let dragonTigerDestroy = null;
     function initDragonTigerGame(container) {
         if(dragonTigerDestroy) dragonTigerDestroy();
@@ -714,13 +705,13 @@
         document.getElementById('refreshBtnDT').onclick=refreshBalance;
         document.querySelectorAll('#dtChips .chip').forEach(c=>{ c.onclick=function(){ state.selectedChip=parseInt(this.dataset.chip); document.querySelectorAll('#dtChips .chip').forEach(cc=>cc.classList.remove('selected')); this.classList.add('selected'); }; });
         updateUIDT(); updateHistoryDisplayDT(); startCountdownDT(30);
-        // 初始背面朝上
         render3DCard(document.getElementById('dragonCardContainer'), '?', '?', true);
         render3DCard(document.getElementById('tigerCardContainer'), '?', '?', true);
         dragonTigerDestroy=()=>{ if(state.countdownInterval) clearInterval(state.countdownInterval); container.innerHTML=''; };
         return dragonTigerDestroy;
     }
-        // ==================== 牛牛游戏（Three.js 3D卡片） ====================
+
+    // ==================== 牛牛游戏 ====================
     let niuNiuDestroy = null;
     function initGame4(container) {
         if(niuNiuDestroy) niuNiuDestroy();
@@ -756,7 +747,6 @@
                 cardContainer.style.display = 'inline-block';
                 cardContainer.classList.add('card-3d-container');
                 handDiv.appendChild(cardContainer);
-                // 延迟渲染实现依次翻牌效果
                 setTimeout(() => {
                     render3DCard(cardContainer, card.value, card.suit, false);
                 }, idx * delay);
@@ -855,7 +845,6 @@
         const updateBalance = setInterval(() => { const balSpan = document.getElementById('gameBalanceDisplay'); if (balSpan && currentUser) balSpan.innerText = `${currentUser.balance.toFixed(2)}`; if (document.getElementById('backToLobbyBtn') === null) clearInterval(updateBalance); }, 500);
     }
 
-    // 双语
     const lang = { zh: { phoneOrEmail:"账号", password:"密码", referralCode:"推荐码", remember:"记住", login:"登录", register:"注册", getCode:"获取验证码", verifyCode:"验证码", registerNow:"注册", referralNote:"推荐码: VIP666,888VIP,GOLD2025,LUCKY8,DICE100" }, th: { phoneOrEmail:"บัญชี", password:"รหัส", referralCode:"รหัสแนะนำ", remember:"จำ", login:"เข้าสู่", register:"สมัคร", getCode:"รับรหัส", verifyCode:"รหัส", registerNow:"สมัคร", referralNote:"VIP666,888VIP,GOLD2025,LUCKY8,DICE100" } };
     let currentLang = 'zh';
     function t(key) { return lang[currentLang][key] || lang.zh[key] || key; }
