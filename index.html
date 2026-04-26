@@ -268,31 +268,41 @@
         async function settleFish(){
             if(isRolling) return;
             let totalBet = Object.values(patternBets).reduce((a,b)=>a+b,0)+Object.values(doubleBets).reduce((a,b)=>a+b,0);
-            if(totalBet===0 && !isGrabbed) { showToast("请下注"); return; }
+            // ★ 不管有没有押注，都执行骰子动画和结果显示 ★
             isRolling=true;
             let r1=patternNames[Math.floor(Math.random()*6)], r2=patternNames[Math.floor(Math.random()*6)], r3=patternNames[Math.floor(Math.random()*6)];
             await rollFishDiceWithAnimation([r1,r2,r3]);
             let occurs={鱼:0,虾:0,蟹:0,葫芦:0,金钱:0,鸡:0};
             [r1,r2,r3].forEach(p=>occurs[p]++);
             let winAmount=0;
-            for(let p in patternBets){
-                let cnt=occurs[p];
-                if(cnt>0) winAmount+=patternBets[p]*cnt;
-            }
-            for(let combo of doubleCombos){
-                let key=combo.join(',');
-                let bet=doubleBets[key];
-                if(bet>0){
-                    let a=combo[0],b=combo[1];
-                    if(occurs[a]>0 && occurs[b]>0) winAmount+=bet*5;
+            // 只有总押注>0时才计算赢额并结算
+            if(totalBet > 0){
+                for(let p in patternBets){
+                    let cnt=occurs[p];
+                    if(cnt>0) winAmount+=patternBets[p]*cnt;
+                }
+                for(let combo of doubleCombos){
+                    let key=combo.join(',');
+                    let bet=doubleBets[key];
+                    if(bet>0){
+                        let a=combo[0],b=combo[1];
+                        if(occurs[a]>0 && occurs[b]>0) winAmount+=bet*5;
+                    }
                 }
             }
-            let netProfit=winAmount-totalBet;
-            lastWinAmount=netProfit;
-            let success = await gameSettle(totalBet, winAmount);
-            if(!success){ isRolling=false; startFishRound(); return; }
-            let pop=document.createElement('div'); pop.className='result-popup'; pop.innerText=netProfit>0?`🎉 赢 ${netProfit.toFixed(2)}`:`😭 输 ${-netProfit}`; document.body.appendChild(pop); setTimeout(()=>pop.remove(),1800);
-            gameRecords.unshift({time:new Date().toLocaleTimeString(), dice:`${r1},${r2},${r3}`, result:netProfit>0?`赢${netProfit.toFixed(2)}`:`输${-netProfit}`});
+            let netProfit = winAmount - totalBet;
+            lastWinAmount = netProfit;
+            // 如果有押注则调用结算（扣除/增加余额），否则只显示结果
+            if(totalBet > 0){
+                let success = await gameSettle(totalBet, winAmount);
+                if(!success){ isRolling=false; startFishRound(); return; }
+            } else {
+                // 无押注时，余额不变，但为了视觉效果也刷新一下显示
+                updateFishUI();
+            }
+            let pop=document.createElement('div'); pop.className='result-popup'; pop.innerText=netProfit>0?`🎉 赢 ${netProfit.toFixed(2)}`:(totalBet>0?`😭 输 ${-netProfit}`:`🎲 ${r1} ${r2} ${r3}`);
+            document.body.appendChild(pop); setTimeout(()=>pop.remove(),1800);
+            gameRecords.unshift({time:new Date().toLocaleTimeString(), dice:`${r1},${r2},${r3}`, result:totalBet>0?(netProfit>0?`赢${netProfit.toFixed(2)}`:`输${-netProfit}`):`未押注`});
             patternBets={鱼:0,虾:0,蟹:0,葫芦:0,金钱:0,鸡:0};
             for(let k in doubleBets) doubleBets[k]=0;
             updateFishUI(); saveLastBetState();
@@ -306,15 +316,16 @@
             hint.innerText=`🎲 下注阶段 · ${remaining}秒`;
             countdownTimer=setInterval(()=>{ remaining--; hint.innerText=`🎲 下注阶段 · ${remaining}秒`; if(remaining<=0){ clearInterval(countdownTimer); if(!isRolling && roundActive) settleFish(); } },1000);
         }
-        // 构建单选押注卡片（无加减按钮，点击即加注）
+        // 构建单选押注卡片（新布局：图标+汉字 在上，金额在下）
         let gridDiv=document.getElementById('fishPatternGrid');
         patternNames.forEach(p=>{
             let div=document.createElement('div'); div.className='fish-bet-card';
-            div.innerHTML=`<div>${patternEmojis[patternNames.indexOf(p)]}</div><div>${p}</div><div><span id="fishBet_${p}">0</span></div>`;
+            // 修改布局：第一行显示图标+文字，第二行显示金额
+            div.innerHTML=`<div style="font-size:1.2rem;">${patternEmojis[patternNames.indexOf(p)]} ${p}</div><div><span id="fishBet_${p}">0</span></div>`;
             div.onclick = () => addPatternBet(p);
             gridDiv.appendChild(div);
         });
-        // 构建双押卡片
+        // 双押卡片保持原样（组合名在上，金额在下）
         let doubleGrid=document.getElementById('fishDoubleGrid');
         doubleCombos.forEach(combo=>{
             let key=combo.join(','); let btn=document.createElement('div'); btn.className='bet-card';
@@ -322,9 +333,7 @@
             btn.onclick=()=>addDoubleBet(key);
             doubleGrid.appendChild(btn);
         });
-        // 筹码切换
         document.querySelectorAll('#fishChips .chip').forEach(c=>{ c.onclick=function(){ currentChip=parseInt(this.dataset.chip); document.querySelectorAll('#fishChips .chip').forEach(cc=>cc.classList.remove('selected')); this.classList.add('selected'); }; });
-        // 抢庄按钮
         document.getElementById('fishGrabBtn').onclick=async ()=>{
             if(isGrabbed) return showToast("已是庄家");
             if(currentUser.balance<2000) return showToast("余额不足2000");
@@ -344,8 +353,8 @@
         updateFishUI(); startFishRound();
         fishDestroy = ()=>{ if(countdownTimer) clearInterval(countdownTimer); roundActive=false; container.innerHTML=''; };
         return fishDestroy;
-    }
-
+    }   
+    
     // ==================== 骰宝游戏（修复自动开奖） ====================
     let diceDestroy = null;
 function initDiceGame(container) {
