@@ -1,1 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>金辉娱乐城 · 葫芦鱼完美版</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        body {
+            background: radial-gradient(circle at 30% 10%, #0a0c1a, #020308);
+            font-family: 'Segoe UI', 'Poppins', system-ui;
+            padding: 12px;
+            min-height: 100vh;
+            color: #ffecb3;
+        }
+        #app {
+            max-width: 520px;
+            margin: 0 auto;
+            background: rgba(15, 20, 35, 0.65);
+            backdrop-filter: blur(16px);
+            border-radius: 48px;
+            border: 1px solid rgba(255, 200, 80, 0.4);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        .game-card {
+            background: rgba(0,0,0,0.3);
+            border-radius: 40px;
+            padding: 20px 16px;
+            border: 1px solid rgba(255,200,80,0.4);
+        }
+        .chip {
+            background: linear-gradient(145deg, #cc8800, #aa6600);
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 36px;
+            margin: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            border: 1px solid #ffaa33;
+            transition: 0.05s linear;
+            box-shadow: 0 2px 6px black;
+        }
+        .chip.selected {
+            background: linear-gradient(145deg, #ffaa33, #ff884d);
+            color: #2a1a0a;
+            box-shadow: 0 0 8px #ffaa33;
+            transform: scale(0.96);
+        }
+        .exec-btn {
+            background: linear-gradient(135deg, #ffaa33, #ff884d);
+            border: none;
+            border-radius: 2rem;
+            padding: 8px 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 6px black;
+            transition: 0.05s;
+        }
+        .exec-btn:active { transform: scale(0.96); }
+        .countdown-area {
+            background: rgba(0,0,0,0.6);
+            border-radius: 40px;
+            padding: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-family: monospace;
+            letter-spacing: 2px;
+            border: 1px solid #ffaa33;
+            margin: 12px 0;
+        }
+        .fish-bet-card {
+            background: rgba(0,0,0,0.5);
+            border-radius: 24px;
+            padding: 8px 4px;
+            text-align: center;
+            border: 1px solid #ffaa33;
+            cursor: pointer;
+            transition: 0.1s;
+            backdrop-filter: blur(4px);
+        }
+        .fish-bet-card:hover {
+            background: rgba(255,170,51,0.2);
+            transform: scale(1.02);
+        }
+        .fish-pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 16px 0;
+        }
+        /* 所有数字火红色加粗 */
+        .fish-bet-card span,
+        #fishDoubleGrid .bet-card div,
+        #fishTotalBet, #fishMyBalance, #fishLastWin {
+            color: #ff3300 !important;
+            font-weight: bold !important;
+            font-size: 1.1rem;
+            text-shadow: 0 0 2px #ff8844;
+        }
+        /* 闪光动画 */
+        .win-flash {
+            animation: redFlash 0.6s 3 !important;
+            background-color: #ff3300 !important;
+            box-shadow: 0 0 20px #ffaa33 !important;
+        }
+        @keyframes redFlash {
+            0% { background-color: rgba(255,50,50,0); }
+            50% { background-color: #ff3300; transform: scale(1.02); }
+            100% { background-color: rgba(255,50,50,0); }
+        }
+        .floating-number {
+            position: fixed;
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: #ffcc00;
+            text-shadow: 0 0 6px red;
+            pointer-events: none;
+            z-index: 3000;
+            white-space: nowrap;
+            animation: floatUp 0.9s forwards;
+        }
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0px) scale(0.8); }
+            70% { opacity: 1; transform: translateY(-40px) scale(1.2); }
+            100% { opacity: 0; transform: translateY(-80px) scale(0.9); }
+        }
+        .balance-bling { animation: balanceGlow 0.4s 3; }
+        @keyframes balanceGlow {
+            0% { text-shadow: 0 0 0px; }
+            50% { text-shadow: 0 0 12px #ff5500; }
+        }
+        /* 3D骰子保留原有效果 */
+        .fish-dice-3d-area {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            perspective: 1000px;
+        }
+        .fish-dice-cube {
+            width: 70px;
+            height: 70px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.4s;
+        }
+        .fish-dice-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #2a1e12;
+            border: 2px solid #ffaa33;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            backface-visibility: visible;
+        }
+        .fish-front { transform: translateZ(35px); }
+        .fish-back { transform: rotateY(180deg) translateZ(35px); }
+        .fish-right { transform: rotateY(90deg) translateZ(35px); }
+        .fish-left { transform: rotateY(-90deg) translateZ(35px); }
+        .fish-top { transform: rotateX(90deg) translateZ(35px); }
+        .fish-bottom { transform: rotateX(-90deg) translateZ(35px); }
+        @media (max-width:480px) {
+            .fish-dice-cube { width: 60px; height: 60px; }
+            .fish-front,.fish-back,.fish-right,.fish-left,.fish-top,.fish-bottom { transform: translateZ(30px); }
+        }
+        .modal {
+            position: fixed;
+            top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #2a1e12;
+            border-radius: 36px;
+            padding: 20px;
+            color: #ffd966;
+            border: 1px solid #ffaa33;
+            text-align: center;
+        }
+        .toast-message {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2a1a0a;
+            padding: 6px 16px;
+            border-radius: 40px;
+            z-index: 2000;
+            white-space: nowrap;
+            border: 1px solid #ffaa33;
+        }
+        .auth-panel {
+            padding: 24px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 40px;
+        }
+        .auth-input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid #ffaa33;
+            border-radius: 40px;
+            color: #ffd966;
+        }
+        .auth-btn {
+            background: linear-gradient(135deg, #ffaa33, #ff884d);
+            width: 100%;
+            border: none;
+            border-radius: 40px;
+            padding: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .flex-row { display: flex; gap: 10px; align-items: center; }
+        .user-section { background: rgba(0,0,0,0.5); padding: 12px; border-bottom: 1px solid #ffaa33; }
+        .user-info-row { display: flex; justify-content: space-between; align-items: center; }
+        #userBalanceDisplay { font-size: 1.6rem; cursor: pointer; }
+    </style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ==================== 极简版葫芦鱼（完美中奖数字显示） ====================
+// 全局用户（为了测试内置一个测试账号，方便直接玩）
+let currentUser = null;
+const STORAGE = { users: 'fish_test' };
+function loadUsers() {
+    let u = localStorage.getItem(STORAGE.users);
+    if(!u) {
+        let init = [{ account: "player", password: "123", balance: 5000, records: [] }];
+        localStorage.setItem(STORAGE.users, JSON.stringify(init));
+        return init;
+    }
+    return JSON.parse(u);
+}
+function saveUsers(users) { localStorage.setItem(STORAGE.users, JSON.stringify(users)); }
+function updateBalance(account, newBal) {
+    let users = loadUsers();
+    let idx = users.findIndex(u => u.account === account);
+    users[idx].balance = newBal;
+    saveUsers(users);
+    if(currentUser && currentUser.account === account) currentUser.balance = newBal;
+    let span = document.getElementById("userBalanceDisplay");
+    if(span) span.innerText = newBal.toFixed(2);
+}
+async function gameSettle(totalBet, winAmount) {
+    if(currentUser.balance < totalBet) { showToast("余额不足"); return false; }
+    let newBal = currentUser.balance - totalBet + winAmount;
+    updateBalance(currentUser.account, newBal);
+    return true;
+}
+function showToast(msg) {
+    let t = document.createElement('div');
+    t.className = 'toast-message';
+    t.innerText = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2000);
+}
+function login(account, password) {
+    let users = loadUsers();
+    let u = users.find(u => u.account === account);
+    if(!u) return false;
+    if(u.password !== password) return false;
+    currentUser = u;
+    localStorage.setItem('curr_acc', account);
+    return true;
+}
+function register(account, password) {
+    let users = loadUsers();
+    if(users.find(u => u.account === account)) return false;
+    users.push({ account, password, balance: 1000, records: [] });
+    saveUsers(users);
+    return true;
+}
+function openAdminModal() {
+    let pwd = prompt("管理员密码:");
+    if(pwd !== "admin888") { showToast("密码错误"); return; }
+    let users = loadUsers();
+    let u = users.find(u => u.account === currentUser.account);
+    if(u) {
+        let amt = parseFloat(prompt("修改余额:"));
+        if(!isNaN(amt)) {
+            u.balance = amt;
+            saveUsers(users);
+            currentUser.balance = amt;
+            updateBalance(currentUser.account, amt);
+            showToast("余额已修改");
+        }
+    }
+}
+// 闪光函数
+function flashWinElement(el, winAmount) {
+    if(!el) return;
+    el.classList.remove('win-flash');
+    void el.offsetWidth;
+    el.classList.add('win-flash');
+    setTimeout(() => el.classList.remove('win-flash'), 600);
+    let rect = el.getBoundingClientRect();
+    let div = document.createElement('div');
+    div.className = 'floating-number';
+    div.innerText = `+${winAmount.toFixed(2)}`;
+    div.style.left = (rect.left + rect.width/2 - 30) + 'px';
+    div.style.top = (rect.top - 10) + 'px';
+    document.body.appendChild(div);
+    setTimeout(()=> div.remove(), 900);
+}
+// ========== 葫芦鱼主游戏 ==========
+let fishDestroy = null;
+function initFishGame(container) {
+    if(fishDestroy) fishDestroy();
+    container.innerHTML = `
+        <div class="game-card">
+            <div style="display:flex; gap:8px; justify-content:space-between;">
+                <div>💰 余额 <span id="fishMyBalance">${currentUser.balance.toFixed(2)}</span></div>
+                <div>🎲 总押注 <span id="fishTotalBet">0</span></div>
+                <div>🏆 上局净利 <span id="fishLastWin">0</span></div>
+            </div>
+            <div class="countdown-area" id="fishPhaseHint">🎲 下注阶段 · 25秒</div>
+            <div id="fishChips">
+                <span class="chip" data-chip="10">10</span>
+                <span class="chip" data-chip="50">50</span>
+                <span class="chip selected" data-chip="100">100</span>
+                <span class="chip" data-chip="500">500</span>
+                <span class="chip" data-chip="1000">1000</span>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button id="fishClearBtn" class="exec-btn">清空</button>
+                <button id="fishRepeatBtn" class="exec-btn">续押</button>
+            </div>
+            <div class="fish-dice-3d-area">
+                <div class="fish-dice-cube" id="fishDice0"></div>
+                <div class="fish-dice-cube" id="fishDice1"></div>
+                <div class="fish-dice-cube" id="fishDice2"></div>
+            </div>
+            <div><strong>押注 鱼·虾·蟹·葫芦·金钱·鸡</strong></div>
+            <div id="fishPatternGrid" class="fish-pattern-grid"></div>
+            <button id="fishRecordBtn" class="exec-btn">📜 记录</button>
+        </div>
+    `;
+    const patternNames = ["鱼","虾","蟹","葫芦","金钱","鸡"];
+    const patternEmojis = ["🐟","🦐","🦀","🎃","💰","🐔"];
+    // 3D骰子构建
+    function buildFishDice(diceDiv) {
+        diceDiv.innerHTML='';
+        const faces=['fish-front','fish-back','fish-right','fish-left','fish-top','fish-bottom'];
+        const texts = [patternEmojis[0], patternEmojis[1], patternEmojis[2], patternEmojis[3], patternEmojis[4], patternEmojis[5]];
+        const transforms = ['translateZ(35px)','rotateY(180deg) translateZ(35px)','rotateY(90deg) translateZ(35px)','rotateY(-90deg) translateZ(35px)','rotateX(90deg) translateZ(35px)','rotateX(-90deg) translateZ(35px)'];
+        for(let i=0;i<6;i++){
+            let fd=document.createElement('div');
+            fd.className=`fish-dice-face ${faces[i]}`;
+            fd.style.transform=transforms[i];
+            fd.style.fontSize='1.6rem';
+            fd.innerText=texts[i];
+            diceDiv.appendChild(fd);
+        }
+        diceDiv.style.transform=`rotateX(${Math.random()*360}deg) rotateY(${Math.random()*360}deg)`;
+    }
+    function setFishDiceValue(diceDiv, patName) {
+        let idx = patternNames.indexOf(patName);
+        let rotX=0, rotY=0;
+        switch(idx){
+            case 0: rotX=0; rotY=0; break;
+            case 1: rotX=0; rotY=-90; break;
+            case 2: rotX=0; rotY=180; break;
+            case 3: rotX=0; rotY=90; break;
+            case 4: rotX=-90; rotY=0; break;
+            case 5: rotX=90; rotY=0; break;
+        }
+        const extraX = 360*(2+Math.floor(Math.random()*2));
+        const extraY = 360*(2+Math.floor(Math.random()*2));
+        diceDiv.style.transform = `rotateX(${rotX+extraX}deg) rotateY(${rotY+extraY}deg)`;
+    }
+    let fishDice = [document.getElementById('fishDice0'),document.getElementById('fishDice1'),document.getElementById('fishDice2')];
+    fishDice.forEach(buildFishDice);
+    let patternBets = {鱼:0,虾:0,蟹:0,葫芦:0,金钱:0,鸡:0};
+    let currentChip = 100;
+    let gameRecords = [];
+    let isRolling = false;
+    let roundActive = true;
+    let countdownTimer = null;
+    let lastWinAmount = 0;
+    let lastBetState = null;
+    let isSettling = false;
 
+    function updateUI() {
+        for(let p in patternBets) {
+            let sp = document.getElementById(`fishBet_${p}`);
+            if(sp) sp.innerText = patternBets[p];
+        }
+        let total = Object.values(patternBets).reduce((a,b)=>a+b,0);
+        document.getElementById('fishTotalBet').innerText = total;
+        document.getElementById('fishLastWin').innerText = lastWinAmount;
+        document.getElementById('fishMyBalance').innerText = currentUser.balance.toFixed(2);
+    }
+    function saveLastBetState() {
+        lastBetState = JSON.parse(JSON.stringify(patternBets));
+    }
+    async function repeatLastBet() {
+        if(isSettling) { showToast("结算中，请稍后"); return; }
+        if(!lastBetState) return showToast("无上局押注");
+        let total = Object.values(lastBetState).reduce((a,b)=>a+b,0);
+        if(total > currentUser.balance) return showToast("余额不足");
+        let oldTotal = Object.values(patternBets).reduce((a,b)=>a+b,0);
+        if(oldTotal > 0) await gameSettle(oldTotal, 0);
+        patternBets = JSON.parse(JSON.stringify(lastBetState));
+        await gameSettle(total, 0);
+        updateUI();
+        showToast(`续押成功 ${total}`);
+    }
+    async function addPatternBet(p) {
+        if(isSettling) { showToast("结算中，请稍后"); return; }
+        let v = currentChip;
+        let total = Object.values(patternBets).reduce((a,b)=>a+b,0);
+        if(v>500 || total+v>2000) return showToast("单注上限500，总注上限2000");
+        if(v > currentUser.balance) return showToast("余额不足");
+        await gameSettle(v, 0);
+        patternBets[p] += v;
+        updateUI();
+        saveLastBetState();
+    }
+    async function clearFishBets() {
+        let total = Object.values(patternBets).reduce((a,b)=>a+b,0);
+        if(total > 0) await gameSettle(-total, 0);
+        for(let p in patternBets) patternBets[p] = 0;
+        updateUI();
+        saveLastBetState();
+    }
+    async function rollFishDiceWithAnimation(final) {
+        for(let i=0;i<3;i++) {
+            fishDice[i].style.transition = 'transform 0.1s linear';
+            for(let step=0;step<20;step++) {
+                setTimeout(()=>{
+                    let rx = Math.random()*360, ry = Math.random()*360;
+                    fishDice[i].style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+                }, step*30);
+            }
+        }
+        await new Promise(r=>setTimeout(r,700));
+        for(let i=0;i<3;i++) {
+            fishDice[i].style.transition = 'transform 0.3s cubic-bezier(0.2,0.9,0.4,1.1)';
+            setFishDiceValue(fishDice[i], final[i]);
+        }
+        await new Promise(r=>setTimeout(r,400));
+    }
+    async function settleFish() {
+        if(isRolling) return;
+        let totalBet = Object.values(patternBets).reduce((a,b)=>a+b,0);
+        isRolling = true;
+        isSettling = true;
+        let r1 = patternNames[Math.floor(Math.random()*6)];
+        let r2 = patternNames[Math.floor(Math.random()*6)];
+        let r3 = patternNames[Math.floor(Math.random()*6)];
+        await rollFishDiceWithAnimation([r1,r2,r3]);
+        let occurs = {鱼:0,虾:0,蟹:0,葫芦:0,金钱:0,鸡:0};
+        [r1,r2,r3].forEach(p => occurs[p]++);
+        // 计算赢得的总金额（奖金不含本金）
+        let winAmount = 0;
+        let winPatterns = [];
+        let winReturnMap = {}; // 记录每个中奖卡片的总返还（原押注+奖金）
+        for(let p in patternBets) {
+            let cnt = occurs[p];
+            if(cnt > 0 && patternBets[p] > 0) {
+                let win = patternBets[p] * cnt;   // 奖金
+                winAmount += win;
+                winPatterns.push(p);
+                winReturnMap[p] = patternBets[p] + win; // ★ 本金+奖金
+            }
+        }
+        let netProfit = winAmount - totalBet;
+        lastWinAmount = netProfit;
+        // 保存快照
+        let snapshot = JSON.parse(JSON.stringify(patternBets));
+        // 立即清空真实押注数据
+        for(let p in patternBets) patternBets[p] = 0;
+        // 未中奖卡片立即归零（UI）
+        for(let p in snapshot) {
+            if(!winPatterns.includes(p)) {
+                let sp = document.getElementById(`fishBet_${p}`);
+                if(sp) sp.innerText = "0";
+            }
+        }
+        // 中奖卡片显示总返还金额（原押注+奖金），并触发闪光
+        for(let p of winPatterns) {
+            let sp = document.getElementById(`fishBet_${p}`);
+            if(sp) sp.innerText = winReturnMap[p];
+            let cardDiv = sp.closest('.fish-bet-card');
+            if(cardDiv) {
+                // 闪光显示奖金（赢额）而不是总返还
+                let winForThis = snapshot[p] * occurs[p];
+                flashWinElement(cardDiv, winForThis);
+            }
+        }
+        // 总押注显示中奖卡片的总押注额（快照），未中奖部分已归零
+        let displayTotal = 0;
+        for(let p of winPatterns) displayTotal += snapshot[p];
+        document.getElementById('fishTotalBet').innerText = displayTotal;
+        // 结算余额（扣除总押注，加上总奖金）
+        if(totalBet > 0) await gameSettle(totalBet, winAmount);
+        // 记录游戏历史
+        gameRecords.unshift({
+            time: new Date().toLocaleTimeString(),
+            dice: `${r1},${r2},${r3}`,
+            result: netProfit>0 ? `赢${netProfit.toFixed(2)}` : (totalBet>0?`输${-netProfit}`:'未押注')
+        });
+        // 3秒后中奖卡片归零
+        setTimeout(() => {
+            for(let p of winPatterns) {
+                let sp = document.getElementById(`fishBet_${p}`);
+                if(sp) sp.innerText = "0";
+            }
+            document.getElementById('fishTotalBet').innerText = "0";
+            isSettling = false;
+        }, 3000);
+        isRolling = false;
+        if(countdownTimer) clearInterval(countdownTimer);
+        startFishRound();
+    }
+    function startFishRound() {
+        if(countdownTimer) clearInterval(countdownTimer);
+        let remaining = 25;
+        let hint = document.getElementById('fishPhaseHint');
+        hint.innerText = `🎲 下注阶段 · ${remaining}秒`;
+        countdownTimer = setInterval(() => {
+            remaining--;
+            hint.innerText = `🎲 下注阶段 · ${remaining}秒`;
+            if(remaining <= 0) {
+                clearInterval(countdownTimer);
+                if(!isRolling && roundActive) settleFish();
+            }
+        }, 1000);
+    }
+    // 构建单选卡片
+    let gridDiv = document.getElementById('fishPatternGrid');
+    patternNames.forEach((p, idx) => {
+        let div = document.createElement('div');
+        div.className = 'fish-bet-card';
+        div.innerHTML = `<div style="font-size:1.2rem;">${patternEmojis[idx]} ${p}</div><div><span id="fishBet_${p}">0</span></div>`;
+        div.onclick = () => addPatternBet(p);
+        gridDiv.appendChild(div);
+    });
+    // 筹码选择
+    document.querySelectorAll('#fishChips .chip').forEach(ch => {
+        ch.onclick = function() {
+            currentChip = parseInt(this.dataset.chip);
+            document.querySelectorAll('#fishChips .chip').forEach(cc => cc.classList.remove('selected'));
+            this.classList.add('selected');
+        };
+    });
+    document.getElementById('fishClearBtn').onclick = clearFishBets;
+    document.getElementById('fishRepeatBtn').onclick = repeatLastBet;
+    document.getElementById('fishRecordBtn').onclick = () => {
+        let html = '<div style="max-height:200px; overflow:auto;">' + gameRecords.map(r => `<div>${r.time} ${r.dice} ${r.result}</div>`).join('') + '</div><button id="closeRec" class="auth-btn">关闭</button>';
+        let m = document.createElement('div'); m.className='modal'; m.innerHTML = `<div class="modal-content">${html}</div>`;
+        document.body.appendChild(m);
+        m.querySelector('#closeRec').onclick = () => m.remove();
+    };
+    updateUI();
+    startFishRound();
+    fishDestroy = () => { if(countdownTimer) clearInterval(countdownTimer); roundActive=false; container.innerHTML=''; };
+    return fishDestroy;
+}
+// 登录/大厅
+function renderGameLobby() {
+    if(!currentUser) { renderAuthUI(); return; }
+    document.getElementById('app').innerHTML = `
+        <div style="text-align:center; padding:20px; background:linear-gradient(135deg,#2a1e12,#1a120b);">
+            <h1>金辉娱乐城</h1>
+        </div>
+        <div class="user-section">
+            <div class="user-info-row">
+                <span>📱 ${currentUser.account}</span>
+                <span>💰 余额: <span id="userBalanceDisplay" style="cursor:pointer;">${currentUser.balance.toFixed(2)}</span></span>
+                <button id="logoutBtn" class="btn-sm" style="background:#ffaa33; border:none; padding:4px 12px; border-radius:20px;">🚪 退出</button>
+            </div>
+        </div>
+        <div style="padding:20px;">
+            <button id="btnFish" class="auth-btn" style="background:#ffaa33;">🐟 潮汕葫芦鱼</button>
+        </div>
+    `;
+    document.getElementById('logoutBtn').onclick = () => { currentUser = null; localStorage.removeItem('curr_acc'); renderAuthUI(); };
+    document.getElementById('userBalanceDisplay').addEventListener('click', () => openAdminModal());
+    document.getElementById('btnFish').onclick = () => switchToGame('fish');
+}
+let currentGameDestroy = null;
+async function switchToGame(gameId) {
+    if(currentGameDestroy) currentGameDestroy();
+    document.getElementById('app').innerHTML = `
+        <div style="padding:12px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                <button id="backToLobbyBtn" class="exec-btn">🏠 返回大厅</button>
+            </div>
+            <div id="singleGameContainer"></div>
+        </div>
+    `;
+    const gameContainer = document.getElementById('singleGameContainer');
+    currentGameDestroy = await initFishGame(gameContainer);
+    document.getElementById('backToLobbyBtn').onclick = () => {
+        if(currentGameDestroy) currentGameDestroy();
+        renderGameLobby();
+    };
+}
+function renderAuthUI() {
+    document.getElementById('app').innerHTML = `
+        <div class="auth-panel">
+            <h2>🏆 金辉娱乐城</h2>
+            <input type="text" id="loginAccount" class="auth-input" placeholder="账号">
+            <input type="password" id="loginPassword" class="auth-input" placeholder="密码">
+            <button id="loginBtn" class="auth-btn">登录</button>
+            <hr>
+            <input type="text" id="regAccount" class="auth-input" placeholder="新账号">
+            <input type="password" id="regPassword" class="auth-input" placeholder="密码">
+            <button id="registerBtn" class="auth-btn">注册</button>
+            <div class="auth-note">测试账号 player / 123</div>
+        </div>
+    `;
+    document.getElementById('loginBtn').onclick = () => {
+        let acc = document.getElementById('loginAccount').value.trim();
+        let pwd = document.getElementById('loginPassword').value;
+        if(login(acc, pwd)) {
+            showToast("登录成功");
+            renderGameLobby();
+        } else showToast("账号或密码错误", true);
+    };
+    document.getElementById('registerBtn').onclick = () => {
+        let acc = document.getElementById('regAccount').value.trim();
+        let pwd = document.getElementById('regPassword').value;
+        if(register(acc, pwd)) {
+            showToast("注册成功，请登录");
+        } else showToast("账号已存在");
+    };
+}
+let savedUser = localStorage.getItem('curr_acc');
+if(savedUser) {
+    let users = loadUsers();
+    let u = users.find(u => u.account === savedUser);
+    if(u) { currentUser = u; renderGameLobby(); }
+    else renderAuthUI();
+} else renderAuthUI();
+</script>
+</body>
+</html>
