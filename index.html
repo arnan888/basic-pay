@@ -152,10 +152,10 @@
     function register(account,password,code) { let valid=["VIP666","888VIP","GOLD2025","LUCKY8","DICE100"]; if(!valid.includes(code)) return {success:false,msg:"推荐码无效"}; let users=loadUsers(); if(users.find(u=>u.account===account)) return {success:false,msg:"账号已存在"}; users.push({account,password,balance:0,register_time:new Date().toLocaleString(),records:[],result_history:[]}); saveUsers(users); return {success:true,msg:"注册成功"}; }
 
     // ==================== 鱼虾蟹游戏（完整3D骰子） ====================
-    let fishDestroy = null;
+        let fishDestroy = null;
     function initFishGame(container) {
         if(fishDestroy) fishDestroy();
-        container.innerHTML = `<div class="game-card"><div style="display:flex; gap:8px;"><div style="flex:1; text-align:center;">💰 余额<div id="fishMyBalance">0</div></div><div style="flex:1; text-align:center;">🎲 总押注<div id="fishTotalBet">0</div></div><div style="flex:1; text-align:center;">🏆 上局净利<div id="fishLastWin">0</div></div></div><div class="countdown-area" id="fishPhaseHint">🎲 下注阶段 · 25秒</div><div id="fishChips"><span class="chip" data-chip="10">10</span><span class="chip" data-chip="50">50</span><span class="chip selected" data-chip="100">100</span><span class="chip" data-chip="500">500</span><span class="chip" data-chip="1000">1000</span></div><div style="display:flex; gap:6px;"><button id="fishClearBtn" class="exec-btn">清空</button><button id="fishRepeatBtn" class="exec-btn">续押</button><button id="fishGrabBtn" class="exec-btn">抢庄</button></div><div class="fish-dice-3d-area"><div class="fish-dice-cube" id="fishDice0"></div><div class="fish-dice-cube" id="fishDice1"></div><div class="fish-dice-cube" id="fishDice2"></div></div><div><strong>单选押注</strong></div><div id="fishPatternGrid" class="fish-pattern-grid"></div><div><strong>双押组合</strong></div><div id="fishDoubleGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div><button id="fishRecordBtn" class="exec-btn">📜 记录</button><div id="fishPlayersPanel"><strong>👥 闲家押注</strong><div id="fishPlayerBetsList"></div></div></div>`;
+        container.innerHTML = `<div class="game-card"><div style="display:flex; gap:8px;"><div style="flex:1; text-align:center;">💰 余额<div id="fishMyBalance">0</div></div><div style="flex:1; text-align:center;">🎲 总押注<div id="fishTotalBet">0</div></div><div style="flex:1; text-align:center;">🏆 上局净利<div id="fishLastWin">0</div></div></div><div class="countdown-area" id="fishPhaseHint">🎲 下注阶段 · 25秒</div><div id="fishChips"><span class="chip" data-chip="10">10</span><span class="chip" data-chip="50">50</span><span class="chip selected" data-chip="100">100</span><span class="chip" data-chip="500">500</span><span class="chip" data-chip="1000">1000</span></div><div style="display:flex; gap:6px;"><button id="fishClearBtn" class="exec-btn">清空</button><button id="fishRepeatBtn" class="exec-btn">续押</button><button id="fishGrabBtn" class="exec-btn">抢庄</button></div><div class="fish-dice-3d-area"><div class="fish-dice-cube" id="fishDice0"></div><div class="fish-dice-cube" id="fishDice1"></div><div class="fish-dice-cube" id="fishDice2"></div></div><div><strong>单选押注（点击卡片加注）</strong></div><div id="fishPatternGrid" class="fish-pattern-grid"></div><div><strong>双押组合（点击卡片加注）</strong></div><div id="fishDoubleGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div><button id="fishRecordBtn" class="exec-btn">📜 记录</button><div id="fishPlayersPanel"><strong>👥 闲家押注</strong><div id="fishPlayerBetsList"></div></div></div>`;
         const patternNames = ["鱼","虾","蟹","葫芦","金钱","鸡"];
         const patternEmojis = ["🐟","🦐","🦀","🎃","💰","🐔"];
         const doubleCombos = [["鱼","虾"],["鱼","蟹"],["鱼","葫芦"],["鱼","金钱"],["鱼","鸡"],["虾","蟹"],["虾","葫芦"],["虾","金钱"],["虾","鸡"],["蟹","葫芦"],["蟹","金钱"],["蟹","鸡"],["葫芦","金钱"],["葫芦","鸡"],["金钱","鸡"]];
@@ -172,7 +172,7 @@
                 fd.innerText=texts[i];
                 diceDiv.appendChild(fd);
             }
-            diceDiv.style.transform = `rotateX(${Math.random()*360}deg) rotateY(${Math.random()*360}deg)`;
+            diceDiv.style.transform=`rotateX(${Math.random()*360}deg) rotateY(${Math.random()*360}deg)`;
         }
         function setFishDiceValue(diceDiv, patName) {
             let idx = patternNames.indexOf(patName);
@@ -195,7 +195,7 @@
         let doubleBets={}; doubleCombos.forEach(c=>doubleBets[c.join(',')]=0);
         let currentChip=100, isGrabbed=false, gameRecords=[], isRolling=false, roundActive=true, countdownTimer=null, lastWinAmount=0;
         let playersList=[{name:"闲家A",bet:0},{name:"闲家B",bet:0},{name:"闲家C",bet:0}];
-        let lastBetState=null, clearTimer=null;
+        let lastBetState=null;
         function updateFishUI(){
             for(let p in patternBets){ let sp=document.getElementById(`fishBet_${p}`); if(sp) sp.innerText=patternBets[p]; }
             for(let c of doubleCombos){ let key=c.join(','); let sp=document.getElementById(`doubleBet_${key.replace(/,/g,'_')}`); if(sp) sp.innerText=doubleBets[key]; }
@@ -218,30 +218,35 @@
             await gameSettle(total, 0);
             updateFishUI(); showToast("续押成功");
         }
-        async function addPatternBet(p,v){
+        async function addPatternBet(p){
             if(isGrabbed) { showToast("庄家不能下注"); return; }
+            let v = currentChip;
             let total=Object.values(patternBets).reduce((a,b)=>a+b,0)+Object.values(doubleBets).reduce((a,b)=>a+b,0);
             if(v>500||total+v>2000) return showToast("超上限");
             if(v>currentUser.balance) return showToast("余额不足");
             await gameSettle(v, 0);
-            patternBets[p]+=v; updateFishUI(); saveLastBetState();
+            patternBets[p] += v;
+            updateFishUI();
+            saveLastBetState();
         }
-        async function subPatternBet(p,v){ let cur=patternBets[p]; if(cur<v) v=cur; if(v===0) return; patternBets[p]-=v; await gameSettle(-v,0); updateFishUI(); saveLastBetState(); }
         async function addDoubleBet(key){
             if(isGrabbed) return showToast("庄家不能下注");
-            let val=currentChip;
+            let v = currentChip;
             let total=Object.values(patternBets).reduce((a,b)=>a+b,0)+Object.values(doubleBets).reduce((a,b)=>a+b,0);
-            if(val>500||total+val>2000) return showToast("超上限");
-            if(val>currentUser.balance) return showToast("余额不足");
-            await gameSettle(val,0);
-            doubleBets[key]+=val; updateFishUI(); saveLastBetState();
+            if(v>500||total+v>2000) return showToast("超上限");
+            if(v>currentUser.balance) return showToast("余额不足");
+            await gameSettle(v,0);
+            doubleBets[key] += v;
+            updateFishUI();
+            saveLastBetState();
         }
         async function clearFishBets(){
             let total=Object.values(patternBets).reduce((a,b)=>a+b,0)+Object.values(doubleBets).reduce((a,b)=>a+b,0);
             if(total>0) await gameSettle(-total,0);
             patternBets={鱼:0,虾:0,蟹:0,葫芦:0,金钱:0,鸡:0};
             for(let k in doubleBets) doubleBets[k]=0;
-            updateFishUI(); saveLastBetState();
+            updateFishUI();
+            saveLastBetState();
         }
         async function rollFishDiceWithAnimation(final){
             for(let i=0;i<3;i++){
@@ -301,12 +306,15 @@
             hint.innerText=`🎲 下注阶段 · ${remaining}秒`;
             countdownTimer=setInterval(()=>{ remaining--; hint.innerText=`🎲 下注阶段 · ${remaining}秒`; if(remaining<=0){ clearInterval(countdownTimer); if(!isRolling && roundActive) settleFish(); } },1000);
         }
+        // 构建单选押注卡片（无加减按钮，点击即加注）
         let gridDiv=document.getElementById('fishPatternGrid');
         patternNames.forEach(p=>{
             let div=document.createElement('div'); div.className='fish-bet-card';
-            div.innerHTML=`<div>${patternEmojis[patternNames.indexOf(p)]}</div><div>${p}</div><div><button class="quick-bet sub-pat" data-pat="${p}">-</button><span id="fishBet_${p}">0</span><button class="quick-bet add-pat" data-pat="${p}">+</button></div>`;
+            div.innerHTML=`<div>${patternEmojis[patternNames.indexOf(p)]}</div><div>${p}</div><div><span id="fishBet_${p}">0</span></div>`;
+            div.onclick = () => addPatternBet(p);
             gridDiv.appendChild(div);
         });
+        // 构建双押卡片
         let doubleGrid=document.getElementById('fishDoubleGrid');
         doubleCombos.forEach(combo=>{
             let key=combo.join(','); let btn=document.createElement('div'); btn.className='bet-card';
@@ -314,7 +322,9 @@
             btn.onclick=()=>addDoubleBet(key);
             doubleGrid.appendChild(btn);
         });
+        // 筹码切换
         document.querySelectorAll('#fishChips .chip').forEach(c=>{ c.onclick=function(){ currentChip=parseInt(this.dataset.chip); document.querySelectorAll('#fishChips .chip').forEach(cc=>cc.classList.remove('selected')); this.classList.add('selected'); }; });
+        // 抢庄按钮
         document.getElementById('fishGrabBtn').onclick=async ()=>{
             if(isGrabbed) return showToast("已是庄家");
             if(currentUser.balance<2000) return showToast("余额不足2000");
@@ -331,13 +341,8 @@
             let html='<div style="max-height:200px; overflow:auto;">'+gameRecords.map(r=>`<div>${r.time} ${r.dice} ${r.result}</div>`).join('')+'</div><button id="closeRec" class="auth-btn">关闭</button>';
             let m=document.createElement('div'); m.className='modal'; m.innerHTML=`<div class="modal-content">${html}</div>`; document.body.appendChild(m); m.querySelector('#closeRec').onclick=()=>m.remove();
         };
-        gridDiv.addEventListener('click',(e)=>{
-            let btn=e.target.closest('.quick-bet'); if(!btn) return; let pat=btn.dataset.pat;
-            if(btn.classList.contains('add-pat')) addPatternBet(pat,currentChip);
-            if(btn.classList.contains('sub-pat')) subPatternBet(pat,currentChip);
-        });
         updateFishUI(); startFishRound();
-        fishDestroy = ()=>{ if(clearTimer) clearTimeout(clearTimer); roundActive=false; if(countdownTimer) clearInterval(countdownTimer); container.innerHTML=''; };
+        fishDestroy = ()=>{ if(countdownTimer) clearInterval(countdownTimer); roundActive=false; container.innerHTML=''; };
         return fishDestroy;
     }
 
