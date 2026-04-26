@@ -411,44 +411,182 @@ updateUI();updateHistory();startCountdown(30);
 dragonTigerDestroy=()=>{if(state.countdownInterval)clearInterval(state.countdownInterval);c.innerHTML='';};
 return dragonTigerDestroy;
 }
-// ==================== 牛牛游戏 ====================
-let niuNiuDestroy=null;
-function initGame4(c){if(niuNiuDestroy)niuNiuDestroy();
-function createDeck(){let suits=['♥','♦','♣','♠'],values=['A','2','3','4','5','6','7','8','9','10','J','Q','K'],deck=[];for(let s of suits)for(let i=0;i<values.length;i++){let v=values[i];let p=(v==='A')?1:(v==='J'||v==='Q'||v==='K')?10:parseInt(v);deck.push({suit:s,value:v,points:p,display:v+s});}return deck;}
-function shuffle(d){for(let i=d.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]];}return d;}
-function calcNiu(cards){let pts=cards.map(c=>c.points),sum=pts.reduce((a,b)=>a+b,0);let has=false,val=0;for(let i=0;i<5;i++)for(let j=i+1;j<5;j++)for(let k=j+1;k<5;k++){let s=pts[i]+pts[j]+pts[k];if(s%10===0){let rest=sum-s;val=rest%10;has=true;break;}if(has)break;if(has)break;}if(!has)return{type:'无牛',multiplier:0,display:'无牛'};if(val===0){let allTen=pts.every(p=>p===10);if(allTen)return{type:'五花牛',multiplier:5,display:'五花牛'};let cnt={};pts.forEach(p=>cnt[p]=(cnt[p]||0)+1);if(Object.values(cnt).some(c=>c===4))return{type:'四炸',multiplier:8,display:'四炸'};return{type:'牛牛',multiplier:3,display:'牛牛'};}return{type:`牛${val}`,multiplier:1,display:`牛${val}`};}
-c.innerHTML=`<div class="game-card"><div>🏦庄家（电脑）</div><div id="bankerHand" class="niu-hand"></div><div id="bankerType">?</div><div>👤闲家（您）</div><div id="playerHand" class="niu-hand"></div><div id="playerType">?</div><div class="countdown-area" id="niuCountdownArea">⏱️下注<span id="niuCountdownNum">25</span>s</div><div><span>🎲本局中奖:<span id="niuWinAmount">0</span></span><span>📊盈亏:<span id="niuProfitLoss">0</span></span></div><div id="niuChips"><span class="chip" data-chip="10">10</span><span class="chip" data-chip="50">50</span><span class="chip selected" data-chip="100">100</span><span class="chip" data-chip="500">500</span><span class="chip" data-chip="1000">1000</span></div><div style="display:flex;gap:8px;"><div class="bet-card" data-bet="PLAYER">闲家赢<br><span id="bet_PLAYER">0</span></div><div class="bet-card" data-bet="BANKER">庄家赢<br><span id="bet_BANKER">0</span></div><div class="bet-card" data-bet="TIE">和<br><span id="bet_TIE">0</span></div></div><div style="display:flex;gap:8px;"><div class="bet-card" data-bet="NIU_NIU">闲家牛牛<br><span id="bet_NIU_NIU">0</span></div><div class="bet-card" data-bet="WU_HUA">闲家五花牛<br><span id="bet_WU_HUA">0</span></div></div><div><button id="niuClearBtn" class="exec-btn">清空</button><button id="niuRepeatBtn" class="exec-btn">续押</button><button id="niuRefreshBtn" class="exec-btn">刷新</button><button id="niuDealBtn" class="exec-btn main-go">🐮发牌</button></div><div>💰余额:<span id="niuBalance">0</span>总押注:<span id="niuTotalBet">0</span></div><div id="niuResultMsg" style="margin-top:8px;"></div></div>`;
-let bets={PLAYER:0,BANKER:0,TIE:0,NIU_NIU:0,WU_HUA:0};
-let selectedChip=100,currentBalance=currentUser?currentUser.balance:0,isRolling=false,countdownTimer=null,lastBetSnapshot=null,remainingSec=25;
-async function updateUI(){for(let k in bets){let sp=document.getElementById(`bet_${k}`);if(sp)sp.innerText=bets[k];}let total=Object.values(bets).reduce((a,b)=>a+b,0);document.getElementById('niuTotalBet').innerText=total;if(currentUser)document.getElementById('niuBalance').innerText=currentUser.balance.toFixed(2);}
-function saveLastBet(){lastBetSnapshot=JSON.parse(JSON.stringify(bets));}
-async function clearAllBets(){let total=Object.values(bets).reduce((a,b)=>a+b,0);if(total>0)await gameSettle(-total,0);for(let k in bets)bets[k]=0;updateUI();saveLastBet();showToast("已清空押注");}
-async function repeatLastBet(){if(!lastBetSnapshot)return showToast("无续押记录");let need=Object.values(lastBetSnapshot).reduce((a,b)=>a+b,0);if(need>currentBalance)return showToast("余额不足");let oldTotal=Object.values(bets).reduce((a,b)=>a+b,0);if(oldTotal>0)await gameSettle(-oldTotal,0);for(let k in bets)bets[k]=0;for(let k in lastBetSnapshot)bets[k]=lastBetSnapshot[k];await gameSettle(need,0);updateUI();showToast("续押成功");}
-async function addBet(t){if(isRolling)return showToast("开奖中");if(selectedChip<=0)return showToast("选筹码");if(selectedChip>currentBalance)return showToast("余额不足");await gameSettle(selectedChip,0);bets[t]+=selectedChip;updateUI();saveLastBet();showToast(`+${selectedChip} ${t}`);}
-async function revealCards(hand,cards,delay=150){hand.innerHTML='';for(let idx=0;idx<cards.length;idx++){let card=cards[idx];let div=document.createElement('div');div.className='simple-card';div.setAttribute('data-suit',card.suit);div.innerText=card.display;div.style.transform='rotateY(90deg)';div.style.transition='transform 0.2s';hand.appendChild(div);setTimeout(()=>{div.style.transform='rotateY(0deg)';},idx*delay);await new Promise(r=>setTimeout(r,delay));}}
-async function startGame(){if(isRolling)return;let totalBet=Object.values(bets).reduce((a,b)=>a+b,0);if(totalBet===0)return showToast("请先下注");if(totalBet>currentBalance)return showToast("余额不足");isRolling=true;if(countdownTimer)clearInterval(countdownTimer);let deck=shuffle(createDeck());let player=deck.slice(0,5),banker=deck.slice(5,10);let pType=calcNiu(player),bType=calcNiu(banker);await revealCards(document.getElementById('playerHand'),player,120);await revealCards(document.getElementById('bankerHand'),banker,120);document.getElementById('playerType').innerHTML=`${pType.display} ${pType.multiplier>1?`(赔率${pType.multiplier})`:''}`;document.getElementById('bankerType').innerHTML=`${bType.display} ${bType.multiplier>1?`(赔率${bType.multiplier})`:''}`;let result='',winAmount=0;let pScore=pType.multiplier===0?0:(pType.multiplier===1?1:pType.multiplier);let bScore=bType.multiplier===0?0:(bType.multiplier===1?1:bType.multiplier);if(pScore>bScore)result='PLAYER';else if(bScore>pScore)result='BANKER';else result='TIE';let winTypes=[];
-if(result==='PLAYER'&&bets.PLAYER>0){winAmount+=bets.PLAYER*2;winTypes.push('PLAYER');}
-if(result==='BANKER'&&bets.BANKER>0){winAmount+=bets.BANKER*2;winTypes.push('BANKER');}
-if(result==='TIE'&&bets.TIE>0){winAmount+=bets.TIE*8;winTypes.push('TIE');}
-if(pType.type==='牛牛'&&bets.NIU_NIU>0){winAmount+=bets.NIU_NIU*(pType.multiplier+1);winTypes.push('NIU_NIU');}
-if(pType.type==='五花牛'&&bets.WU_HUA>0){winAmount+=bets.WU_HUA*(pType.multiplier+1);winTypes.push('WU_HUA');}
-winAmount*=systemConfig.adjustFactor;
-let profit=winAmount-totalBet;
-await gameSettle(totalBet,winAmount);
-document.getElementById('niuWinAmount').innerText=winAmount.toFixed(2);document.getElementById('niuProfitLoss').innerText=profit.toFixed(2);document.getElementById('niuResultMsg').innerHTML=`${pType.display} vs ${bType.display}<br>${result==='PLAYER'?'闲家胜':(result==='BANKER'?'庄家胜':'和局')} ${profit>0?`赢得 ${profit.toFixed(2)}`:''}`;
-for(let wt of winTypes){let el=document.querySelector(`.bet-card[data-bet="${wt}"]`);if(el)flashWinElement(el,winAmount);}
-for(let k in bets)bets[k]=0;updateUI();saveLastBet();isRolling=false;startCountdown(25);}
-function startCountdown(sec){if(countdownTimer)clearInterval(countdownTimer);remainingSec=sec;let cd=document.getElementById('niuCountdownNum');cd.innerText=remainingSec;countdownTimer=setInterval(()=>{if(remainingSec<=1){clearInterval(countdownTimer);countdownTimer=null;if(!isRolling)startGame();}else{remainingSec--;cd.innerText=remainingSec;}},1000);}
-async function refreshBalance(){await updateUI();showToast("刷新");}
-document.querySelectorAll('#niuChips .chip').forEach(c=>{c.onclick=function(){selectedChip=parseInt(this.dataset.chip);document.querySelectorAll('#niuChips .chip').forEach(cc=>cc.classList.remove('selected'));this.classList.add('selected');};});
-document.querySelectorAll('.bet-card[data-bet]').forEach(c=>{c.onclick=()=>addBet(c.dataset.bet);});
-document.getElementById('niuClearBtn').onclick=clearAllBets;
-document.getElementById('niuRepeatBtn').onclick=repeatLastBet;
-document.getElementById('niuRefreshBtn').onclick=refreshBalance;
-document.getElementById('niuDealBtn').onclick=()=>{if(!isRolling)startGame();};
-updateUI();startCountdown(25);saveLastBet();
-niuNiuDestroy=()=>{if(countdownTimer)clearInterval(countdownTimer);c.innerHTML='';};
-return niuNiuDestroy;
+// ==================== 牛牛游戏（添加续押 + 3D结果牌子） ====================
+let niuNiuDestroy = null;
+function initGame4(container) {
+    if(niuNiuDestroy) niuNiuDestroy();
+    function createDeck() {
+        let suits=['♥','♦','♣','♠'];
+        let values=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+        let deck=[];
+        for(let s of suits) for(let i=0;i<values.length;i++){
+            let v=values[i];
+            let p=(v==='A')?1:(v==='J'||v==='Q'||v==='K')?10:parseInt(v);
+            let value = v;
+            deck.push({suit:s, value:value, points:p, display:value+s});
+        }
+        return deck;
+    }
+    function shuffle(deck) { for(let i=deck.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; } return deck; }
+    function calcNiuType(cards) {
+        let pts=cards.map(c=>c.points), sum=pts.reduce((a,b)=>a+b,0);
+        let hasNiu=false,niuVal=0;
+        for(let i=0;i<5;i++) for(let j=i+1;j<5;j++) for(let k=j+1;k<5;k++){
+            let s=pts[i]+pts[j]+pts[k];
+            if(s%10===0){
+                let rest=sum-s;
+                niuVal=rest%10;
+                hasNiu=true;
+                break;
+            } if(hasNiu) break; if(hasNiu) break;
+        }
+        if(!hasNiu) return {type:'无牛',multiplier:0,display:'无牛'};
+        if(niuVal===0){
+            let allTen=pts.every(p=>p===10);
+            if(allTen) return {type:'五花牛',multiplier:5,display:'五花牛'};
+            let cnt={}; pts.forEach(p=>cnt[p]=(cnt[p]||0)+1);
+            if(Object.values(cnt).some(c=>c===4)) return {type:'四炸',multiplier:8,display:'四炸'};
+            return {type:'牛牛',multiplier:3,display:'牛牛'};
+        }
+        return {type:`牛${niuVal}`,multiplier:1,display:`牛${niuVal}`};
+    }
+    container.innerHTML = `<div class="game-card"><div>🏦 庄家（电脑）</div><div id="bankerHand" class="niu-hand"></div><div id="bankerType">?</div><div>👤 闲家（您）</div><div id="playerHand" class="niu-hand"></div><div id="playerType">?</div><div class="countdown-area" id="niuCountdownArea">⏱️ 下注 <span id="niuCountdownNum">25</span> s</div><div><span>🎲 本局中奖: <span id="niuWinAmount">0</span></span><span>📊 盈亏: <span id="niuProfitLoss">0</span></span></div><div id="niuChips"><span class="chip" data-chip="10">10</span><span class="chip" data-chip="50">50</span><span class="chip selected" data-chip="100">100</span><span class="chip" data-chip="500">500</span><span class="chip" data-chip="1000">1000</span></div><div style="display:flex;gap:8px;"><div class="bet-card" data-bet="PLAYER">闲家赢<br><span id="bet_PLAYER">0</span></div><div class="bet-card" data-bet="BANKER">庄家赢<br><span id="bet_BANKER">0</span></div><div class="bet-card" data-bet="TIE">和<br><span id="bet_TIE">0</span></div></div><div style="display:flex;gap:8px;"><div class="bet-card" data-bet="NIU_NIU">闲家牛牛<br><span id="bet_NIU_NIU">0</span></div><div class="bet-card" data-bet="WU_HUA">闲家五花牛<br><span id="bet_WU_HUA">0</span></div></div><div><button id="niuClearBtn" class="exec-btn">清空</button><button id="niuRepeatBtn" class="exec-btn">续押</button><button id="niuRefreshBtn" class="exec-btn">刷新</button><button id="niuDealBtn" class="exec-btn main-go">🐮 发牌</button></div><div>💰 余额: <span id="niuBalance">0</span> 总押注: <span id="niuTotalBet">0</span></div><div id="niuResultMsg" style="margin-top:8px;"></div><div id="niuResult3D" style="margin:10px auto; text-align:center; width:120px; height:50px; background:#2a1e12; border:1px solid #ffaa33; border-radius:20px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.2rem; visibility:hidden;">🏆 结果</div></div>`;
+    let bets={ PLAYER:0, BANKER:0, TIE:0, NIU_NIU:0, WU_HUA:0 };
+    let selectedChip=100, currentBalance=currentUser?currentUser.balance:0, isRolling=false, countdownTimer=null, lastBetSnapshot=null, remainingSec=25;
+    async function updateUI(){
+        for(let k in bets){ let sp=document.getElementById(`bet_${k}`); if(sp) sp.innerText=bets[k]; }
+        let total=Object.values(bets).reduce((a,b)=>a+b,0);
+        document.getElementById('niuTotalBet').innerText=total;
+        if(currentUser) document.getElementById('niuBalance').innerText=currentUser.balance.toFixed(2);
+    }
+    function saveLastBet(){ lastBetSnapshot=JSON.parse(JSON.stringify(bets)); }
+    async function clearAllBets(){
+        let total=Object.values(bets).reduce((a,b)=>a+b,0);
+        if(total>0) await gameSettle(-total,0);
+        for(let k in bets) bets[k]=0;
+        updateUI(); saveLastBet(); showToast("已清空押注");
+    }
+    async function repeatLastBet(){
+        if(!lastBetSnapshot) return showToast("无续押记录");
+        let need=Object.values(lastBetSnapshot).reduce((a,b)=>a+b,0);
+        if(need>currentBalance) return showToast("余额不足");
+        let oldTotal=Object.values(bets).reduce((a,b)=>a+b,0);
+        if(oldTotal>0) await gameSettle(-oldTotal,0);
+        for(let k in bets) bets[k]=0;
+        for(let k in lastBetSnapshot) bets[k]=lastBetSnapshot[k];
+        await gameSettle(need,0);
+        updateUI(); showToast("续押成功");
+    }
+    async function addBet(betType){
+        if(isRolling) return showToast("开奖中");
+        if(selectedChip<=0) return showToast("选筹码");
+        if(selectedChip>currentBalance) return showToast("余额不足");
+        await gameSettle(selectedChip,0);
+        bets[betType]+=selectedChip;
+        updateUI(); saveLastBet(); showToast(`+${selectedChip} ${betType}`);
+    }
+    async function revealCards(handDiv, cards, delay=150){
+        handDiv.innerHTML = '';
+        for(let idx=0; idx<cards.length; idx++){
+            let card = cards[idx];
+            let div = document.createElement('div');
+            div.className = 'simple-card';
+            div.setAttribute('data-suit', card.suit);
+            div.innerText = card.display;
+            div.style.transform = 'rotateY(90deg)';
+            div.style.transition = 'transform 0.2s';
+            handDiv.appendChild(div);
+            setTimeout(() => { div.style.transform = 'rotateY(0deg)'; }, idx * delay);
+            await new Promise(r => setTimeout(r, delay));
+        }
+    }
+    async function startGame(){
+        if(isRolling) return;
+        let totalBet=Object.values(bets).reduce((a,b)=>a+b,0);
+        if(totalBet===0) return showToast("请先下注");
+        if(totalBet>currentBalance) return showToast("余额不足");
+        isRolling=true;
+        if(countdownTimer) clearInterval(countdownTimer);
+        let deck=shuffle(createDeck());
+        let playerCards=deck.slice(0,5), bankerCards=deck.slice(5,10);
+        let playerType=calcNiuType(playerCards), bankerType=calcNiuType(bankerCards);
+        await revealCards(document.getElementById('playerHand'),playerCards,120);
+        await revealCards(document.getElementById('bankerHand'),bankerCards,120);
+        document.getElementById('playerType').innerHTML=`${playerType.display} ${playerType.multiplier>1?`(赔率${playerType.multiplier})`:''}`;
+        document.getElementById('bankerType').innerHTML=`${bankerType.display} ${bankerType.multiplier>1?`(赔率${bankerType.multiplier})`:''}`;
+        let result='', winAmount=0;
+        let pScore=playerType.multiplier===0?0:(playerType.multiplier===1?1:playerType.multiplier);
+        let bScore=bankerType.multiplier===0?0:(bankerType.multiplier===1?1:bankerType.multiplier);
+        if(pScore>bScore) result='PLAYER';
+        else if(bScore>pScore) result='BANKER';
+        else result='TIE';
+        let winTypes=[];
+        if(result==='PLAYER'&&bets.PLAYER>0){ winAmount+=bets.PLAYER*2; winTypes.push('PLAYER'); }
+        if(result==='BANKER'&&bets.BANKER>0){ winAmount+=bets.BANKER*2; winTypes.push('BANKER'); }
+        if(result==='TIE'&&bets.TIE>0){ winAmount+=bets.TIE*8; winTypes.push('TIE'); }
+        if(playerType.type==='牛牛'&&bets.NIU_NIU>0){ winAmount+=bets.NIU_NIU*(playerType.multiplier+1); winTypes.push('NIU_NIU'); }
+        if(playerType.type==='五花牛'&&bets.WU_HUA>0){ winAmount+=bets.WU_HUA*(playerType.multiplier+1); winTypes.push('WU_HUA'); }
+        winAmount *= systemConfig.adjustFactor;
+        let profit=winAmount-totalBet;
+        await gameSettle(totalBet, winAmount);
+        document.getElementById('niuWinAmount').innerText=winAmount.toFixed(2);
+        document.getElementById('niuProfitLoss').innerText=profit.toFixed(2);
+        let resultText = '';
+        if(result==='PLAYER') resultText='闲家赢';
+        else if(result==='BANKER') resultText='庄家赢';
+        else resultText='和局';
+        document.getElementById('niuResultMsg').innerHTML=`${playerType.display} vs ${bankerType.display}<br>${resultText} ${profit>0?` 赢得 ${profit.toFixed(2)}`:''}`;
+        // 3D牌子显示结果
+        let resultDiv = document.getElementById('niuResult3D');
+        resultDiv.style.visibility = 'visible';
+        resultDiv.style.backgroundColor = '#ffaa33';
+        resultDiv.style.color = '#2a1a0a';
+        resultDiv.style.textShadow = '0 0 5px #fff';
+        resultDiv.innerText = resultText;
+        setTimeout(() => { resultDiv.style.visibility = 'hidden'; }, 3000);
+        for(let wt of winTypes){
+            let el = document.querySelector(`.bet-card[data-bet="${wt}"]`);
+            if(el) flashWinElement(el, winAmount);
+        }
+        for(let k in bets) bets[k]=0;
+        updateUI(); saveLastBet();
+        isRolling=false;
+        startCountdown(25);
+    }
+    function startCountdown(sec){
+        if(countdownTimer) clearInterval(countdownTimer);
+        remainingSec=sec;
+        let cd=document.getElementById('niuCountdownNum');
+        cd.innerText=remainingSec;
+        countdownTimer=setInterval(()=>{
+            if(remainingSec<=1){
+                clearInterval(countdownTimer);
+                countdownTimer=null;
+                if(!isRolling) startGame();
+            }else{
+                remainingSec--;
+                cd.innerText=remainingSec;
+            }
+        },1000);
+    }
+    async function refreshBalance(){ await updateUI(); showToast("刷新"); }
+    document.querySelectorAll('#niuChips .chip').forEach(c=>{
+        c.onclick=function(){
+            selectedChip=parseInt(this.dataset.chip);
+            document.querySelectorAll('#niuChips .chip').forEach(cc=>cc.classList.remove('selected'));
+            this.classList.add('selected');
+        };
+    });
+    document.querySelectorAll('.bet-card[data-bet]').forEach(c=>{
+        c.onclick=()=>addBet(c.dataset.bet);
+    });
+    document.getElementById('niuClearBtn').onclick=clearAllBets;
+    document.getElementById('niuRepeatBtn').onclick=repeatLastBet;
+    document.getElementById('niuRefreshBtn').onclick=refreshBalance;
+    document.getElementById('niuDealBtn').onclick=()=>{ if(!isRolling) startGame(); };
+    updateUI(); startCountdown(25); saveLastBet();
+    niuNiuDestroy=()=>{ if(countdownTimer) clearInterval(countdownTimer); container.innerHTML=''; };
+    return niuNiuDestroy;
 }
 // ==================== 大厅和路由 ====================
 let currentGameDestroy=null;
