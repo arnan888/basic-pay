@@ -33,13 +33,13 @@
         .chip.selected{background:#ffaa33;color:#2a1a0a;box-shadow:0 0 8px #ffaa33}
         .exec-btn{background:linear-gradient(135deg,#ffaa33,#ff884d);border:none;border-radius:36px;padding:8px 14px;color:#2a1a0a;font-weight:bold;cursor:pointer;margin:3px}
         .countdown-area{text-align:center;margin:6px 0 12px;background:rgba(0,0,0,0.6);border-radius:40px;padding:6px 12px;font-weight:bold;border:1px solid #ffaa33}
-        /* 骰子尺寸 70px (手机55px) 精确校准旋转轴心 */
+        /* 骰子基本尺寸 */
         .fish-dice-cube, .dice-cube {
             width: 70px;
             height: 70px;
             position: relative;
             transform-style: preserve-3d;
-            transition: transform 0.4s;
+            transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
         }
         .fish-dice-face, .dice-face {
             position: absolute;
@@ -55,21 +55,39 @@
             font-size: 2rem;
             transform: translateZ(35px);
         }
-        /* ----- 葫芦鱼专用区域：增大间距，提升骰子平稳落地感 ----- */
+        /* ----- 葫芦鱼专用：超大间距 + 强制居中独立 ----- */
         .fish-dice-3d-area {
             display: flex;
             justify-content: center;
-            gap: 40px;          /* 桌面端加大间距，避免拥挤 */
-            margin: 20px 0;
-            perspective: 800px;  /* 增强透视，每个骰子更独立 */
+            align-items: center;
+            gap: 48px;            /* 桌面端超大间距 */
+            margin: 24px 0;
+            perspective: 900px;    /* 更深的景深感 */
+            flex-wrap: nowrap;
         }
         .fish-dice-cube {
-            margin: 0 6px;
+            margin: 0 8px;
+            flex-shrink: 0;
         }
-        .fish-front, .fish-back, .fish-right, .fish-left, .fish-top, .fish-bottom,
-        .front, .back, .right, .left, .top, .bottom {
-            transform: translateZ(35px);
+        /* 手机端再优化 */
+        @media (max-width:520px){
+            .fish-dice-3d-area {
+                gap: 34px;
+                perspective: 750px;
+            }
+            .fish-dice-cube {
+                margin: 0 5px;
+            }
         }
+        /* 普通骰子区域保持原样（骰宝） */
+        .dice-3d-area {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            perspective: 700px;
+        }
+        /* 手机端葫芦鱼骰子尺寸适配 */
         @media (max-width:480px){
             .fish-dice-cube, .dice-cube {
                 width: 55px;
@@ -78,28 +96,8 @@
             .fish-dice-face, .dice-face {
                 transform: translateZ(27.5px);
             }
-            .fish-front, .fish-back, .fish-right, .fish-left, .fish-top, .fish-bottom,
-            .front, .back, .right, .left, .top, .bottom {
-                transform: translateZ(27.5px);
-            }
-            .fish-dice-3d-area {
-                gap: 28px;          /* 手机端间距足够防止挤压 */
-                perspective: 650px;
-            }
-            .fish-dice-cube {
-                margin: 0 4px;
-            }
-            .dice-3d-area {
-                perspective: 550px;
-            }
         }
-        .dice-3d-area {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin: 20px 0;
-            perspective: 700px;
-        }
+        /* 其他样式保持不变（pip 图案等） */
         .pip{width:10px;height:10px;background:#ffaa33;border-radius:50%;margin:2px;position:absolute}
         .pip-l1,.pip-l2,.pip-l3{left:12px}
         .pip-r1,.pip-r2,.pip-r3{right:12px}
@@ -285,7 +283,7 @@
     function login(acc,pwd){let u=loadUsers().find(u=>u.account===acc);if(!u)return{success:false,msg:"账号不存在"};if(u.password!==pwd)return{success:false,msg:"密码错误"};currentUser=u;localStorage.setItem('curr_acc',acc);return{success:true,msg:"登录成功"};}
     function register(acc,pwd,code){let valid=["VIP666","888VIP","GOLD2025","LUCKY8","DICE100"];if(!valid.includes(code))return{success:false,msg:"推荐码无效"};let users=loadUsers();if(users.find(u=>u.account===acc))return{success:false,msg:"账号已存在"};users.push({account:acc,password:pwd,balance:5000,records:[]});saveUsers(users);return{success:true,msg:"注册成功"};}
 
-    // ==================== 葫芦鱼（完整带双押，骰子70px，间距已优化） ====================
+    // ==================== 葫芦鱼（完整矫正：间距+轴心+落地稳定） ====================
     let fishDestroy = null;
     function initFishGame(c){if(fishDestroy)fishDestroy();
     c.innerHTML=`<div class="game-card"><div style="display:flex;gap:8px;justify-content:space-between"><div>💰余额<span id="fishMyBalance">0</span></div><div>🎲总押注<span id="fishTotalBet">0</span></div><div>🏆上局净利<span id="fishLastWin">0</span></div></div><div class="countdown-area" id="fishPhaseHint">🎲 下注阶段 · 25秒</div><div id="fishChips"><span class="chip" data-chip="10">10</span><span class="chip" data-chip="50">50</span><span class="chip selected" data-chip="100">100</span><span class="chip" data-chip="500">500</span><span class="chip" data-chip="1000">1000</span></div><div><button id="fishClearBtn" class="exec-btn">清空</button><button id="fishRepeatBtn" class="exec-btn">续押</button><button id="fishGrabBtn" class="exec-btn">抢庄</button></div><div class="fish-dice-3d-area"><div class="fish-dice-cube" id="fishDice0"></div><div class="fish-dice-cube" id="fishDice1"></div><div class="fish-dice-cube" id="fishDice2"></div></div><div><strong>单选押注（点击加注）</strong></div><div id="fishPatternGrid" class="fish-pattern-grid"></div><div><strong>双押组合（点击加注）</strong></div><div id="fishDoubleGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div><button id="fishRecordBtn" class="exec-btn">📜记录</button></div>`;
@@ -312,11 +310,11 @@
     async function addDoubleBet(key){if(grabbed){showToast("庄家不能下注");return;}if(settling){showToast("结算中");return;}let v=chip;let total=Object.values(patternBets).reduce((a,b)=>a+b,0)+Object.values(doubleBets).reduce((a,b)=>a+b,0);if(v>500||total+v>2000)return showToast("单注上限500，总注上限2000");if(v>currentUser.balance)return showToast("余额不足");await gameSettle(v,0);doubleBets[key]+=v;updateUI();saveState();}
     async function clear(){if(settling){showToast("结算中");return;}let total=Object.values(patternBets).reduce((a,b)=>a+b,0)+Object.values(doubleBets).reduce((a,b)=>a+b,0);if(total>0)await gameSettle(-total,0);for(let p in patternBets)patternBets[p]=0;for(let k in doubleBets)doubleBets[k]=0;updateUI();saveState();}
     async function rollAnim(final){
-        for(let i=0;i<3;i++){dice[i].style.transition='transform 0.1s linear';
-            for(let s=0;s<20;s++)setTimeout(()=>{let rx=Math.random()*360,ry=Math.random()*360;dice[i].style.transform=`rotateX(${rx}deg) rotateY(${ry}deg)`;},s*30);}
-        await new Promise(r=>setTimeout(r,700));
-        for(let i=0;i<3;i++){dice[i].style.transition='transform 0.3s cubic-bezier(0.2,0.9,0.4,1.1)';setVal(dice[i],final[i]);}
-        await new Promise(r=>setTimeout(r,400));
+        for(let i=0;i<3;i++){dice[i].style.transition='transform 0.08s linear';
+            for(let s=0;s<18;s++)setTimeout(()=>{let rx=Math.random()*360,ry=Math.random()*360;dice[i].style.transform=`rotateX(${rx}deg) rotateY(${ry}deg)`;},s*40);}
+        await new Promise(r=>setTimeout(r,800));
+        for(let i=0;i<3;i++){dice[i].style.transition='transform 0.4s cubic-bezier(0.2,0.8,0.3,1.05)';setVal(dice[i],final[i]);}
+        await new Promise(r=>setTimeout(r,450));
         for(let i=0;i<3;i++)setVal(dice[i],final[i]);
     }
     async function settle(){
@@ -360,7 +358,7 @@
     return fishDestroy;
     }
 
-    // ==================== 骰宝游戏 ====================
+    // ==================== 骰宝游戏（无改动） ====================
     let diceDestroy = null;
     function initDiceGame(c){if(diceDestroy)diceDestroy();
     c.innerHTML=`<div class="game-card"><div style="display:flex;gap:8px;"><div style="flex:1;">🏦庄家<span id="diceBankerDisplay">${systemConfig.bankerBalance.toFixed(2)}</span></div><div style="flex:1;">🎲总押注<span id="totalBetDice">0</span></div></div><div class="countdown-area">⏱️下注<span id="countdownNumDice">25</span>s</div><div class="dice-3d-area"><div class="dice-cube" id="dice1"></div><div class="dice-cube" id="dice2"></div><div class="dice-cube" id="dice3"></div></div><div>🎲总点数<span id="totalPoints">3</span></div><div>💰本局中奖:<span id="rollingWinNumber">0</span>盈亏:<span id="diceProfitLoss">0</span></div><div><button id="clearAllBtnDice" class="exec-btn">清空</button><button id="repeatBtnDice" class="exec-btn">续押</button><button id="refreshBtnDice" class="exec-btn">刷新</button></div><div id="diceChips"><span class="chip" data-val="10">10</span><span class="chip" data-val="50">50</span><span class="chip selected" data-val="100">100</span><span class="chip" data-val="500">500</span><span class="chip" data-val="1000">1000</span></div><div><strong>大小单双</strong></div><div style="display:flex;gap:8px;"><div class="bet-card" data-type="BIG">大<br><span id="bet_BIG">0</span></div><div class="bet-card" data-type="SMALL">小<br><span id="bet_SMALL">0</span></div><div class="bet-card" data-type="ODD">单<br><span id="bet_ODD">0</span></div><div class="bet-card" data-type="EVEN">双<br><span id="bet_EVEN">0</span></div></div><div><strong>点数4-17</strong><div id="pointsGrid" class="points-grid"></div></div><div><strong>围骰/豹子</strong><div id="trioGrid" class="trio-grid"></div></div><button id="diceHistoryBtn" class="exec-btn">📜记录</button></div>`;
@@ -468,7 +466,7 @@
     return diceDestroy;
     }
 
-    // ==================== 龙虎斗 ====================
+    // ==================== 龙虎斗（无改动） ====================
     let dragonTigerDestroy=null;
     function initDragonTigerGame(c){if(dragonTigerDestroy)dragonTigerDestroy();
     const suits=["♥","♦","♣","♠"];
@@ -517,7 +515,7 @@
     return dragonTigerDestroy;
     }
 
-    // ==================== 牛牛游戏 ====================
+    // ==================== 牛牛游戏（无改动） ====================
     let niuNiuDestroy = null;
     function initGame4(container) {
         if(niuNiuDestroy) niuNiuDestroy();
