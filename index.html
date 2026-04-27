@@ -51,7 +51,7 @@
         .history-cell{width:32px;height:32px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,170,51,0.2);margin:2px}
         .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:1000}
         .modal-content{background:#2a1e12;border-radius:36px;padding:20px;color:#ffd966;border:1px solid #ffaa33}
-        /* 移除所有toast和浮动弹窗，但保留弹窗用于记录等手动按钮 */
+        /* 隐藏所有toast和浮动弹窗 */
         .toast-message, .floating-number, .result-popup { display: none !important; }
         .win-flash{animation:redFlash 0.6s 3 !important;background-color:#ff3300 !important;box-shadow:0 0 20px #ffaa33 !important}
         @keyframes redFlash{0%{background-color:rgba(255,50,50,0)}50%{background-color:#ff3300;transform:scale(1.02)}100%{background-color:rgba(255,50,50,0)}}
@@ -79,7 +79,6 @@
         body.light-mode .auth-input, body.light-mode .fish-bet-card, body.light-mode .bet-card, body.light-mode .chip, body.light-mode .quick-bet, body.light-mode .exec-btn, body.light-mode .countdown-area { background: rgba(255,250,240,0.8); border-color: #c99a3b; color: #4a3a2a; }
         body.light-mode .chip.selected { background: linear-gradient(145deg, #ffcc77, #e6a822); color: #2a1a0a; }
         body.light-mode .fish-dice-face, body.light-mode .dice-face, body.light-mode .simple-card, body.light-mode .dt-card { background: #fffaf0; border-color: #c99a3b; color: #4a3a2a; }
-        body.light-mode .toast-message { background: #fff9ef; color: #b8860b; border-color: #b8860b; }
         body.light-mode .admin-btn { background: #e6a822; color: #2a1a0a; }
         body.light-mode .lang-switch, body.light-mode .theme-switch { background: #e6a822; color: #2a1a0a; }
         body.light-mode .charge-btn, body.light-mode .withdraw-btn { background: linear-gradient(135deg, #e6a822, #c9881c); color: #2a1a0a; }
@@ -89,7 +88,7 @@
 <body>
 <div id="app"></div>
 <script>
-    // ==================== 全局存储 ====================
+    // ==================== 全局存储（本地后台） ====================
     const STORAGE={users:'jh_final',recharge:'jh_recharge',withdraw:'jh_withdraw',config:'jh_config'};
     let systemConfig={bankerBalance:200000,adjustFactor:0.98};
     function loadConfig(){let s=localStorage.getItem(STORAGE.config);if(s)systemConfig=JSON.parse(s);else localStorage.setItem(STORAGE.config,JSON.stringify(systemConfig));}
@@ -99,10 +98,9 @@
     let currentUser=null;
 
     function updateBalance(acc,newBal){let users=loadUsers();let idx=users.findIndex(u=>u.account===acc);if(idx!==-1){users[idx].balance=newBal;saveUsers(users);if(currentUser&&currentUser.account===acc)currentUser.balance=newBal;let span=document.getElementById("userBalanceDisplay");if(span)span.innerText=newBal.toFixed(2);}}
-    // 移除所有showToast调用，改为空函数
+    // 彻底移除所有弹窗提示
     function showToast(msg,isErr=false){}
     async function gameSettle(totalBet,winAmount){if(!currentUser)return false;if(currentUser.balance<totalBet)return false;let bankerDelta=totalBet-winAmount;let newBanker=systemConfig.bankerBalance+bankerDelta;if(newBanker<0)return false;systemConfig.bankerBalance=newBanker;saveConfig();let newBal=currentUser.balance-totalBet+winAmount;updateBalance(currentUser.account,newBal);return true;}
-    // 移除flashWinElement中的飘字，只保留闪动
     function flashWinElement(el,winAmount){if(!el)return;el.classList.remove('win-flash');void el.offsetWidth;el.classList.add('win-flash');setTimeout(()=>el.classList.remove('win-flash'),600);let span=el.querySelector('span');if(span){span.classList.remove('number-flash');void span.offsetWidth;span.classList.add('number-flash');setTimeout(()=>span.classList.remove('number-flash'),500);}}
     function applyRecharge(){let amt=parseFloat(prompt("充值金额（USDT）:","100"));if(isNaN(amt)||amt<=0)return;let orders=JSON.parse(localStorage.getItem(STORAGE.recharge)||'[]');orders.push({id:Date.now(),account:currentUser.account,amount:amt,status:'pending',time:new Date().toLocaleString()});localStorage.setItem(STORAGE.recharge,JSON.stringify(orders));}
     function applyWithdraw(){let amt=parseFloat(prompt("提现金额（USDT）:","10"));if(isNaN(amt)||amt<=0)return;if(currentUser.balance<amt)return;let addr=prompt("USDT收款地址");if(!addr)return;let orders=JSON.parse(localStorage.getItem(STORAGE.withdraw)||'[]');orders.push({id:Date.now(),account:currentUser.account,amount:amt,address:addr,status:'pending',time:new Date().toLocaleString()});localStorage.setItem(STORAGE.withdraw,JSON.stringify(orders));}
@@ -112,14 +110,14 @@
     function refreshWithdraw(){let container=modalDiv.querySelector('#withdrawList');if(pendingWithdraws.length===0){container.innerHTML='<div>无待处理提现</div>';return;}container.innerHTML=pendingWithdraws.map(o=>`<div>${o.account} 提现 ${o.amount} USDT <button class="admin-btn approveWithdraw" data-id="${o.id}">✅已打款</button> <button class="admin-btn rejectWithdraw" data-id="${o.id}">❌拒绝</button></div>`).join('');document.querySelectorAll('.approveWithdraw').forEach(btn=>{btn.onclick=()=>{let id=parseInt(btn.dataset.id);let order=withdrawOrders.find(o=>o.id===id);if(order&&order.status==='pending'){let user=users.find(u=>u.account===order.account);if(user&&user.balance>=order.amount){user.balance-=order.amount;saveUsers(users);order.status='approved';localStorage.setItem(STORAGE.withdraw,JSON.stringify(withdrawOrders));modalDiv.remove();openAdminModal();}else{}}}});document.querySelectorAll('.rejectWithdraw').forEach(btn=>{btn.onclick=()=>{let id=parseInt(btn.dataset.id);let order=withdrawOrders.find(o=>o.id===id);if(order){order.status='rejected';localStorage.setItem(STORAGE.withdraw,JSON.stringify(withdrawOrders));modalDiv.remove();openAdminModal();}}});}
     refreshRecharge();refreshWithdraw();
     modalDiv.querySelector('#addBankerBtn').onclick=()=>{let amt=parseFloat(prompt("注入金额:"));if(!isNaN(amt)&&amt>0){systemConfig.bankerBalance+=amt;saveConfig();modalDiv.remove();openAdminModal();}};
-    modalDiv.querySelector('#saveFactorBtn').onclick=()=>{let val=parseFloat(modalDiv.querySelector('#factorInput').value);if(!isNaN(val)&&val>=0.5&&val<=1.5){systemConfig.adjustFactor=val;saveConfig();modalDiv.remove();openAdminModal();}else{}};
+    modalDiv.querySelector('#saveFactorBtn').onclick=()=>{let val=parseFloat(modalDiv.querySelector('#factorInput').value);if(!isNaN(val)&&val>=0.5&&val<=1.5){systemConfig.adjustFactor=val;saveConfig();modalDiv.remove();openAdminModal();}};
     modalDiv.querySelector('#addBalanceBtn').onclick=()=>{let acc=modalDiv.querySelector('#userSelect').value;let amt=parseFloat(modalDiv.querySelector('#amountInput').value);if(isNaN(amt)||amt<=0)return;let user=users.find(u=>u.account===acc);if(user){user.balance+=amt;saveUsers(users);if(currentUser&&currentUser.account===acc)currentUser.balance=user.balance;modalDiv.remove();openAdminModal();}};
-    modalDiv.querySelector('#subBalanceBtn').onclick=()=>{let acc=modalDiv.querySelector('#userSelect').value;let amt=parseFloat(modalDiv.querySelector('#amountInput').value);if(isNaN(amt)||amt<=0)return;let user=users.find(u=>u.account===acc);if(user&&user.balance>=amt){user.balance-=amt;saveUsers(users);if(currentUser&&currentUser.account===acc)currentUser.balance=user.balance;modalDiv.remove();openAdminModal();}else{}};
+    modalDiv.querySelector('#subBalanceBtn').onclick=()=>{let acc=modalDiv.querySelector('#userSelect').value;let amt=parseFloat(modalDiv.querySelector('#amountInput').value);if(isNaN(amt)||amt<=0)return;let user=users.find(u=>u.account===acc);if(user&&user.balance>=amt){user.balance-=amt;saveUsers(users);if(currentUser&&currentUser.account===acc)currentUser.balance=user.balance;modalDiv.remove();openAdminModal();}};
     modalDiv.querySelector('#closeAdminBtn').onclick=()=>modalDiv.remove();}
     function login(acc,pwd){let u=loadUsers().find(u=>u.account===acc);if(!u)return{success:false,msg:"账号不存在"};if(u.password!==pwd)return{success:false,msg:"密码错误"};currentUser=u;localStorage.setItem('curr_acc',acc);return{success:true,msg:"登录成功"};}
     function register(acc,pwd,code){let valid=["VIP666","888VIP","GOLD2025","LUCKY8","DICE100"];if(!valid.includes(code))return{success:false,msg:"推荐码无效"};let users=loadUsers();if(users.find(u=>u.account===acc))return{success:false,msg:"账号已存在"};users.push({account:acc,password:pwd,balance:5000,records:[]});saveUsers(users);return{success:true,msg:"注册成功"};}
 
-    // ==================== 鱼虾蟹游戏（无弹窗，中奖显示本金+赢额并闪动3秒） ====================
+    // ==================== 鱼虾蟹游戏（葫芦鱼） ====================
     let fishDestroy = null;
     function initFishGame(container) {
         if(fishDestroy) fishDestroy();
@@ -242,7 +240,7 @@
             let occurs={鱼:0,虾:0,蟹:0,葫芦:0,金钱:0,鸡:0};
             [r1,r2,r3].forEach(p=>occurs[p]++);
             let winAmount=0;
-            let winDetails={}; // 记录每个下注区域的总返还 (押注+赢)
+            let winDetails={};
             if(totalBet > 0){
                 for(let p in patternBets){
                     let cnt=occurs[p];
@@ -267,10 +265,8 @@
             }
             let netProfit = winAmount - totalBet;
             lastWinAmount = netProfit;
-            if(totalBet > 0){
-                await gameSettle(totalBet, winAmount);
-            }
-            // 显示中奖结果：在每个中奖区域显示本金+赢额，并闪动3秒
+            if(totalBet > 0) await gameSettle(totalBet, winAmount);
+            // 显示中奖区域的总返还并闪动3秒
             for(let p in patternBets){
                 let sp = document.getElementById(`fishBet_${p}`);
                 if(sp){
@@ -304,12 +300,10 @@
                     }
                 }
             }
-            // 清空押注数据
             patternBets={鱼:0,虾:0,蟹:0,葫芦:0,金钱:0,鸡:0};
             for(let k in doubleBets) doubleBets[k]=0;
             updateFishUI();
             saveLastBetState();
-            // 记录历史（用于记录按钮）
             gameRecords.unshift({time:new Date().toLocaleTimeString(), dice:`${r1},${r2},${r3}`, result:totalBet>0?(netProfit>0?`赢${netProfit.toFixed(2)}`:`输${-netProfit}`):`未押注`});
             isRolling=false; isGrabbed=false;
             if(countdownTimer) clearInterval(countdownTimer);
@@ -356,7 +350,7 @@
         return fishDestroy;
     }   
 
-    // ==================== 骰宝游戏（无弹窗，中奖显示总返还并闪动3秒） ====================
+    // ==================== 骰宝游戏 ====================
     let diceDestroy = null;
     function initDiceGame(container) {
         if(diceDestroy) diceDestroy();
@@ -491,7 +485,7 @@
             let d1 = Math.floor(Math.random()*6)+1, d2 = Math.floor(Math.random()*6)+1, d3 = Math.floor(Math.random()*6)+1;
             let { total, types } = getResultInfo(d1,d2,d3);
             let winAmount = 0;
-            let winDetails = {}; // 记录每个下注区域的总返还
+            let winDetails = {};
             if(totalBetVal > 0){
                 const oddsMap = {4:60,5:30,6:18,7:12,8:8,9:7,10:6,11:6,12:7,13:8,14:12,15:18,16:30,17:60};
                 if(types.includes('BIG') && bets.BIG){ winAmount += bets.BIG * 2; winDetails['BIG'] = bets.BIG * 3; }
@@ -507,7 +501,6 @@
                 for(let k in winDetails) winDetails[k] *= systemConfig.adjustFactor;
             }
             let profit = winAmount - totalBetVal;
-            // 骰子动画
             let steps = 15;
             for(let i=0;i<steps;i++){
                 setTimeout(() => {
@@ -520,7 +513,6 @@
                 addRecord(d1,d2,d3, winAmount, totalBetVal, profit);
                 if(profitLossSpan) profitLossSpan.innerText = profit.toFixed(2);
                 await gameSettle(totalBetVal, winAmount);
-                // 显示中奖结果：每个中奖区域显示总返还，闪动3秒后归零
                 for(let k in bets){
                     let el = document.getElementById(`bet_${k}`);
                     if(el){
@@ -537,7 +529,6 @@
                         }
                     }
                 }
-                // 清空押注数据
                 for(let k in bets) bets[k] = 0;
                 updateUIDice();
                 startCountdownDice(25);
@@ -593,7 +584,7 @@
         return diceDestroy;
     }
 
-    // ==================== 龙虎斗（无弹窗，自动开奖，中奖显示总返还闪动3秒） ====================
+    // ==================== 龙虎斗 ====================
     let dragonTigerDestroy = null;
     function initDragonTigerGame(c){if(dragonTigerDestroy)dragonTigerDestroy();
     const suits=["♥","♦","♣","♠"];
@@ -630,7 +621,6 @@
         resultHistory.unshift(res);
         if(resultHistory.length>10) resultHistory.pop();
         updateHistory(); updateStreak();
-        // 显示中奖区域总返还并闪动
         let items=['DRAGON','TIGER','TIE'];
         for(let typ of items){
             let span = document.getElementById(`bet${typ.charAt(0)+typ.slice(1).toLowerCase()}Amount`);
@@ -654,8 +644,7 @@
         if(state.countdownInterval) clearInterval(state.countdownInterval);
         startCountdown(30);
     }
-    function executeBet(){ /* 移除确认按钮的自动触发，改为自动开奖，不再需要手动确认 */ }
-    function repeatLast(){ if(lastBet && !state.betRolling){ /* 直接使用lastBet开奖 */ let t=lastBet.type, a=lastBet.amount; if(a<=currentUser.balance){ gameSettle(a,0); state.bets[t]=a; autoDraw(); } } }
+    function repeatLast(){ if(lastBet && !state.betRolling){ let t=lastBet.type, a=lastBet.amount; if(a<=currentUser.balance){ gameSettle(a,0); state.bets[t]=a; autoDraw(); } } }
     function startCountdown(sec){
         if(state.countdownInterval) clearInterval(state.countdownInterval);
         state.countdown=sec;
@@ -685,7 +674,7 @@
     return dragonTigerDestroy;
     }
 
-    // ==================== 牛牛游戏（无弹窗，自动开奖，中奖显示总返还闪动3秒） ====================
+    // ==================== 牛牛游戏 ====================
     let niuNiuDestroy = null;
     function initGame4(container) {
         if(niuNiuDestroy) niuNiuDestroy();
@@ -743,7 +732,6 @@
             resultDiv.style.textShadow = '0 0 5px #fff';
             resultDiv.innerText = resultText;
             setTimeout(() => { resultDiv.style.visibility = 'hidden'; }, 3000);
-            // 显示中奖区域总返还并闪动
             let betTypes = ['PLAYER','BANKER','TIE','NIU_NIU','WU_HUA'];
             for(let bt of betTypes){
                 let sp = document.getElementById(`bet_${bt}`);
@@ -813,7 +801,7 @@
     let currentLang='zh';
     function t(k){return lang[currentLang][k]||lang.zh[k]||k;}
     function renderAuthUI(){const sa=localStorage.getItem('neon_saved_account')||'',sp=localStorage.getItem('neon_saved_password')||'',rc=localStorage.getItem('neon_remember_me')==='true';document.getElementById('app').innerHTML=`<div class="auth-panel"><h2>🏆金辉娱乐城</h2><div><input type="text" id="loginAccount" class="auth-input" placeholder="${t('phoneOrEmail')}" value="${sa}"><input type="password" id="loginPassword" class="auth-input" placeholder="${t('password')}" value="${sp}"><div class="flex-row"><input type="checkbox" id="rememberCheckbox" ${rc?'checked':''}><label>${t('remember')}</label></div><button id="loginBtn" class="auth-btn">${t('login')}</button></div><hr><h3>${t('registerNow')}</h3><input type="text" id="regAccount" class="auth-input" placeholder="${t('phoneOrEmail')}"><div class="flex-row"><input type="text" id="regCode" class="auth-input" placeholder="${t('verifyCode')}"><button id="getCodeBtn" class="code-btn">${t('getCode')}</button></div><input type="password" id="regPassword" class="auth-input" placeholder="${t('password')}"><input type="text" id="regReferral" class="auth-input" placeholder="${t('referralCode')}"><button id="registerBtn" class="auth-btn">${t('register')}</button><div class="auth-note">${t('referralNote')}</div></div>`;
-    document.getElementById('loginBtn').onclick=()=>{let a=document.getElementById('loginAccount').value.trim(),p=document.getElementById('loginPassword').value,rem=document.getElementById('rememberCheckbox').checked;let res=login(a,p);if(res.success){if(rem){localStorage.setItem('neon_saved_account',a);localStorage.setItem('neon_saved_password',p);localStorage.setItem('neon_remember_me','true');}else{localStorage.removeItem('neon_saved_account');localStorage.removeItem('neon_saved_password');localStorage.setItem('neon_remember_me','false');}renderGameLobby();}else{}};
+    document.getElementById('loginBtn').onclick=()=>{let a=document.getElementById('loginAccount').value.trim(),p=document.getElementById('loginPassword').value,rem=document.getElementById('rememberCheckbox').checked;let res=login(a,p);if(res.success){if(rem){localStorage.setItem('neon_saved_account',a);localStorage.setItem('neon_saved_password',p);localStorage.setItem('neon_remember_me','true');}else{localStorage.removeItem('neon_saved_account');localStorage.removeItem('neon_saved_password');localStorage.setItem('neon_remember_me','false');}renderGameLobby();}};
     document.getElementById('getCodeBtn').onclick=()=>{let a=document.getElementById('regAccount').value.trim();if(!a)return;let code=Math.floor(100000+Math.random()*900000);window.tempCode={acc:a,code:code,expire:Date.now()+5*60*1000};alert(`【验证码】您的验证码是：${code}，5分钟内有效。`);};
     document.getElementById('registerBtn').onclick=()=>{let a=document.getElementById('regAccount').value.trim(),c=document.getElementById('regCode').value.trim(),p=document.getElementById('regPassword').value,ref=document.getElementById('regReferral').value.trim().toUpperCase();if(!a||!c||!p||!ref)return;if(!['VIP666','888VIP','GOLD2025','LUCKY8','DICE100'].includes(ref))return;if(!window.tempCode||window.tempCode.acc!==a||window.tempCode.code!=c||Date.now()>window.tempCode.expire)return;if(p.length<4)return;let res=register(a,p,ref);if(res.success){document.getElementById('regAccount').value='';document.getElementById('regCode').value='';document.getElementById('regPassword').value='';document.getElementById('regReferral').value='';}};}
     loadConfig();
