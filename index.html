@@ -51,7 +51,6 @@
         .history-cell{width:32px;height:32px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,170,51,0.2);margin:2px}
         .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:1000}
         .modal-content{background:#2a1e12;border-radius:36px;padding:20px;color:#ffd966;border:1px solid #ffaa33}
-        /* 隐藏所有toast和浮动弹窗 */
         .toast-message, .floating-number, .result-popup { display: none !important; }
         .win-flash{animation:redFlash 0.6s 3 !important;background-color:#ff3300 !important;box-shadow:0 0 20px #ffaa33 !important}
         @keyframes redFlash{0%{background-color:rgba(255,50,50,0)}50%{background-color:#ff3300;transform:scale(1.02)}100%{background-color:rgba(255,50,50,0)}}
@@ -88,7 +87,7 @@
 <body>
 <div id="app"></div>
 <script>
-    // ==================== 全局存储（本地后台） ====================
+    // ==================== 全局存储 ====================
     const STORAGE={users:'jh_final',recharge:'jh_recharge',withdraw:'jh_withdraw',config:'jh_config'};
     let systemConfig={bankerBalance:200000,adjustFactor:0.98};
     function loadConfig(){let s=localStorage.getItem(STORAGE.config);if(s)systemConfig=JSON.parse(s);else localStorage.setItem(STORAGE.config,JSON.stringify(systemConfig));}
@@ -98,7 +97,6 @@
     let currentUser=null;
 
     function updateBalance(acc,newBal){let users=loadUsers();let idx=users.findIndex(u=>u.account===acc);if(idx!==-1){users[idx].balance=newBal;saveUsers(users);if(currentUser&&currentUser.account===acc)currentUser.balance=newBal;let span=document.getElementById("userBalanceDisplay");if(span)span.innerText=newBal.toFixed(2);}}
-    // 彻底移除所有弹窗提示
     function showToast(msg,isErr=false){}
     async function gameSettle(totalBet,winAmount){if(!currentUser)return false;if(currentUser.balance<totalBet)return false;let bankerDelta=totalBet-winAmount;let newBanker=systemConfig.bankerBalance+bankerDelta;if(newBanker<0)return false;systemConfig.bankerBalance=newBanker;saveConfig();let newBal=currentUser.balance-totalBet+winAmount;updateBalance(currentUser.account,newBal);return true;}
     function flashWinElement(el,winAmount){if(!el)return;el.classList.remove('win-flash');void el.offsetWidth;el.classList.add('win-flash');setTimeout(()=>el.classList.remove('win-flash'),600);let span=el.querySelector('span');if(span){span.classList.remove('number-flash');void span.offsetWidth;span.classList.add('number-flash');setTimeout(()=>span.classList.remove('number-flash'),500);}}
@@ -117,7 +115,7 @@
     function login(acc,pwd){let u=loadUsers().find(u=>u.account===acc);if(!u)return{success:false,msg:"账号不存在"};if(u.password!==pwd)return{success:false,msg:"密码错误"};currentUser=u;localStorage.setItem('curr_acc',acc);return{success:true,msg:"登录成功"};}
     function register(acc,pwd,code){let valid=["VIP666","888VIP","GOLD2025","LUCKY8","DICE100"];if(!valid.includes(code))return{success:false,msg:"推荐码无效"};let users=loadUsers();if(users.find(u=>u.account===acc))return{success:false,msg:"账号已存在"};users.push({account:acc,password:pwd,balance:5000,records:[]});saveUsers(users);return{success:true,msg:"注册成功"};}
 
-    // ==================== 鱼虾蟹游戏（葫芦鱼） ====================
+    // ==================== 鱼虾蟹游戏 ====================
     let fishDestroy = null;
     function initFishGame(container) {
         if(fishDestroy) fishDestroy();
@@ -266,7 +264,6 @@
             let netProfit = winAmount - totalBet;
             lastWinAmount = netProfit;
             if(totalBet > 0) await gameSettle(totalBet, winAmount);
-            // 显示中奖区域的总返还并闪动3秒
             for(let p in patternBets){
                 let sp = document.getElementById(`fishBet_${p}`);
                 if(sp){
@@ -674,37 +671,89 @@
     return dragonTigerDestroy;
     }
 
-    // ==================== 牛牛游戏 ====================
+    // ==================== 牛牛游戏（增加记录功能 + 理牌算法） ====================
     let niuNiuDestroy = null;
     function initGame4(container) {
         if(niuNiuDestroy) niuNiuDestroy();
         function createDeck() { let suits=['♥','♦','♣','♠']; let values=['A','2','3','4','5','6','7','8','9','10','J','Q','K']; let deck=[]; for(let s of suits) for(let i=0;i<values.length;i++){ let v=values[i]; let p=(v==='A')?1:(v==='J'||v==='Q'||v==='K')?10:parseInt(v); deck.push({suit:s, value:v, points:p, display:v+s}); } return deck; }
         function shuffle(deck) { for(let i=deck.length-1;i>0;i--){ let j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; } return deck; }
-        function calcNiuType(cards) { let pts=cards.map(c=>c.points), sum=pts.reduce((a,b)=>a+b,0); let hasNiu=false,niuVal=0; for(let i=0;i<5;i++) for(let j=i+1;j<5;j++) for(let k=j+1;k<5;k++){ let s=pts[i]+pts[j]+pts[k]; if(s%10===0){ let rest=sum-s; niuVal=rest%10; hasNiu=true; break; } if(hasNiu) break; if(hasNiu) break; } if(!hasNiu) return {type:'无牛',multiplier:0,display:'无牛'}; if(niuVal===0){ let allTen=pts.every(p=>p===10); if(allTen) return {type:'五花牛',multiplier:5,display:'五花牛'}; let cnt={}; pts.forEach(p=>cnt[p]=(cnt[p]||0)+1); if(Object.values(cnt).some(c=>c===4)) return {type:'四炸',multiplier:8,display:'四炸'}; return {type:'牛牛',multiplier:3,display:'牛牛'}; } return {type:`牛${niuVal}`,multiplier:1,display:`牛${niuVal}`}; }
-        container.innerHTML = `<div class="game-card"><div>🏦 庄家（电脑）</div><div id="bankerHand" class="niu-hand"></div><div id="bankerType">?</div><div>👤 闲家（您）</div><div id="playerHand" class="niu-hand"></div><div id="playerType">?</div><div class="countdown-area" id="niuCountdownArea">⏱️ 下注 <span id="niuCountdownNum">25</span> s</div><div><span>🎲 本局中奖: <span id="niuWinAmount">0</span></span><span>📊 盈亏: <span id="niuProfitLoss">0</span></span></div><div id="niuChips"><span class="chip" data-chip="10">10</span><span class="chip" data-chip="50">50</span><span class="chip selected" data-chip="100">100</span><span class="chip" data-chip="500">500</span><span class="chip" data-chip="1000">1000</span></div><div style="display:flex;gap:8px;"><div class="bet-card" data-bet="PLAYER">闲家赢<br><span id="bet_PLAYER">0</span></div><div class="bet-card" data-bet="BANKER">庄家赢<br><span id="bet_BANKER">0</span></div><div class="bet-card" data-bet="TIE">和<br><span id="bet_TIE">0</span></div></div><div style="display:flex;gap:8px;"><div class="bet-card" data-bet="NIU_NIU">闲家牛牛<br><span id="bet_NIU_NIU">0</span></div><div class="bet-card" data-bet="WU_HUA">闲家五花牛<br><span id="bet_WU_HUA">0</span></div></div><div><button id="niuClearBtn" class="exec-btn">清空</button><button id="niuRepeatBtn" class="exec-btn">续押</button><button id="niuRefreshBtn" class="exec-btn">刷新</button></div><div>💰 余额: <span id="niuBalance">0</span> 总押注: <span id="niuTotalBet">0</span></div><div id="niuResultMsg" style="margin-top:8px;"></div><div id="niuResult3D"></div></div>`;
+        function calcNiuType(cards) { let pts=cards.map(c=>c.points), sum=pts.reduce((a,b)=>a+b,0); let hasNiu=false,niuVal=0; for(let i=0;i<5;i++) for(let j=i+1;j<5;j++) for(let k=j+1;k<5;k++){ let s=pts[i]+pts[j]+pts[k]; if(s%10===0){ let rest=sum-s; niuVal=rest%10; hasNiu=true; break; } if(hasNiu) break; if(hasNiu) break; } if(!hasNiu) return {type:'无牛',multiplier:0,display:'无牛',niuCards:[],restCards:[]}; if(niuVal===0){ let allTen=pts.every(p=>p===10); if(allTen) return {type:'五花牛',multiplier:5,display:'五花牛',niuCards:cards.slice(),restCards:[]}; let cnt={}; pts.forEach(p=>cnt[p]=(cnt[p]||0)+1); if(Object.values(cnt).some(c=>c===4)) return {type:'四炸',multiplier:8,display:'四炸',niuCards:cards.slice(),restCards:[]}; return {type:'牛牛',multiplier:3,display:'牛牛',niuCards:cards.slice(),restCards:[]}; } return {type:`牛${niuVal}`,multiplier:1,display:`牛${niuVal}`,niuCards:[],restCards:[]}; }
+        // 理牌函数：有牛时三张组成牛的牌放在左边，另外两张放右边；无牛时按点数从大到小排列
+        function reorderNiuCards(cards, niuTypeObj) {
+            if(niuTypeObj.type === '无牛') {
+                // 按点数从大到小排序
+                return cards.slice().sort((a,b)=>b.points - a.points);
+            } else {
+                // 需要找出哪三张牌的和是10/20/30，以及剩下两张
+                let pts = cards.map(c=>c.points);
+                let sum = pts.reduce((a,b)=>a+b,0);
+                let found = false;
+                let niuIdx = [];
+                for(let i=0;i<5;i++){
+                    for(let j=i+1;j<5;j++){
+                        for(let k=j+1;k<5;k++){
+                            let s = pts[i]+pts[j]+pts[k];
+                            if(s % 10 === 0){
+                                niuIdx = [i,j,k];
+                                found = true;
+                                break;
+                            }
+                            if(found) break;
+                        }
+                        if(found) break;
+                    }
+                    if(found) break;
+                }
+                let niuCards = niuIdx.map(idx=>cards[idx]);
+                let restCards = cards.filter((_,idx)=>!niuIdx.includes(idx));
+                // 三张牛牌按点数从大到小排序（可选）
+                niuCards.sort((a,b)=>b.points - a.points);
+                restCards.sort((a,b)=>b.points - a.points);
+                return [...niuCards, ...restCards];
+            }
+        }
+        container.innerHTML = `<div class="game-card"><div>🏦 庄家（电脑）</div><div id="bankerHand" class="niu-hand"></div><div id="bankerType">?</div><div>👤 闲家（您）</div><div id="playerHand" class="niu-hand"></div><div id="playerType">?</div><div class="countdown-area" id="niuCountdownArea">⏱️ 下注 <span id="niuCountdownNum">25</span> s</div><div><span>🎲 本局中奖: <span id="niuWinAmount">0</span></span><span>📊 盈亏: <span id="niuProfitLoss">0</span></span></div><div id="niuChips"><span class="chip" data-chip="10">10</span><span class="chip" data-chip="50">50</span><span class="chip selected" data-chip="100">100</span><span class="chip" data-chip="500">500</span><span class="chip" data-chip="1000">1000</span></div><div style="display:flex;gap:8px;"><div class="bet-card" data-bet="PLAYER">闲家赢<br><span id="bet_PLAYER">0</span></div><div class="bet-card" data-bet="BANKER">庄家赢<br><span id="bet_BANKER">0</span></div><div class="bet-card" data-bet="TIE">和<br><span id="bet_TIE">0</span></div></div><div style="display:flex;gap:8px;"><div class="bet-card" data-bet="NIU_NIU">闲家牛牛<br><span id="bet_NIU_NIU">0</span></div><div class="bet-card" data-bet="WU_HUA">闲家五花牛<br><span id="bet_WU_HUA">0</span></div></div><div><button id="niuClearBtn" class="exec-btn">清空</button><button id="niuRepeatBtn" class="exec-btn">续押</button><button id="niuRefreshBtn" class="exec-btn">刷新</button><button id="niuRecordBtn" class="exec-btn">📜 记录</button></div><div>💰 余额: <span id="niuBalance">0</span> 总押注: <span id="niuTotalBet">0</span></div><div id="niuResultMsg" style="margin-top:8px;"></div><div id="niuResult3D"></div></div>`;
         let bets={ PLAYER:0, BANKER:0, TIE:0, NIU_NIU:0, WU_HUA:0 };
         let selectedChip=100, currentBalance=currentUser?currentUser.balance:0, isRolling=false, countdownTimer=null, lastBetSnapshot=null, remainingSec=25;
+        let gameRecordsNiu = [];  // 存储记录
         async function updateUI(){ for(let k in bets){ let sp=document.getElementById(`bet_${k}`); if(sp) sp.innerText=bets[k]; } let total=Object.values(bets).reduce((a,b)=>a+b,0); document.getElementById('niuTotalBet').innerText=total; if(currentUser) document.getElementById('niuBalance').innerText=currentUser.balance.toFixed(2); }
         function saveLastBet(){ lastBetSnapshot=JSON.parse(JSON.stringify(bets)); }
         async function clearAllBets(){ let total=Object.values(bets).reduce((a,b)=>a+b,0); if(total>0) await gameSettle(-total,0); for(let k in bets) bets[k]=0; updateUI(); saveLastBet(); }
         async function repeatLastBet(){ if(!lastBetSnapshot) return; let need=Object.values(lastBetSnapshot).reduce((a,b)=>a+b,0); if(need>currentBalance) return; let oldTotal=Object.values(bets).reduce((a,b)=>a+b,0); if(oldTotal>0) await gameSettle(-oldTotal,0); for(let k in bets) bets[k]=0; for(let k in lastBetSnapshot) bets[k]=lastBetSnapshot[k]; await gameSettle(need,0); updateUI(); }
         async function addBet(betType){ if(isRolling) return; if(selectedChip<=0) return; if(selectedChip>currentBalance) return; await gameSettle(selectedChip,0); bets[betType]+=selectedChip; updateUI(); saveLastBet(); }
-        async function revealCards(handDiv, cards, delay=150){ handDiv.innerHTML = ''; for(let idx=0; idx<cards.length; idx++){ let card = cards[idx]; let div = document.createElement('div'); div.className = 'simple-card'; div.setAttribute('data-suit', card.suit); div.innerText = card.display; div.style.transform = 'rotateY(90deg)'; div.style.transition = 'transform 0.2s'; handDiv.appendChild(div); setTimeout(() => { div.style.transform = 'rotateY(0deg)'; }, idx * delay); await new Promise(r => setTimeout(r, delay)); } }
+        async function revealCards(handDiv, cards, delay=120){ 
+            handDiv.innerHTML = ''; 
+            for(let idx=0; idx<cards.length; idx++){ 
+                let card = cards[idx]; 
+                let div = document.createElement('div'); 
+                div.className = 'simple-card'; 
+                div.setAttribute('data-suit', card.suit); 
+                div.innerText = card.display; 
+                div.style.transform = 'rotateY(90deg)'; 
+                div.style.transition = 'transform 0.2s'; 
+                handDiv.appendChild(div); 
+                setTimeout(() => { div.style.transform = 'rotateY(0deg)'; }, idx * delay); 
+                await new Promise(r => setTimeout(r, delay)); 
+            } 
+        }
         async function autoDrawGame(){
             if(isRolling) return;
             let totalBet=Object.values(bets).reduce((a,b)=>a+b,0);
             isRolling=true;
             if(countdownTimer) clearInterval(countdownTimer);
             let deck=shuffle(createDeck());
-            let playerCards=deck.slice(0,5), bankerCards=deck.slice(5,10);
-            let playerType=calcNiuType(playerCards), bankerType=calcNiuType(bankerCards);
-            await revealCards(document.getElementById('playerHand'),playerCards,120);
-            await revealCards(document.getElementById('bankerHand'),bankerCards,120);
-            document.getElementById('playerType').innerHTML=`${playerType.display} ${playerType.multiplier>1?`(赔率${playerType.multiplier})`:''}`;
-            document.getElementById('bankerType').innerHTML=`${bankerType.display} ${bankerType.multiplier>1?`(赔率${bankerType.multiplier})`:''}`;
+            let playerRawCards=deck.slice(0,5), bankerRawCards=deck.slice(5,10);
+            let playerTypeObj=calcNiuType(playerRawCards);
+            let bankerTypeObj=calcNiuType(bankerRawCards);
+            let playerCardsOrdered = reorderNiuCards(playerRawCards, playerTypeObj);
+            let bankerCardsOrdered = reorderNiuCards(bankerRawCards, bankerTypeObj);
+            await revealCards(document.getElementById('playerHand'), playerCardsOrdered, 100);
+            await revealCards(document.getElementById('bankerHand'), bankerCardsOrdered, 100);
+            document.getElementById('playerType').innerHTML=`${playerTypeObj.display} ${playerTypeObj.multiplier>1?`(赔率${playerTypeObj.multiplier})`:''}`;
+            document.getElementById('bankerType').innerHTML=`${bankerTypeObj.display} ${bankerTypeObj.multiplier>1?`(赔率${bankerTypeObj.multiplier})`:''}`;
             let result='', winAmount=0;
-            let pScore=playerType.multiplier===0?0:(playerType.multiplier===1?1:playerType.multiplier);
-            let bScore=bankerType.multiplier===0?0:(bankerType.multiplier===1?1:bankerType.multiplier);
+            let pScore=playerTypeObj.multiplier===0?0:(playerTypeObj.multiplier===1?1:playerTypeObj.multiplier);
+            let bScore=bankerTypeObj.multiplier===0?0:(bankerTypeObj.multiplier===1?1:bankerTypeObj.multiplier);
             if(pScore>bScore) result='PLAYER';
             else if(bScore>pScore) result='BANKER';
             else result='TIE';
@@ -712,8 +761,8 @@
             if(result==='PLAYER' && bets.PLAYER>0){ winAmount += bets.PLAYER*2; winDetails['PLAYER'] = bets.PLAYER*3; }
             if(result==='BANKER' && bets.BANKER>0){ winAmount += bets.BANKER*2; winDetails['BANKER'] = bets.BANKER*3; }
             if(result==='TIE' && bets.TIE>0){ winAmount += bets.TIE*8; winDetails['TIE'] = bets.TIE*9; }
-            if(playerType.type==='牛牛' && bets.NIU_NIU>0){ let mul = playerType.multiplier+1; winAmount += bets.NIU_NIU * mul; winDetails['NIU_NIU'] = bets.NIU_NIU * (mul+1); }
-            if(playerType.type==='五花牛' && bets.WU_HUA>0){ let mul = playerType.multiplier+1; winAmount += bets.WU_HUA * mul; winDetails['WU_HUA'] = bets.WU_HUA * (mul+1); }
+            if(playerTypeObj.type==='牛牛' && bets.NIU_NIU>0){ let mul = playerTypeObj.multiplier+1; winAmount += bets.NIU_NIU * mul; winDetails['NIU_NIU'] = bets.NIU_NIU * (mul+1); }
+            if(playerTypeObj.type==='五花牛' && bets.WU_HUA>0){ let mul = playerTypeObj.multiplier+1; winAmount += bets.WU_HUA * mul; winDetails['WU_HUA'] = bets.WU_HUA * (mul+1); }
             winAmount *= systemConfig.adjustFactor;
             for(let k in winDetails) winDetails[k] *= systemConfig.adjustFactor;
             let profit=winAmount-totalBet;
@@ -724,7 +773,7 @@
             if(result==='PLAYER') resultText='闲家赢';
             else if(result==='BANKER') resultText='庄家赢';
             else resultText='和局';
-            document.getElementById('niuResultMsg').innerHTML=`${playerType.display} vs ${bankerType.display}<br>${resultText} ${profit>0?` 赢得 ${profit.toFixed(2)}`:''}`;
+            document.getElementById('niuResultMsg').innerHTML=`${playerTypeObj.display} vs ${bankerTypeObj.display}<br>${resultText} ${profit>0?` 赢得 ${profit.toFixed(2)}`:''}`;
             let resultDiv = document.getElementById('niuResult3D');
             resultDiv.style.visibility = 'visible';
             resultDiv.style.backgroundColor = '#ffaa33';
@@ -732,6 +781,7 @@
             resultDiv.style.textShadow = '0 0 5px #fff';
             resultDiv.innerText = resultText;
             setTimeout(() => { resultDiv.style.visibility = 'hidden'; }, 3000);
+            // 显示中奖区域总返还并闪动
             let betTypes = ['PLAYER','BANKER','TIE','NIU_NIU','WU_HUA'];
             for(let bt of betTypes){
                 let sp = document.getElementById(`bet_${bt}`);
@@ -749,6 +799,10 @@
                     }
                 }
             }
+            // 记录本轮结果
+            let recordStr = `${playerTypeObj.display} vs ${bankerTypeObj.display} → ${resultText} 盈亏:${profit.toFixed(2)}`;
+            gameRecordsNiu.unshift({time:new Date().toLocaleTimeString(), result:recordStr});
+            if(gameRecordsNiu.length > 50) gameRecordsNiu.pop();
             for(let k in bets) bets[k]=0;
             updateUI(); saveLastBet();
             isRolling=false;
@@ -771,11 +825,17 @@
             },1000);
         }
         async function refreshBalance(){ await updateUI(); }
+        function showRecordModal(){
+            if(gameRecordsNiu.length===0) return;
+            let html = '<div style="max-height:200px; overflow:auto;">' + gameRecordsNiu.map(r=>`<div>${r.time} ${r.result}</div>`).join('') + '</div><button id="closeRec" class="auth-btn">关闭</button>';
+            let m = document.createElement('div'); m.className='modal'; m.innerHTML=`<div class="modal-content">${html}</div>`; document.body.appendChild(m); m.querySelector('#closeRec').onclick=()=>m.remove();
+        }
         document.querySelectorAll('#niuChips .chip').forEach(c=>{ c.onclick=function(){ selectedChip=parseInt(this.dataset.chip); document.querySelectorAll('#niuChips .chip').forEach(cc=>cc.classList.remove('selected')); this.classList.add('selected'); }; });
         document.querySelectorAll('.bet-card[data-bet]').forEach(c=>{ c.onclick=()=>addBet(c.dataset.bet); });
         document.getElementById('niuClearBtn').onclick=clearAllBets;
         document.getElementById('niuRepeatBtn').onclick=repeatLastBet;
         document.getElementById('niuRefreshBtn').onclick=refreshBalance;
+        document.getElementById('niuRecordBtn').onclick=showRecordModal;
         updateUI(); startCountdown(25); saveLastBet();
         niuNiuDestroy=()=>{ if(countdownTimer) clearInterval(countdownTimer); container.innerHTML=''; };
         return niuNiuDestroy;
