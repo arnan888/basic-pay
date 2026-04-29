@@ -1,3 +1,98 @@
+📋 查看数据
+1. 查看所有用户（含余额）
+bash
+node -e "console.log(JSON.stringify(require('/www/wwwroot/game/api/data/users.json'),null,2))"
+
+2. 查看充值/提现记录
+bash
+node -e "console.log(JSON.stringify(require('/www/wwwroot/game/api/data/recharges.json'),null,2))"
+node -e "console.log(JSON.stringify(require('/www/wwwroot/game/api/data/withdraws.json'),null,2))"
+
+3. 查看庄家资金池
+bash
+node -e "console.log(JSON.stringify(require('/www/wwwroot/game/api/data/config.json'),null,2))"
+✏️ 修改数据（请替换引号内的中文占位符）
+
+
+4. 给用户上分/下分（金额可正可负）
+bash
+node -e "
+const fs=require('fs'),p='/www/wwwroot/game/api/data/users.json';
+let u=JSON.parse(fs.readFileSync(p,'utf8'));
+let idx=u.findIndex(x=>x.account==='目标账号');
+if(idx==-1){console.log('未找到用户');process.exit(1);}
+u[idx].balance+= 金额;
+fs.writeFileSync(p,JSON.stringify(u));
+console.log('操作成功，新余额：'+u[idx].balance);
+"
+示例：给 player1 加 2000
+
+bash
+node -e "const fs=require('fs'),p='/www/wwwroot/game/api/data/users.json';let u=JSON.parse(fs.readFileSync(p,'utf8'));let idx=u.findIndex(x=>x.account==='player1');if(idx==-1){console.log('未找到');return;}u[idx].balance+=2000;fs.writeFileSync(p,JSON.stringify(u));console.log('新余额：'+u[idx].balance);"
+
+5. 直接设定用户余额（不累加）
+将上面的 += 金额 改为 = 金额 即可。
+
+6. 审核通过充值申请（并给用户加钱）
+bash
+node -e "
+const fs=require('fs');
+let rec=JSON.parse(fs.readFileSync('/www/wwwroot/game/api/data/recharges.json','utf8'));
+let idx=rec.findIndex(r=>r.id==充值ID);
+if(idx==-1){console.log('订单不存在');process.exit(1);}
+rec[idx].status='approved';
+let users=JSON.parse(fs.readFileSync('/www/wwwroot/game/api/data/users.json','utf8'));
+let user=users.find(u=>u.account===rec[idx].account);
+if(user)user.balance+=rec[idx].amount;
+fs.writeFileSync('/www/wwwroot/game/api/data/recharges.json',JSON.stringify(rec));
+fs.writeFileSync('/www/wwwroot/game/api/data/users.json',JSON.stringify(users));
+console.log('已通过，用户新余额：'+user.balance);
+"
+
+
+7. 拒绝充值申请
+bash
+node -e "
+const fs=require('fs');
+let rec=JSON.parse(fs.readFileSync('/www/wwwroot/game/api/data/recharges.json','utf8'));
+let idx=rec.findIndex(r=>r.id==充值ID);
+if(idx==-1){console.log('订单不存在');process.exit(1);}
+rec[idx].status='rejected';
+fs.writeFileSync('/www/wwwroot/game/api/data/recharges.json',JSON.stringify(rec));
+console.log('已拒绝');
+"
+
+
+8. 审核通过提现（并扣款）
+bash
+node -e "
+const fs=require('fs');
+let w=JSON.parse(fs.readFileSync('/www/wwwroot/game/api/data/withdraws.json','utf8'));
+let idx=w.findIndex(x=>x.id==提现ID);
+if(idx==-1){console.log('订单不存在');process.exit(1);}
+w[idx].status='approved';
+let users=JSON.parse(fs.readFileSync('/www/wwwroot/game/api/data/users.json','utf8'));
+let user=users.find(u=>u.account===w[idx].account);
+if(user)user.balance-=w[idx].amount;
+fs.writeFileSync('/www/wwwroot/game/api/data/withdraws.json',JSON.stringify(w));
+fs.writeFileSync('/www/wwwroot/game/api/data/users.json',JSON.stringify(users));
+console.log('已打款，用户扣款后余额：'+user.balance);
+"
+
+9. 修改庄家资金池
+bash
+node -e "
+const fs=require('fs');
+let cfg=JSON.parse(fs.readFileSync('/www/wwwroot/game/api/data/config.json','utf8'));
+cfg.bankerBalance=新金额;
+fs.writeFileSync('/www/wwwroot/game/api/data/config.json',JSON.stringify(cfg));
+console.log('庄家余额已更新为：'+cfg.bankerBalance);
+"
+--------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------
+
+
+
 arnan888's Project静默
 
 
