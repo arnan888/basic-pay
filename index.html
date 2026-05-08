@@ -1727,51 +1727,54 @@ function initFishGame(container) {
             this.classList.add('selected');
         };
     });
-
-    document.getElementById('fishGrabBtn').onclick = async () => {
-        if (isGrabbed || isRolling) return;
-        if (!currentUser || currentUser.balance < 2000) return;
-        let serviceFee = Math.round(2000 * 0.02 * 100) / 100;
-        systemConfig.bankerBalance += serviceFee;
-        await saveConfig();
-        await gameSettle(2000, 0);
-        isGrabbed = true;
+       document.getElementById('fishGrabBtn').onclick = async () => {
+    if (isGrabbed || isRolling) return;
+    if (!currentUser || currentUser.balance < 2000) {
+        showToast('余额不足2000，无法抢庄', true);
+        return;
+    }
+    try {
+        const res = await apiCall('POST', '/game/grab-dealer', { account: currentUser.account });
+        currentUser.balance = res.balance;
         updateFishUI();
-    };
+        showToast('抢庄成功！');
+    } catch (e) {
+        showToast('抢庄失败: ' + e.message, true);
+    }
+};
 
-    document.getElementById('fishClearBtn').onclick = clearFishBets;
-    document.getElementById('fishRepeatBtn').onclick = repeatLastBet;
+document.getElementById('fishClearBtn').onclick = clearFishBets;
+document.getElementById('fishRepeatBtn').onclick = repeatLastBet;
 
-    document.getElementById('fishRecordBtn').onclick = () => {
+document.getElementById('fishRecordBtn').onclick = () => {
     let html = '<div style="max-height:200px;overflow:auto;">' +
-        gameRecords.map(r => `<div>第${r.round}局 ${r.time} 🎲 ${r.dice} ${r.result}</div>`).join('') +
+        gameRecords.map(r => `<div>第${r.round}局 ${r.time} ${r.dealer ? '庄家:'+r.dealer : '无庄'} 🎲 ${r.dice} ${r.result}</div>`).join('') +
         '</div><button id="closeRec" class="auth-btn">关闭</button>';
     let m = document.createElement('div');
     m.className = 'modal';
     m.innerHTML = `<div class="modal-content">${html}</div>`;
     document.body.appendChild(m);
     m.querySelector('#closeRec').onclick = () => m.remove();
-    };
+};
 
-    document.getElementById('fishVipCard').onclick = showVipDetailModal;
-    document.getElementById('fishBackLobbyBtn').onclick = () => {
-        if (fishDestroy) fishDestroy();
-        renderGameLobby();
-    };
+document.getElementById('fishVipCard').onclick = showVipDetailModal;
+document.getElementById('fishBackLobbyBtn').onclick = () => {
+    if (fishDestroy) fishDestroy();
+    renderGameLobby();
+};
 
-    updateFishUI();
-    startFishRound();
+updateFishUI();
+startFishRound();
 
-    fishDestroy = () => {
-        if (countdownTimer) clearInterval(countdownTimer);
-        if (onlineCountInterval) clearInterval(onlineCountInterval);
-        clearAllFlashTimeouts();
-        roundActive = false;
-        container.innerHTML = '';
-    };
-    return fishDestroy;
-}
-
+fishDestroy = () => {
+    if (countdownTimer) clearInterval(countdownTimer);
+    if (onlineCountInterval) clearInterval(onlineCountInterval);
+    clearAllFlashTimeouts();
+    roundActive = false;
+    container.innerHTML = '';
+};
+return fishDestroy;
+  
         // ==================== 骰宝游戏 ====================
         let diceDestroy = null;
 
