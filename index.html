@@ -1444,7 +1444,24 @@ function initFishGame(container) {
         // 🔧 续押按钮控制：有快照且不在开奖中才可用
         let repeatBtn = document.getElementById('fishRepeatBtn');
         if (repeatBtn) repeatBtn.disabled = isRolling || !lastBetState;
-
+        // 显示庄家公告
+function updateDealerBoard() {
+  fetch('/api/game/state')
+    .then(r => r.json())
+    .then(state => {
+      const board = document.getElementById('dealerBoard');
+      const name = document.getElementById('dealerName');
+      if (state.dealer) {
+        board.style.display = 'block';
+        name.textContent = state.dealer;
+      } else {
+        board.style.display = 'none';
+      }
+    });
+}
+updateDealerBoard();
+setInterval(updateDealerBoard, 5000); // 每5秒刷新一次（或者和游戏状态绑定）
+        
         refreshVipDisplay();
     }
 
@@ -1714,21 +1731,30 @@ function initFishGame(container) {
     });
 
     document.getElementById('fishGrabBtn').onclick = async () => {
-        if (isGrabbed || isRolling) return;
-        if (!currentUser || currentUser.balance < 2000) return;
-        let serviceFee = Math.round(2000 * 0.02 * 100) / 100;
-        systemConfig.bankerBalance += serviceFee;
-        await saveConfig();
-        await gameSettle(2000, 0);
-        isGrabbed = true;
-        updateFishUI();
+    if (isGrabbed || isRolling) return;
+    if (!currentUser || currentUser.balance < 2000) {
+        showToast('余额不足2000，无法抢庄', true);
+        return;
+    }
+    
+    // 调用后端抢庄接口
+    try {
+        const res = await apiCall('POST', '/game/grab-dealer', { account: currentUser.account });
+        if (res.msg === '抢庄成功') {
+            currentUser.balance = res.balance;
+            updateFishUI();
+            showToast('抢庄成功！你的庄家身份已广播');
+        }
+    } catch (e) {
+        showToast('抢庄失败: ' + e.message, true);
+    }
+};
     };
 
     document.getElementById('fishClearBtn').onclick = clearFishBets;
     document.getElementById('fishRepeatBtn').onclick = repeatLastBet;
 
-    document.getElementById('fishRecordBtn').onclick = () => {
-    let html = '<div style="max-height:200px;overflow:auto;">' +
+    gameRecords.map(r => `<div>第${r.round}局 ${r.time} ${r.dealer ? '庄家:'+r.dealer : '无庄'} 🎲 ${r.dice} ${r.result}</div>`).join('')    let html = '<div style="max-height:200px;overflow:auto;">' +
         gameRecords.map(r => `<div>第${r.round}局 ${r.time} 🎲 ${r.dice} ${r.result}</div>`).join('') +
         '</div><button id="closeRec" class="auth-btn">关闭</button>';
     let m = document.createElement('div');
@@ -1772,6 +1798,9 @@ function initFishGame(container) {
             </div>
             <div style="display:flex;gap:8px;"><div style="flex:1;text-align:center;">🏦 庄家<div id="diceBankerDisplay">${systemConfig.bankerBalance.toFixed(2)}</div></div><div style="flex:1;text-align:center;">🎲 总押注<div id="totalBetDice">0</div></div></div>
             <div class="countdown-area" id="countdownAreaDice">⏱️ 下注 <span id="countdownNumDice">25</span> s</div>
+           <div id="dealerBoard" class="dealer-board" style="display:none; text-align:center; margin:4px 0; padding:6px; background:linear-gradient(145deg,#cc8800,#aa6600); border-radius:20px; color:#2a1a0a; font-weight:bold;">
+  🐉 本局庄家：<span id="dealerName"></span>
+</div>
             <div class="dice-3d-area"><div class="dice-cube" id="dice1"></div><div class="dice-cube" id="dice2"></div><div class="dice-cube" id="dice3"></div></div>
             <div style="text-align:center;font-size:1.2rem;">总点数: <span id="totalPoints">3</span></div>
             <div><span>🎲 本局中奖: <span id="rollingWinNumber">0</span></span><span>📊 盈亏: <span id="diceProfitLoss">0</span></span></div>
