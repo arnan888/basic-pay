@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>总管理后台</title>
+    <style>
+        :root { --bg: #0d0d1a; --card: rgba(20,20,40,0.9); --text: #ffd966; --gold: #ffaa33; --red: #ff4444; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui; padding: 20px; }
+        .container { max-width: 800px; margin: auto; }
+        h1 { text-align: center; margin-bottom: 24px; color: var(--gold); }
+        .section { background: var(--card); border: 1px solid var(--gold); border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+        .section h3 { margin-bottom: 12px; color: #ff884d; border-bottom: 1px solid var(--gold); padding-bottom: 6px; }
+        .row { display: flex; align-items: center; gap: 10px; margin: 8px 0; flex-wrap: wrap; }
+        input, select { padding: 8px 12px; background: #1a1a2e; border: 1px solid var(--gold); border-radius: 8px; color: var(--text); outline: none; }
+        button { padding: 8px 16px; background: linear-gradient(135deg, var(--gold), #ff884d); border: none; border-radius: 8px; color: #1a1a0a; font-weight: bold; cursor: pointer; }
+        button:hover { opacity: 0.9; }
+        button.danger { background: linear-gradient(135deg, #ff4444, #cc2222); color: #fff; }
+        .badge { background: var(--gold); color: #1a1a0a; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; }
+        .user-item, .order-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,170,51,0.2); }
+        .game-state { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .state-item { background: rgba(0,0,0,0.3); padding: 8px; border-radius: 8px; }
+        .state-value { font-size: 1.2rem; font-weight: bold; color: var(--gold); }
+        .history-list, .dealer-list { max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 8px; }
+        .history-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #333; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🏦 金葫娱乐城 · 总管理后台</h1>
+
+    <!-- 登录面板 -->
+    <div id="loginPanel" class="section">
+        <h3>🔐 管理员登录</h3>
+        <div class="row">
+            <input id="adminPwd" type="password" placeholder="财源广进">
+            <button onclick="loginAdmin()">登录</button>
+        </div>
+    </div>
+
+    <!-- 主面板（登录后显示） -->
+    <div id="mainPanel" style="display:none;">
+        <!-- 游戏监控 -->
+        <div class="section">
+            <h3>🎮 游戏监控</h3>
+            <div class="game-state" id="gameStatePanel">
+                <div class="state-item">局数 <span class="state-value" id="gRound">-</span></div>
+                <div class="state-item">阶段 <span class="state-value" id="gPhase">-</span></div>
+                <div class="state-item">剩余秒 <span class="state-value" id="gSeconds">-</span></div>
+                <div class="state-item">投注人数 <span class="state-value" id="gPlayers">-</span></div>
+                <div class="state-item">总投注额 <span class="state-value" id="gTotalBet">-</span></div>
+                <div class="state-item">暂停状态 <span class="state-value" id="gPaused">-</span></div>
+            </div>
+            <div class="row" style="margin-top:10px;">
+                <button onclick="gameNext()">⏭ 下一局</button>
+                <button onclick="gamePause()">⏸ 暂停</button>
+                <button onclick="gameResume()">▶ 恢复</button>
+                <button onclick="gameReset()" class="danger">🔄 重置游戏</button>
+            </div>
+        </div>
+
+        <!-- 历史记录 -->
+        <div class="section">
+            <h3>📜 最近100期开奖</h3>
+            <div class="history-list" id="historyList">加载中...</div>
+        </div>
+
+        <!-- 庄家抢庄记录 -->
+        <div class="section">
+            <h3>🐉 庄家抢庄记录</h3>
+            <div class="dealer-list" id="dealerRecords">加载中...</div>
+        </div>
+
+        <!-- 庄家资金池 -->
+        <div class="section">
+            <h3>🏦 庄家资金池</h3>
+            <div class="row">
+                <span>当前资金池：</span>
+                <strong id="bankerPool" style="font-size:1.3rem;color:#ff884d;">0</strong>
+                <input id="injectAmt" type="number" placeholder="注入金额" style="width:120px;">
+                <button onclick="injectBanker()">➕ 注入</button>
+            </div>
+        </div>
+
+        <!-- 赔付系数 & 概率系数 -->
+        <div class="section">
+            <h3>⚙️ 赔付系数 & 概率系数</h3>
+            <div class="row">
+                <span>赔付系数：</span>
+                <input id="adjustFactor" type="number" step="0.01" min="0.5" max="1.5" value="0.98" style="width:100px;">
+                <button onclick="saveFactor()">💾 保存</button>
+            </div>
+            <div class="row">
+                <span>概率系数(50正常)：</span>
+                <input id="probWeight" type="number" min="10" max="100" value="50" style="width:100px;">
+                <button onclick="saveProb()">💾 保存</button>
+            </div>
+        </div>
+
+        <!-- 用户管理 -->
+        <div class="section">
+            <h3>👥 用户管理</h3>
+            <div class="row">
+                <select id="userSelect" style="flex:1;"></select>
+                <input id="scoreAmt" type="number" placeholder="金额" style="width:100px;">
+                <button onclick="addScore()">上分</button>
+                <button onclick="subScore()" class="danger">下分</button>
+            </div>
+            <button onclick="showGameRecords()" style="margin-top:8px;">📋 查看游戏记录</button>
+            <div id="gameRecordArea" style="margin-top:8px;max-height:300px;overflow:auto;background:rgba(0,0,0,0.3);border-radius:8px;padding:8px;display:none;"></div>
+            <div id="userList" style="margin-top:10px;"></div>
+        </div>
+
+        <!-- 充值审核 -->
+        <div class="section">
+            <h3>💎 充值审核 <span id="rechargeCount" class="badge">0</span></h3>
+            <div id="rechargeList"></div>
+        </div>
+
+        <!-- 提现审核 -->
+        <div class="section">
+            <h3>💰 提现审核 <span id="withdrawCount" class="badge">0</span></h3>
+            <div id="withdrawList"></div>
+        </div>
+
+        <button onclick="logoutAdmin()" class="danger" style="margin-top:12px;">退出后台</button>
+    </div>
+</div>
+
+<script>
+const API_BASE = '/api';
+const ADMIN_PWD = 'wang......';
+let users = [], recharges = [], withdraws = [], config = { bankerBalance: 200000, adjustFactor: 0.98, probWeight: 50 };
+let stateTimer = null;
+
+// 加载所有数据
+async function loadAll() {
+    config = { bankerBalance: 0 };
+    try {
+        const headers = { 'Content-Type': 'application/json' };
+        // 用户列表
+        const u = await fetch(API_BASE + '/users');
+        users = await u.json();
+        // 待审核充值
+        const r = await fetch(API_BASE + '/recharges/pending', { headers });
+        recharges = await r.json();
+        // 待审核提现
+        const w = await fetch(API_BASE + '/withdraws/pending', { headers });
+        withdraws = await w.json();
+        // 配置
+        const c = await fetch(API_BASE + '/config');
+        config = await c.json();
+        // 庄家记录
+        const d = await fetch(API_BASE + '/admin/dealer-records');
+        const dealerData = await d.json();
+        displayDealerRecords(dealerData.records);
+    } catch (e) {
+        console.log('API加载失败:', e);
+    }
+    renderAll();
+    loadGameState();
+    loadHistory();
+    if (stateTimer) clearInterval(stateTimer);
+    stateTimer = setInterval(loadGameState, 2000);
+}
+
+// 渲染所有数据到界面
+function renderAll() {
+    // 资金池
+    document.getElementById('bankerPool').innerText = Number(config.bankerBalance || 200000).toFixed(2);
+    document.getElementById('adjustFactor').value = config.adjustFactor || 0.98;
+    document.getElementById('probWeight').value = config.probWeight || 50;
+
+    // 用户下拉框
+    const sel = document.getElementById('userSelect');
+    sel.innerHTML = (users || []).map(u =>
+        `<option value="${u.account}">${u.account} (${u.balance.toFixed(2)})</option>`
+    ).join('');
+
+    // 用户列表概览
+    document.getElementById('userList').innerHTML = (users || []).map(u =>
+        `<div class="user-item"><span>📱 ${u.account}</span><span>💰 ${u.balance.toFixed(2)} USDT</span></div>`
+    ).join('');
+
+    // 充值审核
+    const pendingRecharges = (recharges || []).filter(o => o.status === 'pending');
+    document.getElementById('rechargeCount').innerText = pendingRecharges.length;
+    document.getElementById('rechargeList').innerHTML = pendingRecharges.length === 0
+        ? '无待审核'
+        : pendingRecharges.map(o => `<div class="order-item">
+            <span>${o.account} 充值 ${o.amount} USDT</span>
+            <div>
+                <button onclick="approveRecharge(${o.id})">✅确认</button>
+                <button onclick="rejectRecharge(${o.id})" class="danger">❌拒绝</button>
+            </div>
+        </div>`).join('');
+
+    // 提现审核
+    const pendingWithdraws = (withdraws || []).filter(o => o.status === 'pending');
+    document.getElementById('withdrawCount').innerText = pendingWithdraws.length;
+    document.getElementById('withdrawList').innerHTML = pendingWithdraws.length === 0
+        ? '无待处理'
+        : pendingWithdraws.map(o => `<div class="order-item">
+            <span>${o.account} 提现 ${o.amount} → ${o.address||'无地址'}</span>
+            <div>
+                <button onclick="approveWithdraw(${o.id})">✅已打款</button>
+                <button onclick="rejectWithdraw(${o.id})" class="danger">❌拒绝</button>
+            </div>
+        </div>`).join('');
+}
+
+// 加载游戏状态
+async function loadGameState() {
+    try {
+        const res = await fetch(API_BASE + '/game/state');
+        const state = await res.json();
+        const phaseNames = ['🎲 下注', '🎰 开奖', '✨ 展示'];
+        document.getElementById('gRound').innerText = state.round;
+        document.getElementById('gPhase').innerText = phaseNames[state.phase] || state.phase;
+        document.getElementById('gSeconds').innerText = state.secondsRemaining;
+        document.getElementById('gPlayers').innerText = state.totalPlayers;
+        document.getElementById('gTotalBet').innerText = state.totalBets || 0;
+        document.getElementById('gPaused').innerText = state.paused ? '⏸ 已暂停' : '▶ 运行中';
+    } catch (e) {
+        document.getElementById('gameStatePanel').innerHTML = '游戏状态获取失败';
+    }
+}
+
+// 加载游戏历史
+async function loadHistory() {
+    try {
+        const res = await fetch(API_BASE + '/game/history');
+        const data = await res.json();
+        let html = '';
+        data.list.forEach(r => {
+            html += `<div class="history-row">
+                <span>第${r.round}期</span>
+                <span>${r.dice}</span>
+                <span>${r.time}</span>
+            </div>`;
+        });
+        document.getElementById('historyList').innerHTML = html || '暂无记录';
+    } catch (e) {
+        document.getElementById('historyList').innerHTML = '加载失败';
+    }
+}
+
+// 显示庄家记录
+function displayDealerRecords(records) {
+    const area = document.getElementById('dealerRecords');
+    if (!area) return;
+    if (!records || records.length === 0) {
+        area.innerHTML = '暂无庄家记录';
+        return;
+    }
+    area.innerHTML = records.map(r =>
+        `<div class="order-item">
+            <span>第${r.round}局 庄家:${r.dealer} 🎲${r.dice} 盈亏:${r.profit.toFixed(2)}</span>
+        </div>`
+    ).join('');
+}
+
+// 登录/登出
+function loginAdmin() {
+    if (document.getElementById('adminPwd').value === ADMIN_PWD) {
+        document.getElementById('loginPanel').style.display = 'none';
+        document.getElementById('mainPanel').style.display = 'block';
+        loadAll();
+    } else {
+        alert('密码错误');
+    }
+}
+function logoutAdmin() {
+    document.getElementById('loginPanel').style.display = 'block';
+    document.getElementById('mainPanel').style.display = 'none';
+    if (stateTimer) clearInterval(stateTimer);
+}
+
+// 游戏控制
+async function gameNext() { await fetch(API_BASE + '/game/next', { method:'POST' }); loadGameState(); }
+async function gamePause() { await fetch(API_BASE + '/game/pause', { method:'POST' }); loadGameState(); }
+async function gameResume() { await fetch(API_BASE + '/game/resume', { method:'POST' }); loadGameState(); }
+async function gameReset() {
+    if (confirm('确定要重置游戏吗？')) {
+        await fetch(API_BASE + '/game/reset', { method:'POST' });
+        loadAll();
+    }
+}
+
+// 资金池注入
+async function injectBanker() {
+    let amt = parseFloat(document.getElementById('injectAmt').value);
+    if (isNaN(amt) || amt <= 0) return;
+    config.bankerBalance += amt;
+    await fetch(API_BASE + '/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+    });
+    loadAll();
+}
+
+// 保存系数
+async function saveFactor() {
+    config.adjustFactor = parseFloat(document.getElementById('adjustFactor').value);
+    await fetch(API_BASE + '/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+    });
+    loadAll();
+}
+async function saveProb() {
+    config.probWeight = parseInt(document.getElementById('probWeight').value);
+    await fetch(API_BASE + '/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+    });
+    loadAll();
+}
+
+// 查看游戏记录
+async function showGameRecords() {
+    const acc = document.getElementById('userSelect').value;
+    const area = document.getElementById('gameRecordArea');
+    try {
+        const res = await fetch('/api/user/' + encodeURIComponent(acc) + '/game-records');
+        const data = await res.json();
+        if (!data.records || data.records.length === 0) {
+            area.innerHTML = '暂无游戏记录';
+            area.style.display = 'block';
+            return;
+        }
+        let html = '<table border="1" cellpadding="4" style="width:100%;border-collapse:collapse;font-size:0.8rem;">';
+        html += '<tr style="background:rgba(255,170,51,0.3);"><th>局号</th><th>时间</th><th>庄家</th><th>🎲骰子</th><th>投注</th><th>返奖</th><th>庄家盈亏</th></tr>';
+        data.records.forEach(r => {
+            html += `<tr>
+                <td>${r.round}</td>
+                <td>${r.time}</td>
+                <td>${r.dealer||'无'}</td>
+                <td>${r.dice}</td>
+                <td>${(r.bet||0).toFixed(2)}</td>
+                <td>${(r.return||0).toFixed(2)}</td>
+                <td>${(r.dealerProfit||0).toFixed(2)}</td>
+            </tr>`;
+        });
+        html += '</table>';
+        area.innerHTML = html;
+        area.style.display = 'block';
+    } catch (e) {
+        area.innerHTML = '加载失败，请确认后端接口已部署';
+        area.style.display = 'block';
+    }
+}
+
+// 上分/下分
+async function addScore() {
+    const acc = document.getElementById('userSelect').value;
+    const amt = parseFloat(document.getElementById('scoreAmt').value);
+    if (isNaN(amt) || amt <= 0) return;
+    const u = users.find(u => u.account === acc);
+    if (u) {
+        u.balance += amt;
+        await fetch(API_BASE + '/user/' + encodeURIComponent(acc) + '/balance', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ balance: u.balance })
+        });
+        loadAll();
+    }
+}
+async function subScore() {
+    const acc = document.getElementById('userSelect').value;
+    const amt = parseFloat(document.getElementById('scoreAmt').value);
+    if (isNaN(amt) || amt <= 0) return;
+    const u = users.find(u => u.account === acc);
+    if (u && u.balance >= amt) {
+        u.balance -= amt;
+        await fetch(API_BASE + '/user/' + encodeURIComponent(acc) + '/balance', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ balance: u.balance })
+        });
+        loadAll();
+    }
+}
+
+// 审核操作
+async function approveRecharge(id) {
+    await fetch(API_BASE + '/recharge/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'approved' })
+    });
+    loadAll();
+}
+async function rejectRecharge(id) {
+    await fetch(API_BASE + '/recharge/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'rejected' })
+    });
+    loadAll();
+}
+async function approveWithdraw(id) {
+    await fetch(API_BASE + '/withdraw/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'approved' })
+    });
+    loadAll();
+}
+async function rejectWithdraw(id) {
+    await fetch(API_BASE + '/withdraw/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'rejected' })
+    });
+    loadAll();
+}
+</script>
+</body>
+</html>
