@@ -471,15 +471,25 @@ function renderAuth(){
   };
 
   // 登录按钮
-  document.getElementById('loginBtn').onclick = async () => {
+ document.getElementById('loginBtn').onclick = async () => {
     const a = document.getElementById('loginAccount').value.trim();
     const p = document.getElementById('loginPassword').value;
+    const remember = document.getElementById('rememberMe').checked;
     if(!a || !p) { toast('请填写完整',true); return; }
     const res = await login(a, p);
-    if(res.success) renderLobby();
-    else toast(res.msg, true);
-  };
-
+    if(res.success) {
+        if(remember) {
+            localStorage.setItem('saved_account', a);
+            localStorage.setItem('saved_password', p);
+            localStorage.setItem('remember_me', 'true');
+        } else {
+            localStorage.removeItem('saved_account');
+            localStorage.removeItem('saved_password');
+            localStorage.setItem('remember_me', 'false');
+        }
+        renderLobby();
+    } else toast(res.msg, true);
+};
   // 注册按钮
   document.getElementById('registerBtn').onclick = async () => {
     const account = document.getElementById('regAccount').value.trim();
@@ -856,6 +866,10 @@ function initGame4(c){c.innerHTML='<p>牛牛待重构</p>';return()=>c.innerHTML
 function renderLobby(){
   if(fishDestroy){fishDestroy();fishDestroy=null}
   if(!user){ renderAuth(); return }
+    // 自动填充记住的账号密码
+  const savedAcc = localStorage.getItem('saved_account');
+  const savedPwd = localStorage.getItem('saved_password');
+  const rememberMe = localStorage.getItem('remember_me') === 'true';
   document.getElementById('app').innerHTML=`<div style="text-align:center;padding:16px;background:linear-gradient(135deg,#2a1e12,#1a120b);border-bottom:2px solid #ffaa33"><h1 id="lobbyTitle">金辉娱乐城</h1><p>选择游戏</p></div><div class="user-section"><div class="user-info-row"><span>📱${user.account}</span><span>💰<span id="userBalanceDisplay">${user.balance.toFixed(2)}</span></span><div class="btn-group"><button id="vipBtn" class="btn-sm">👑VIP${user.vip?.level||0}</button><button id="svcBtn" class="btn-sm">📞客服</button><button id="logoutBtn" class="btn-sm">🚪退出</button><button id="themeBtn" class="theme-switch">🌙夜间</button></div></div><div style="margin-top:8px"><button id="rechargeBtn" class="charge-btn">💎充值</button><button id="withdrawBtn" class="withdraw-btn">💰提现</button></div></div><div class="game-grid"><div class="game-card-item" data-game="fish"><div class="game-name">潮汕葫芦鱼</div><div class="game-desc">3D骰子·多人实时</div></div><div class="game-card-item" data-game="dice"><div class="game-name">骰宝</div><div class="game-desc">重构中</div></div><div class="game-card-item" data-game="dragonTiger"><div class="game-name">龙虎斗</div><div class="game-desc">重构中</div></div><div class="game-card-item" data-game="game4"><div class="game-name">牛牛</div><div class="game-desc">重构中</div></div></div>`;
   document.getElementById('logoutBtn').onclick=()=>{user=null;localStorage.removeItem('curr_acc');renderAuth()};
   document.getElementById('svcBtn').onclick=showService;
@@ -892,17 +906,200 @@ function renderAuth(){
   document.getElementById('loginBtn').onclick=async()=>{ const a=document.getElementById('loginAcc').value.trim(),p=document.getElementById('loginPwd').value; const r=await login(a,p); if(r.success)renderLobby() };
   document.getElementById('regBtn').onclick=async()=>{ const a=document.getElementById('regAcc').value.trim(),p=document.getElementById('regPwd').value,ref=document.getElementById('regRef').value.trim(); const r=await register(a,p,ref); if(r.success){toast('注册成功！');renderLobby()} }
 }
-
 async function openAdmin(){
-  const pwd=prompt('管理员密码'); if(pwd!=='guowang2026')return;
-  const users=[]; try{ if(apiOk){ const u=await call('GET','/users'); users.push(...u) } }catch(e){}
-  let html=`<div class="modal-content" style="max-width:680px"><h3>管理员</h3><p>资金池: ${200000}</p><hr><div><strong>用户管理</strong><select id="adminSel">${users.map(u=>`<option value="${u.account}">${u.account} (${u.balance})</option>`).join('')}</select><input id="adminAmt" type="number" placeholder="金额" style="width:80px"><button id="adminAdd">上分</button><button id="adminSub">下分</button></div><button id="closeAdmin" class="auth-btn">关闭</button></div>`;
-  const m=document.createElement('div'); m.className='modal'; m.innerHTML=html; document.body.appendChild(m);
-  m.querySelector('#closeAdmin').onclick=()=>m.remove();
-  m.querySelector('#adminAdd').onclick=async()=>{ const acc=m.querySelector('#adminSel').value, amt=+m.querySelector('#adminAmt').value; if(!amt)return; await call('PUT','/user/'+encodeURIComponent(acc)+'/balance',{balance:users.find(u=>u.account===acc).balance+amt}); m.remove(); openAdmin() };
-  m.querySelector('#adminSub').onclick=async()=>{ const acc=m.querySelector('#adminSel').value, amt=+m.querySelector('#adminAmt').value; const u=users.find(u=>u.account===acc); if(!amt||u.balance<amt)return; await call('PUT','/user/'+encodeURIComponent(acc)+'/balance',{balance:u.balance-amt}); m.remove(); openAdmin() }
-}
+  const pwd = prompt('管理员密码');
+  if(pwd !== 'guowang2026') return;
 
+  // 从服务器加载所有数据
+  let users = [], recharges = [], withdraws = [];
+  try {
+    if(apiOk){
+      const [uRes, rRes, wRes] = await Promise.all([
+        call('GET', '/users'),
+        call('GET', '/recharges/pending'),
+        call('GET', '/withdraws/pending')
+      ]);
+      users = uRes;
+      recharges = rRes;
+      withdraws = wRes;
+    }
+  } catch(e) {
+    toast('数据加载失败', true);
+    return;
+  }
+
+  // 构建简易后台界面
+  const pendingRecharges = recharges.filter(o => o.status === 'pending');
+  const pendingWithdraws = withdraws.filter(o => o.status === 'pending');
+
+  let html = `
+    <div class="modal-content" style="max-width:700px; background: linear-gradient(145deg, #1e1e36, #0a0a14); border: 1px solid #ffaa33;">
+      <h3 style="text-align:center; color:#ffaa33;">🔧 管理员面板</h3>
+      <hr style="border-color:#ffaa33;">
+
+      <!-- 用户管理（上分/下分） -->
+      <div style="margin:12px 0;">
+        <strong>👤 用户管理</strong>
+        <div class="row" style="margin-top:6px;">
+          <select id="adminUserSelect" style="flex:1;">
+            ${users.map(u => `<option value="${u.account}">${u.account} (余额: ${u.balance.toFixed(2)})</option>`).join('')}
+          </select>
+          <input id="adminAmt" type="number" placeholder="金额" style="width:100px;">
+          <button id="adminAddBtn">上分</button>
+          <button id="adminSubBtn" class="danger">下分</button>
+        </div>
+      </div>
+
+      <!-- 查看游戏记录 -->
+      <div style="margin:12px 0;">
+        <strong>📋 游戏记录</strong>
+        <div class="row">
+          <select id="recordUserSelect" style="flex:1;">
+            ${users.map(u => `<option value="${u.account}">${u.account}</option>`).join('')}
+          </select>
+          <button id="showRecordsBtn">查询</button>
+        </div>
+        <div id="adminGameRecords" style="max-height:200px; overflow:auto; background:rgba(0,0,0,0.3); border-radius:8px; padding:8px; margin-top:8px; display:none;"></div>
+      </div>
+
+      <!-- 充值审核 -->
+      <div style="margin:12px 0;">
+        <strong>💎 充值审核 <span style="background:#ffaa33; color:#000; padding:2px 8px; border-radius:10px;">${pendingRecharges.length}</span></strong>
+        <div style="max-height:150px; overflow:auto; background:rgba(0,0,0,0.3); border-radius:8px; padding:8px; margin-top:4px;">
+          ${pendingRecharges.length === 0 ? '<span style="color:#999;">无待审核</span>' :
+            pendingRecharges.map(o => `
+              <div class="order-item" style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid #333;">
+                <span>${o.account} 充值 ${o.amount} USDT</span>
+                <div>
+                  <button class="approveRecharge" data-id="${o.id}">✅确认</button>
+                  <button class="rejectRecharge danger" data-id="${o.id}">❌拒绝</button>
+                </div>
+              </div>
+            `).join('')}
+        </div>
+      </div>
+
+      <!-- 提现审核 -->
+      <div style="margin:12px 0;">
+        <strong>💰 提现审核 <span style="background:#ffaa33; color:#000; padding:2px 8px; border-radius:10px;">${pendingWithdraws.length}</span></strong>
+        <div style="max-height:150px; overflow:auto; background:rgba(0,0,0,0.3); border-radius:8px; padding:8px; margin-top:4px;">
+          ${pendingWithdraws.length === 0 ? '<span style="color:#999;">无待审核</span>' :
+            pendingWithdraws.map(o => `
+              <div class="order-item" style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid #333;">
+                <span>${o.account} 提现 ${o.amount} USDT → ${o.address||'无地址'}</span>
+                <div>
+                  <button class="approveWithdraw" data-id="${o.id}">✅已打款</button>
+                  <button class="rejectWithdraw danger" data-id="${o.id}">❌拒绝</button>
+                </div>
+              </div>
+            `).join('')}
+        </div>
+      </div>
+
+      <button id="closeAdminBtn" class="auth-btn" style="margin-top:12px;">关闭</button>
+    </div>`;
+
+  const m = document.createElement('div');
+  m.className = 'modal';
+  m.innerHTML = html;
+  document.body.appendChild(m);
+
+  // 关闭按钮
+  m.querySelector('#closeAdminBtn').onclick = () => m.remove();
+
+  // 上分
+  m.querySelector('#adminAddBtn').onclick = async () => {
+    const acc = m.querySelector('#adminUserSelect').value;
+    const amt = parseFloat(m.querySelector('#adminAmt').value);
+    if(isNaN(amt) || amt <= 0) return;
+    const u = users.find(u => u.account === acc);
+    if(u){
+      u.balance += amt;
+      await call('PUT', '/user/' + encodeURIComponent(acc) + '/balance', { balance: u.balance });
+      m.remove();
+      openAdmin(); // 刷新面板
+    }
+  };
+
+  // 下分
+  m.querySelector('#adminSubBtn').onclick = async () => {
+    const acc = m.querySelector('#adminUserSelect').value;
+    const amt = parseFloat(m.querySelector('#adminAmt').value);
+    if(isNaN(amt) || amt <= 0) return;
+    const u = users.find(u => u.account === acc);
+    if(u && u.balance >= amt){
+      u.balance -= amt;
+      await call('PUT', '/user/' + encodeURIComponent(acc) + '/balance', { balance: u.balance });
+      m.remove();
+      openAdmin();
+    }
+  };
+
+  // 查看游戏记录
+  m.querySelector('#showRecordsBtn').onclick = async () => {
+    const acc = m.querySelector('#recordUserSelect').value;
+    const area = m.querySelector('#adminGameRecords');
+    try{
+      const res = await call('GET', '/user/' + encodeURIComponent(acc) + '/game-records');
+      const data = res;
+      if(!data.records || data.records.length === 0){
+        area.innerHTML = '暂无记录';
+        area.style.display = 'block';
+        return;
+      }
+      let table = '<table border="1" cellpadding="4" style="width:100%; border-collapse:collapse; font-size:0.8rem;">';
+      table += '<tr style="background:rgba(255,170,51,0.3);"><th>局号</th><th>时间</th><th>庄家</th><th>骰子</th><th>投注</th><th>返奖</th><th>庄家盈亏</th></tr>';
+      data.records.forEach(r => {
+        table += `<tr><td>${r.round}</td><td>${r.time}</td><td>${r.dealer||'无'}</td><td>${r.dice}</td><td>${(r.bet||0).toFixed(2)}</td><td>${(r.return||0).toFixed(2)}</td><td>${(r.dealerProfit||0).toFixed(2)}</td></tr>`;
+      });
+      table += '</table>';
+      area.innerHTML = table;
+      area.style.display = 'block';
+    } catch(e) {
+      area.innerHTML = '加载失败';
+      area.style.display = 'block';
+    }
+  };
+
+  // 充值审核事件
+  m.querySelectorAll('.approveRecharge').forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.id;
+      await call('PUT', '/recharge/' + id, { status: 'approved' });
+      m.remove();
+      openAdmin();
+    };
+  });
+  m.querySelectorAll('.rejectRecharge').forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.id;
+      await call('PUT', '/recharge/' + id, { status: 'rejected' });
+      m.remove();
+      openAdmin();
+    };
+  });
+
+  // 提现审核事件
+  m.querySelectorAll('.approveWithdraw').forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.id;
+      await call('PUT', '/withdraw/' + id, { status: 'approved' });
+      m.remove();
+      openAdmin();
+    };
+  });
+  m.querySelectorAll('.rejectWithdraw').forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.id;
+      await call('PUT', '/withdraw/' + id, { status: 'rejected' });
+      m.remove();
+      openAdmin();
+    };
+  });
+
+  // 点击模态框外部关闭
+  m.addEventListener('click', (e) => { if(e.target === m) m.remove(); });
+}
 (async function init(){
   await chkApi();
   const saved=localStorage.curr_acc;
