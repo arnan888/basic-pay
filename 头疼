@@ -64,9 +64,21 @@
         body.light-mode .auth-input,body.light-mode .fish-bet-card,body.light-mode .bet-card,body.light-mode .chip,body.light-mode .exec-btn,body.light-mode .countdown-area { background:rgba(255,250,240,0.8); border-color:#c99a3b; color:#4a3a2a; }
         body.light-mode .chip.selected { background:linear-gradient(145deg,#ffcc77,#e6a822); color:#2a1a0a; }
         body.light-mode .fish-dice-face,body.light-mode .dice-face,body.light-mode .simple-card,body.light-mode .dt-card { background:#fffaf0; border-color:#c99a3b; color:#4a3a2a; }
-    </style>
-</head>
-<body>
+        /* 骰子点数定位 */
+       .pip { width:10px; height:10px; background:#ffaa33; border-radius:50%; margin:2px; position:absolute; }
+       .pip-center, .pip-mid { top:50%; left:50%; transform:translate(-50%,-50%); }
+       .pip-tl { top:8px; left:8px; }
+       .pip-tr { top:8px; right:8px; }
+       .pip-bl { bottom:8px; left:8px; }
+       .pip-br { bottom:8px; right:8px; }
+       .pip-l1,.pip-l2,.pip-l3 { left:12px; }
+       .pip-r1,.pip-r2,.pip-r3 { right:12px; }
+       .pip-l1,.pip-r1 { top:12px; }
+       .pip-l2,.pip-r2 { top:50%; transform:translateY(-50%); }
+       .pip-l3,.pip-r3 { bottom:12px; }   
+     </style>
+  </head>
+ <body>
 <div id="app"></div>
 <script>
 // ==================== 后端通信 ====================
@@ -577,6 +589,7 @@ function initDiceGame(container) {
 }
 
 // ==================== 龙虎斗 ====================
+// ==================== 龙虎斗 ====================
 let dragonTigerDestroy = null;
 function initDragonTigerGame(c) {
     if(dragonTigerDestroy) dragonTigerDestroy();
@@ -587,9 +600,13 @@ function initDragonTigerGame(c) {
       <div style="display:flex;justify-content:space-between;"><div><div>🐉龙</div><div id="dragonCardDiv" class="dt-card">?</div></div><div>VS</div><div><div>🐯虎</div><div id="tigerCardDiv" class="dt-card">?</div></div></div>
       <div id="dtBattleResult" class="countdown-area">⚔️等待开牌</div>
       <div class="countdown-area" id="countdownAreaDT">⏱️下一局:<span id="countdownNumDT">30</span>s</div>
-      <div><div>🐉龙<span id="betDragonAmount">0</span></div><div>⚖️和<span id="betTieAmount">0</span></div><div>🐯虎<span id="betTigerAmount">0</span></div></div>
-      <div><button id="dtClearBtn" class="exec-btn">清空</button><button id="dtRepeatBtn" class="exec-btn" disabled>续押</button></div>
-      <button id="dtBackBtn" class="exec-btn" style="margin-top:6px;">返回大厅</button>
+      <div id="dtChips"><span class="chip" data-chip="10">10</span><span class="chip" data-chip="50">50</span><span class="chip selected" data-chip="100">100</span><span class="chip" data-chip="500">500</span><span class="chip" data-chip="1000">1000</span></div>
+      <div style="display:flex;gap:8px;justify-content:center;margin:8px 0;">
+        <div class="bet-card" id="betDragonCard" style="cursor:pointer;">🐉龙<br><span id="betDragonAmount">0</span></div>
+        <div class="bet-card" id="betTieCard" style="cursor:pointer;">⚖️和<br><span id="betTieAmount">0</span></div>
+        <div class="bet-card" id="betTigerCard" style="cursor:pointer;">🐯虎<br><span id="betTigerAmount">0</span></div>
+      </div>
+      <div style="display:flex;gap:6px;justify-content:center;"><button id="dtClearBtn" class="exec-btn">清空</button><button id="dtRepeatBtn" class="exec-btn" disabled>续押</button></div>
     </div>`;
     let bets = {DRAGON:0, TIGER:0, TIE:0}, isRolling=false, countdownTimer=null, lastBet=null, selectedChip=100;
     function ui(){ document.getElementById('betDragonAmount').innerText=bets.DRAGON; document.getElementById('betTigerAmount').innerText=bets.TIGER; document.getElementById('betTieAmount').innerText=bets.TIE; document.getElementById('dtRepeatBtn').disabled=isRolling||!lastBet; }
@@ -644,8 +661,19 @@ function initDragonTigerGame(c) {
             if(remaining<=0){ clearInterval(countdownTimer); if(!isRolling) settle(); }
         },1000);
     }
-    document.getElementById('dtBackBtn').onclick = ()=>{ if(dragonTigerDestroy) dragonTigerDestroy(); renderGameLobby(); };
-    ui(); startCountdown(30);
+    // 绑定筹码
+    document.querySelectorAll('#dtChips .chip').forEach(ch => {
+        ch.onclick = () => { selectedChip=parseInt(ch.dataset.chip); document.querySelectorAll('#dtChips .chip').forEach(cc=>cc.classList.remove('selected')); ch.classList.add('selected'); };
+    });
+    // 绑定下注区域
+    document.getElementById('betDragonCard').onclick = () => addBet('DRAGON');
+    document.getElementById('betTigerCard').onclick = () => addBet('TIGER');
+    document.getElementById('betTieCard').onclick = () => addBet('TIE');
+    // 清空/续押
+    document.getElementById('dtClearBtn').onclick = clearBets;
+    document.getElementById('dtRepeatBtn').onclick = repeatBet;
+    document.getElementById('dtBackLobbyBtn').onclick = ()=>{ if(dragonTigerDestroy) dragonTigerDestroy(); renderGameLobby(); };
+    ui(); saveLast(); startCountdown(30);
     dragonTigerDestroy = () => { clearInterval(countdownTimer); c.innerHTML=''; };
     return dragonTigerDestroy;
 }
