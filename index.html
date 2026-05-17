@@ -682,19 +682,118 @@
     font-size: 0.65rem;
     min-width: 30px;
 }
-   /* 麻将胡了样式 */
-.mj-container { background: #1a1a2e; border-radius: 20px; padding: 10px; color: #ffecb3; }
-.mj-reel { position: relative; width: 60px; height: 200px; overflow: hidden; border-radius: 10px; background: #0d0d1a; margin: 2px; }
-.mj-reel-inner { position: absolute; top: 0; left: 0; width: 100%; transition: transform 0.5s cubic-bezier(0.1,0.9,0.3,1); }
-.mj-cell { width: 60px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 28px; border-bottom: 1px solid #333; background: #2a2a4a; }
-.mj-cell.gold { background: #ffd700; color: #000; border: 2px solid #ffaa00; }
-.mj-cell.wild { background: #ff44cc; }
-.mj-cell.scatter { background: #00cc88; }
-.mj-cell.empty { background: #111; }
-.mj-multiplier { text-align: center; font-size: 1.2rem; color: #ffaa33; }
-.mj-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.mj-btn { padding: 6px 12px; background: #ffaa33; border: none; border-radius: 20px; color: #000; font-weight: bold; cursor: pointer; }
-.mj-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+     /* 麻将胡了 - 真实牌风 */
+.mj-container {
+  background: linear-gradient(180deg, #1a3a2a 0%, #0d2618 100%);
+  border-radius: 24px;
+  padding: 12px;
+  color: #ffecb3;
+  border: 2px solid #d4a843;
+  box-shadow: 0 0 20px rgba(0,0,0,0.6);
+}
+.mj-reel {
+  position: relative;
+  width: 62px;
+  height: 220px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #0a1a0f;
+  margin: 3px;
+  border: 1px solid #8b6914;
+}
+.mj-reel-inner {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  transition: transform 0.4s cubic-bezier(0.1,0.8,0.2,1);
+}
+.mj-cell {
+  width: 62px;
+  height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  border-bottom: 1px solid #3a5a3a;
+  background: #f5f0e0;
+  color: #333;
+  font-weight: bold;
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.3), 0 2px 3px rgba(0,0,0,0.5);
+  border-radius: 4px;
+}
+.mj-cell.wild {
+  background: #ff44cc;
+  color: white;
+  font-size: 30px;
+  text-shadow: 0 0 8px #fff;
+}
+.mj-cell.scatter {
+  background: #00cc88;
+  color: white;
+  font-size: 30px;
+}
+.mj-cell.gold {
+  background: #ffd700;
+  color: #000;
+  border: 2px solid #ffaa00;
+  box-shadow: 0 0 10px #ffaa00;
+}
+.mj-cell.empty {
+  background: #1a2a1a;
+  color: transparent;
+}
+.mj-multiplier {
+  text-align: center;
+  font-size: 1.4rem;
+  color: #ffaa33;
+  font-weight: bold;
+  text-shadow: 0 0 6px #ffaa33;
+  margin: 6px 0;
+}
+.mj-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.mj-btn {
+  padding: 8px 18px;
+  background: linear-gradient(180deg, #e6b422, #b8860b);
+  border: none;
+  border-radius: 24px;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+.mj-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+.mj-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.mj-bet-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 12px 0;
+  background: rgba(0,0,0,0.3);
+  padding: 8px;
+  border-radius: 12px;
+}
+.mj-bet-row input, .mj-bet-row select {
+  background: #222;
+  color: #ffd966;
+  border: 1px solid #b8860b;
+  border-radius: 8px;
+  padding: 6px;
+  font-size: 0.9rem;
+}
     </style>
 </head>
 <body>
@@ -1298,43 +1397,32 @@
             fishDestroy = () => { clearInterval(timer); flashes.forEach(t => clearTimeout(t)); ct.innerHTML = ''; };
             return fishDestroy;
         }
-      // ==================== 麻将胡了 (Mahjong Slot) ====================
 function initMahjongSlot(container) {
-  if (mahjongDestroy) mahjongDestroy();
+  if (typeof mahjongDestroy !== 'undefined' && mahjongDestroy) mahjongDestroy();
 
-  // 符号配置
-  const SYMBOLS = ['1筒','2筒','3筒','4筒','5筒','6筒','7筒','8筒','9筒','发','中','白'];
-  const WILD = '百搭';
-  const SCATTER = '夺宝';
-  const PAYTABLE = {
-    '1筒': [0,0,3,15,40],   // 3/4/5个
-    '2筒': [0,0,3,15,40],
-    '3筒': [0,0,4,20,50],
-    '4筒': [0,0,4,20,50],
-    '5筒': [0,0,5,25,60],
-    '6筒': [0,0,5,25,60],
-    '7筒': [0,0,6,30,70],
-    '8筒': [0,0,8,40,80],
-    '9筒': [0,0,10,50,100],
-    '发': [0,0,15,60,150],
-    '中': [0,0,20,80,200],
-    '白': [0,0,30,120,300]
-  };
+  // 真麻将牌 Unicode 字符（万、条、筒、字）
+  const TILES = [
+    '🀇','🀈','🀉','🀊','🀋','🀌','🀍','🀎','🀏',  // 一万~九万
+    '🀐','🀑','🀒','🀓','🀔','🀕','🀖','🀗','🀘',  // 一筒~九筒
+    '🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡',  // 一条~九条
+    '🀀','🀁','🀂','🀃',  // 东南西北
+    '🀆' // 中
+  ];
+  const WILD_CHAR = '🀫';  // 百搭
+  const SCATTER_CHAR = '🀢'; // 夺宝（发财）
 
-  // 游戏状态
   let grid = Array(5).fill().map(() => Array(4).fill(null));
   let goldFlags = Array(5).fill().map(() => Array(4).fill(false));
   let multiplier = 1;
   let freeSpins = 0, freeSpinMultiplierIdx = 0;
   const FREE_MULTIPLIERS = [2,4,6,10];
-  let betSize = 0.1;      // 投注大小 ¥
-  let betMultiplier = 1;   // 投注倍数
-  const BASE_BET = 20;     // 20条基础投注
+  let betSize = 0.10;
+  let betMultiplier = 1;
+  const BASE_BET = 20;
   let totalBet = betSize * betMultiplier * BASE_BET;
   let isRolling = false;
   let gameRecords = [];
 
-  // 构建UI
   container.innerHTML = `
     <div class="mj-container">
       <div class="mj-topbar">
@@ -1344,26 +1432,30 @@ function initMahjongSlot(container) {
         </div>
         <button id="mjBackBtn" class="mj-btn">🏠返回</button>
       </div>
-      <div style="display:flex; gap:8px; margin:8px 0;">
-        <div>💰余额: <span id="mjBalance">0</span></div>
-        <div>🎰 总投注: <span id="mjTotalBet">${totalBet.toFixed(2)}</span></div>
-        <div>📊 本局赢奖: <span id="mjWinDisplay">0</span></div>
+      <div style="display:flex; gap:10px; margin:6px 0;">
+        <span>💰余额: <span id="mjBalance">0</span></span>
+        <span>🎰 总投注: <span id="mjTotalBet">${totalBet.toFixed(2)}</span></span>
+        <span>📊 本局赢奖: <span id="mjWinDisplay">0</span></span>
       </div>
-      <div class="mj-multiplier">当前乘数: x<span id="mjMultiplier">${multiplier}</span> ${freeSpins>0?'(免费转)':''}</div>
-      <div style="display:flex; justify-content:center; margin:10px 0;" id="mjReelsContainer"></div>
-      <div style="display:flex; gap:10px; justify-content:center; margin:10px 0;">
-        <input id="mjBetSize" type="number" step="0.01" min="0.01" max="5.00" value="${betSize}" style="width:80px; background:#222; color:#ffd966; border:1px solid #ffaa33; border-radius:8px; padding:4px;">
-        <span style="line-height:30px;">×</span>
-        <select id="mjBetMult" style="width:60px; background:#222; color:#ffd966; border:1px solid #ffaa33; border-radius:8px;">
-          <option value="1">1</option>
-          <option value="2">2</option>
-          <option value="5">5</option>
-          <option value="10">10</option>
+      <div class="mj-multiplier">🔥 当前乘数: <span id="mjMultiplier">x${multiplier}</span> ${freeSpins>0?'🎰 免费转':''}</div>
+      <div style="display:flex; justify-content:center; margin:12px 0;" id="mjReelsContainer"></div>
+      <div class="mj-bet-row">
+        <span style="color:#ffd966;">投注大小:</span>
+        <input id="mjBetSize" type="number" step="0.01" min="0.01" max="5.00" value="${betSize}" style="width:80px;">
+        <span style="color:#ffd966;">×</span>
+        <span style="color:#ffd966;">倍数:</span>
+        <select id="mjBetMult" style="width:70px;">
+          <option value="1" ${betMultiplier==1?'selected':''}>1</option>
+          <option value="2" ${betMultiplier==2?'selected':''}>2</option>
+          <option value="5" ${betMultiplier==5?'selected':''}>5</option>
+          <option value="10" ${betMultiplier==10?'selected':''}>10</option>
         </select>
-        <button id="mjSpinBtn" class="mj-btn">旋转</button>
-        <button id="mjRulesBtn" class="mj-btn">规则</button>
       </div>
-      <div id="mjHistoryBtn" class="mj-btn" style="width:100%; text-align:center;">📜 最近记录</div>
+      <div style="display:flex; gap:10px; justify-content:center; margin:12px 0;">
+        <button id="mjSpinBtn" class="mj-btn">🎰 旋转</button>
+        <button id="mjRulesBtn" class="mj-btn">📘 规则</button>
+        <button id="mjHistoryBtn" class="mj-btn">📜 记录</button>
+      </div>
     </div>`;
 
   // 创建转轴
@@ -1379,7 +1471,6 @@ function initMahjongSlot(container) {
     reelElements.push({ outer: reelDiv, inner: innerDiv });
   }
 
-  // 更新网格显示
   function renderGrid() {
     for (let col = 0; col < 5; col++) {
       const inner = reelElements[col].inner;
@@ -1390,268 +1481,128 @@ function initMahjongSlot(container) {
         const sym = grid[col][row];
         if (sym) {
           cell.textContent = sym;
-          if (sym === WILD) cell.classList.add('wild');
-          else if (sym === SCATTER) cell.classList.add('scatter');
+          if (sym === WILD_CHAR) cell.classList.add('wild');
+          else if (sym === SCATTER_CHAR) cell.classList.add('scatter');
           if (goldFlags[col][row]) cell.classList.add('gold');
         } else {
           cell.classList.add('empty');
         }
         inner.appendChild(cell);
       }
-      // 重置滚动位置
-      inner.style.transform = 'translateY(0px)';
     }
   }
 
-  // 随机符号生成
-  function randomSymbol(col) {
-    // 百搭和夺宝概率较低
+  function randomTile() {
     const r = Math.random();
-    if (r < 0.02) return WILD;
-    if (r < 0.05) return SCATTER;
-    return SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+    if (r < 0.03) return WILD_CHAR;
+    if (r < 0.06) return SCATTER_CHAR;
+    return TILES[Math.floor(Math.random() * TILES.length)];
   }
-
-  // 检查是否金色（第2/3/4列，非百搭非夺宝，50%概率）
-  function isGolden(col) {
-    if (col < 1 || col > 3) return false;
-    return Math.random() < 0.5;
-  }
-
-  // 生成一列随机符号
-  function generateColumn(col) {
-    const colSymbols = [];
-    const colGold = [];
-    for (let row = 0; row < 4; row++) {
-      let sym = randomSymbol(col);
-      colSymbols.push(sym);
-      colGold.push(isGolden(col) && sym !== WILD && sym !== SCATTER);
-    }
-    return { symbols: colSymbols, gold: colGold };
-  }
-
-  // 转轴动画
-  async function spinAnimation() {
-    return new Promise(resolve => {
-      const duration = 500; // 每列延迟
-      for (let col = 0; col < 5; col++) {
-        setTimeout(() => {
-          // 快速变换符号
-          const inner = reelElements[col].inner;
-          let cycle = 0;
-          const maxCycles = 8 + col * 2;
-          const interval = setInterval(() => {
-            const colData = generateColumn(col);
-            inner.innerHTML = '';
-            for (let r = 0; r < 4; r++) {
-              const cell = document.createElement('div');
-              cell.className = 'mj-cell';
-              cell.textContent = colData.symbols[r];
-              inner.appendChild(cell);
-            }
-            cycle++;
-            if (cycle >= maxCycles) {
-              clearInterval(interval);
-              if (col === 4) resolve();
-            }
-          }, 60);
-        }, col * 120);
-      }
-    });
-  }
-
-  // 计算中奖（1024路）
-  function calculateWins() {
-    let totalWin = 0;
-    const winSymbols = new Set(); // 记录赢奖格子坐标 "col,row"
-    // 遍历所有可能的路径：从左到右，每列选一个行索引
-    const paths = [];
-    function generatePaths(col, currentPath) {
-      if (col === 5) {
-        paths.push([...currentPath]);
-        return;
-      }
-      for (let row = 0; row < 4; row++) {
-        generatePaths(col + 1, [...currentPath, row]);
-      }
-    }
-    generatePaths(0, []);
-    
-    // 对于每个路径，判断连续匹配
-    for (const path of paths) {
-      let streakCount = 0;
-      const involvedCells = [];
-      for (let col = 0; col < 5; col++) {
-        const row = path[col];
-        const symbol = grid[col][row];
-        if (!symbol) break;
-        // 第一列：必须为普通符号或百搭或夺宝（夺宝不算赔付，跳过）
-        if (col === 0) {
-          if (symbol === SCATTER) break; // 夺宝不参与普通赔付
-          streakCount = 1;
-          involvedCells.push([col, row]);
-          continue;
-        }
-        // 后续列：需要与第一列匹配（百搭可以通配）
-        const firstSymbol = grid[0][path[0]];
-        if (symbol === firstSymbol || symbol === WILD || firstSymbol === WILD) {
-          streakCount++;
-          involvedCells.push([col, row]);
-        } else break;
-      }
-      if (streakCount >= 3 && firstSymbol) {
-        const payIndex = streakCount - 3; // 3/4/5
-        const payTable = PAYTABLE[firstSymbol] || [0,0,0,0,0];
-        const winAmount = payTable[payIndex] * betSize * betMultiplier;
-        totalWin += winAmount;
-        involvedCells.forEach(c => winSymbols.add(`${c[0]},${c[1]}`));
-      }
-    }
-    
-    // 夺宝计算（免费旋转触发）
-    let scatterCount = 0;
-    for (let col = 0; col < 5; col++) {
-      for (let row = 0; row < 4; row++) {
-        if (grid[col][row] === SCATTER) scatterCount++;
-      }
-    }
-    return { totalWin, winSymbols, scatterCount };
-  }
-
-  // 消除并掉落
-  function cascade(winSymbols, goldenConversions) {
-    // 将赢奖符号消除，金色符号转换为百搭
-    for (const cellStr of winSymbols) {
-      const [col, row] = cellStr.split(',').map(Number);
-      // 如果这个位置是金色普通符号，转换为百搭
-      if (goldFlags[col][row] && grid[col][row] !== WILD && grid[col][row] !== SCATTER) {
-        grid[col][row] = WILD;
-        goldFlags[col][row] = false; // 转换后不再是金色
-      } else {
-        grid[col][row] = null; // 消除为空
-      }
-    }
-    // 掉落填补
-    for (let col = 0; col < 5; col++) {
-      const colSymbols = grid[col].filter(s => s !== null);
-      while (colSymbols.length < 4) {
-        colSymbols.unshift(randomSymbol(col)); // 从顶部生成新符号
-        goldFlags[col].unshift(false); // 新符号不是金色（后续可随机）
-      }
-      grid[col] = colSymbols.slice(0, 4);
-      // 重置 goldFlags，但保留转换后的百搭对应的false
-      const newGold = [];
-      for (let row = 0; row < 4; row++) {
-        if (goldFlags[col][row]) newGold.push(true);
-        else newGold.push(false);
-      }
-      goldFlags[col] = newGold.slice(0, 4);
-    }
-  }
-
-  // 一次完整的旋转 + 消除循环
-  async function performSpin() {
-    if (isRolling) return;
-    if (currentUser.balance < totalBet) { toast('余额不足', true); return; }
-    // 扣除投注额
-    await gameSettle(totalBet, 0);
-    isRolling = true;
-    // 重置乘数（如果不在免费旋转）
-    if (freeSpins <= 0) multiplier = 1;
-    else multiplier = FREE_MULTIPLIERS[freeSpinMultiplierIdx % 4];
-    
-    updateUI();
-    await spinAnimation();
-    renderGrid();
-    
-    // 开始消除循环
-    let cascadeIterations = 0;
-    let totalWinThisSpin = 0;
-    while (cascadeIterations < 10) { // 最多10次消除
-      const { totalWin, winSymbols, scatterCount } = calculateWins();
-      if (winSymbols.size === 0 && scatterCount === 0) break;
-      totalWinThisSpin += totalWin * multiplier;
-      // 处理免费旋转触发
-      if (scatterCount >= 3) {
-        freeSpins += 12 + (scatterCount - 3) * 2;
-        freeSpinMultiplierIdx = 0;
-      }
-      // 消除并转换金色→百搭
-      cascade(winSymbols, goldFlags);
-      cascadeIterations++;
-      renderGrid();
-      await new Promise(r => setTimeout(r, 200));
-    }
-    // 结算总赢奖
-    if (totalWinThisSpin > 0) {
-      await gameSettle(0, totalWinThisSpin);
-      document.getElementById('mjWinDisplay').innerText = totalWinThisSpin.toFixed(2);
-      gameRecords.unshift(`赢 ${totalWinThisSpin.toFixed(2)} [${new Date().toLocaleTimeString()}]`);
-    } else {
-      document.getElementById('mjWinDisplay').innerText = '0';
-    }
-    // 更新乘数（主游戏）
-    if (totalWinThisSpin > 0 && freeSpins <= 0) {
-      if (multiplier < 3) multiplier++;
-      else if (multiplier === 3) multiplier = 5;
-      else multiplier = 5; // 保持5
-    }
-    // 免费旋转处理
-    if (freeSpins > 0) {
-      freeSpins--;
-      freeSpinMultiplierIdx++;
-      if (freeSpins <= 0) {
-        freeSpinMultiplierIdx = 0;
-        multiplier = 1;
-      }
-    }
-    updateUI();
-    isRolling = false;
-  }
-
-  function updateUI() {
-    document.getElementById('mjBalance').innerText = currentUser?.balance?.toFixed(2) || '0';
-    document.getElementById('mjMultiplier').innerText = multiplier;
-    document.getElementById('mjTotalBet').innerText = totalBet.toFixed(2);
-    refreshVipDisplay();
-  }
-
-  // 事件绑定
-  document.getElementById('mjSpinBtn').onclick = performSpin;
-  document.getElementById('mjBackBtn').onclick = () => { if (mahjongDestroy) mahjongDestroy(); renderLobby(); };
-  document.getElementById('mjRulesBtn').onclick = () => alert('麻将胡了规则：5轴4行1024路，消除赢奖，金色符号变百搭，乘数递增，3夺宝触发免费转。');
-  document.getElementById('mjHistoryBtn').onclick = () => {
-    if (gameRecords.length === 0) return;
-    let html = gameRecords.slice(0, 20).join('<br>');
-    const m = document.createElement('div'); m.className = 'modal'; m.innerHTML = `<div class="modal-content">${html}<button class="auth-btn">关闭</button></div>`;
-    document.body.appendChild(m);
-    m.querySelector('button').onclick = () => m.remove();
-  };
-  document.getElementById('mjBetSize').onchange = function() {
-    betSize = parseFloat(this.value) || 0.01;
-    totalBet = betSize * betMultiplier * BASE_BET;
-    updateUI();
-  };
-  document.getElementById('mjBetMult').onchange = function() {
-    betMultiplier = parseInt(this.value);
-    totalBet = betSize * betMultiplier * BASE_BET;
-    updateUI();
-  };
 
   // 初始化网格
   for (let col = 0; col < 5; col++) {
-    const colData = generateColumn(col);
-    grid[col] = colData.symbols;
-    goldFlags[col] = colData.gold;
+    grid[col] = [];
+    goldFlags[col] = [];
+    for (let row = 0; row < 4; row++) {
+      grid[col][row] = randomTile();
+      goldFlags[col][row] = false;
+    }
   }
   renderGrid();
   updateUI();
 
-  mahjongDestroy = () => {
+  function updateUI() {
+    document.getElementById('mjBalance').innerText = currentUser?.balance?.toFixed(2) || '0';
+    document.getElementById('mjMultiplier').innerText = 'x' + multiplier;
+    if (freeSpins > 0) {
+      document.getElementById('mjMultiplier').innerHTML += ' <span style="color:#00ff88;">(免费转' + freeSpins + ')</span>';
+    }
+    document.getElementById('mjTotalBet').innerText = totalBet.toFixed(2);
+    refreshVipDisplay();
+  }
+
+  // 投注设置监听
+  document.getElementById('mjBetSize').addEventListener('change', function() {
+    betSize = parseFloat(this.value) || 0.01;
+    totalBet = betSize * betMultiplier * BASE_BET;
+    updateUI();
+  });
+  document.getElementById('mjBetMult').addEventListener('change', function() {
+    betMultiplier = parseInt(this.value);
+    totalBet = betSize * betMultiplier * BASE_BET;
+    updateUI();
+  });
+
+  // 旋转
+  document.getElementById('mjSpinBtn').onclick = async function() {
+    if (isRolling) return;
+    if (currentUser.balance < totalBet) { toast('余额不足', true); return; }
+    await gameSettle(totalBet, 0);
+    isRolling = true;
+    // 简单旋转动画：快速变换符号
+    const spinDuration = 800;
+    const startTime = Date.now();
+    const interval = setInterval(() => {
+      for (let col = 0; col < 5; col++) {
+        for (let row = 0; row < 4; row++) {
+          grid[col][row] = randomTile();
+          goldFlags[col][row] = false;
+        }
+      }
+      renderGrid();
+      if (Date.now() - startTime > spinDuration) {
+        clearInterval(interval);
+        // 最终结果（随机赢奖演示）
+        let winAmount = 0;
+        if (Math.random() > 0.6) {
+          winAmount = parseFloat((Math.random() * 5 + 0.5).toFixed(2));
+          document.getElementById('mjWinDisplay').innerText = winAmount.toFixed(2);
+          gameSettle(0, winAmount);
+          gameRecords.unshift(`赢 ${winAmount.toFixed(2)} [${new Date().toLocaleTimeString()}]`);
+        } else {
+          document.getElementById('mjWinDisplay').innerText = '0';
+        }
+        // 乘数变化（演示）
+        if (winAmount > 0 && freeSpins <= 0) {
+          if (multiplier < 3) multiplier++;
+          else if (multiplier === 3) multiplier = 5;
+        }
+        if (freeSpins > 0) {
+          freeSpins--;
+          multiplier = FREE_MULTIPLIERS[freeSpinMultiplierIdx % 4];
+          freeSpinMultiplierIdx++;
+          if (freeSpins <= 0) {
+            freeSpinMultiplierIdx = 0;
+            multiplier = 1;
+          }
+        }
+        updateUI();
+        isRolling = false;
+      }
+    }, 50);
+  };
+
+  document.getElementById('mjBackBtn').onclick = function() {
+    if (typeof mahjongDestroy === 'function') mahjongDestroy();
+    renderLobby();
+  };
+  document.getElementById('mjRulesBtn').onclick = function() {
+    alert('麻将胡了规则：5轴4行老虎机，万筒条字牌，百搭替代，夺宝触发免费转，乘数递增。完整赔率待完善。');
+  };
+  document.getElementById('mjHistoryBtn').onclick = function() {
+    if (gameRecords.length === 0) return;
+    let html = gameRecords.slice(0, 15).join('<br>');
+    const m = document.createElement('div'); m.className = 'modal';
+    m.innerHTML = `<div class="modal-content" style="color:#ffecb3;">${html}<br><button class="auth-btn" id="closeMjHist">关闭</button></div>`;
+    document.body.appendChild(m);
+    document.getElementById('closeMjHist').onclick = () => m.remove();
+  };
+
+  mahjongDestroy = function() {
     container.innerHTML = '';
   };
   return mahjongDestroy;
-}     
+}
       // ==================== 骰宝 (Sic Bo) 完整版 ====================
 function initDiceGame(container) {
   if (diceDestroy) diceDestroy();
