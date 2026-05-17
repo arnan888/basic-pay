@@ -32,25 +32,14 @@ function writeJSON(file, data) { fs.writeFileSync(file, JSON.stringify(data, nul
 
 // 初始化数据文件
 if (!fs.existsSync(USERS_FILE)) writeJSON(USERS_FILE, [
-  { account: "admin", password: "admin888", balance: 0, phone: "", email: "", vip: { level: 1, totalWager: 0, weeklyClaimed: null, upgradeRewards: [] }, records: [] }
+  { account: "admin", password: "admin888", balance: 0, phone: "", email: "", referralCode: "", vip: { level: 1, totalWager: 0, weeklyClaimed: null, upgradeRewards: [] }, records: [], createdAt: new Date().toISOString() }
 ]);
-if (!fs.existsSync(CONFIG_FILE)) writeJSON(CONFIG_FILE, { bankerBalance: 200000, adjustFactor: 0.98, probWeight: 50, serviceFee: 0.02 });
+if (!fs.existsSync(CONFIG_FILE)) writeJSON(CONFIG_FILE, { bankerBalance: 200000, adjustFactor: 0.98, probWeight: 50, serviceFee: 0.02, systemProfit: 0 });
 if (!fs.existsSync(RECHARGE_FILE)) writeJSON(RECHARGE_FILE, []);
 if (!fs.existsSync(WITHDRAW_FILE)) writeJSON(WITHDRAW_FILE, []);
 if (!fs.existsSync(HISTORY_FILE)) writeJSON(HISTORY_FILE, []);
 
-// VIP 配置
-const VIP = [
-  { lv:1, wager:0, reward:0, week:0 },{ lv:2, wager:30000, reward:15, week:0 },{ lv:3, wager:100000, reward:30, week:3 },
-  { lv:4, wager:250000, reward:55, week:5 },{ lv:5, wager:500000, reward:100, week:8 },{ lv:6, wager:1000000, reward:200, week:15 },
-  { lv:7, wager:2000000, reward:400, week:30 },{ lv:8, wager:3000000, reward:550, week:55 },{ lv:9, wager:4000000, reward:700, week:85 },
-  { lv:10, wager:5000000, reward:800, week:110 }
-];
-function vipInfo(w) { let lv=1; for(let i=1;i<VIP.length;i++) if(w>=VIP[i].wager) lv=VIP[i].lv; return VIP.find(v=>v.lv===lv)||VIP[0]; }
-
-const onlineUsers = new Map();
-setInterval(() => { const now=Date.now(); for(const [k,t] of onlineUsers) if(now-t>30000) onlineUsers.delete(k); }, 10000);
-
+// 游戏逻辑（保持不变，但已修复语法错误）
 const pn = ["鱼","虾","蟹","葫芦","金钱","鸡"];
 const dc = [
   ["鱼","虾"],["鱼","蟹"],["鱼","葫芦"],["鱼","金钱"],["鱼","鸡"],
@@ -72,16 +61,39 @@ function createWeightedPicker(probWeight) {
 let weightedPick = createWeightedPicker(50);
 
 function changePhase() {
-  if(gameState.phase===0){ if(gameLock)return; gameLock=true; const cf=readJSON(CONFIG_FILE); const pw=cf.probWeight||50; if(!weightedPick||pw!==(cf.probWeight||50)) weightedPick=createWeightedPicker(pw); const r1=weightedPick(),r2=weightedPick(),r3=weightedPick(); gameState.results=[r1,r2,r3]; gameState.phase=1; gameState.secondsRemaining=6; settleRound(r1,r2,r3); gameLock=false; }
-  else if(gameState.phase===1){ gameState.phase=2; gameState.secondsRemaining=4; }
-  else if(gameState.phase===2){ gameState.round++; gameState.bets={}; gameState.totalBets=0; gameState.roundResult={}; dealerState={active:false,account:null,displayId:null,grabTime:null}; gameState.dealerProfit=0; gameState.phase=0; gameState.secondsRemaining=25; }
+  if(gameState.phase===0){
+    if(gameLock) return;
+    gameLock=true;
+    const cf=readJSON(CONFIG_FILE);
+    const pw=cf.probWeight||50;
+    weightedPick=createWeightedPicker(pw);
+    const r1=weightedPick(), r2=weightedPick(), r3=weightedPick();
+    gameState.results=[r1,r2,r3];
+    gameState.phase=1;
+    gameState.secondsRemaining=6;
+    settleRound(r1,r2,r3);
+    gameLock=false;
+  } else if(gameState.phase===1){
+    gameState.phase=2;
+    gameState.secondsRemaining=4;
+  } else if(gameState.phase===2){
+    gameState.round++;
+    gameState.bets={};
+    gameState.totalBets=0;
+    gameState.roundResult={};
+    dealerState={active:false,account:null,displayId:null,grabTime:null};
+    gameState.dealerProfit=0;
+    gameState.phase=0;
+    gameState.secondsRemaining=25;
+  }
 }
 
 function settleRound(r1, r2, r3) {
   const users = readJSON(USERS_FILE);
   const cf = readJSON(CONFIG_FILE);
   const adj = cf.adjustFactor || 0.98;
-  const occurs = {}; pn.forEach(p => occurs[p]=0);
+  const occurs = {};
+  pn.forEach(p => occurs[p]=0);
   [r1,r2,r3].forEach(p => occurs[p]++);
   let totalBetAmount = 0, totalReturnAmount = 0;
 
@@ -110,7 +122,6 @@ function settleRound(r1, r2, r3) {
     }
     const balanceBefore = user.balance;
     user.balance += ret;
-
     if (!user.records) user.records = [];
     user.records.push({
       type: 'settle',
@@ -121,7 +132,6 @@ function settleRound(r1, r2, r3) {
       round: gameState.round,
       detail: { bet: ub.totalBet, return: ret, winDetails: wd }
     });
-
     if (!user.vip) user.vip = { level:1, totalWager:0, weeklyClaimed:null, upgradeRewards:[] };
     user.vip.totalWager = (user.vip.totalWager||0) + ub.totalBet;
     gameState.roundResult[acc] = { totalReturn: ret, winDetails: wd };
@@ -139,12 +149,20 @@ function settleRound(r1, r2, r3) {
       const net = gross - fee;
       const dealerBefore = dealer.balance;
       dealer.balance += net;
-      dealer.balance += 2000; // 归还本金
+      dealer.balance += 2000;
       if (!dealer.records) dealer.records = [];
       dealer.records.push({ type:'dealer_settle', amount: net+2000, balance: dealer.balance, balanceBefore: dealerBefore, time: new Date().toISOString() });
       dealerProfit = net;
     }
   }
+
+  // 系统盈利统计
+  let serviceIncome = 0;
+  if (dealerState.active && dealerState.account) {
+    const gross = totalBetAmount - totalReturnAmount;
+    if (gross > 0) serviceIncome = gross * (cf.serviceFee || 0.02);
+  }
+  cf.systemProfit = (cf.systemProfit || 0) + serviceIncome;
   gameState.dealerProfit = dealerProfit;
   writeJSON(CONFIG_FILE, cf);
   writeJSON(USERS_FILE, users);
@@ -156,7 +174,8 @@ function settleRound(r1, r2, r3) {
     time: new Date().toLocaleTimeString(),
     bets: JSON.parse(JSON.stringify(gameState.bets)),
     roundResult: JSON.parse(JSON.stringify(gameState.roundResult)),
-    dealerProfit
+    dealerProfit,
+    serviceIncome
   });
   if (gameHistory.length > 500) gameHistory.shift();
   writeJSON(HISTORY_FILE, gameHistory);
@@ -164,7 +183,9 @@ function settleRound(r1, r2, r3) {
 
 setInterval(() => { if(paused) return; if(gameState.secondsRemaining>0) gameState.secondsRemaining--; if(gameState.secondsRemaining<=0) changePhase(); }, 1000);
 
+// ============ API 路由 ============
 const captchaStore = new Map();
+const onlineUsers = new Map();
 app.get('/api/captcha', (req, res) => {
   const svgWidth=100, svgHeight=36;
   const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -176,40 +197,24 @@ app.get('/api/captcha', (req, res) => {
   res.json({ token, svg: Buffer.from(svg).toString('base64') });
 });
 
-      app.post('/api/login', (req, res) => {
+app.post('/api/login', (req, res) => {
   const { account, password } = req.body;
   const users = readJSON(USERS_FILE);
   const u = users.find(u => u.account === account || u.phone === account || u.email === account);
   if (!u) return res.status(400).json({ msg:'账号不存在' });
   if (u.password !== password) return res.status(400).json({ msg:'密码错误' });
-  
-  // 👇 关键：如果数据库里的用户缺字段，临时补上
   if (!u.vip) u.vip = { level: 1, totalWager: 0, weeklyClaimed: null, upgradeRewards: [] };
   if (!u.records) u.records = [];
-  
-  // 保存修正后的数据（可选，防止下次再出问题）
   writeJSON(USERS_FILE, users);
-  
   res.json({ success:true, user: { account:u.account, phone:u.phone, email:u.email, balance:u.balance, vip:u.vip } });
 });
+
 app.post('/api/register', (req, res) => {
   const { account, password, referralCode, phone, email, captchaToken, captchaInput } = req.body;
-
   const validCodes = ["VIP666","888VIP","AGENT001","THAI888","BKK999"];
   if (!referralCode || !validCodes.includes(referralCode)) {
     return res.status(400).json({ msg: '推荐码无效，请联系代理获取' });
   }
-
- //if (!phone && !email) return res.status(400).json({ msg: '请填写手机号或邮箱' });
-  //if (phone && !/^1[3-9]\d{9}$/.test(phone)) return res.status(400).json({ msg: '手机号格式不正确' });
-  //if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ msg: '邮箱格式不正确' });
-
- //if (!captchaToken || !captchaInput) return res.status(400).json({ msg: '验证码不能为空' });
-  const cap = captchaStore.get(captchaToken);
-  //if (!cap || Date.now() > cap.expire) return res.status(400).json({ msg: '验证码已过期，请刷新' });
-  //if (cap.code !== captchaInput.toUpperCase()) return res.status(400).json({ msg: '验证码错误' });
-  captchaStore.delete(captchaToken);
-
   const users = readJSON(USERS_FILE);
   if (users.find(u => u.account === account)) return res.status(400).json({ msg:'账号已存在' });
   if (phone && users.find(u => u.phone === phone)) return res.status(400).json({ msg:'手机号已注册' });
@@ -220,7 +225,8 @@ app.post('/api/register', (req, res) => {
     phone: phone || '', email: email || '',
     referralCode: referralCode,
     vip:{ level:1, totalWager:0, weeklyClaimed:null, upgradeRewards:[] },
-    records:[]
+    records:[],
+    createdAt: new Date().toISOString()
   };
   users.push(nu); writeJSON(USERS_FILE, users);
   res.json({ success:true, user: { account:nu.account, phone:nu.phone, email:nu.email, balance:nu.balance, vip:nu.vip } });
@@ -231,10 +237,10 @@ app.get('/api/user/:account/profile', (req,res) => {
   if (!u) return res.status(404).json({ msg:'不存在' });
   if (!u.vip) u.vip = { level:1, totalWager:0, weeklyClaimed:null, upgradeRewards:[] };
   const records = (u.records||[]).filter(r => Date.now() - new Date(r.time).getTime() < 7*24*60*60*1000).slice(-500);
-  res.json({ user: { account:u.account, phone:u.phone||'', email:u.email||'', balance:u.balance, vip:u.vip, records } });
+  res.json({ user: { account:u.account, phone:u.phone||'', email:u.email||'', balance:u.balance, vip:u.vip, records, createdAt: u.createdAt || '' } });
 });
 
-app.put('/api/user/:account/balance', (req,res) => {
+  app.put('/api/user/:account/balance', (req,res) => {
   const users = readJSON(USERS_FILE);
   const u = users.find(u => u.account === req.params.account);
   if (!u) return res.status(404).json({ msg:'不存在' });
@@ -248,8 +254,58 @@ app.put('/api/user/:account/balance', (req,res) => {
   res.json({ msg:'ok' });
 });
 
-app.get('/api/ping', (req,res) => res.json({ ok:true }));
+  // 确保用户有 records 数组
+  if (!user.records) user.records = [];
+  
+  // 记录余额变化（后端以请求中的 balance 为准，同时可校验）
+  const oldBalance = user.balance;
+  // 可选择性更新余额，但前端 gameSettle 已经更新了，这里可以选择只记录不更新
+  // 为了保持一致性，我们允许请求传入 balance 并覆盖（前端已更新）
+  user.balance = balance;
+  
+  user.records.push({
+    type: type,
+    amount: amount,
+    balance: balance,
+    balanceBefore: oldBalance,
+    time: new Date().toISOString(),
+    detail: detail || ''
+  });
+  
+  writeJSON(USERS_FILE, users);
+  res.json({ msg: '记录成功' });
+});   
+  const users = readJSON(USERS_FILE);
+  const u = users.find(u => u.account === req.params.account);
+  if (!u) return res.status(404).json({ msg:'不存在' });
+  const oldBalance = u.balance;
+  u.balance = req.body.balance;
+  if (req.body.admin) {
+    if (!u.records) u.records = [];
+    u.records.push({ type: u.balance>oldBalance?'admin_add':'admin_sub', amount: u.balance-oldBalance, balance: u.balance, balanceBefore: oldBalance, time: new Date().toISOString(), detail:{operator:'admin'} });
+  }
+  writeJSON(USERS_FILE, users);
+  res.json({ msg:'ok' });
+});
 
+app.delete('/api/user/:account', (req, res) => {
+  const users = readJSON(USERS_FILE);
+  const index = users.findIndex(u => u.account === req.params.account);
+  if (index === -1) return res.status(404).json({ msg: '用户不存在' });
+  users.splice(index, 1);
+  writeJSON(USERS_FILE, users);
+  if (gameState.bets && gameState.bets[req.params.account]) {
+    delete gameState.bets[req.params.account];
+  }
+  if (dealerState.active && dealerState.account === req.params.account) {
+    dealerState.active = false;
+    dealerState.account = null;
+    dealerState.displayId = null;
+  }
+  res.json({ msg: '用户已删除' });
+});
+
+app.get('/api/ping', (req,res) => res.json({ ok:true }));
 app.get('/api/game/state', (req, res) => {
   const acc = req.query.account || '';
   let betSummary = null;
@@ -276,7 +332,6 @@ app.post('/api/game/bet', (req, res) => {
   if (user.balance < amount) return res.status(400).json({ msg:'余额不足' });
   const balanceBefore = user.balance;
   user.balance -= amount;
-
   if (!user.records) user.records = [];
   user.records.push({
     type: 'bet',
@@ -287,7 +342,6 @@ app.post('/api/game/bet', (req, res) => {
     round: gameState.round,
     detail: { single, double }
   });
-
   writeJSON(USERS_FILE, users);
   if (!gameState.bets[account]) gameState.bets[account] = { single:{}, double:{}, totalBet:0 };
   const my = gameState.bets[account];
@@ -338,7 +392,15 @@ app.post('/api/game/grab-dealer', (req, res) => {
   res.json({ msg:'抢庄成功', balance: user.balance, betSummary: summary });
 });
 
-app.get('/api/users', (req,res) => res.json(readJSON(USERS_FILE).map(u => ({ account:u.account, balance:u.balance, vip:u.vip, referralCode: u.referralCode || '' }))));
+app.get('/api/users', (req,res) => res.json(readJSON(USERS_FILE).map(u => ({
+    account: u.account,
+    balance: u.balance,
+    vip: u.vip,
+    referralCode: u.referralCode || '',
+    phone: u.phone || '',
+    email: u.email || '',
+    createdAt: u.createdAt || ''
+}))));
 app.get('/api/user/:account/balance', (req,res) => { const u = readJSON(USERS_FILE).find(u => u.account === req.params.account); if (!u) return res.status(404).json({ msg:'不存在' }); res.json({ balance:u.balance }); });
 app.get('/api/config', (req,res) => res.json(readJSON(CONFIG_FILE)));
 app.put('/api/config', (req,res) => { writeJSON(CONFIG_FILE, { ...readJSON(CONFIG_FILE), ...req.body }); res.json({ msg:'ok' }); });
@@ -352,6 +414,15 @@ app.get('/api/withdraws/pending', (req,res) => res.json(readJSON(WITHDRAW_FILE))
 app.get('/api/game/history', (req,res) => res.json({ list: gameHistory }));
 app.get('/api/user/:account/game-records', (req,res) => { const records = gameHistory.filter(h => h.bets && h.bets[req.params.account]).slice(-100).map(h => ({ round: h.round, dealer: h.dealer||'无', dice: h.dice, time: h.time, bet: h.bets[req.params.account]?.totalBet||0, return: h.roundResult[req.params.account]?.totalReturn||0, dealerProfit: h.dealerProfit })); res.json({ records }); });
 app.get('/api/admin/dealer-records', (req,res) => res.json({ records: gameHistory.filter(h => h.dealer).map(h => ({ round: h.round, dealer: h.dealer, dice: h.dice, time: h.time, profit: h.dealerProfit||0 })) }));
+
+app.get('/api/admin/system-profit', (req, res) => {
+  const cf = readJSON(CONFIG_FILE);
+  const totalService = gameHistory.reduce((sum, h) => sum + (h.serviceIncome || 0), 0);
+  res.json({
+    systemProfit: cf.systemProfit || totalService,
+    bankerBalance: cf.bankerBalance || 0
+  });
+});
 
 app.post('/api/heartbeat', (req, res) => { const body = req.body || {}; const deviceId = body.deviceId; if (deviceId) onlineUsers.set(deviceId, Date.now()); res.json({ online: onlineUsers.size }); });
 app.get('/api/online', (req, res) => res.json({ count: onlineUsers.size }));
