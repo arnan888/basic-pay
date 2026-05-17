@@ -721,7 +721,7 @@
   color: #2a1a08;
   font-weight: bold;
   box-shadow: 
-    inset 0 -4px 0 rgba(0,0,0,0.2),
+    inset 0 -4px 0 rgba(34,139,34,.1),
     inset 0 4px 8px rgba(255,255,255,0.5),
     0 2px 6px rgba(0,0,0,0.6);
   border-radius: 8px;
@@ -1458,29 +1458,54 @@
 function initMahjongSlot(container) {
   if (typeof mahjongDestroy !== 'undefined' && mahjongDestroy) mahjongDestroy();
 
-  // 真麻将牌 Unicode 字符（万、条、筒、字）
+// ==================== 麻将胡了 (Mahjong Slot) ====================
+// ==================== 麻将胡了 (Mahjong Slot) 完整版 ====================
+function initMahjongSlot(container) {
+  if (typeof mahjongDestroy !== 'undefined' && mahjongDestroy) mahjongDestroy();
+
+  // 真麻将牌 Unicode 字符（万、筒、条、字）
   const TILES = [
     '🀇','🀈','🀉','🀊','🀋','🀌','🀍','🀎','🀏',  // 一万~九万
     '🀐','🀑','🀒','🀓','🀔','🀕','🀖','🀗','🀘',  // 一筒~九筒
     '🀙','🀚','🀛','🀜','🀝','🀞','🀟','🀠','🀡',  // 一条~九条
-    '🀀','🀁','🀂','🀃',  // 东南西北
-    '🀆' // 中
+    '🀀','🀁','🀂','🀃',                           // 东南西北
+    '🀆'                                            // 中
   ];
-  const WILD_CHAR = '🀫';  // 百搭
-  const SCATTER_CHAR = '🀢'; // 夺宝（发财）
+  const WILD_CHAR = '🀫';       // 百搭
+  const SCATTER_CHAR = '🀢';    // 夺宝（发财）
 
-  let grid = Array(5).fill().map(() => Array(4).fill(null));
-  let goldFlags = Array(5).fill().map(() => Array(4).fill(false));
-  let multiplier = 1;
-  let freeSpins = 0, freeSpinMultiplierIdx = 0;
+  // 赔付表：3/4/5 个的赔付倍数（乘以总投注）
+  const PAYTABLE = {
+    // 低级牌（万1-9、筒1-9、条1-9）
+    '🀇':[0,0,1,2,5], '🀈':[0,0,1,2,5], '🀉':[0,0,1,2,5],
+    '🀊':[0,0,1,2,5], '🀋':[0,0,1,2,5], '🀌':[0,0,1,2,5],
+    '🀍':[0,0,1,2,5], '🀎':[0,0,1,2,5], '🀏':[0,0,1,2,5],
+    '🀐':[0,0,1,2,5], '🀑':[0,0,1,2,5], '🀒':[0,0,1,2,5],
+    '🀓':[0,0,1,2,5], '🀔':[0,0,1,2,5], '🀕':[0,0,1,2,5],
+    '🀖':[0,0,1,2,5], '🀗':[0,0,1,2,5], '🀘':[0,0,1,2,5],
+    '🀙':[0,0,1,2,5], '🀚':[0,0,1,2,5], '🀛':[0,0,1,2,5],
+    '🀜':[0,0,1,2,5], '🀝':[0,0,1,2,5], '🀞':[0,0,1,2,5],
+    '🀟':[0,0,1,2,5], '🀠':[0,0,1,2,5], '🀡':[0,0,1,2,5],
+    // 高级牌（字牌）
+    '🀀':[0,0,2,5,10], '🀁':[0,0,2,5,10], '🀂':[0,0,2,5,10],
+    '🀃':[0,0,2,5,10], '🀆':[0,0,3,8,15]
+  };
+
+  // ========== 状态变量 ==========
+  let grid = Array(5).fill().map(() => Array(4).fill(null));   // 5x4 符号
+  let goldFlags = Array(5).fill().map(() => Array(4).fill(false)); // 金色标记
+  let multiplier = 1;                // 当前旋转乘数
+  let freeSpins = 0;                 // 剩余免费旋转次数
+  let freeSpinMultiplierIdx = 0;     // 免费转乘数索引
   const FREE_MULTIPLIERS = [2,4,6,10];
-  let betSize = 0.10;
-  let betMultiplier = 1;
-  const BASE_BET = 20;
+  let betSize = 0.10;                // 投注大小 ¥
+  let betMultiplier = 1;             // 投注倍数
+  const BASE_BET = 20;               // 20线基础投注
   let totalBet = betSize * betMultiplier * BASE_BET;
   let isRolling = false;
   let gameRecords = [];
 
+  // ========== UI 构建 ==========
   container.innerHTML = `
     <div class="mj-container">
       <div class="mj-topbar">
@@ -1495,7 +1520,7 @@ function initMahjongSlot(container) {
         <span>🎰 总投注: <span id="mjTotalBet">${totalBet.toFixed(2)}</span></span>
         <span>📊 本局赢奖: <span id="mjWinDisplay">0</span></span>
       </div>
-      <div class="mj-multiplier">🔥 当前乘数: <span id="mjMultiplier">x${multiplier}</span> ${freeSpins>0?'🎰 免费转':''}</div>
+      <div class="mj-multiplier">🔥 当前乘数: <span id="mjMultiplier">x${multiplier}</span> <span id="mjFreeInfo"></span></div>
       <div style="display:flex; justify-content:center; margin:12px 0;" id="mjReelsContainer"></div>
       <div class="mj-bet-row">
         <span style="color:#ffd966;">投注大小:</span>
@@ -1516,7 +1541,7 @@ function initMahjongSlot(container) {
       </div>
     </div>`;
 
-  // 创建转轴
+  // 创建 5 个转轴容器
   const reelsContainer = document.getElementById('mjReelsContainer');
   const reelElements = [];
   for (let col = 0; col < 5; col++) {
@@ -1529,6 +1554,36 @@ function initMahjongSlot(container) {
     reelElements.push({ outer: reelDiv, inner: innerDiv });
   }
 
+  // ========== 工具函数 ==========
+  function randomTile(excludeGold = false, colIndex = -1) {
+    const r = Math.random();
+    if (r < 0.03) return WILD_CHAR;          // 3% 百搭
+    if (r < 0.07) return SCATTER_CHAR;       // 4% 夺宝
+    let tile = TILES[Math.floor(Math.random() * TILES.length)];
+    // 金色：仅在第2/3/4列，且不是百搭/夺宝，概率25%
+    if (!excludeGold && colIndex >= 1 && colIndex <= 3 && tile !== WILD_CHAR && tile !== SCATTER_CHAR) {
+      if (Math.random() < 0.25) {
+        // 金色由 goldFlags 控制，符号不变
+      }
+    }
+    return tile;
+  }
+
+  // 初始化随机网格
+  function initGrid() {
+    for (let col = 0; col < 5; col++) {
+      for (let row = 0; row < 4; row++) {
+        grid[col][row] = randomTile(false, col);
+        // 金色设置：如果该列可能是金色，且符号不是百搭/夺宝，概率25%
+        goldFlags[col][row] = false;
+        if (col >= 1 && col <= 3 && grid[col][row] !== WILD_CHAR && grid[col][row] !== SCATTER_CHAR && Math.random() < 0.25) {
+          goldFlags[col][row] = true;
+        }
+      }
+    }
+  }
+
+  // 渲染网格到转轴
   function renderGrid() {
     for (let col = 0; col < 5; col++) {
       const inner = reelElements[col].inner;
@@ -1550,36 +1605,258 @@ function initMahjongSlot(container) {
     }
   }
 
-  function randomTile() {
-    const r = Math.random();
-    if (r < 0.03) return WILD_CHAR;
-    if (r < 0.06) return SCATTER_CHAR;
-    return TILES[Math.floor(Math.random() * TILES.length)];
+  // ========== 1024 路中奖计算 ==========
+  function calculateWins() {
+    let totalWin = 0;
+    const winCells = new Set(); // 记录赢奖格子坐标 "col,row"
+    const scatterCount = [].concat(...grid).filter(s => s === SCATTER_CHAR).length;
+
+    // 生成所有路径 (4^5 = 1024)
+    const allPaths = [];
+    function generatePaths(col, currentPath) {
+      if (col === 5) { allPaths.push([...currentPath]); return; }
+      for (let row = 0; row < 4; row++) {
+        generatePaths(col + 1, [...currentPath, row]);
+      }
+    }
+    generatePaths(0, []);
+
+    // 遍历路径，计算连续匹配
+    for (const path of allPaths) {
+      const firstRow = path[0];
+      const firstSym = grid[0][firstRow];
+      if (!firstSym || firstSym === SCATTER_CHAR) continue; // 夺宝不参与普通赔付
+
+      let streak = 0;
+      const involvedCells = [];
+      for (let col = 0; col < 5; col++) {
+        const row = path[col];
+        const sym = grid[col][row];
+        if (!sym) break;
+        if (col === 0) {
+          streak = 1;
+          involvedCells.push([col, row]);
+          continue;
+        }
+        // 匹配：相同符号或任意一方为百搭
+        if (sym === firstSym || sym === WILD_CHAR || firstSym === WILD_CHAR) {
+          streak++;
+          involvedCells.push([col, row]);
+        } else {
+          break; // 不连续，放弃此路径
+        }
+      }
+      if (streak >= 3) {
+        // 从赔付表中查找 firstSym 的倍数（如果 firstSym 是百搭，则使用第二个非百搭符号作为主赔付，这里简化为百搭赔付与低赔率相同）
+        let paySymbol = firstSym;
+        if (firstSym === WILD_CHAR) {
+          // 百搭作为主符号时，寻找第二个符号作为实际赔付（取第一个非百搭符号）
+          for (let c = 1; c < streak; c++) {
+            const sym = grid[c][path[c]];
+            if (sym !== WILD_CHAR) { paySymbol = sym; break; }
+          }
+        }
+        const payTable = PAYTABLE[paySymbol] || [0,0,1,2,5];
+        const symbolPayout = payTable[streak - 3];  // 3,4,5 个对应索引 0,1,2
+        if (symbolPayout > 0) {
+          totalWin += symbolPayout * betSize * betMultiplier;  // 乘以投注大小和倍数
+        }
+        involvedCells.forEach(c => winCells.add(`${c[0]},${c[1]}`));
+      }
+    }
+    return { totalWin, winCells, scatterCount };
   }
 
-  // 初始化网格
-  for (let col = 0; col < 5; col++) {
-    grid[col] = [];
-    goldFlags[col] = [];
-    for (let row = 0; row < 4; row++) {
-      grid[col][row] = randomTile();
-      goldFlags[col][row] = false;
+  // ========== 消除 + 掉落 + 新符号 ==========
+  function cascade(winCells) {
+    // 1. 将赢奖格子中的金色普通符号转换为百搭，其他消除（置空）
+    for (const cellStr of winCells) {
+      const [col, row] = cellStr.split(',').map(Number);
+      if (goldFlags[col][row] && grid[col][row] !== WILD_CHAR && grid[col][row] !== SCATTER_CHAR) {
+        grid[col][row] = WILD_CHAR;     // 变成百搭
+        goldFlags[col][row] = false;    // 移除金色标记
+      } else {
+        grid[col][row] = null;          // 消除为空
+        goldFlags[col][row] = false;
+      }
+    }
+
+    // 2. 掉落：每列从下往上，将空位上方符号下移，顶部生成新符号
+    for (let col = 0; col < 5; col++) {
+      const column = grid[col];
+      const newCol = column.filter(s => s !== null); // 保留非空
+      const emptyCount = 4 - newCol.length;
+      // 顶部生成新符号
+      for (let i = 0; i < emptyCount; i++) {
+        const newSym = randomTile(false, col);
+        newCol.unshift(newSym); // 从顶部插入
+        // 新符号的金色：仅在第2/3/4列且不是百搭/夺宝，保持一定概率
+        const goldIdx = i;
+        if (col >= 1 && col <= 3 && newSym !== WILD_CHAR && newSym !== SCATTER_CHAR && Math.random() < 0.25) {
+          goldFlags[col][i] = true; // 注意：这里 top 对应索引，我们稍后统一重置 goldFlags
+        }
+      }
+      grid[col] = newCol.slice(0, 4);
+      // 重新设置 goldFlags 数组大小
+      while (goldFlags[col].length < 4) goldFlags[col].push(false);
     }
   }
-  renderGrid();
-  updateUI();
 
+  // ========== 旋转动画（快速变换符号） ==========
+  async function spinAnimation() {
+    const spinDuration = 800; // 总动画时长
+    const startTime = Date.now();
+    return new Promise(resolve => {
+      const interval = setInterval(() => {
+        for (let col = 0; col < 5; col++) {
+          for (let row = 0; row < 4; row++) {
+            grid[col][row] = randomTile(false, col);
+            goldFlags[col][row] = false;
+          }
+        }
+        renderGrid();
+        if (Date.now() - startTime > spinDuration) {
+          clearInterval(interval);
+          // 动画结束，生成最终的真实结果
+          initGrid(); // 重置为带金色概率的初始网格
+          renderGrid();
+          resolve();
+        }
+      }, 50);
+    });
+  }
+
+  // ========== 一次完整旋转（包括消除循环） ==========
+  async function performSpin() {
+    if (isRolling) return;
+    if (currentUser.balance < totalBet) { toast('余额不足', true); return; }
+    // 扣除投注
+    await gameSettle(totalBet, 0);
+    isRolling = true;
+
+    // 重置乘数（主游戏）
+    if (freeSpins <= 0) multiplier = 1;
+
+    updateUI();
+    await spinAnimation();
+
+    // 消除循环：最多进行10次
+    let cascadeCount = 0;
+    let totalWinThisSpin = 0;
+    let freeSpinsAwarded = 0;
+    let winDetails = new Map(); // 记录每次赢奖的格子用于闪烁
+
+    while (cascadeCount < 10) {
+      const { totalWin, winCells, scatterCount } = calculateWins();
+      if (winCells.size === 0 && scatterCount < 3) break; // 没有赢奖且夺宝不够免费转
+
+      // 计算本次赢奖金额（乘以当前乘数）
+      const cascadeWin = totalWin * multiplier;
+      totalWinThisSpin += cascadeWin;
+
+      // 记录赢奖格子
+      winCells.forEach(cell => {
+        const [col, row] = cell.split(',').map(Number);
+        winDetails.set(`${col},${row}`, (winDetails.get(`${col},${row}`) || 0) + cascadeWin);
+      });
+
+      // 免费旋转触发（夺宝≥3）
+      if (scatterCount >= 3) {
+        const extraSpins = 12 + (scatterCount - 3) * 2;
+        freeSpins += extraSpins;
+        freeSpinsAwarded += extraSpins;
+        freeSpinMultiplierIdx = 0; // 重置免费转乘数索引
+      }
+
+      // 消除并转换金色→百搭
+      cascade(winCells);
+      cascadeCount++;
+      renderGrid();
+      await new Promise(r => setTimeout(r, 300)); // 短暂暂停观察消除
+    }
+
+    // 结算赢奖
+    if (totalWinThisSpin > 0) {
+      await gameSettle(0, totalWinThisSpin);
+      document.getElementById('mjWinDisplay').innerText = totalWinThisSpin.toFixed(2);
+      gameRecords.unshift(`赢 ${totalWinThisSpin.toFixed(2)} [${new Date().toLocaleTimeString()}]`);
+      if (gameRecords.length > 50) gameRecords.pop();
+
+      // 闪烁赢奖格子（简单处理：所有赢过的格子闪一下）
+      const allWinCells = Array.from(winDetails.keys());
+      allWinCells.forEach(cell => {
+        const [col, row] = cell.split(',').map(Number);
+        const cellDiv = reelElements[col].inner.children[row];
+        if (cellDiv) cellDiv.classList.add('win-flash');
+        setTimeout(() => {
+          if (cellDiv) cellDiv.classList.remove('win-flash');
+        }, 1000);
+      });
+    } else {
+      document.getElementById('mjWinDisplay').innerText = '0';
+    }
+
+    // 更新乘数（主游戏：有赢奖且不是免费转时递增）
+    if (totalWinThisSpin > 0 && freeSpins <= 0) {
+      if (multiplier < 3) multiplier++;
+      else if (multiplier === 3) multiplier = 5;
+      else multiplier = 5; // 保持5
+    }
+
+    // 处理免费旋转模式
+    if (freeSpins > 0) {
+      // 如果刚触发了免费转，第一次免费转已经开始（因为还在同一旋转中？按照原规则，免费转的旋转应该另外启动，我们简化：免费转在接下来的旋转中进行）
+      // 我们使用一个标记，让下一次旋转自动使用免费转乘数
+    }
+
+    // 减少免费旋转次数（如果有的话，在本次旋转结束时扣除）
+    if (freeSpins > 0) {
+      freeSpins--;
+      if (freeSpins <= 0) {
+        freeSpinMultiplierIdx = 0;
+        multiplier = 1; // 退出免费转，重置乘数
+      } else {
+        // 如果还有免费转，乘数设置为对应序列
+        multiplier = FREE_MULTIPLIERS[freeSpinMultiplierIdx % FREE_MULTIPLIERS.length];
+        freeSpinMultiplierIdx++;
+      }
+    }
+
+    updateUI();
+    isRolling = false;
+  }
+
+  // ========== UI 更新 ==========
   function updateUI() {
     document.getElementById('mjBalance').innerText = currentUser?.balance?.toFixed(2) || '0';
     document.getElementById('mjMultiplier').innerText = 'x' + multiplier;
+    const freeInfo = document.getElementById('mjFreeInfo');
     if (freeSpins > 0) {
-      document.getElementById('mjMultiplier').innerHTML += ' <span style="color:#00ff88;">(免费转' + freeSpins + ')</span>';
+      freeInfo.innerHTML = '<span style="color:#00ff88;">(免费转剩余:' + freeSpins + ')</span>';
+    } else {
+      freeInfo.innerHTML = '';
     }
     document.getElementById('mjTotalBet').innerText = totalBet.toFixed(2);
     refreshVipDisplay();
   }
 
-  // 投注设置监听
+  // ========== 事件绑定 ==========
+  document.getElementById('mjSpinBtn').addEventListener('click', performSpin);
+  document.getElementById('mjBackBtn').addEventListener('click', () => {
+    if (typeof mahjongDestroy === 'function') mahjongDestroy();
+    renderLobby();
+  });
+  document.getElementById('mjRulesBtn').addEventListener('click', () => {
+    alert('🎰 麻将胡了\n5轴4行1024路老虎机\n百搭🀫可替代除夺宝🀢外所有符号\n金色符号消除后变百搭\n主游戏乘数：x1→x2→x3→x5\n3个夺宝触发免费转，每多1个+2次\n免费转乘数：x2/x4/x6/x10\n中奖符号消除后掉落新符号，可连锁中奖');
+  });
+  document.getElementById('mjHistoryBtn').addEventListener('click', () => {
+    if (gameRecords.length === 0) return;
+    let html = gameRecords.slice(0, 15).join('<br>');
+    const m = document.createElement('div'); m.className = 'modal';
+    m.innerHTML = `<div class="modal-content" style="color:#ffecb3;">${html}<br><button class="auth-btn" id="closeMjHist">关闭</button></div>`;
+    document.body.appendChild(m);
+    document.getElementById('closeMjHist').addEventListener('click', () => m.remove());
+  });
   document.getElementById('mjBetSize').addEventListener('change', function() {
     betSize = parseFloat(this.value) || 0.01;
     totalBet = betSize * betMultiplier * BASE_BET;
@@ -1591,70 +1868,10 @@ function initMahjongSlot(container) {
     updateUI();
   });
 
-  // 旋转
-  document.getElementById('mjSpinBtn').onclick = async function() {
-    if (isRolling) return;
-    if (currentUser.balance < totalBet) { toast('余额不足', true); return; }
-    await gameSettle(totalBet, 0);
-    isRolling = true;
-    // 简单旋转动画：快速变换符号
-    const spinDuration = 800;
-    const startTime = Date.now();
-    const interval = setInterval(() => {
-      for (let col = 0; col < 5; col++) {
-        for (let row = 0; row < 4; row++) {
-          grid[col][row] = randomTile();
-          goldFlags[col][row] = false;
-        }
-      }
-      renderGrid();
-      if (Date.now() - startTime > spinDuration) {
-        clearInterval(interval);
-        // 最终结果（随机赢奖演示）
-        let winAmount = 0;
-        if (Math.random() > 0.6) {
-          winAmount = parseFloat((Math.random() * 5 + 0.5).toFixed(2));
-          document.getElementById('mjWinDisplay').innerText = winAmount.toFixed(2);
-          gameSettle(0, winAmount);
-          gameRecords.unshift(`赢 ${winAmount.toFixed(2)} [${new Date().toLocaleTimeString()}]`);
-        } else {
-          document.getElementById('mjWinDisplay').innerText = '0';
-        }
-        // 乘数变化（演示）
-        if (winAmount > 0 && freeSpins <= 0) {
-          if (multiplier < 3) multiplier++;
-          else if (multiplier === 3) multiplier = 5;
-        }
-        if (freeSpins > 0) {
-          freeSpins--;
-          multiplier = FREE_MULTIPLIERS[freeSpinMultiplierIdx % 4];
-          freeSpinMultiplierIdx++;
-          if (freeSpins <= 0) {
-            freeSpinMultiplierIdx = 0;
-            multiplier = 1;
-          }
-        }
-        updateUI();
-        isRolling = false;
-      }
-    }, 50);
-  };
-
-  document.getElementById('mjBackBtn').onclick = function() {
-    if (typeof mahjongDestroy === 'function') mahjongDestroy();
-    renderLobby();
-  };
-  document.getElementById('mjRulesBtn').onclick = function() {
-    alert('麻将胡了规则：5轴4行老虎机，万筒条字牌，百搭替代，夺宝触发免费转，乘数递增。完整赔率待完善。');
-  };
-  document.getElementById('mjHistoryBtn').onclick = function() {
-    if (gameRecords.length === 0) return;
-    let html = gameRecords.slice(0, 15).join('<br>');
-    const m = document.createElement('div'); m.className = 'modal';
-    m.innerHTML = `<div class="modal-content" style="color:#ffecb3;">${html}<br><button class="auth-btn" id="closeMjHist">关闭</button></div>`;
-    document.body.appendChild(m);
-    document.getElementById('closeMjHist').onclick = () => m.remove();
-  };
+  // 初始化网格
+  initGrid();
+  renderGrid();
+  updateUI();
 
   mahjongDestroy = function() {
     container.innerHTML = '';
